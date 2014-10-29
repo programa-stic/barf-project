@@ -4,7 +4,7 @@ from barf.core.reil import ReilEmulator
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilParser
 from barf.core.smt.smtlibv2 import BitVec
-from barf.core.smt.smtlibv2 import Solver as SmtSolver
+from barf.core.smt.smtlibv2 import Z3Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 from barf.utils.utils import VariableNamer
 

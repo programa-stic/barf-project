@@ -24,13 +24,13 @@ from barf.arch.x86.x86instructiontranslator import add_register_size
 logger = logging.getLogger("X86Translator")
 
 def print_translation_exception(instruction, err):
-    print "[-] Exception (%s:%d) : '%s'" % \
-        (__name__, sys.exc_traceback.tb_lineno, str(err))
-    print ""
-    print traceback.format_exc()
+    logger.debug("[-] Exception (%s:%d) : '%s'" % \
+        (__name__, sys.exc_traceback.tb_lineno, str(err)))
+    logger.debug("")
+    logger.debug(traceback.format_exc())
 
-    print instruction
-    print instruction.mnemonic, type(instruction)
+    logger.debug(str(instruction))
+    logger.debug("%s (%s)" % (str(instruction.mnemonic), type(instruction)))
 
 class X86Translator(object):
 

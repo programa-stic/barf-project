@@ -17,16 +17,25 @@ Installation
 
 * Capstone_ : A lightweight multi-platform, multi-architecture disassembly framework.
 * Z3_ : A high-performance theorem prover being developed at Microsoft Research.
+* CVC4_ : An efficient open-source automatic theorem prover for satisfiability modulo theories (SMT) problems.
 * PyBFD_ : A Python interface to the GNU Binary File Descriptor (BFD) library.
 
 The following command installs *BARF* on your system: ::
 
     $ sudo python setup.py install
 
-For Debian-based system, you can use an installation script that downloads
+For Debian-based system, you can use an installation script that first downloads
 and installs all dependencies and then installs *BARF*: ::
 
     $ sudo install.sh
+
+Notes
+-----
+
+    * The installer compiles both Z3 and CVC4 so it can take some time to finish (specially, CVC4).
+    * Only one SMT solver is needed in order to work. You may choose between Z3 and CVC4 or install both.
+    * The installer was tested on Ubuntu 12.04 and 14.04 (x86_64).
+    * To run some tests you need to install PyAsmJIT first.
 
 Quickstart
 ==========
@@ -224,6 +233,7 @@ from PySymEmu_.
 
 .. _Capstone : http://www.capstone-engine.org
 .. _Z3 : http ://z3.codeplex.com
+.. _CVC4 : http://cvc4.cs.nyu.edu/web/
 .. _PyBFD : http://github.com/Groundworkstech/pybfd
 .. _PySymEmu : http://github.com/feliam/pysymemu
 .. _REIL : http://www.usenix.org/legacy/event/woot10/tech/full_papers/Dullien.pdf

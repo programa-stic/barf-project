@@ -596,7 +596,9 @@ class SmtTranslator(object):
     def _translate_jcc(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a JCC instruction.
         """
-        raise Exception("Unsupported instruction : JCC")
+        # raise Exception("Unsupported instruction : JCC")
+
+        return []
 
     # Other Instructions
     # ======================================================================== #

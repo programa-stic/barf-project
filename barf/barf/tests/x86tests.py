@@ -10,7 +10,7 @@ from barf.arch.x86.x86instructiontranslator import LITE_TRANSLATION
 from barf.arch.x86.x86parser import X86Parser
 from barf.arch.x86.x86translator import X86Translator
 from barf.core.reil import ReilEmulator
-from barf.core.smt.smtlibv2 import Solver as SmtSolver
+from barf.core.smt.smtlibv2 import Z3Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
 

@@ -19,7 +19,7 @@ from arch.x86.x86disassembler import X86Disassembler
 from arch.x86.x86translator import X86Translator
 from core.bi import BinaryFile
 from core.reil import ReilEmulator
-from core.smt.smtlibv2 import Solver as SmtSolver
+from core.smt.smtlibv2 import Z3Solver
 from core.smt.smtlibv2 import CVC4Solver
 
 from core.smt.smttranslator import SmtTranslator
@@ -31,6 +31,10 @@ logging.basicConfig(
 )
 
 verbose = False
+
+# Choose between SMT Solvers...
+SMT_SOLVER  = "Z3"
+# SMT_SOLVER  = "CVC4"
 
 class BARF(object):
     """Binary Analysis Framework."""
@@ -80,8 +84,12 @@ class BARF(object):
             self.ir_emulator = ReilEmulator(self.arch_info.address_size)
             self.ir_translator = X86Translator(architecture_mode=self.arch_info.architecture_mode)
 
-            # self.smt_solver = SmtSolver()
-            self.smt_solver = CVC4Solver()
+            if SMT_SOLVER == "Z3":
+                self.smt_solver = Z3Solver()
+            elif SMT_SOLVER == "CVC4":
+                self.smt_solver = CVC4Solver()
+            else:
+                raise Exception("Invalid SMT solver.")
 
             self.smt_translator = SmtTranslator(self.smt_solver, self.arch_info.address_size)
 

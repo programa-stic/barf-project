@@ -1120,7 +1120,7 @@ class X86InstructionTranslator(object):
         trans  = ["str [{0} $1,   EMPTY,  {1} %0]".format(oprnd2_size_str, oprnd_size_str)]
 
         # Decrement in 1 shift amount
-        trans += ["sub [{0} $1,   {0} 1,  {0} %1]".format(oprnd_size_str)]
+        trans += ["sub [{0} %0,   {0} 1,  {0} %1]".format(oprnd_size_str)]
 
         # Negate
         trans += ["xor [{0} %1, {0} {1},  {0} %2]".format(oprnd_size_str, (2**oprnd_size)-1)]
@@ -1185,7 +1185,7 @@ class X86InstructionTranslator(object):
         trans  = ["str [{0} $1,   EMPTY,  {1} %0]".format(oprnd2_size_str, oprnd_size_str)]
 
         # Decrement in 1 shift amount
-        trans += ["sub [{0} $1,   {0} 1,  {0} %1]".format(oprnd_size_str)]
+        trans += ["sub [{0} %0,   {0} 1,  {0} %1]".format(oprnd_size_str)]
 
         # Shift left
         trans += ["bsh [{0} $0,  {0} %1,  {0} %2]".format(oprnd_size_str)]

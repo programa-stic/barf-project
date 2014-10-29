@@ -9,6 +9,7 @@ setup(
     description      = 'A multiplatform open source Binary Analysis and Reverse engineering Framework',
     install_requires = [
         'networkx',
+        'pefile',
         'pybfd',
         'pydot',
         'pygments',

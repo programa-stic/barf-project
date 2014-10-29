@@ -13,7 +13,7 @@ from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86disassembler import X86Disassembler
 from barf.arch.x86.x86translator import X86Translator
 from barf.core.bi import Memory
-from barf.core.smt.smtlibv2 import Solver as SmtSolver
+from barf.core.smt.smtlibv2 import Z3Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
 verbose = False

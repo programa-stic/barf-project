@@ -280,6 +280,12 @@ def init_parser():
         default=None,
         help="Save summary to file.")
 
+    parser.add_argument(
+        "-r",
+        type=int,
+        choices=[8, 16, 32, 64],
+        help="Filter verified gadgets by operands register size.")
+
     return parser
 
 def do_find(bin, args):
@@ -333,6 +339,17 @@ def do_verify(bin, classified, args):
     verify_time = end - start
 
     discarded = []
+
+    # Filter by operand size.
+    if args.r:
+        verified_temp = []
+
+        for gadget in verified:
+            if all([op.size == args.r for op in gadget.sources]) and \
+                all([op.size == args.r for op in gadget.destination]):
+                verified_temp += [gadget]
+
+        verified = verified_temp
 
     # Filter duplicate gadgets.
     if args.unique:

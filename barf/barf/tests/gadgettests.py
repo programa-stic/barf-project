@@ -14,7 +14,7 @@ from barf.core.reil import ReilEmptyOperand
 from barf.core.reil import ReilEmulator
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
-from barf.core.smt.smtlibv2 import Solver as SmtSolver
+from barf.core.smt.smtlibv2 import Z3Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
 class GadgetClassifierTests(unittest.TestCase):
