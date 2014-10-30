@@ -181,6 +181,7 @@ interface to the SMT-solver-related functionalities.
 Directory Structure
 ===================
 ::
+
     barf/       Framework's main directory.
     doc/        Documentation.
     samples/    Binaries samples for testing.
