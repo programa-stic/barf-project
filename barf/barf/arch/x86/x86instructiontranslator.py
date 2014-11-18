@@ -1719,7 +1719,35 @@ class X86InstructionTranslator(object):
         # Flags Affected
         # None.
 
-        trans = ["ret [EMPTY, EMPTY, EMPTY]"]
+        trans = []
+
+        # Pop return address
+        if self.architecture_mode == ARCH_X86_MODE_32:
+            trans  = ["ldm [DWORD esp,   EMPTY, DWORD  %0]"]
+            trans += ["add [DWORD esp, DWORD 4, DWORD  %1]"]
+            trans += ["str [DWORD  %1,   EMPTY, DWORD esp]"]
+        elif self.architecture_mode == ARCH_X86_MODE_64:
+            trans  = ["ldm [QWORD rsp,   EMPTY, QWORD  %0]"]
+            trans += ["add [QWORD rsp, QWORD 8, QWORD  %1]"]
+            trans += ["str [QWORD  %1,   EMPTY, QWORD rsp]"]
+
+        # Free stack.
+        if len(in_operands) > 0:
+            oprnd1 = in_operands[0]
+
+            assert oprnd1.size
+            assert oprnd1.size == 16
+            assert isinstance(oprnd1, ReilImmediateOperand)
+
+            if self.architecture_mode == ARCH_X86_MODE_32:
+                trans += ["add [DWORD esp, DWORD {0},  DWORD %2]".format(oprnd1.immediate & (2**32 -1))]
+                trans += ["str [DWORD  %2,     EMPTY, DWORD esp]"]
+            elif self.architecture_mode == ARCH_X86_MODE_64:
+                trans += ["add [QWORD rsp, QWORD {0}, QWORD  %2]".format(oprnd1.immediate & (2**64 -1))]
+                trans += ["str [QWORD  %2,     EMPTY, QWORD rsp]"]
+
+		# TODO: Replace RET instruction with JCC [BYTE 0x1, EMPTY, {D,Q}WORD %0]
+        trans += ["ret [EMPTY, EMPTY, EMPTY]"]
 
         return self._ir_parser.parse(trans, False)
 

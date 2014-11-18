@@ -8,8 +8,6 @@ agnostic.
 
 """
 
-import sys
-
 from barf.analysis.gadget import GadgetType
 from barf.analysis.gadget import RawGadget
 from barf.arch.x86.x86instructiontranslator import FULL_TRANSLATION
@@ -65,10 +63,22 @@ class GadgetFinder(object):
         # find gadget tail
         for addr in xrange(start_address, end_address + 1):
             # TODO: Make this 'speed improvement' architecture-agnostic
-            if self._mem[addr] != "\xc3":
+            op_codes = [
+                "\xc3",     # RET
+                "\xc2",     # RET imm16
+                "\xeb",     # JMP rel8
+                "\xe8",     # CALL rel{16,32}
+                "\xe9",     # JMP rel{16,32}
+                "\xff",     # JMP/CALL r/m{16,32,64}
+            ]
+
+            if self._mem[addr] not in op_codes:
                 continue
 
-            asm_instr, asm_size = self._disasm.disassemble(self._mem[addr], addr)
+            asm_instr, asm_size = self._disasm.disassemble(
+                self._mem[addr:min(addr+16, end_address + 1)],
+                addr
+            )
 
             if not asm_instr:
                 continue
@@ -79,7 +89,8 @@ class GadgetFinder(object):
             ins_ir = self._ir_trans.translate(asm_instr)
 
             # build gadget
-            if ins_ir[0] and ins_ir[0].mnemonic == ReilMnemonic.RET:
+            if ins_ir[-1] and (ins_ir[-1].mnemonic == ReilMnemonic.RET \
+                or ins_ir[-1].mnemonic == ReilMnemonic.JCC):
                 root = GadgetTreeNode(DualInstruction(addr, asm_instr, ins_ir))
 
                 roots.append(root)
@@ -113,7 +124,10 @@ class GadgetFinder(object):
 
             raw_bytes = self._mem[start_addr:end_addr]
 
-            asm_instr, asm_size = self._disasm.disassemble(raw_bytes, start_addr)
+            asm_instr, asm_size = self._disasm.disassemble(
+                raw_bytes,
+                start_addr
+            )
 
             if not asm_instr or asm_size != step:
                 continue
@@ -159,13 +173,14 @@ class GadgetFinder(object):
     def _is_valid_ins(self, ins_ir, ins_asm):
         """Check for instruction validity as a gadget.
         """
-        invalid_inss = [
-            ReilMnemonic.RET,
-            ReilMnemonic.UNKN,
+        invalid_instrs = [
             ReilMnemonic.JCC,
+            ReilMnemonic.RET,
+            ReilMnemonic.UNDEF,
+            ReilMnemonic.UNKN,
         ]
 
-        return not any([i.mnemonic in invalid_inss for i in ins_ir])
+        return not any([i.mnemonic in invalid_instrs for i in ins_ir])
 
 
 class GadgetTreeNode(object):

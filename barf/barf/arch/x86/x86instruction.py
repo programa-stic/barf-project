@@ -1,3 +1,4 @@
+from barf.arch.x86.x86base import X86ImmediateOperand
 from barf.arch.x86.x86base import X86InstructionBase
 from barf.arch.x86.x86base import X86MemoryOperand
 from barf.arch.x86.x86base import X86RegisterOperand
@@ -3143,8 +3144,21 @@ class Ret(X86InstructionBase):
     @property
     def source_operands(self):
         """Get source operands."""
-        return [
-        ]
+        if len(self.operands) == 1:
+
+            # Fix size.
+            immediate = self.operands[0].immediate & (2**16-1)
+            size = 16
+
+            self.operands[0] = X86ImmediateOperand(immediate)
+            self.operands[0].size = size
+
+            return [
+                (self.operands[0], False),
+            ]
+        else:
+            return [
+            ]
 
     @property
     def destination_operands(self):
