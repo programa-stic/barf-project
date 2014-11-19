@@ -17,6 +17,11 @@ class RawGadget(object):
     """Represent a gadget as a list of instructions.
     """
 
+    __slots__ = [
+        '_instrs',
+        '_id',
+    ]
+
     def __init__(self, instrs):
 
         # List of instructions (dual instructions.)
@@ -77,6 +82,17 @@ class TypedGadget(RawGadget):
 
     """Represents a gadget with its semantic classification.
     """
+
+    __slots__ = [
+        '_gadget',
+        '_sources',
+        '_destination',
+        '_modified_regs',
+        '_gadget_type',
+        '_verified',
+        '_is_valid',
+        '_operation',
+    ]
 
     def __init__(self, gadget, gadget_type):
 

@@ -317,6 +317,17 @@ class X86ArchitectureInformation(ArchitectureInformation):
 class X86InstructionBase(object):
     """Representation of x86 instruction."""
 
+    __slots__ = [
+        '_prefix',
+        '_mnemonic',
+        '_operands',
+        '_bytes',
+        '_size',
+        '_flags_affected',
+        '_address',
+        '_arch_mode',
+    ]
+
     def __init__(self, prefix, mnemonic, operands, arch_mode):
         self._prefix = prefix
         self._mnemonic = mnemonic
@@ -418,6 +429,11 @@ class X86InstructionBase(object):
 class X86Operand(object):
     """Representation of x86 operand."""
 
+    __slots__ = [
+        '_modifier',
+        '_size',
+    ]
+
     def __init__(self, modifier):
         self._modifier = modifier
         self._size = None
@@ -445,6 +461,10 @@ class X86Operand(object):
 
 class X86ImmediateOperand(X86Operand):
     """Representation of x86 immediate operand."""
+
+    __slots__ = [
+        '_immediate'
+    ]
 
     def __init__(self, immediate):
         super(X86ImmediateOperand, self).__init__("")
@@ -481,6 +501,11 @@ class X86ImmediateOperand(X86Operand):
 class X86RegisterOperand(X86Operand):
     """Representation of x86 register operand."""
 
+    __slots__ = [
+        '_name',
+        '_size',
+    ]
+
     def __init__(self, name, size=None):
         super(X86RegisterOperand, self).__init__("")
 
@@ -508,6 +533,15 @@ class X86RegisterOperand(X86Operand):
 
 class X86MemoryOperand(X86Operand):
     """Representation of x86 memory operand."""
+
+    __slots__ = [
+        '_segment',
+        '_base',
+        '_index',
+        '_index',
+        '_scale',
+        '_displacement',
+    ]
 
     def __init__(self, segment, base, index, scale, displacement):
         super(X86MemoryOperand, self).__init__("")
