@@ -178,6 +178,13 @@ class ReilInstruction(object):
     """Representation of a REIL instruction.
     """
 
+    __slots__ = [
+        '_mnemonic',
+        '_operands',
+        '_comment',
+        '_address',
+    ]
+
     def __init__(self):
 
         # A REIL mnemonic
@@ -283,6 +290,11 @@ class ReilOperand(object):
     """Representation of an IR instruction's operand.
     """
 
+    __slots__ = [
+        '_size',
+        '_tag',
+    ]
+
     def __init__(self, size):
 
         # Size of the operand, in bits.
@@ -333,6 +345,10 @@ class ReilImmediateOperand(ReilOperand):
     """Representation of a REIL instruction immediate operand.
     """
 
+    __slots__ = [
+        '_immediate',
+    ]
+
     def __init__(self, immediate, size=None):
         super(ReilImmediateOperand, self).__init__(size)
 
@@ -373,6 +389,10 @@ class ReilRegisterOperand(ReilOperand):
 
     """Representation of a REIL instruction register operand.
     """
+
+    __slots__ = [
+        '_name',
+    ]
 
     def __init__(self, name, size=None):
         super(ReilRegisterOperand, self).__init__(size)
@@ -548,6 +568,12 @@ class DualInstruction(object):
     representation.
 
     """
+
+    __slots__ = [
+        '_address',
+        '_asm_instr',
+        '_ir_instrs',
+    ]
 
     def __init__(self, address, asm_instr, ir_instrs):
 
