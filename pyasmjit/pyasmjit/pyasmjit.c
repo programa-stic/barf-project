@@ -5,24 +5,24 @@
 #include "Python.h"
 
 typedef struct {
-    unsigned long rax;
-    unsigned long rbx;
-    unsigned long rcx;
-    unsigned long rdx;
-    unsigned long rdi;
-    unsigned long rsi;
-    unsigned long rbp;
-    unsigned long rsp;
-    unsigned long rip;
-    unsigned long r8;
-    unsigned long r9;
-    unsigned long r10;
-    unsigned long r11;
-    unsigned long r12;
-    unsigned long r13;
-    unsigned long r14;
-    unsigned long r15;
-    unsigned long rflags;
+    unsigned long rax;      // 0
+    unsigned long rbx;      // 1
+    unsigned long rcx;      // 2
+    unsigned long rdx;      // 3
+    unsigned long rdi;      // 4
+    unsigned long rsi;      // 5
+    unsigned long rbp;      // 6
+    unsigned long rsp;      // 7
+    unsigned long rip;      // 8
+    unsigned long r8;       // 9
+    unsigned long r9;       // 10
+    unsigned long r10;      // 11
+    unsigned long r11;      // 12
+    unsigned long r12;      // 13
+    unsigned long r13;      // 14
+    unsigned long r14;      // 15
+    unsigned long r15;      // 16
+    unsigned long rflags;   // 17
 } context_t;
 
 void

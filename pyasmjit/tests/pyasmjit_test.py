@@ -19,6 +19,7 @@ context_in = {
     'rdx' : 0x1,
     'rdi' : 0x1,
     'rsi' : 0x1,
+    'rflags' : 0x202,
 }
 
 print code

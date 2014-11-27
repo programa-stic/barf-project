@@ -22,6 +22,14 @@ push rcx
 push rdx
 push rdi
 push rsi
+push r8
+push r9
+push r10
+push r11
+push r12
+push r13
+push r14
+push r15
 
 ;; Save ptr to context
 mov [rbp-0x08], rdi
@@ -31,12 +39,28 @@ push qword [rdi+6*8]
 popfq
 
 ;; Load context (registers)
-mov rax, [rdi+0*8]
-mov rbx, [rdi+1*8]
-mov rcx, [rdi+2*8]
-mov rdx, [rdi+3*8]
-mov rsi, [rdi+5*8]
-mov rdi, [rdi+4*8]
+mov rax, [rdi+ 0*8]
+mov rbx, [rdi+ 1*8]
+mov rcx, [rdi+ 2*8]
+mov rdx, [rdi+ 3*8]
+mov rsi, [rdi+ 5*8]
+
+;; TODO: Set rbp, rsp and rip registers
+
+; mov rbp, [rdi+ 6*8]
+; mov rsp, [rdi+ 7*8]
+; mov rip, [rdi+ 8*8]
+
+mov r8,  [rdi+ 9*8]
+mov r9,  [rdi+10*8]
+mov r10, [rdi+11*8]
+mov r11, [rdi+12*8]
+mov r12, [rdi+13*8]
+mov r13, [rdi+14*8]
+mov r14, [rdi+15*8]
+mov r15, [rdi+16*8]
+
+mov rdi, [rdi+ 4*8]
 
 ;; Run code
 {code}
@@ -46,15 +70,28 @@ push rdi
 mov rdi, [rbp-0x08]
 
 ;; Save context
-mov [rdi+0*8], rax
-mov [rdi+1*8], rbx
-mov [rdi+2*8], rcx
-mov [rdi+3*8], rdx
-mov [rdi+5*8], rsi
+mov [rdi+ 0*8], rax
+mov [rdi+ 1*8], rbx
+mov [rdi+ 2*8], rcx
+mov [rdi+ 3*8], rdx
+mov [rdi+ 5*8], rsi
+
+; mov [rdi+ 6*8], rbp
+; mov [rdi+ 7*8], rsp
+; mov [rdi+ 8*8], rip
+
+mov [rdi+ 9*8], r8
+mov [rdi+10*8], r9
+mov [rdi+11*8], r10
+mov [rdi+12*8], r11
+mov [rdi+13*8], r12
+mov [rdi+14*8], r13
+mov [rdi+15*8], r14
+mov [rdi+16*8], r15
 
 ;; Save context (flags)
 pushfq
-pop qword [rdi+6*8]
+pop qword [rdi+17*8]
 
 ;; Copy rdi to rsi
 mov rsi, rdi
@@ -63,9 +100,17 @@ mov rsi, rdi
 pop rdi
 
 ;; Save rdi value
-mov [rsi+4*8], rdi
+mov [rsi+ 4*8], rdi
 
 ;; Restore registers
+pop r15
+pop r14
+pop r13
+pop r12
+pop r11
+pop r10
+pop r9
+pop r8
 pop rsi
 pop rdi
 pop rdx
