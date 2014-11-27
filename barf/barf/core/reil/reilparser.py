@@ -85,6 +85,7 @@ def parse_operand(string, location, tokens):
         "dword"   : 32,
         "word"    : 16,
         "byte"    : 8,
+        "bit"     : 1,
     }
 
     # Immediate operand.
@@ -189,6 +190,7 @@ size1 = Or([
     Literal("dword"),
     Literal("word"),
     Literal("byte"),
+    Literal("bit"),
 ])("size")
 
 # operand = (Or([

@@ -266,7 +266,7 @@ class ReilInstruction(object):
                 32  : "DWORD",
                 16  : "WORD",
                 8   : "BYTE",
-                1   : "BYTE", # FIX
+                1   : "BIT",
                 ""  : "UNK",
             }
 
@@ -366,6 +366,12 @@ class ReilImmediateOperand(ReilOperand):
         """Get immediate.
         """
         return self._immediate
+
+    @immediate.setter
+    def immediate(self, value):
+        """Set immediate.
+        """
+        self._immediate = value
 
     def __str__(self):
         """Return string representation of the operand.

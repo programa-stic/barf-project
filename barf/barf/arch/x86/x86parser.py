@@ -227,7 +227,10 @@ reg = Or([
     Combine("st" + Word(nums)),
     Combine("st(" + Word(nums) + ")"),
     Combine("xmm" + Word(nums)),
+    Combine("ymm" + Word(nums)),
     Combine("mm" + Word(nums)),
+    Combine("dr" + Word(nums)),
+    Combine("cr" + Word(nums)),
 ])
 
 imm = Optional("-") +  Or([hex_num, dec_num])

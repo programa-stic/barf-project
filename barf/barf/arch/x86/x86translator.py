@@ -29,7 +29,8 @@ def print_translation_exception(instruction, err):
     logger.debug("")
     logger.debug(traceback.format_exc())
 
-    logger.debug(str(instruction))
+    logger.debug("asm: " + str(instruction))
+    logger.debug("bytes: " + "".join("\\x%02x" % ord(b) for b in instruction.bytes))
     logger.debug("%s (%s)" % (str(instruction.mnemonic), type(instruction)))
 
 class X86Translator(object):

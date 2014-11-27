@@ -26,6 +26,7 @@ size_str = {
     32  : "dword",
     16  : "word",
     8   : "byte",
+    1   : "bit",
 }
 
 def check_operands_type(instr):
@@ -421,7 +422,7 @@ class X86InstructionTranslator(object):
         result_size_str = size_str[result_size]
 
         trans  = ["and [{0}   {2}, {0} {1}, {0} ?sf.0]".format(result_size_str, 2**(oprnd_size-1), result)]       # filter sign bit
-        trans += ["bsh [{0} ?sf.0, {0} {1}, BYTE   sf]".format(result_size_str, -(oprnd_size-1))]                 # extract sign bit
+        trans += ["bsh [{0} ?sf.0, {0} {1}, BIT    sf]".format(result_size_str, -(oprnd_size-1))]                 # extract sign bit
 
         return trans
 
@@ -436,7 +437,7 @@ class X86InstructionTranslator(object):
         trans += ["xor [{0} ?of.3, {0}     1, {0} ?of.4]".format(oprnd_size_str)]                                                 # sign bit oprnd1 ^ sign bit oprnd2 ^ 1
         trans += ["xor [{0} ?of.0, {0} ?of.2, {0} ?of.5]".format(oprnd_size_str)]                                                 # sign bit oprnd1 ^ sign bit result
         trans += ["and [{0} ?of.4, {0} ?of.5, {0} ?of.6]".format(oprnd_size_str)]                                                 # (sign bit oprnd1 ^ sign bit oprnd2 ^ 1) & (sign bit oprnd1 ^ sign bit result)
-        trans += ["bsh [{0} ?of.6, {0}   {1}, BYTE   of]".format(oprnd_size_str, -(oprnd_size-1))]
+        trans += ["bsh [{0} ?of.6, {0}   {1}, BIT    of]".format(oprnd_size_str, -(oprnd_size-1))]
 
         return trans
 
@@ -444,7 +445,7 @@ class X86InstructionTranslator(object):
         result_size_str = size_str[result_size]
 
         trans  = ["and [{0}   {2}, {0} {1}, {0} ?cf.0]".format(result_size_str, 2**oprnd_size, result)]           # filter carry bit
-        trans += ["bsh [{0} ?cf.0, {0} {1}, BYTE   cf]".format(result_size_str, -oprnd_size)]
+        trans += ["bsh [{0} ?cf.0, {0} {1}, BIT   cf]".format(result_size_str, -oprnd_size)]
 
         return trans
 
@@ -452,17 +453,21 @@ class X86InstructionTranslator(object):
         result_size_str = size_str[result_size]
 
         trans  = ["and  [{0}   {2}, {0} {1}, {0} ?zf.0]".format(result_size_str, (2**oprnd_size)-1, result)]      # filter low part of result
-        trans += ["bisz [{0} ?zf.0,   EMPTY, BYTE   zf]".format(result_size_str)]
+        trans += ["bisz [{0} ?zf.0,   EMPTY, BIT    zf]".format(result_size_str)]
 
         return trans
 
     def _undefine_flag(self, flag):
-        trans = ["undef [EMPTY, EMPTY, BYTE {0}]".format(flag)]
+        # NOTE: This is the rigth implementation. However, in every test
+        # I've made each time a flag is leave undefined it is always set
+        # to 0.
+        # trans = ["undef [EMPTY, EMPTY, BIT  {0}]".format(flag)]
+        trans = ["str [BYTE 0, EMPTY, BIT  {0}]".format(flag)]
 
         return trans
 
     def _clear_flag(self, flag):
-        trans = ["str [BYTE 0, EMPTY, BYTE {0}]".format(flag)]
+        trans = ["str [BYTE 0, EMPTY, BIT  {0}]".format(flag)]
 
         return trans
 
@@ -608,7 +613,7 @@ class X86InstructionTranslator(object):
         result_size_str = size_str[result_size]
 
         trans  = ["add [{0}  $0, {0} $1, {1} %0]".format(oprnd_size_str, result_size_str)]
-        trans += ["str [BYTE cf,  EMPTY, {0} %1]".format(result_size_str)]
+        trans += ["str [BIT  cf,  EMPTY, {0} %1]".format(result_size_str)]
         trans += ["add [{0}  %0, {0} %1, {0} %2]".format(result_size_str)]
 
         if self._translation_mode == FULL_TRANSLATION:
@@ -674,7 +679,7 @@ class X86InstructionTranslator(object):
         result_size_str = size_str[result_size]
 
         trans  = ["sub [{0}  $0, {0} $1, {1} %0]".format(oprnd_size_str, result_size_str)]
-        trans += ["str [BYTE cf,  EMPTY, {0} %1]".format(result_size_str)]
+        trans += ["str [BIT  cf,  EMPTY, {0} %1]".format(result_size_str)]
         trans += ["sub [{0}  %0, {0} %1, {0} %2]".format(result_size_str)]
 
         if self._translation_mode == FULL_TRANSLATION:
@@ -716,8 +721,8 @@ class X86InstructionTranslator(object):
             # Flags : OF, CF
             trans += ["bsh  [{0}     %0, {0} {1}, {2}  ?of.0]".format(result_size_str, -oprnd_size, oprnd_size_str)]
             trans += ["bisz [{0}  ?of.0,   EMPTY, BYTE ?of.1]".format(result_size_str)]
-            trans += ["xor  [BYTE ?of.1,  BYTE 1, BYTE    of]"]
-            trans += ["xor  [BYTE ?of.1,  BYTE 1, BYTE    cf]"]
+            trans += ["xor  [BYTE ?of.1,  BYTE 1, BIT     of]"]
+            trans += ["xor  [BYTE ?of.1,  BYTE 1, BIT     cf]"]
 
             # Flags : SF, ZF, AF, PF
             trans += self._undefine_flag("sf")
@@ -915,7 +920,7 @@ class X86InstructionTranslator(object):
 
         # Flags : CF
         trans += ["bisz [{0}  $0,  EMPTY, BYTE %1]".format(oprnd_size_str)]
-        trans += ["xor  [BYTE %1, BYTE 1, BYTE cf]"]
+        trans += ["xor  [BYTE %1, BYTE 1, BIT  cf]"]
 
         if self._translation_mode == FULL_TRANSLATION:
             # Flags : OF, SF, ZF, AF, PF
@@ -1131,7 +1136,7 @@ class X86InstructionTranslator(object):
 
         # Save LSB in CF
         trans += ["and [{0} %4,   {0} 1,  {0} %5]".format(oprnd_size_str)]
-        trans += ["str [{0} %5,   EMPTY, BYTE cf]".format(oprnd_size_str)]
+        trans += ["str [{0} %5,   EMPTY, BIT  cf]".format(oprnd_size_str)]
 
         # Shift one more time
         trans += ["bsh [{0} %4,  {0} -1,  {0} #0]".format(oprnd_size_str)]
@@ -1192,7 +1197,7 @@ class X86InstructionTranslator(object):
 
         # Save LSB in CF
         trans += ["and [{0} %2,   {0} 1,  {0} %3]".format(oprnd_size_str)]
-        trans += ["str [{0} %3,   EMPTY, BYTE cf]".format(oprnd_size_str)]
+        trans += ["str [{0} %3,   EMPTY, BIT  cf]".format(oprnd_size_str)]
 
         # Shift one more time
         trans += ["bsh [{0} %2,   {0} 1,  {0} #0]".format(oprnd_size_str)]
@@ -1268,7 +1273,7 @@ class X86InstructionTranslator(object):
 
         # Filter lsb bit
         trans += ["and  [{0} $0,   {0} 1,      {0} %6]".format(oprnd_size_str)]
-        trans += ["str  [{0} %6,   EMPTY,     BYTE cf]".format(oprnd_size_str)]
+        trans += ["str  [{0} %6,   EMPTY,     BIT  cf]".format(oprnd_size_str)]
 
         # Shift right
         trans += ["bsh  [{0} %1,  {0} -1,      {0} %3]".format(oprnd_size_str)]
@@ -1371,8 +1376,8 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans  = ["xor [BYTE cf,  BYTE 1, BYTE %0]"]
-        trans += ["xor [BYTE zf,  BYTE 1, BYTE %1]"]
+        trans  = ["xor [BIT  cf,  BIT  1, BYTE %0]"]
+        trans += ["xor [BIT  zf,  BIT  1, BYTE %1]"]
         trans += ["and [BYTE %0, BYTE %1, BYTE %2]"]
         trans += ["jcc [BYTE %2,   EMPTY,      $0]"]
 
@@ -1404,8 +1409,8 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans  = ["or  [BYTE cf, BYTE zf, BYTE %0]"]
-        trans += ["jcc [BYTE %0,   EMPTY,      $0]"]
+        trans  = ["or  [BIT cf, BIT zf, BIT %0]"]
+        trans += ["jcc [BIT %0,  EMPTY,     $0]"]
 
         return self._ir_parser.parse(trans, False)
 
@@ -1420,7 +1425,7 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans  = ["sub  [BYTE sf, BYTE OF, BYTE %0]"]
+        trans  = ["sub  [BIT  sf, BIT  OF, BYTE %0]"]
         trans += ["bisz [BYTE %0,   EMPTY, BYTE %1]"]
         trans += ["xor  [BYTE %1,  BYTE 1, BYTE %2]"]
         trans += ["jcc  [BYTE %2,   EMPTY,      $0]"]
@@ -1438,7 +1443,7 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans = ["jcc [BYTE zf, EMPTY, $0]"]
+        trans = ["jcc [BIT  zf, EMPTY, $0]"]
 
         return self._ir_parser.parse(trans, False)
 
@@ -1453,7 +1458,7 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans = ["jcc [BYTE sf, EMPTY, $0]"]
+        trans = ["jcc [BIT  sf, EMPTY, $0]"]
 
         return self._ir_parser.parse(trans, False)
 
@@ -1468,9 +1473,9 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans  = ["sub  [BYTE sf, BYTE of, BYTE %0]"]
+        trans  = ["sub  [BIT  sf, BIT  of, BYTE %0]"]
         trans += ["bisz [BYTE %0,   EMPTY, BYTE %1]"]
-        trans += ["xor  [BYTE zf,  BYTE 1, BYTE %2]"]
+        trans += ["xor  [BIT  zf,  BIT 1,  BYTE %2]"]
         trans += ["and  [BYTE %1, BYTE %2, BYTE %3]"]
         trans += ["jcc  [BYTE %3,   EMPTY,      $0]"]
 
@@ -1487,7 +1492,7 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans  = ["sub  [BYTE sf, BYTE of, BYTE %0]"]
+        trans  = ["sub  [BIT  sf, BIT  of, BYTE %0]"]
         trans += ["bisz [BYTE %0,   EMPTY, BYTE %1]"]
         trans += ["jcc  [BYTE %1,   EMPTY,      $0]"]
 
@@ -1504,7 +1509,8 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans  = ["bisz [BYTE cf, EMPTY, BYTE %0]"]
+        trans  = ["bisz [BIT  cf, EMPTY, BYTE %0]"]
+
         trans += ["jcc  [BYTE %0, EMPTY,      $0]"]
 
         return self._ir_parser.parse(trans, False)
@@ -1520,7 +1526,7 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans  = ["bisz [BYTE of, EMPTY, BYTE %0]"]
+        trans  = ["bisz [BIT  of, EMPTY, BYTE %0]"]
         trans += ["jcc  [BYTE %0, EMPTY,      $0]"]
 
         return self._ir_parser.parse(trans, False)
@@ -1536,7 +1542,7 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans  = ["bisz [BYTE sf, EMPTY, BYTE %0]"]
+        trans  = ["bisz [BIT  sf, EMPTY, BYTE %0]"]
         trans += ["jcc  [BYTE %0, EMPTY,      $0]"]
 
         return self._ir_parser.parse(trans, False)
@@ -1552,7 +1558,7 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans  = ["jcc [BYTE cf, EMPTY, $0]"]
+        trans  = ["jcc [BIT  cf, EMPTY, $0]"]
 
         return self._ir_parser.parse(trans, False)
 
@@ -1567,10 +1573,10 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans  = ["sub  [BYTE sf, BYTE of, BYTE %0]"]
+        trans  = ["sub  [BIT  sf, BIT  of, BYTE %0]"]
         trans += ["bisz [BYTE %0,   EMPTY, BYTE %1]"]
-        trans += ["xor  [BYTE %1,  BYTE 1, BYTE %2]"]
-        trans += ["or   [BYTE %2, BYTE zf, BYTE %3]"]
+        trans += ["xor  [BYTE %1,  BYTE 1, BIT  %2]"]
+        trans += ["or   [BIT  %2, BIT  zf, BYTE %3]"]
         trans += ["jcc  [BYTE %3,   EMPTY,      $0]"]
 
         return self._ir_parser.parse(trans, False)
@@ -1586,7 +1592,7 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans = ["jcc [BYTE zf, EMPTY, $0]"]
+        trans = ["jcc [BIT  zf, EMPTY, $0]"]
 
         return self._ir_parser.parse(trans, False)
 
@@ -1601,8 +1607,8 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans  = ["xor [BYTE zf, BYTE 0x1, BYTE %0]"]
-        trans += ["jcc [BYTE %0,    EMPTY,      $0]"]
+        trans  = ["xor [BIT zf, BIT 0x1, BIT %0]"]
+        trans += ["jcc [BIT %0,   EMPTY,     $0]"]
 
         return self._ir_parser.parse(trans, False)
 
@@ -1617,8 +1623,8 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans  = ["xor [BYTE zf, BYTE 1, %0]"]
-        trans += ["jcc [BYTE %0,  EMPTY, $0]"]
+        trans  = ["xor [BIT zf, BIT 1, BIT %0]"]
+        trans += ["jcc [BIT %0, EMPTY, $0]"]
 
         return self._ir_parser.parse(trans, False)
 
@@ -1633,8 +1639,8 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans  = ["xor [BYTE cf,  BYTE 1, BYTE %0]"]
-        trans += ["xor [BYTE zf,  BYTE 1, BYTE %1]"]
+        trans  = ["xor [BIT  cf,  BIT  1, BYTE %0]"]
+        trans += ["xor [BIT  zf,  BIT  1, BYTE %1]"]
         trans += ["and [BYTE %0, BYTE %1, BYTE %2]"]
         trans += ["jcc [BYTE %2,   EMPTY,      $0]"]
 
@@ -1651,7 +1657,7 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans = ["jcc [BYTE cf, EMPTY, $0]"]
+        trans = ["jcc [BIT  cf, EMPTY, $0]"]
 
         return self._ir_parser.parse(trans, False)
 
@@ -1666,7 +1672,7 @@ class X86InstructionTranslator(object):
         if isinstance(in_operands[0], ReilImmediateOperand):
             in_operands[0] = ReilImmediateOperand(in_operands[0].immediate << 8, in_operands[0].size + 8)
 
-        trans  = ["xor [BYTE cf, BYTE 1, BYTE %0]"]
+        trans  = ["xor [BIT  cf, BIT  1, BYTE %0]"]
         trans += ["jcc [BYTE %0,  EMPTY,      $0]"]
 
         return self._ir_parser.parse(trans, False)
@@ -1827,7 +1833,7 @@ class X86InstructionTranslator(object):
         # The DF flag is set to 0. The CF, OF, ZF, SF, AF, and PF flags
         # are unaffected.
 
-        trans = ["str [BYTE 0, EMPTY, BYTE df]"]
+        trans = ["str [BIT 0, EMPTY, BIT df]"]
 
         return self._ir_parser.parse(trans, False)
 
@@ -1836,7 +1842,16 @@ class X86InstructionTranslator(object):
         # The CF flag is set to 0. The OF, ZF, SF, AF, and PF flags are
         # unaffected.
 
-        trans = ["str [BYTE 0, EMPTY, BYTE cf]"]
+        trans = ["str [BIT 0, EMPTY, BIT cf]"]
+
+        return self._ir_parser.parse(trans, False)
+
+    def _translate_stc(self, instruction, in_operands=None, out_operands=None):
+        # Flags Affected
+        # The CF flag is set. The OF, ZF, SF, AF, and PF flags are
+        # unaffected.
+
+        trans = ["str [BIT 1, EMPTY, BIT cf]"]
 
         return self._ir_parser.parse(trans, False)
 

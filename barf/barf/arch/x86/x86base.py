@@ -36,7 +36,7 @@ class X86ArchitectureInformation(ArchitectureInformation):
     ]
 
     registers_gp_32b_mode_32 = [
-        "eax", "ebx", "ecx", "edx", "ebp", "esi", "edi", "esp", "eip",
+        "eax", "ebx", "ecx", "edx", "ebp", "esi", "edi", "esp", "eip", "eflags"
     ]
 
     registers_gp_32b_mode_64 = [
@@ -45,7 +45,7 @@ class X86ArchitectureInformation(ArchitectureInformation):
 
     registers_gp_64b = [
         "rax", "rbx", "rcx", "rdx", "rdi", "rsi", "rbp", "rsp", "rip",
-        "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
+        "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "rflags"
     ]
 
     registers_fpu = [
@@ -65,9 +65,25 @@ class X86ArchitectureInformation(ArchitectureInformation):
         "xmm8", "xmm9", "xmm10", "xmm11", "xmm12", "xmm13", "xmm14", "xmm15",
     ]
 
+    registers_avx_mode_32 = [
+        "ymm0", "ymm1", "ymm2", "ymm3", "ymm4", "ymm5", "ymm6", "ymm7",
+    ]
+
+    registers_avx_mode_64 = [
+        "ymm8", "ymm9", "ymm10", "ymm11", "ymm12", "ymm13", "ymm14", "ymm15",
+    ]
+
     flags = [
         "af", "cf", "of", "pf", "sf", "zf",
         "df",
+    ]
+
+    debug_registers = [
+        "dr0", "dr1", "dr2", "dr3", "dr4", "dr5", "dr6", "dr7"
+    ]
+
+    control_registers = [
+        "cr0", "cr1", "cr2", "cr3", "cr4"
     ]
 
     def __init__(self, architecture_mode):
@@ -150,7 +166,8 @@ class X86ArchitectureInformation(ArchitectureInformation):
                 self.registers_gp_8b_mode_32  + \
                 self.registers_gp_16b_mode_32 + \
                 self.registers_gp_32b_mode_32 + \
-                self.registers_sse_mode_32
+                self.registers_sse_mode_32 + \
+                self.registers_avx_mode_32
 
             self._registers_gp = \
                 self.registers_gp_8b_mode_32  + \
@@ -166,7 +183,9 @@ class X86ArchitectureInformation(ArchitectureInformation):
                 self.registers_gp_32b_mode_64 + \
                 self.registers_gp_64b + \
                 self.registers_sse_mode_32 + \
-                self.registers_sse_mode_64
+                self.registers_sse_mode_64 + \
+                self.registers_avx_mode_32 + \
+                self.registers_avx_mode_64
 
             self._registers_gp = \
                 self.registers_gp_8b_mode_32  + \
@@ -181,7 +200,9 @@ class X86ArchitectureInformation(ArchitectureInformation):
             self.registers_fpu + \
             self.registers_mmx + \
             self.flags + \
-            self.registers_seg
+            self.registers_seg + \
+            self.debug_registers + \
+            self.control_registers
 
     def _load_registers_size(self):
         for reg in self._registers:
@@ -209,9 +230,16 @@ class X86ArchitectureInformation(ArchitectureInformation):
                 self._registers_size[reg] = 128
             elif reg in self.registers_sse_mode_64:
                 self._registers_size[reg] = 128
+            elif reg in self.registers_avx_mode_32:
+                self._registers_size[reg] = 256
+            elif reg in self.registers_avx_mode_64:
+                self._registers_size[reg] = 256
             elif reg in self.flags:
-                # self._registers_size[reg] = 1
-                self._registers_size[reg] = 8
+                self._registers_size[reg] = 1
+            elif reg in self.debug_registers:
+                self._registers_size[reg] = 32
+            elif reg in self.control_registers:
+                self._registers_size[reg] = 32
             else:
                 raise Exception()
 
@@ -230,6 +258,15 @@ class X86ArchitectureInformation(ArchitectureInformation):
                 "dl" : ("edx", 0x000000ff, 0),
                 "dh" : ("edx", 0x0000ff00, 8),
                 "dx" : ("edx", 0x0000ffff, 0),
+
+                # flags
+                "cf": ("eflags", 0x00000001, 0),  # bit 0
+                "pf": ("eflags", 0x00000004, 2),  # bit 2
+                "af": ("eflags", 0x00000008, 4),  # bit 4
+                "zf": ("eflags", 0x00000040, 6),  # bit 6
+                "sf": ("eflags", 0x00000080, 7),  # bit 7
+                "df": ("eflags", 0x00000400, 10), # bit 10
+                "of": ("eflags", 0x00000800, 11), # bit 11
             }
         else:
             mapper = {
@@ -286,6 +323,15 @@ class X86ArchitectureInformation(ArchitectureInformation):
                 "r13d" : ("r13", 0x00000000ffffffff, 0),
                 "r14d" : ("r14", 0x00000000ffffffff, 0),
                 "r15d" : ("r15", 0x00000000ffffffff, 0),
+
+                # flags
+                "cf": ("rflags", 0x0000000000000001, 0),  # bit 0
+                "pf": ("rflags", 0x0000000000000004, 2),  # bit 2
+                "af": ("rflags", 0x0000000000000008, 4),  # bit 4
+                "zf": ("rflags", 0x0000000000000040, 6),  # bit 6
+                "sf": ("rflags", 0x0000000000000080, 7),  # bit 7
+                "df": ("rflags", 0x0000000000000400, 10), # bit 10
+                "of": ("rflags", 0x0000000000000800, 11), # bit 11
             }
 
         return mapper
