@@ -7,6 +7,7 @@ Some more work is needed to make this algorithm truly architecture
 agnostic.
 
 """
+import logging
 
 from barf.analysis.gadget import GadgetType
 from barf.analysis.gadget import RawGadget
@@ -14,6 +15,9 @@ from barf.arch.x86.x86instructiontranslator import FULL_TRANSLATION
 from barf.arch.x86.x86instructiontranslator import LITE_TRANSLATION
 from barf.core.reil import DualInstruction
 from barf.core.reil import ReilMnemonic
+from barf.core.reil import ReilRegisterOperand
+
+logger = logging.getLogger("GadgetFinder")
 
 class GadgetFinder(object):
 
@@ -86,11 +90,18 @@ class GadgetFinder(object):
             # restarts ir register numbering
             self._ir_trans.reset()
 
-            ins_ir = self._ir_trans.translate(asm_instr)
+            try:
+                ins_ir = self._ir_trans.translate(asm_instr)
+            except:
+                logger.debug("[-] Error: GadgetFinder")
+                logger.debug("asm: " + str(asm_instr))
+                logger.debug("bytes: " + "".join("\\x%02x" % ord(b) for b in asm_instr.bytes))
+                continue
 
             # build gadget
             if ins_ir[-1] and (ins_ir[-1].mnemonic == ReilMnemonic.RET \
-                or ins_ir[-1].mnemonic == ReilMnemonic.JCC):
+                or (ins_ir[-1].mnemonic == ReilMnemonic.JCC and isinstance(ins_ir[-1].operands[2], ReilRegisterOperand))):
+
                 root = GadgetTreeNode(DualInstruction(addr, asm_instr, ins_ir))
 
                 roots.append(root)
@@ -132,7 +143,13 @@ class GadgetFinder(object):
             if not asm_instr or asm_size != step:
                 continue
 
-            ir_instrs = self._ir_trans.translate(asm_instr)
+            try:
+                ir_instrs = self._ir_trans.translate(asm_instr)
+            except:
+                logger.debug("[-] Error: GadgetFinder")
+                logger.debug("asm: " + str(asm_instr))
+                logger.debug("bytes: " + "".join("\\x%02x" % ord(b) for b in asm_instr.bytes))
+                continue
 
             if self._is_valid_ins(ir_instrs, asm_instr):
                 child = GadgetTreeNode(DualInstruction(start_addr, asm_instr, \
