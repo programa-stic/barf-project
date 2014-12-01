@@ -125,7 +125,7 @@ class BitVec(Symbol):
     ''' A symbolic bitvector '''
     def __init__(self, size, value, *children, **kwargs):
         super(BitVec,self).__init__(value, *children, **kwargs)
-        assert size in [1,8,16,32,64,128,256]
+        # assert size in [1,8,16,32,64,128,256]
         self.size=size
 
     def __getstate__(self):

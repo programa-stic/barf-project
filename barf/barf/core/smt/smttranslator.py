@@ -565,14 +565,27 @@ class SmtTranslator(object):
 
         dst_size = op3_var.size
 
+        constrs = []
+
         if oprnd1.size == oprnd3.size:
             expr = (op1_var == op3_var)
         elif oprnd1.size < oprnd3.size:
             expr = (op1_var == smtlibv2.EXTRACT(op3_var, 0, op1_var.size))
+
+			# Make sure that the values that can take dst operand
+			# do not exceed the range of the source operand. 
+			# TODO: Find a better way to enforce this.
+            fmt = "#b%0{0}d".format(op3_var.size - op1_var.size)
+            imm = smtlibv2.BitVec(op3_var.size - op1_var.size, fmt % 0)
+
+            constrs = [(imm == smtlibv2.EXTRACT(op3_var, op1_var.size, op3_var.size - op1_var.size))]
         else:
             expr = (smtlibv2.EXTRACT(op1_var, 0, op3_var.size) == op3_var)
 
         rv = [expr]
+
+        if constrs:
+            rv += constrs
 
         if parent_reg_constrs:
             rv += parent_reg_constrs
