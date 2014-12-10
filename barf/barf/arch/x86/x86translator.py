@@ -23,16 +23,6 @@ from barf.arch.x86.x86instructiontranslator import add_register_size
 
 logger = logging.getLogger("X86Translator")
 
-def print_translation_exception(instruction, err):
-    logger.debug("[-] Exception (%s:%d) : '%s'" % \
-        (__name__, sys.exc_traceback.tb_lineno, str(err)))
-    logger.debug("")
-    logger.debug(traceback.format_exc())
-
-    logger.debug("asm: " + str(instruction))
-    logger.debug("bytes: " + "".join("\\x%02x" % ord(b) for b in instruction.bytes))
-    logger.debug("%s (%s)" % (str(instruction.mnemonic), type(instruction)))
-
 class X86Translator(object):
 
     """x86 to IR Translator."""
@@ -73,15 +63,25 @@ class X86Translator(object):
             dst_regs, dst_write_instrs = self._translate_dst_oprnds(instruction)
 
             trans_instrs = self.instr_translator.translate(instruction, src_regs, dst_regs)
-        except NotImplementedError as err:
+        except NotImplementedError:
             src_read_instrs = []
             dst_write_instrs = []
 
             trans_instrs = [self.ir_builder.gen_unkn()]
 
-            logger.debug("[E] x86 Translator :: Instruction not supported : '%s' (%s)" % (instruction, instruction.mnemonic))
-        except Exception as err:
-            print_translation_exception(instruction, err)
+            if instruction.bytes:
+                bytes_str = "".join("\\x%02x" % ord(b) for b in instruction.bytes)
+            else:
+                bytes_str = ""
+
+            logger.info("Failed to translate x86 to REIL, instruction not supported: %s (%s)", instruction, bytes_str)
+        except Exception:
+            if instruction.bytes:
+                bytes_str = "".join("\\x%02x" % ord(b) for b in instruction.bytes)
+            else:
+                bytes_str = ""
+
+            logger.error("Failed to translate x86 to REIL: %s (%s)", instruction, bytes_str, exc_info=True)
 
         translation = src_read_instrs + trans_instrs + dst_write_instrs
 

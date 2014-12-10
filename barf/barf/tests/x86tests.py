@@ -126,6 +126,8 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
+        self.__set_address(0xdeadbeef, x86_instrs)
+
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
         ctx_init = self.__init_context()
@@ -149,6 +151,8 @@ class X86TranslationTests(unittest.TestCase):
         asm = ["cld"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
 
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
@@ -174,6 +178,8 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
+        self.__set_address(0xdeadbeef, x86_instrs)
+
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
         ctx_init = self.__init_context()
@@ -197,6 +203,8 @@ class X86TranslationTests(unittest.TestCase):
         asm = ["nop"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
 
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
@@ -222,6 +230,8 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
+        self.__set_address(0xdeadbeef, x86_instrs)
+
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
         ctx_init = self.__init_context()
@@ -245,6 +255,8 @@ class X86TranslationTests(unittest.TestCase):
         asm = ["not eax"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
 
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
@@ -270,6 +282,8 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
+        self.__set_address(0xdeadbeef, x86_instrs)
+
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
         ctx_init = self.__init_context()
@@ -293,6 +307,8 @@ class X86TranslationTests(unittest.TestCase):
         asm = ["or eax, ebx"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
 
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
@@ -318,6 +334,8 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
+        self.__set_address(0xdeadbeef, x86_instrs)
+
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
         ctx_init = self.__init_context()
@@ -341,6 +359,8 @@ class X86TranslationTests(unittest.TestCase):
         asm = ["cmp eax, ebx"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
 
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
@@ -366,6 +386,8 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
+        self.__set_address(0xdeadbeef, x86_instrs)
+
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
         ctx_init = self.__init_context()
@@ -389,6 +411,8 @@ class X86TranslationTests(unittest.TestCase):
         asm = ["dec eax"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
 
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
@@ -414,6 +438,8 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
+        self.__set_address(0xdeadbeef, x86_instrs)
+
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
         ctx_init = self.__init_context()
@@ -437,6 +463,8 @@ class X86TranslationTests(unittest.TestCase):
         asm = ["div ebx"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
 
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
@@ -467,6 +495,8 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
+        self.__set_address(0xdeadbeef, x86_instrs)
+
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
         ctx_init = self.__init_context()
@@ -490,6 +520,8 @@ class X86TranslationTests(unittest.TestCase):
         asm = ["mul ebx"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
 
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
@@ -515,6 +547,8 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
+        self.__set_address(0xdeadbeef, x86_instrs)
+
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
         ctx_init = self.__init_context()
@@ -538,6 +572,8 @@ class X86TranslationTests(unittest.TestCase):
         asm = ["sub eax, ebx"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
 
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
@@ -563,6 +599,8 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
+        self.__set_address(0xdeadbeef, x86_instrs)
+
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
         ctx_init = self.__init_context()
@@ -586,6 +624,8 @@ class X86TranslationTests(unittest.TestCase):
         asm = ["add eax, ebx"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
 
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
@@ -611,6 +651,8 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
+        self.__set_address(0xdeadbeef, x86_instrs)
+
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
         ctx_init = self.__init_context()
@@ -634,6 +676,8 @@ class X86TranslationTests(unittest.TestCase):
         asm = ["movzx eax, bx"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
 
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
@@ -659,6 +703,8 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
+        self.__set_address(0xdeadbeef, x86_instrs)
+
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
         ctx_init = self.__init_context()
@@ -682,6 +728,8 @@ class X86TranslationTests(unittest.TestCase):
         asm = ["shr eax, 3"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
 
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
@@ -707,6 +755,8 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
+        self.__set_address(0xdeadbeef, x86_instrs)
+
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
         ctx_init = self.__init_context()
@@ -731,6 +781,8 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
+        self.__set_address(0xdeadbeef, x86_instrs)
+
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
         ctx_init = self.__init_context()
@@ -754,7 +806,8 @@ class X86TranslationTests(unittest.TestCase):
         asm = ["sar eax, 3"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
-        x86_instrs[0].address = 0xdeadbeef
+
+        self.__set_address(0xdeadbeef, x86_instrs)
 
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
@@ -779,7 +832,8 @@ class X86TranslationTests(unittest.TestCase):
         asm = ["stc"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
-        x86_instrs[0].address = 0xdeadbeef
+
+        self.__set_address(0xdeadbeef, x86_instrs)
 
         reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
@@ -902,6 +956,12 @@ class X86TranslationTests(unittest.TestCase):
 
         return reil_context_out
 
+    def __set_address(self, address, x86_instrs):
+        addr = address
+
+        for x86_instr in x86_instrs:
+            x86_instr.address = addr
+            addr += 1
 
 def main():
     unittest.main()

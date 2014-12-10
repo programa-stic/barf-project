@@ -346,7 +346,12 @@ class X86Parser():
         except Exception, reason:
             # print "[E] x86 parsing error : '%s' (%s)" % (instr, reason)
 
-            logger.debug("[E] x86 parsing error : '%s' (%s)" % (instr, reason))
+            if bytes:
+                bytes_str = "".join("\\x%02x" % ord(b) for b in bytes)
+            else:
+                bytes_str = ""
+
+            logger.error("Failed to parse x86 instruction: %s (%s : %s)", instr, hex(address), bytes_str)
 
             instr_asm = None
 

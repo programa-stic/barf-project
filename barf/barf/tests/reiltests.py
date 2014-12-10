@@ -98,6 +98,9 @@ class ReilEmulatorTests(unittest.TestCase):
 
     def test_add(self):
         asm_instrs  = self._asm_parser.parse("add eax, ebx")
+
+        self.__set_address(0xdeadbeef, [asm_instrs])
+
         reil_instrs = self._translator.translate(asm_instrs)
 
         regs_initial = {
@@ -148,6 +151,8 @@ class ReilEmulatorTests(unittest.TestCase):
         asm_instrs += [self._asm_parser.parse("mov al, 0x12")]
         asm_instrs += [self._asm_parser.parse("mov ah, 0x34")]
 
+        self.__set_address(0xdeadbeef, asm_instrs)
+
         reil_instrs  = self._translator.translate(asm_instrs[0])
         reil_instrs += self._translator.translate(asm_instrs[1])
         reil_instrs += self._translator.translate(asm_instrs[2])
@@ -160,6 +165,12 @@ class ReilEmulatorTests(unittest.TestCase):
 
         self.assertEqual(regs_final["eax"], 0xdead3412)
 
+    def __set_address(self, address, asm_instrs):
+        addr = address
+
+        for asm_instr in asm_instrs:
+            asm_instr.address = addr
+            addr += 1
 
 class ReilParserTests(unittest.TestCase):
 
