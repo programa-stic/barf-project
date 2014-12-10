@@ -365,7 +365,24 @@ class ReilImmediateOperand(ReilOperand):
     def immediate(self):
         """Get immediate.
         """
-        return self._immediate
+        if self._size:
+            rv = self._immediate & (2**self._size-1)
+        else:
+            rv = self._immediate & (2**32-1)
+
+        return rv
+
+    @property
+    def size(self):
+        """Get operand size.
+        """
+        return self._size
+
+    @size.setter
+    def size(self, value):
+        """Set operand size.
+        """
+        self._size = value
 
     @immediate.setter
     def immediate(self, value):
