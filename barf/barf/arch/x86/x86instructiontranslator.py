@@ -1,5 +1,3 @@
-# coding=latin-1
-
 import copy
 
 from functools import wraps
@@ -352,9 +350,9 @@ class X86InstructionTranslator(object):
         # Translate instruction.
         tb = TranslationBuilder(self.ir_name_generator)
 
-        instrs = translator_fn(tb, instruction, in_operands, out_operands)
+        translator_fn(tb, instruction, in_operands, out_operands)
 
-        return instrs
+        return tb.instanciate(instruction.address)
 
     @property
     def translation_mode(self):
@@ -375,15 +373,15 @@ class X86InstructionTranslator(object):
 
 # "Flags"
 # ============================================================================ #
-    def _translate_af(self, tb, oprnd1, oprnd2, result):
+    def _update_af(self, tb, oprnd1, oprnd2, result):
         # TODO: Implement
         pass
 
-    def _translate_pf(self, tb, oprnd1, oprnd2, result):
+    def _update_pf(self, tb, oprnd1, oprnd2, result):
         # TODO: Implement
         pass
 
-    def _translate_sf(self, tb, oprnd1, oprnd2, result):
+    def _update_sf(self, tb, oprnd1, oprnd2, result):
         # Create temporal variables.
         tmp0 = tb.temporal(result.size)
 
@@ -395,7 +393,7 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_and(result, mask0, tmp0))  # filter sign bit
         tb.add(self._builder.gen_bsh(tmp0, shift0, sf))     # extract sign bit
 
-    def _translate_of(self, tb, oprnd1, oprnd2, result):
+    def _update_of(self, tb, oprnd1, oprnd2, result):
         of = self._flags["of"]
 
         imm0 = tb.immediate(2**(oprnd1.size-1), oprnd1.size)
@@ -420,7 +418,7 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_and(tmp4, tmp5, tmp6))     # (sign bit oprnd1 ^ sign bit oprnd2 ^ 1) & (sign bit oprnd1 ^ sign bit result)
         tb.add(self._builder.gen_bsh(tmp6, imm3, of))
 
-    def _translate_cf(self, tb, oprnd1, oprnd2, result):
+    def _update_cf(self, tb, oprnd1, oprnd2, result):
         cf = self._flags["cf"]
 
         imm0 = tb.immediate(2**oprnd1.size, result.size)
@@ -432,7 +430,7 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_and(result, imm0, tmp0))   # filter carry bit
         tb.add(self._builder.gen_bsh(tmp0, imm2, cf))
 
-    def _translate_zf(self, tb, oprnd1, oprnd2, result):
+    def _update_zf(self, tb, oprnd1, oprnd2, result):
         zf = self._flags["zf"]
 
         imm0 = tb.immediate((2**oprnd1.size)-1, result.size)
@@ -474,8 +472,6 @@ class X86InstructionTranslator(object):
 
         tb.add(self._builder.gen_str(oprnd1, oprnd2))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_movzx(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
         # None.
@@ -487,8 +483,6 @@ class X86InstructionTranslator(object):
         assert oprnd2.size > oprnd1.size
 
         tb.add(self._builder.gen_str(oprnd1, oprnd2))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_xchg(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -510,8 +504,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_str(tmp1, oprnd3))
         tb.add(self._builder.gen_str(tmp0, oprnd4))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_push(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
         # None.
@@ -527,8 +519,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_str(tmp0, self._sp))
         tb.add(self._builder.gen_stm(oprnd1, self._sp))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_pop(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
         # None.
@@ -543,8 +533,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_ldm(self._sp, oprnd1))
         tb.add(self._builder.gen_add(self._sp, self._ws, tmp0))
         tb.add(self._builder.gen_str(tmp0, self._sp))
-
-        return tb.instanciate(instruction.address)
 
 # "Binary Arithmetic Instructions"
 # ============================================================================ #
@@ -566,16 +554,14 @@ class X86InstructionTranslator(object):
 
         if self._translation_mode == FULL_TRANSLATION:
             # Flags : OF, SF, ZF, AF, CF, PF
-            self._translate_of(tb, oprnd1, oprnd2, oprnd1)
-            self._translate_sf(tb, oprnd1, oprnd2, oprnd1)
-            self._translate_zf(tb, oprnd1, oprnd2, oprnd1)
-            self._translate_af(tb, oprnd1, oprnd2, oprnd1)
-            self._translate_cf(tb, oprnd1, oprnd2, oprnd1)
-            self._translate_pf(tb, oprnd1, oprnd2, oprnd1)
+            self._update_of(tb, oprnd1, oprnd2, oprnd1)
+            self._update_sf(tb, oprnd1, oprnd2, oprnd1)
+            self._update_zf(tb, oprnd1, oprnd2, oprnd1)
+            self._update_af(tb, oprnd1, oprnd2, oprnd1)
+            self._update_cf(tb, oprnd1, oprnd2, oprnd1)
+            self._update_pf(tb, oprnd1, oprnd2, oprnd1)
 
         tb.add(self._builder.gen_str(tmp0, oprnd3))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_adc(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -598,16 +584,14 @@ class X86InstructionTranslator(object):
 
         if self._translation_mode == FULL_TRANSLATION:
             # Flags : OF, SF, ZF, AF, CF, PF
-            self._translate_of(tb, oprnd1, oprnd2, tmp2)
-            self._translate_sf(tb, oprnd1, oprnd2, tmp2)
-            self._translate_zf(tb, oprnd1, oprnd2, tmp2)
-            self._translate_af(tb, oprnd1, oprnd2, tmp2)
-            self._translate_cf(tb, oprnd1, oprnd2, tmp2)
-            self._translate_pf(tb, oprnd1, oprnd2, tmp2)
+            self._update_of(tb, oprnd1, oprnd2, tmp2)
+            self._update_sf(tb, oprnd1, oprnd2, tmp2)
+            self._update_zf(tb, oprnd1, oprnd2, tmp2)
+            self._update_af(tb, oprnd1, oprnd2, tmp2)
+            self._update_cf(tb, oprnd1, oprnd2, tmp2)
+            self._update_pf(tb, oprnd1, oprnd2, tmp2)
 
         tb.add(self._builder.gen_str(tmp2, oprnd3))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_sub(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -627,16 +611,14 @@ class X86InstructionTranslator(object):
 
         if self._translation_mode == FULL_TRANSLATION:
             # Flags : OF, SF, ZF, AF, PF, CF
-            self._translate_of(tb, oprnd1, oprnd2, oprnd1)
-            self._translate_sf(tb, oprnd1, oprnd2, oprnd1)
-            self._translate_zf(tb, oprnd1, oprnd2, oprnd1)
-            self._translate_af(tb, oprnd1, oprnd2, oprnd1)
-            self._translate_pf(tb, oprnd1, oprnd2, oprnd1)
-            self._translate_cf(tb, oprnd1, oprnd2, oprnd1)
+            self._update_of(tb, oprnd1, oprnd2, oprnd1)
+            self._update_sf(tb, oprnd1, oprnd2, oprnd1)
+            self._update_zf(tb, oprnd1, oprnd2, oprnd1)
+            self._update_af(tb, oprnd1, oprnd2, oprnd1)
+            self._update_pf(tb, oprnd1, oprnd2, oprnd1)
+            self._update_cf(tb, oprnd1, oprnd2, oprnd1)
 
         tb.add(self._builder.gen_str(tmp0, oprnd3))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_sbb(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -660,16 +642,14 @@ class X86InstructionTranslator(object):
 
         if self._translation_mode == FULL_TRANSLATION:
             # Flags : OF, SF, ZF, AF, PF, CF
-            self._translate_of(tb, oprnd1, oprnd2, tmp2)
-            self._translate_sf(tb, oprnd1, oprnd2, tmp2)
-            self._translate_zf(tb, oprnd1, oprnd2, tmp2)
-            self._translate_af(tb, oprnd1, oprnd2, tmp2)
-            self._translate_pf(tb, oprnd1, oprnd2, tmp2)
-            self._translate_cf(tb, oprnd1, oprnd2, tmp2)
+            self._update_of(tb, oprnd1, oprnd2, tmp2)
+            self._update_sf(tb, oprnd1, oprnd2, tmp2)
+            self._update_zf(tb, oprnd1, oprnd2, tmp2)
+            self._update_af(tb, oprnd1, oprnd2, tmp2)
+            self._update_pf(tb, oprnd1, oprnd2, tmp2)
+            self._update_cf(tb, oprnd1, oprnd2, tmp2)
 
         tb.add(self._builder.gen_str(tmp2, oprnd3))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_mul(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -710,8 +690,6 @@ class X86InstructionTranslator(object):
             self._undefine_flag(tb, self._flags["zf"])
             self._undefine_flag(tb, self._flags["af"])
             self._undefine_flag(tb, self._flags["pf"])
-
-        return tb.instanciate(instruction.address)
 
     def _translate_imul(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -768,8 +746,6 @@ class X86InstructionTranslator(object):
             self._undefine_flag(tb, self._flags["af"])
             self._undefine_flag(tb, self._flags["pf"])
 
-        return tb.instanciate(instruction.address)
-
     def _translate_div(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
         # The CF, OF, SF, ZF, AF, and PF flags are undefined.
@@ -819,8 +795,6 @@ class X86InstructionTranslator(object):
             self._undefine_flag(tb, self._flags["af"])
             self._undefine_flag(tb, self._flags["pf"])
 
-        return tb.instanciate(instruction.address)
-
     def _translate_inc(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
         # The CF flag is not affected. The OF, SF, ZF, AF, and PF flags
@@ -840,15 +814,13 @@ class X86InstructionTranslator(object):
 
         if self._translation_mode == FULL_TRANSLATION:
             # Flags : OF, SF, ZF, AF, PF
-            self._translate_of(tb, oprnd1, oprnd1, tmp0)
-            self._translate_sf(tb, oprnd1, oprnd1, tmp0)
-            self._translate_zf(tb, oprnd1, oprnd1, tmp0)
-            self._translate_af(tb, oprnd1, oprnd1, tmp0)
-            self._translate_pf(tb, oprnd1, oprnd1, tmp0)
+            self._update_of(tb, oprnd1, oprnd1, tmp0)
+            self._update_sf(tb, oprnd1, oprnd1, tmp0)
+            self._update_zf(tb, oprnd1, oprnd1, tmp0)
+            self._update_af(tb, oprnd1, oprnd1, tmp0)
+            self._update_pf(tb, oprnd1, oprnd1, tmp0)
 
         tb.add(self._builder.gen_str(tmp0, oprnd2))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_dec(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -869,15 +841,13 @@ class X86InstructionTranslator(object):
 
         if self._translation_mode == FULL_TRANSLATION:
             # Flags : OF, SF, ZF, AF, PF
-            self._translate_of(tb, oprnd1, oprnd1, tmp0)
-            self._translate_sf(tb, oprnd1, oprnd1, tmp0)
-            self._translate_zf(tb, oprnd1, oprnd1, tmp0)
-            self._translate_af(tb, oprnd1, oprnd1, tmp0)
-            self._translate_pf(tb, oprnd1, oprnd1, tmp0)
+            self._update_of(tb, oprnd1, oprnd1, tmp0)
+            self._update_sf(tb, oprnd1, oprnd1, tmp0)
+            self._update_zf(tb, oprnd1, oprnd1, tmp0)
+            self._update_af(tb, oprnd1, oprnd1, tmp0)
+            self._update_pf(tb, oprnd1, oprnd1, tmp0)
 
         tb.add(self._builder.gen_str(tmp0, oprnd2))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_neg(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -907,13 +877,11 @@ class X86InstructionTranslator(object):
 
         if self._translation_mode == FULL_TRANSLATION:
             # Flags : OF, SF, ZF, AF, PF
-            self._translate_of(tb, oprnd1, oprnd1, oprnd2)
-            self._translate_sf(tb, oprnd1, oprnd1, oprnd2)
-            self._translate_zf(tb, oprnd1, oprnd1, oprnd2)
-            self._translate_af(tb, oprnd1, oprnd1, oprnd2)
-            self._translate_pf(tb, oprnd1, oprnd1, oprnd2)
-
-        return tb.instanciate(instruction.address)
+            self._update_of(tb, oprnd1, oprnd1, oprnd2)
+            self._update_sf(tb, oprnd1, oprnd1, oprnd2)
+            self._update_zf(tb, oprnd1, oprnd1, oprnd2)
+            self._update_af(tb, oprnd1, oprnd1, oprnd2)
+            self._update_pf(tb, oprnd1, oprnd1, oprnd2)
 
     def _translate_cmp(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -931,14 +899,12 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_sub(oprnd1, oprnd2, tmp0))
 
         # Flags : CF, OF, SF, ZF, AF, PF
-        self._translate_cf(tb, oprnd1, oprnd2, tmp0)
-        self._translate_of(tb, oprnd1, oprnd2, tmp0)
-        self._translate_sf(tb, oprnd1, oprnd2, tmp0)
-        self._translate_zf(tb, oprnd1, oprnd2, tmp0)
-        self._translate_af(tb, oprnd1, oprnd2, tmp0)
-        self._translate_pf(tb, oprnd1, oprnd2, tmp0)
-
-        return tb.instanciate(instruction.address)
+        self._update_cf(tb, oprnd1, oprnd2, tmp0)
+        self._update_of(tb, oprnd1, oprnd2, tmp0)
+        self._update_sf(tb, oprnd1, oprnd2, tmp0)
+        self._update_zf(tb, oprnd1, oprnd2, tmp0)
+        self._update_af(tb, oprnd1, oprnd2, tmp0)
+        self._update_pf(tb, oprnd1, oprnd2, tmp0)
 
 # "Decimal Arithmetic Instructions"
 # ============================================================================ #
@@ -967,14 +933,12 @@ class X86InstructionTranslator(object):
             self._clear_flag(tb, self._flags["cf"])
 
             # Flags : SF, ZF, PF
-            self._translate_sf(tb, oprnd1, oprnd2, oprnd3)
-            self._translate_zf(tb, oprnd1, oprnd2, oprnd3)
-            self._translate_pf(tb, oprnd1, oprnd2, oprnd3)
+            self._update_sf(tb, oprnd1, oprnd2, oprnd3)
+            self._update_zf(tb, oprnd1, oprnd2, oprnd3)
+            self._update_pf(tb, oprnd1, oprnd2, oprnd3)
 
             # Flags : AF
             self._undefine_flag(tb, self._flags["af"])
-
-        return tb.instanciate(instruction.address)
 
     def _translate_or(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -998,14 +962,12 @@ class X86InstructionTranslator(object):
             self._clear_flag(tb, self._flags["cf"])
 
             # Flags : SF, ZF, PF
-            self._translate_sf(tb, oprnd1, oprnd2, oprnd3)
-            self._translate_zf(tb, oprnd1, oprnd2, oprnd3)
-            self._translate_pf(tb, oprnd1, oprnd2, oprnd3)
+            self._update_sf(tb, oprnd1, oprnd2, oprnd3)
+            self._update_zf(tb, oprnd1, oprnd2, oprnd3)
+            self._update_pf(tb, oprnd1, oprnd2, oprnd3)
 
             # Flags : AF
             self._undefine_flag(tb, self._flags["af"])
-
-        return tb.instanciate(instruction.address)
 
     def _translate_xor(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -1029,14 +991,12 @@ class X86InstructionTranslator(object):
             self._clear_flag(tb, self._flags["cf"])
 
             # Flags : SF, ZF, PF
-            self._translate_sf(tb, oprnd1, oprnd2, oprnd3)
-            self._translate_zf(tb, oprnd1, oprnd2, oprnd3)
-            self._translate_pf(tb, oprnd1, oprnd2, oprnd3)
+            self._update_sf(tb, oprnd1, oprnd2, oprnd3)
+            self._update_zf(tb, oprnd1, oprnd2, oprnd3)
+            self._update_pf(tb, oprnd1, oprnd2, oprnd3)
 
             # Flags : AF
             self._undefine_flag(tb, self._flags["af"])
-
-        return tb.instanciate(instruction.address)
 
     def _translate_not(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -1052,8 +1012,6 @@ class X86InstructionTranslator(object):
 
         tb.add(self._builder.gen_xor(oprnd1, imm0, oprnd2))
 
-        return tb.instanciate(instruction.address)
-
 # "Shift and Rotate Instructions"
 # ============================================================================ #
     def _translate_shr(self, tb, instruction, in_operands=None, out_operands=None):
@@ -1062,7 +1020,7 @@ class X86InstructionTranslator(object):
         # of the destination operand; it is undefined for SHL and SHR
         # instructions where the count is greater than or equal to the
         # size (in bits) of the destination operand. The OF flag is
-        # affected only for 1-bit shifts (see “Description” above);
+        # affected only for 1-bit shifts (see "Description" above);
         # otherwise, it is undefined. The SF, ZF, and PF flags are set
         # according to the result. If the count is 0, the flags are
         # not affected. For a non-zero count, the AF flag is
@@ -1113,14 +1071,12 @@ class X86InstructionTranslator(object):
             # TODO: Implement translation for OF flag.
 
             # Flags : SF, ZF, PF
-            self._translate_sf(tb, oprnd1, oprnd1, oprnd3)
-            self._translate_zf(tb, oprnd1, oprnd1, oprnd3)
-            self._translate_pf(tb, oprnd1, oprnd1, oprnd3)
+            self._update_sf(tb, oprnd1, oprnd1, oprnd3)
+            self._update_zf(tb, oprnd1, oprnd1, oprnd3)
+            self._update_pf(tb, oprnd1, oprnd1, oprnd3)
 
             # Flags : AF
             self._undefine_flag(tb, self._flags["af"])
-
-        return tb.instanciate(instruction.address)
 
     def _translate_shl(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -1128,7 +1084,7 @@ class X86InstructionTranslator(object):
         # of the destination operand; it is undefined for SHL and SHR
         # instructions where the count is greater than or equal to the
         # size (in bits) of the destination operand. The OF flag is
-        # affected only for 1-bit shifts (see “Description” above);
+        # affected only for 1-bit shifts (see "Description" above);
         # otherwise, it is undefined. The SF, ZF, and PF flags are set
         # according to the result. If the count is 0, the flags are
         # not affected. For a non-zero count, the AF flag is
@@ -1172,14 +1128,12 @@ class X86InstructionTranslator(object):
             # TODO: Implement translation for OF flag.
 
             # Flags : SF, ZF, PF
-            self._translate_sf(tb, oprnd1, oprnd1, oprnd3)
-            self._translate_zf(tb, oprnd1, oprnd1, oprnd3)
-            self._translate_pf(tb, oprnd1, oprnd1, oprnd3)
+            self._update_sf(tb, oprnd1, oprnd1, oprnd3)
+            self._update_zf(tb, oprnd1, oprnd1, oprnd3)
+            self._update_pf(tb, oprnd1, oprnd1, oprnd3)
 
             # Flags : AF
             self._undefine_flag(tb, self._flags["af"])
-
-        return tb.instanciate(instruction.address)
 
     def _translate_sal(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -1187,7 +1141,7 @@ class X86InstructionTranslator(object):
         # of the destination operand; it is undefined for SHL and SHR
         # instructions where the count is greater than or equal to the
         # size (in bits) of the destination operand. The OF flag is
-        # affected only for 1-bit shifts (see “Description” above);
+        # affected only for 1-bit shifts (see "Description" above);
         # otherwise, it is undefined. The SF, ZF, and PF flags are set
         # according to the result. If the count is 0, the flags are
         # not affected. For a non-zero count, the AF flag is
@@ -1203,7 +1157,7 @@ class X86InstructionTranslator(object):
         # of the destination operand; it is undefined for SHL and SHR
         # instructions where the count is greater than or equal to the
         # size (in bits) of the destination operand. The OF flag is
-        # affected only for 1-bit shifts (see “Description” above);
+        # affected only for 1-bit shifts (see "Description" above);
         # otherwise, it is undefined. The SF, ZF, and PF flags are set
         # according to the result. If the count is 0, the flags are
         # not affected. For a non-zero count, the AF flag is
@@ -1274,21 +1228,19 @@ class X86InstructionTranslator(object):
             # TODO: Implement translation for OF flag.
 
             # Flags : SF, ZF, PF
-            self._translate_sf(tb, oprnd1, oprnd1, oprnd3)
-            self._translate_zf(tb, oprnd1, oprnd1, oprnd3)
-            self._translate_pf(tb, oprnd1, oprnd1, oprnd3)
+            self._update_sf(tb, oprnd1, oprnd1, oprnd3)
+            self._update_zf(tb, oprnd1, oprnd1, oprnd3)
+            self._update_pf(tb, oprnd1, oprnd1, oprnd3)
 
             # Flags : AF
             self._undefine_flag(tb, self._flags["af"])
-
-        return tb.instanciate(instruction.address)
 
 # "Bit and Byte Instructions"
 # ============================================================================ #
     def _translate_test(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
         # The OF and CF flags are set to 0. The SF, ZF, and PF flags are
-        # set according to the result (see the “Operation” section
+        # set according to the result (see the "Operation" section
         # above). The state of the AF flag is undefined.
 
         oprnd1 = in_operands[0]
@@ -1306,14 +1258,12 @@ class X86InstructionTranslator(object):
         self._clear_flag(tb, self._flags["cf"])
 
         # Flags : SF, ZF, PF
-        self._translate_sf(tb, oprnd1, oprnd2, tmp0)
-        self._translate_zf(tb, oprnd1, oprnd2, tmp0)
-        self._translate_pf(tb, oprnd1, oprnd2, tmp0)
+        self._update_sf(tb, oprnd1, oprnd2, tmp0)
+        self._update_zf(tb, oprnd1, oprnd2, tmp0)
+        self._update_pf(tb, oprnd1, oprnd2, tmp0)
 
         # Flags : AF
         self._undefine_flag(tb, self._flags["af"])
-
-        return tb.instanciate(instruction.address)
 
 # "Control Transfer Instructions"
 # ============================================================================ #
@@ -1335,8 +1285,6 @@ class X86InstructionTranslator(object):
         imm0 = tb.immediate(1, 1)
 
         tb.add(self._builder.gen_jcc(imm0, oprnd1))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_ja(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if above (CF=0 and ZF=0).
@@ -1362,8 +1310,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_and(tmp0, tmp1, tmp2))
         tb.add(self._builder.gen_jcc(tmp2, oprnd1))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_jo(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if overflow (OF=1).
 
@@ -1378,8 +1324,6 @@ class X86InstructionTranslator(object):
         oprnd1 = in_operands[0]
 
         tb.add(self._builder.gen_jcc(self._flags["of"], oprnd1))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_jbe(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if below or equal (CF=1 or ZF=1).
@@ -1398,8 +1342,6 @@ class X86InstructionTranslator(object):
 
         tb.add(self._builder.gen_or(self._flags["cf"], self._flags["zf"], tmp0))
         tb.add(self._builder.gen_jcc(tmp0, oprnd1))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_jl(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if less (SF!=OF).
@@ -1425,8 +1367,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_xor(tmp1, imm0, tmp2))
         tb.add(self._builder.gen_jcc(tmp2, oprnd1))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_je(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if equal (ZF=1).
 
@@ -1442,8 +1382,6 @@ class X86InstructionTranslator(object):
 
         tb.add(self._builder.gen_jcc(self._flags["zf"], oprnd1))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_js(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if sign (SF=1).
 
@@ -1458,8 +1396,6 @@ class X86InstructionTranslator(object):
         oprnd1 = in_operands[0]
 
         tb.add(self._builder.gen_jcc(self._flags["sf"], oprnd1))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_jg(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if greater (ZF=0 and SF=OF).
@@ -1487,8 +1423,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_and(tmp1, tmp2, tmp3))
         tb.add(self._builder.gen_jcc(tmp3, oprnd1))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_jge(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if greater or equal (SF=OF).
 
@@ -1509,8 +1443,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_bisz(tmp0, tmp1))
         tb.add(self._builder.gen_jcc(tmp1, oprnd1))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_jae(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if above or equal (CF=0).
 
@@ -1528,8 +1460,6 @@ class X86InstructionTranslator(object):
 
         tb.add(self._builder.gen_bisz(self._flags["cf"], tmp0))
         tb.add(self._builder.gen_jcc(tmp0, oprnd1))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_jno(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if not overflow (OF=0).
@@ -1549,8 +1479,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_bisz(self._flags["of"], tmp0))
         tb.add(self._builder.gen_jcc(tmp0, oprnd1))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_jns(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if not sign (SF=0).
 
@@ -1569,8 +1497,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_bisz(self._flags["sf"], tmp0))
         tb.add(self._builder.gen_jcc(tmp0, oprnd1))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_jb(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if below (CF=1).
 
@@ -1585,8 +1511,6 @@ class X86InstructionTranslator(object):
         oprnd1 = in_operands[0]
 
         tb.add(self._builder.gen_jcc(self._flags["cf"], oprnd1))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_jle(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if less or equal (ZF=1 or SF!=OF).
@@ -1614,8 +1538,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_or(tmp2, self._flags["zf"], tmp3))
         tb.add(self._builder.gen_jcc(tmp3, oprnd1))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_jz(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if 0 (ZF=1).
 
@@ -1630,8 +1552,6 @@ class X86InstructionTranslator(object):
         oprnd1 = in_operands[0]
 
         tb.add(self._builder.gen_jcc(self._flags["zf"], oprnd1))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_jne(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if not equal (ZF=0).
@@ -1653,8 +1573,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_xor(self._flags["zf"], imm0, tmp0))
         tb.add(self._builder.gen_jcc(tmp0, oprnd1))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_jnz(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if not zero (ZF=0).
 
@@ -1674,8 +1592,6 @@ class X86InstructionTranslator(object):
 
         tb.add(self._builder.gen_xor(self._flags["zf"], imm0, tmp0))
         tb.add(self._builder.gen_jcc(tmp0, oprnd1))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_jnbe(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if not below or equal (CF=0 and ZF=0).
@@ -1701,8 +1617,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_and(tmp0, tmp1, tmp2))
         tb.add(self._builder.gen_jcc(tmp2, oprnd1))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_jc(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if carry (CF=1).
 
@@ -1717,8 +1631,6 @@ class X86InstructionTranslator(object):
         oprnd1 = in_operands[0]
 
         tb.add(self._builder.gen_jcc(self._flags["cf"], oprnd1))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_jnc(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump near if not carry (CF=0).
@@ -1740,8 +1652,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_xor(self._flags["cf"], imm0, tmp0))
         tb.add(self._builder.gen_jcc(tmp0, oprnd1))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_jecxz(self, tb, instruction, in_operands=None, out_operands=None):
         # Jump short if ECX register is 0.
 
@@ -1761,8 +1671,6 @@ class X86InstructionTranslator(object):
 
         tb.add(self._builder.gen_bisz(ecx, tmp0))
         tb.add(self._builder.gen_jcc(tmp0, oprnd1))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_call(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -1790,8 +1698,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_add(self._ip, size, tmp1))
         tb.add(self._builder.gen_stm(tmp1, self._sp))
         tb.add(self._builder.gen_jcc(imm1, oprnd1))
-
-        return tb.instanciate(instruction.address)
 
     def _translate_ret(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
@@ -1821,8 +1727,6 @@ class X86InstructionTranslator(object):
 
 		# TODO: Replace RET instruction with JCC [BYTE 0x1, EMPTY, {D,Q}WORD %0]
         tb.add(self._builder.gen_ret())
-
-        return tb.instanciate(instruction.address)
 
 # "String Instructions"
 # ============================================================================ #
@@ -1882,8 +1786,6 @@ class X86InstructionTranslator(object):
         tb.add(self._builder.gen_add(self._sp, self._ws, tmp0))
         tb.add(self._builder.gen_str(tmp0, self._sp))
 
-        return tb.instanciate(instruction.address)
-
 # "Flag Control (EFLAG) Instructions"
 # ============================================================================ #
     def _translate_cld(self, tb, instruction, in_operands=None, out_operands=None):
@@ -1893,8 +1795,6 @@ class X86InstructionTranslator(object):
 
         self._clear_flag(tb, self._flags["df"])
 
-        return tb.instanciate(instruction.address)
-
     def _translate_clc(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
         # The CF flag is set to 0. The OF, ZF, SF, AF, and PF flags are
@@ -1902,16 +1802,12 @@ class X86InstructionTranslator(object):
 
         self._clear_flag(tb, self._flags["cf"])
 
-        return tb.instanciate(instruction.address)
-
     def _translate_stc(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
         # The CF flag is set. The OF, ZF, SF, AF, and PF flags are
         # unaffected.
 
         self._set_flag(tb, self._flags["cf"])
-
-        return tb.instanciate(instruction.address)
 
 # "Segment Register Instructions"
 # ============================================================================ #
@@ -1930,15 +1826,11 @@ class X86InstructionTranslator(object):
 
         tb.add(self._builder.gen_str(oprnd1, oprnd2))
 
-        return tb.instanciate(instruction.address)
-
     def _translate_nop(self, tb, instruction, in_operands=None, out_operands=None):
         # Flags Affected
         # None.
 
         tb.add(self._builder.gen_nop())
-
-        return tb.instanciate(instruction.address)
 
 # "Random Number Generator Instruction"
 # ============================================================================ #
@@ -1950,5 +1842,3 @@ class X86InstructionTranslator(object):
         # None.
 
         tb.add(self._builder.gen_unkn())
-
-        return tb.instanciate(instruction.address)
