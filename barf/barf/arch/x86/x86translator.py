@@ -49,45 +49,19 @@ class X86Translator(object):
         # An instance of a X86InstructionTranslator
         self.instr_translator = X86InstructionTranslator(self.ir_reg_name_generator, self.arch_mode, self._translation_mode)
 
-    @add_register_size
     def translate(self, instruction):
         """Return IR representation of an instruction.
         """
-        trans_instrs = []
-
         try:
-            src_read_instrs = []
-            dst_write_instrs = []
-
-            src_regs, src_read_instrs = self._translate_src_oprnds(instruction)
-            dst_regs, dst_write_instrs = self._translate_dst_oprnds(instruction)
-
-            trans_instrs = self.instr_translator.translate(instruction, src_regs, dst_regs)
+            trans_instrs = self.instr_translator.translate(instruction)
         except NotImplementedError:
-            src_read_instrs = []
-            dst_write_instrs = []
-
             trans_instrs = [self.ir_builder.gen_unkn()]
 
-            if instruction.bytes:
-                bytes_str = "".join("\\x%02x" % ord(b) for b in instruction.bytes)
-            else:
-                bytes_str = ""
+            self._log_not_supported_instruction(instruction)
+        except:
+            self._log_translation_exception(instruction)
 
-            logger.info("Failed to translate x86 to REIL, instruction not supported: %s (%s)", instruction, bytes_str)
-        except Exception:
-            if instruction.bytes:
-                bytes_str = "".join("\\x%02x" % ord(b) for b in instruction.bytes)
-            else:
-                bytes_str = ""
-
-            logger.error("Failed to translate x86 to REIL: %s (%s)", instruction, bytes_str, exc_info=True)
-
-        translation = src_read_instrs + trans_instrs + dst_write_instrs
-
-        self._translate_instr_addresses(instruction.address, translation)
-
-        return translation
+        return trans_instrs
 
     def reset(self):
         """Restart IR register name generator.
@@ -107,146 +81,28 @@ class X86Translator(object):
         self._translation_mode = value
         self.instr_translator._translation_mode = value
 
-    # Auxiliary functions
-    # ======================================================================== #
-    def _translate_instr_addresses(self, base_address, translation):
-        if base_address:
-            for index, instr in enumerate(translation):
-                instr.address = (base_address << 8) | (index & 0xff)
-
-    def _translate_src_oprnds(self, instruction):
-        """Return instruction sources access translation.
-        """
-        src_regs = []
-        src_read_instrs = []
-
-        for src, acc_mem in instruction.source_operands:
-            if isinstance(src, barf.arch.x86.x86base.X86ImmediateOperand):
-                read_src_reg = ReilImmediateOperand(src.immediate, src.size)
-            elif isinstance(src, barf.arch.x86.x86base.X86RegisterOperand):
-                read_src_reg = ReilRegisterOperand(src.name, src.size)
-            elif isinstance(src, barf.arch.x86.x86base.X86MemoryOperand):
-                read_src_reg = ReilRegisterOperand(self.ir_reg_name_generator.get_next(), src.size)
-
-                src_read_instrs += self._generate_read_instr(src, read_src_reg, acc_mem)
-            else:
-                raise Exception()
-
-            src_regs += [read_src_reg]
-
-        return src_regs, src_read_instrs
-
-    def _translate_dst_oprnds(self, instruction):
-        """Return instruction destination access translation.
-        """
-        dst_regs = []
-        dst_write_instrs = []
-
-        src_regs = filter(lambda r : isinstance(r, barf.arch.x86.x86base.X86RegisterOperand), map(lambda t : t[0], instruction.source_operands))
-
-        for dst in instruction.destination_operands:
-            # print type(dst)
-
-            if isinstance(dst, barf.arch.x86.x86base.X86RegisterOperand):
-                if dst.name in [src.name for src in src_regs]:
-                    write_dst_reg = ReilRegisterOperand(self.ir_reg_name_generator.get_next(), dst.size)
-
-                    dst_reg = ReilRegisterOperand(dst.name, dst.size)
-
-                    dst_write_instrs += [self.ir_builder.gen_str(write_dst_reg, dst_reg)]
-                else:
-                    write_dst_reg = ReilRegisterOperand(dst.name, dst.size)
-            elif isinstance(dst, barf.arch.x86.x86base.X86MemoryOperand):
-                write_dst_reg = ReilRegisterOperand(self.ir_reg_name_generator.get_next(), dst.size)
-
-                dst_write_instrs += self._generate_write_instrs(dst, write_dst_reg)
-            else:
-                raise Exception()
-
-            dst_regs += [write_dst_reg]
-
-        return dst_regs, dst_write_instrs
-
-    def _generate_read_instr(self, operand, dst_reg, access_memory):
-        """Return operand read memory access translation.
-        """
-        if access_memory:
-            addr_reg, instrs = self._compute_memory_address(operand, None)
-
-            instrs += [self.ir_builder.gen_ldm(addr_reg, dst_reg)]
+    def _log_not_supported_instruction(self, instruction):
+        if instruction.bytes:
+            bytes_str = " ".join("%02x" % ord(b) for b in instruction.bytes)
         else:
-            addr_reg, instrs = self._compute_memory_address(operand, dst_reg)
+            bytes_str = ""
 
-            if len(instrs) == 0:
-                instrs += [self.ir_builder.gen_str(addr_reg, dst_reg)]
+        logger.info(
+            "Instruction not supported: %s (%s  %s)",
+            instruction.mnemonic,
+            bytes_str,
+            instruction
+        )
 
-        return instrs
+    def _log_translation_exception(self, instruction):
+        if instruction.bytes:
+            bytes_str = " ".join("%02x" % ord(b) for b in instruction.bytes)
+        else:
+            bytes_str = ""
 
-    def _generate_write_instrs(self, operand, dst_reg):
-        """Return operand write memory access translation.
-        """
-        addr_reg, instrs = self._compute_memory_address(operand, None)
-
-        return instrs + [self.ir_builder.gen_stm(dst_reg, addr_reg)]
-
-    def _compute_memory_address(self, mem_operand, dst_reg):
-        """Return operand memory access translation.
-        """
-        # reil code generation:
-        #   add  base,  disp, t0
-        #   mul index, scale, t1
-        #   add    t1,    t0, t2
-        size = self.arch_info.architecture_size
-
-        regs, instrs = self._unpack_memory_operand(mem_operand)
-
-        addr_reg = dst_reg if dst_reg else None
-
-        if len(regs) == 3:
-            temp_reg = ReilRegisterOperand(self.ir_reg_name_generator.get_next(), size)
-
-            if not dst_reg:
-                addr_reg = ReilRegisterOperand(self.ir_reg_name_generator.get_next(), size)
-
-            instrs += [self.ir_builder.gen_add(regs[0], regs[1], temp_reg)]
-            instrs += [self.ir_builder.gen_add(temp_reg, regs[2], addr_reg)]
-        elif len(regs) == 2:
-            if not dst_reg:
-                addr_reg = ReilRegisterOperand(self.ir_reg_name_generator.get_next(), size)
-
-            instrs += [self.ir_builder.gen_add(regs[0], regs[1], addr_reg)]
-        elif len(regs) == 1:
-            addr_reg = regs[0]
-
-        return addr_reg, instrs
-
-    def _unpack_memory_operand(self, operand):
-        """Return memory operand components.
-        """
-        # [base + scale * index + disp] ->
-        #    [base, index * scale, disp], [index * scale instr]
-
-        size = self.arch_info.architecture_size
-
-        instrs = []
-
-        base_reg, index_reg, disp_reg = None, None, None
-
-        if operand.base:
-            base_reg = ReilRegisterOperand(operand.base, size)
-
-        if operand.index and operand.scale != 0x0:
-            index_temp_reg = ReilRegisterOperand(operand.index, size)
-            scale_temp_reg = ReilImmediateOperand(operand.scale, size)
-            index_reg = ReilRegisterOperand(self.ir_reg_name_generator.get_next(), size)
-
-            mul_instr = self.ir_builder.gen_mul(index_temp_reg, scale_temp_reg, index_reg)
-
-            instrs += [mul_instr]
-
-        if operand.displacement and operand.displacement != 0x0:
-            disp_reg = ReilImmediateOperand(operand.displacement, size)
-
-        regs = filter(lambda x : x, [base_reg, index_reg, disp_reg])
-
-        return regs, instrs
+        logger.error(
+            "Failed to translate x86 to REIL: %s (%s)",
+            instruction,
+            bytes_str,
+            exc_info=True
+        )
