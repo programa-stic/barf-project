@@ -11,8 +11,8 @@ import logging
 
 from barf.analysis.gadget import GadgetType
 from barf.analysis.gadget import RawGadget
-from barf.arch.x86.x86instructiontranslator import FULL_TRANSLATION
-from barf.arch.x86.x86instructiontranslator import LITE_TRANSLATION
+from barf.arch.x86.x86translator import FULL_TRANSLATION
+from barf.arch.x86.x86translator import LITE_TRANSLATION
 from barf.core.reil import DualInstruction
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand

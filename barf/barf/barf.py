@@ -170,15 +170,15 @@ class BARF(object):
             # disassemble instruction
             start, end = curr_addr, min(curr_addr + 16, self.binary.ea_end + 1)
 
-            asm, size = self.disassembler.disassemble(self.text_section[start:end], curr_addr)
+            asm = self.disassembler.disassemble(self.text_section[start:end], curr_addr)
 
             if not asm:
                 return
 
-            yield curr_addr, asm, size
+            yield curr_addr, asm, asm.size
 
             # update instruction pointer
-            curr_addr += size
+            curr_addr += asm.size
 
     def recover_cfg(self, ea_start=None, ea_end=None, mode=None):
         """Recover CFG
