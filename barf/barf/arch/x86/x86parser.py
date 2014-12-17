@@ -64,7 +64,7 @@ from barf.arch.x86.x86base import X86InstructionBase
 from barf.arch.x86.x86base import X86MemoryOperand
 from barf.arch.x86.x86base import X86RegisterOperand
 
-logger = logging.getLogger("X86Parser")
+logger = logging.getLogger(__name__)
 
 arch_info = None
 
@@ -98,90 +98,62 @@ def infer_operands_size(operands):
                 oprnd.size = size
     else:
         for oprnd in operands:
-            if isinstance(oprnd, X86ImmediateOperand):
+            if isinstance(oprnd, X86ImmediateOperand) and not oprnd.size:
                 oprnd.size = arch_info.architecture_size
-
-def build_instruction(prefix, mnemonic, operands):
-    """Build x86 instruction class from its mnemonic.
-    """
-    module = barf.arch.x86.x86instruction
-    klass = mnemonic.capitalize()
-    default = X86InstructionBase
-
-    x86_class = getattr(module, klass, default)
-
-    return x86_class(prefix, mnemonic, operands, arch_info.architecture_mode)
-
-def build_memory_operand(dictionary):
-    """Build x86 memory operand from a dictionary.
-    """
-    segment = dictionary.get("segment", None)
-    base = dictionary.get("base", None)
-    index = dictionary.get("index", None)
-    scale = 0x1
-    displacement = 0x0
-
-    if "scale" in dictionary:
-        scale = int(dictionary["scale"], 16)
-
-    if "displacement" in dictionary:
-        sign  = dictionary.get("displacement_signess", "+")
-        value = dictionary.get("displacement")
-
-        displacement = int(sign + value, 16)
-
-    return X86MemoryOperand(segment, base, index, scale, displacement)
-
-def parse_operand_modifier(string, location, tokens):
-    """Parser operand modifier.
-    """
-    return " ".join(tokens)
 
 def parse_operand(string, location, tokens):
     """Parse an instruction operand.
     """
-    if "mem_addr" in tokens.keys():
-        oprnd = build_memory_operand(tokens)
+    # print "parse_operand: ", tokens
 
-    if "imm" in tokens.keys():
-        modifier = tokens.get("modifier", "")
-        if modifier:
-            oprnd = X86ImmediateOperand(int("".join(tokens["imm"]), 16), modifier_size[modifier])
-        else:
-            oprnd = X86ImmediateOperand(int("".join(tokens["imm"]), 16))
+    modifier = " ".join(tokens.get("modifier", ""))
 
-    if "reg" in tokens.keys():
-        oprnd = X86RegisterOperand(tokens["reg"], arch_info.register_size[tokens["reg"]])
+    if "immediate" in tokens.keys():
+        value = int("".join(tokens["immediate"]), 16)
+        size = modifier_size.get(modifier, None)
 
-    oprnd.modifier = tokens.get("modifier", "")
+        oprnd = X86ImmediateOperand(value)
+        oprnd.size = size
+
+    if "register" in tokens.keys():
+        name = tokens["register"]
+        size = arch_info.register_size[tokens["register"]]
+
+        oprnd = X86RegisterOperand(name, size)
+
+    if "memory" in tokens.keys():
+        segment = tokens.get("segment", None)
+        base = tokens.get("base", None)
+        index = tokens.get("index", None)
+        scale = int(tokens.get("scale", "0x1"), 16)
+        displacement = int("".join(tokens.get("displacement", "0x0")), 16)
+
+        oprnd = X86MemoryOperand(segment, base, index, scale, displacement)
+
+    oprnd.modifier = modifier
 
     if not oprnd.size and oprnd.modifier:
         oprnd.size = modifier_size[oprnd.modifier]
 
-    return [oprnd]
+    return oprnd
 
 def parse_instruction(string, location, tokens):
     """Parse an instruction.
     """
     prefix = tokens.get("prefix", None)
-    mnemonic = tokens.get("mnemonic", None)
-    operands = []
-
-    if "fst_operand" in tokens.keys():
-        operands.append(tokens["fst_operand"][0])
-
-    if "snd_operand" in tokens.keys():
-        operands.append(tokens["snd_operand"][0])
-
-    if "trd_operand" in tokens.keys():
-        operands.append(tokens["trd_operand"][0])
-
-    if "fth_operand" in tokens.keys():
-        operands.append(tokens["fth_operand"][0])
+    mnemonic = tokens.get("mnemonic")
+    operands = [op for op in tokens.get("operands", [])]
 
     infer_operands_size(operands)
 
-    return build_instruction(prefix, mnemonic, operands)
+    instr = X86InstructionBase(
+        prefix,
+        mnemonic,
+        operands,
+        arch_info.architecture_mode
+    )
+
+    return instr
 
 # Grammar Rules
 # ============================================================================ #
@@ -196,13 +168,10 @@ colon    = Literal(":")
 hex_num = Combine("0x" + Word("0123456789abcdef"))
 dec_num = Word("0123456789")
 
-mnemonic = Word(alphanums)
-
 # Operand Parsing
 # ============================================================================ #
-modifier = Forward()
-modifier << (ZeroOrMore(
-    Or([
+modifier = (
+    Optional(Or([
         Literal("xmmword"),
         Literal("xword"),
         Literal("tword"),
@@ -210,12 +179,23 @@ modifier << (ZeroOrMore(
         Literal("dword"),
         Literal("word"),
         Literal("byte"),
-        Literal("ptr"),
         Literal("far"),
-    ])
-)("modifier")).setParseAction(parse_operand_modifier)
+    ])) +
+    Optional(Literal("ptr"))
+)
 
-reg = Or([
+immediate = Optional("-") +  Or([hex_num, dec_num])
+
+segment = Or([
+    Literal("cs"),
+    Literal("ds"),
+    Literal("ss"),
+    Literal("es"),
+    Literal("fs"),
+    Literal("gs"),
+])("segment")
+
+register = Or([
     Literal("cs"),
     Literal("ds"),
     Literal("ss"),
@@ -233,18 +213,7 @@ reg = Or([
     Combine("cr" + Word(nums)),
 ])
 
-imm = Optional("-") +  Or([hex_num, dec_num])
-
-seg = Or([
-    Literal("cs"),
-    Literal("ds"),
-    Literal("ss"),
-    Literal("es"),
-    Literal("fs"),
-    Literal("gs"),
-])("segment")
-
-base = reg("base")
+base = register("base")
 
 scale = Or([
     Literal("1"),
@@ -254,37 +223,36 @@ scale = Or([
     Literal("0x1"),
     Literal("0x2"),
     Literal("0x4"),
-    Literal("0x8")
-])("scale")
+    Literal("0x8"),
+])
 
-index = reg("index") + Optional("*" + scale)
+scaled_index = register("index") + Optional(mul + scale("scale"))
 
-displacement = Or([hex_num, dec_num])("displacement")
-displacement_signess = (Or([plus, minus]))("displacement_signess")
+displacement = (
+    Optional(Or([plus, minus])) + Or([hex_num, dec_num])
+)("displacement")
 
-memory_addressing = (
-    Optional(seg + Suppress(colon)) +
+memory = (
+    Optional(segment + Suppress(colon)) +
     Suppress(lbracket) +
     Or([
         base,
-        index,
+        scaled_index,
         displacement,
-        displacement_signess + displacement,
 
-        base + plus + index,
-        base + plus + index + displacement_signess + displacement,
+        base + plus + scaled_index,
+        base + plus + scaled_index + displacement,
 
-        base + displacement_signess + displacement,
-        index + displacement_signess + displacement,
+        base + displacement,
+        scaled_index + displacement,
     ]) +
     Suppress(rbracket)
 )
 
-operand = (Optional(modifier) + Or([
-    imm("imm"),
-    reg("reg"),
-    memory_addressing("mem_addr"),
-])).setParseAction(parse_operand)
+operand = (
+    Optional(modifier)("modifier") +
+    Or([immediate("immediate"), register("register"), memory("memory")])
+).setParseAction(parse_operand)
 
 # Intruction Parsing
 # ============================================================================ #
@@ -299,16 +267,16 @@ prefix = Or([
     Literal("data32"),
 ])
 
-instruction = ((Optional(prefix)("prefix")) + Or([
-    mnemonic("mnemonic"),
-    mnemonic("mnemonic") + operand("fst_operand"),
-    mnemonic("mnemonic") + operand("fst_operand") + Suppress(comma) + operand("snd_operand"),
-    mnemonic("mnemonic") + operand("fst_operand") + Suppress(comma) + operand("snd_operand") + Suppress(comma) + operand("trd_operand"),
-    mnemonic("mnemonic") + operand("fst_operand") + Suppress(comma) + operand("snd_operand") + Suppress(comma) + operand("trd_operand") + Suppress(comma) + operand("fth_operand"),
-])).setParseAction(parse_instruction)
+mnemonic = Word(alphanums)
+
+instruction = (
+    Optional(prefix)("prefix") +
+    mnemonic("mnemonic") +
+    Optional(ZeroOrMore(operand + Suppress(comma)) + operand)("operands")
+).setParseAction(parse_instruction)
 
 
-class X86Parser():
+class X86Parser(object):
     """x86 Instruction Parser.
     """
 
@@ -328,6 +296,9 @@ class X86Parser():
         """
         instr_parse = None
 
+        if instr in ["repne", "rep", "lock", "data16"]:
+            return None
+
         try:
             instr_lower = instr.lower()
 
@@ -341,18 +312,28 @@ class X86Parser():
             instr_asm = copy.deepcopy(self._cache[instr_lower])
             instr_asm.address = address
 
-            assert all([oprnd.size in [8, 16, 32, 64, 80, 128] for oprnd in instr_asm.operands]), "error : %s" % (instr_asm)
-            assert all([oprnd.base or oprnd.index or oprnd.displacement for oprnd in instr_asm.operands if isinstance(oprnd, X86MemoryOperand)]), "error : %s" % (instr_asm)
+            self._check_instruction(instr_asm)
         except Exception, reason:
-            # print "[E] x86 parsing error : '%s' (%s)" % (instr, reason)
-
-            if bytes:
-                bytes_str = "".join("\\x%02x" % ord(b) for b in bytes)
-            else:
-                bytes_str = ""
-
-            logger.error("Failed to parse x86 instruction: %s (%s : %s)", instr, hex(address), bytes_str)
-
             instr_asm = None
 
+            self._log_parsing_exception(instr, address, size, bytes)
+
         return instr_asm
+
+    def _log_parsing_exception(self, instr, address, size, bytes):
+        if bytes:
+            bytes_str = "".join("\\x%02x" % ord(b) for b in bytes)
+        else:
+            bytes_str = "???"
+
+        logger.error(
+            "Failed to parse x86 instruction: %s (%s : %s)",
+            instr,
+            hex(address) if address else "???",
+            bytes_str,
+            exc_info=True
+        )
+
+    def _check_instruction(self, instr_asm):
+        assert all([oprnd.size in [8, 16, 32, 64, 80, 128] for oprnd in instr_asm.operands]), "error : %s" % (instr_asm)
+        assert all([oprnd.base or oprnd.index or oprnd.displacement for oprnd in instr_asm.operands if isinstance(oprnd, X86MemoryOperand)]), "error : %s" % (instr_asm)
