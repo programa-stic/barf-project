@@ -517,7 +517,7 @@ class BasicBlockBuilder(object):
         while addr < end_address:
             start, end = addr, min(addr + self._lookahead_max, end_address)
 
-            asm, size = self._disasm.disassemble(self._mem[start:end], addr)
+            asm = self._disasm.disassemble(self._mem[start:end], addr)
 
             if not asm:
                 break
@@ -533,15 +533,15 @@ class BasicBlockBuilder(object):
             # TODO: Manage 'call' instruction properly (without
             # resorting to 'asm.mnemonic == "call"').
             if ir[-1].mnemonic == ReilMnemonic.JCC and not asm.mnemonic == "call":
-                taken, not_taken, direct = self._extract_branches(addr, asm, size, ir)
+                taken, not_taken, direct = self._extract_branches(addr, asm, asm.size, ir)
                 break
 
             # if ir[-1].mnemonic == ReilMnemonic.JCC and asm.mnemonic == "call":
-            #     direct_branch = addr + size
+            #     direct_branch = addr + asm.size
             #     break
 
             # update instruction pointer and iterate
-            addr += size
+            addr += asm.size
 
         bb_current.taken_branch = taken
         bb_current.not_taken_branch = not_taken

@@ -53,9 +53,6 @@ from pyparsing import Suppress
 from pyparsing import Word
 from pyparsing import ZeroOrMore
 
-import barf
-import barf.arch.x86.x86instruction
-
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
 from barf.arch.x86.x86base import X86ArchitectureInformation
@@ -85,6 +82,8 @@ modifier_size = {
 # ============================================================================ #
 
 def infer_operands_size(operands):
+    """Infer x86 instruction operand size based on other operands.
+    """
     size = None
 
     for oprnd in operands:
@@ -102,26 +101,23 @@ def infer_operands_size(operands):
                 oprnd.size = arch_info.architecture_size
 
 def parse_operand(string, location, tokens):
-    """Parse an instruction operand.
+    """Parse an x86 instruction operand.
     """
-    # print "parse_operand: ", tokens
-
     modifier = " ".join(tokens.get("modifier", ""))
 
-    if "immediate" in tokens.keys():
-        value = int("".join(tokens["immediate"]), 16)
+    if "immediate" in tokens:
+        immediate = int("".join(tokens["immediate"]), 16)
         size = modifier_size.get(modifier, None)
 
-        oprnd = X86ImmediateOperand(value)
-        oprnd.size = size
+        oprnd = X86ImmediateOperand(immediate, size)
 
-    if "register" in tokens.keys():
+    if "register" in tokens:
         name = tokens["register"]
         size = arch_info.register_size[tokens["register"]]
 
         oprnd = X86RegisterOperand(name, size)
 
-    if "memory" in tokens.keys():
+    if "memory" in tokens:
         segment = tokens.get("segment", None)
         base = tokens.get("base", None)
         index = tokens.get("index", None)
@@ -138,7 +134,7 @@ def parse_operand(string, location, tokens):
     return oprnd
 
 def parse_instruction(string, location, tokens):
-    """Parse an instruction.
+    """Parse an x86 instruction.
     """
     prefix = tokens.get("prefix", None)
     mnemonic = tokens.get("mnemonic")
@@ -165,7 +161,7 @@ lbracket = Literal("[")
 rbracket = Literal("]")
 colon    = Literal(":")
 
-hex_num = Combine("0x" + Word("0123456789abcdef"))
+hex_num = Combine(Literal("0x") + Word("0123456789abcdef"))
 dec_num = Word("0123456789")
 
 # Operand Parsing
@@ -196,21 +192,16 @@ segment = Or([
 ])("segment")
 
 register = Or([
-    Literal("cs"),
-    Literal("ds"),
-    Literal("ss"),
-    Literal("es"),
-    Literal("fs"),
-    Literal("gs"),
+    segment,
     Word(alphas),
-    Combine("r" + Word(alphanums)),
-    Combine("st" + Word(nums)),
-    Combine("st(" + Word(nums) + ")"),
-    Combine("xmm" + Word(nums)),
-    Combine("ymm" + Word(nums)),
-    Combine("mm" + Word(nums)),
-    Combine("dr" + Word(nums)),
-    Combine("cr" + Word(nums)),
+    Combine(Literal("r") + Word(alphanums)),
+    Combine(Literal("st") + Word(nums)),
+    Combine(Literal("st(") + Word(nums) + Literal(")")),
+    Combine(Literal("xmm") + Word(nums)),
+    Combine(Literal("ymm") + Word(nums)),
+    Combine(Literal("mm") + Word(nums)),
+    Combine(Literal("dr") + Word(nums)),
+    Combine(Literal("cr") + Word(nums)),
 ])
 
 base = register("base")
@@ -275,7 +266,6 @@ instruction = (
     Optional(ZeroOrMore(operand + Suppress(comma)) + operand)("operands")
 ).setParseAction(parse_instruction)
 
-
 class X86Parser(object):
     """x86 Instruction Parser.
     """
@@ -291,49 +281,37 @@ class X86Parser(object):
         modifier_size["far"] = arch_info.architecture_size
         modifier_size["ptr"] = arch_info.architecture_size
 
-    def parse(self, instr, address=None, size=None, bytes=None):
+    def parse(self, instr):
         """Parse an x86 instruction.
         """
-        instr_parse = None
-
-        if instr in ["repne", "rep", "lock", "data16"]:
-            return None
-
         try:
             instr_lower = instr.lower()
 
             if not instr_lower in self._cache:
                 instr_asm = instruction.parseString(instr_lower)[0]
-                instr_asm.size = size
-                instr_asm.bytes = bytes
 
                 self._cache[instr_lower] = instr_asm
 
             instr_asm = copy.deepcopy(self._cache[instr_lower])
-            instr_asm.address = address
 
-            self._check_instruction(instr_asm)
-        except Exception, reason:
+            # self._check_instruction(instr_asm)
+        except:
             instr_asm = None
 
-            self._log_parsing_exception(instr, address, size, bytes)
+            error_msg = "Failed to parse instruction: %s"
+
+            logger.error(error_msg, instr, exc_info=True)
 
         return instr_asm
 
-    def _log_parsing_exception(self, instr, address, size, bytes):
-        if bytes:
-            bytes_str = "".join("\\x%02x" % ord(b) for b in bytes)
-        else:
-            bytes_str = "???"
+    def _check_instruction(self, instr):
+        # Check operands size.
+        assert all([oprnd.size in [8, 16, 32, 64, 80, 128]
+                        for oprnd in instr.operands]), \
+                "Invalid operand size: %s" % instr
 
-        logger.error(
-            "Failed to parse x86 instruction: %s (%s : %s)",
-            instr,
-            hex(address) if address else "???",
-            bytes_str,
-            exc_info=True
-        )
-
-    def _check_instruction(self, instr_asm):
-        assert all([oprnd.size in [8, 16, 32, 64, 80, 128] for oprnd in instr_asm.operands]), "error : %s" % (instr_asm)
-        assert all([oprnd.base or oprnd.index or oprnd.displacement for oprnd in instr_asm.operands if isinstance(oprnd, X86MemoryOperand)]), "error : %s" % (instr_asm)
+        # Check memory operand parameters.
+        assert all([oprnd.base or oprnd.index or oprnd.displacement
+                        for oprnd in instr.operands
+                            if isinstance(oprnd, X86MemoryOperand)]), \
+                "Invalid memory operand parameters: %s" % instr

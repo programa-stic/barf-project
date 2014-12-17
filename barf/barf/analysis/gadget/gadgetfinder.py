@@ -79,7 +79,7 @@ class GadgetFinder(object):
             if self._mem[addr] not in op_codes:
                 continue
 
-            asm_instr, asm_size = self._disasm.disassemble(
+            asm_instr = self._disasm.disassemble(
                 self._mem[addr:min(addr+16, end_address + 1)],
                 addr
             )
@@ -135,12 +135,9 @@ class GadgetFinder(object):
 
             raw_bytes = self._mem[start_addr:end_addr]
 
-            asm_instr, asm_size = self._disasm.disassemble(
-                raw_bytes,
-                start_addr
-            )
+            asm_instr = self._disasm.disassemble(raw_bytes, start_addr)
 
-            if not asm_instr or asm_size != step:
+            if not asm_instr or asm_instr.size != step:
                 continue
 
             try:

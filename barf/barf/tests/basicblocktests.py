@@ -15,14 +15,32 @@ class BinDiffTests(unittest.TestCase):
     def test_equality(self):
         addr = 0x0804842f
 
-        asm1  = [self._parser.parse("cmp DWORD PTR [esp+0x18], 0x41424344", 0x08048425, 8)]
-        asm1 += [self._parser.parse("jne 0x08048445", 0x0804842d, 2)]
+        asm = self._parser.parse("cmp DWORD PTR [esp+0x18], 0x41424344")
+        asm.address = 0x08048425
+        asm.size = 8
+
+        asm1 = [asm]
+
+        asm = self._parser.parse("jne 0x08048445")
+        asm.address = 0x0804842d
+        asm.size = 2
+
+        asm1 += [asm]
 
         ir1  = [self._translator.translate(asm1[0])]
         ir1 += [self._translator.translate(asm1[1])]
 
-        asm2  = [self._parser.parse("cmp DWORD PTR [esp+0x18], 0x41424344", 0x08048425, 8)]
-        asm2 += [self._parser.parse("jne 0x0804844f", 0x0804842d, 2)]
+        asm = self._parser.parse("cmp DWORD PTR [esp+0x18], 0x41424344")
+        asm.address = 0x08048425
+        asm.size = 8
+
+        asm2 = [asm]
+
+        asm = self._parser.parse("jne 0x0804844f")
+        asm.address = 0x0804842d
+        asm.size = 2
+
+        asm2 += [asm]
 
         ir2  = [self._translator.translate(asm2[0])]
         ir2 += [self._translator.translate(asm2[1])]

@@ -1,5 +1,6 @@
 """
-This modules contains a x86 disassembler base on the XED Intel library.
+This modules contains a x86 disassembler based on the Capstone
+disassembly framework.
 
 """
 from capstone import *
@@ -21,29 +22,42 @@ class X86Disassembler(Disassembler):
             ARCH_X86_MODE_64 : CS_MODE_64
         }
 
-        self.x86_parser = X86Parser(architecture_mode)
-        self.md = Cs(CS_ARCH_X86, arch_mode_map[architecture_mode])
+        self._parser = X86Parser(architecture_mode)
+        self._disassembler = Cs(CS_ARCH_X86, arch_mode_map[architecture_mode])
 
     def disassemble(self, data, address):
         """Disassemble the data into an instruction.
         """
-        disasm = list(self.md.disasm_lite(data, address))
+        asm, size = self._cs_disassemble_one(data, address)
 
-        if len(disasm) > 0:
-            address, size, mnemonic, op_str = disasm[0]
-        else:
-            return None, 0
+        instr = self._parser.parse(asm) if asm else None
 
-        bytes = data[0:size]
-        asm = str((mnemonic + " " + op_str).strip())
-        instr = self.x86_parser.parse(asm, address, size, bytes)
+        if instr:
+            instr.address = address
+            instr.size = size
+            instr.bytes = data[0:size]
 
-        if not instr:
-            return None, 0
-
-        return instr, size
+        return instr
 
     def disassemble_all(self, data, address):
         """Disassemble the data into multiple instructions.
         """
         raise NotImplementedError()
+
+    def _cs_disassemble_one(self, data, address):
+        """Disassemble the data into an instruction in string form.
+        """
+        asm, size = "", 0
+
+        disasm = list(self._disassembler.disasm_lite(data, address))
+
+        if len(disasm) > 0:
+            address, size, mnemonic, op_str = disasm[0]
+
+            asm = str(mnemonic + " " + op_str).strip()
+
+        # Quick fix for Capstone 'bug'.
+        if asm in ["repne", "rep", "lock", "data16"]:
+            asm, size = "", 0
+
+        return asm, size
