@@ -3,10 +3,13 @@ This module contains all lthe classes that handle the x86 instruction
 representation.
 
 """
+import logging
 
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
 from barf.arch import ArchitectureInformation
+
+logger = logging.getLogger(__name__)
 
 # TODO: This class need a *heavy* refactor.
 class X86ArchitectureInformation(ArchitectureInformation):
@@ -336,29 +339,6 @@ class X86ArchitectureInformation(ArchitectureInformation):
 
         return mapper
 
-    def read_register(self, register, registers):
-        register_size = self._arch_regs_size[register]
-
-        base_reg_name, value_filter, shift = self.register_access_mapper().get(register, (register, 2**register_size - 1, 0))
-
-        if base_reg_name not in registers:
-            registers[base_reg_name] = random.randint(0, 2**self._arch_regs_size[base_reg_name] - 1)
-
-        reg_value = registers[base_reg_name]
-
-        return (reg_value & value_filter) >> shift
-
-    def write_register(self, register, registers, value):
-        register_size = self._arch_regs_size[register]
-
-        base_reg_name, value_filter, shift = self.register_access_mapper().get(register.name, (register, 2**register_size - 1, 0))
-
-        reg_value = registers.get(base_reg_name, random.randint(0, 2**register_size - 1))
-
-        registers[base_reg_name] = (reg_value & ~value_filter) | ((value << shift) & value_filter)
-
-        return registers[base_reg_name]
-
 
 class X86InstructionBase(object):
     """Representation of x86 instruction."""
@@ -369,7 +349,6 @@ class X86InstructionBase(object):
         '_operands',
         '_bytes',
         '_size',
-        '_flags_affected',
         '_address',
         '_arch_mode',
     ]
@@ -378,9 +357,8 @@ class X86InstructionBase(object):
         self._prefix = prefix
         self._mnemonic = mnemonic
         self._operands = operands
-        self._bytes = None
+        self._bytes = ""
         self._size = None
-        self._flags_affected = []
         self._address = None
         self._arch_mode = arch_mode
 
@@ -420,26 +398,6 @@ class X86InstructionBase(object):
         self._size = value
 
     @property
-    def source_operands(self):
-        """Get instruction sources."""
-        raise NotImplementedError()
-
-    @property
-    def destination_operands(self):
-        """Get instruction destinations."""
-        raise NotImplementedError()
-
-    @property
-    def flags_affected(self):
-        """Get flags affected by the instruction."""
-        return self._flags_affected
-
-    @flags_affected.setter
-    def flags_affected(self, value):
-        """Set flags affected by the instruction."""
-        self._flags_affected = value
-
-    @property
     def address(self):
         """Get instruction address."""
         return self._address
@@ -451,7 +409,6 @@ class X86InstructionBase(object):
 
     def __str__(self):
         operands_str = ", ".join([str(oprnd) for oprnd in self._operands])
-        # operands_str = ", ".join(["%s (%s)" % (str(oprnd), oprnd.size) for oprnd in self._operands])
 
         string  = self._prefix + " " if self._prefix else ""
         string += self._mnemonic
@@ -460,13 +417,12 @@ class X86InstructionBase(object):
         return string
 
     def __eq__(self, other):
-        return self.prefix == other.prefix and \
-            self.mnemonic == other.mnemonic and \
-            self.operands == other.operands and \
-            self.bytes == other.bytes and \
-            self.size == other.size and \
-            self.flags_affected == other.flags_affected and \
-            self.address == other.address
+        return  self.prefix == other.prefix and \
+                self.mnemonic == other.mnemonic and \
+                self.operands == other.operands and \
+                self.bytes == other.bytes and \
+                self.size == other.size and \
+                self.address == other.address
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -509,36 +465,39 @@ class X86ImmediateOperand(X86Operand):
     """Representation of x86 immediate operand."""
 
     __slots__ = [
-        '_immediate'
+        '_immediate',
+        '_size'
     ]
 
-    def __init__(self, immediate):
+    def __init__(self, immediate, size=None):
         super(X86ImmediateOperand, self).__init__("")
 
-        if type(immediate) == str:
-            self._immediate = int(immediate, 16)
-        else:
-            self._immediate = immediate
+        assert type(immediate) in [int, long], "Invalid immediate value type."
+
+        self._immediate = immediate
+        self._size = size
 
     @property
     def immediate(self):
         """Get immediate."""
+        if not self._size:
+            raise Exception("Operand size missing.")
+
         return self._immediate
 
     def __str__(self):
-        # TODO: Take into account if it's a 32-bits o 64-bits architecture.
+        if not self._size:
+            raise Exception("Operand size missing.")
+
         string  = self._modifier + " " if self._modifier else ""
+        string += hex(self._immediate & 2**self._size-1)
 
-        if self._size:
-            string += hex(self._immediate & 2**self._size-1)
-        else:
-            string += hex(self._immediate & 0xffffffff)
-
-        return string if string[-1] != 'L' else string[:-1]
+        return string[:-1] if string[-1] == 'L' else string
 
     def __eq__(self, other):
-        return self.modifier == other.modifier and self.size == other.size and \
-            self.immediate == other.immediate
+        return  self.modifier == other.modifier and \
+                self.size == other.size and \
+                self.immediate == other.immediate
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -561,17 +520,24 @@ class X86RegisterOperand(X86Operand):
     @property
     def name(self):
         """Get register name."""
+        if not self._size:
+            raise Exception("Operand size missing.")
+
         return self._name
 
     def __str__(self):
+        if not self._size:
+            raise Exception("Operand size missing.")
+
         string  = self._modifier + " " if self._modifier else ""
         string += self._name
 
         return string
 
     def __eq__(self, other):
-        return self.modifier == other.modifier and self.size == other.size and \
-            self.name == other.name
+        return  self.modifier == other.modifier and \
+                self.size == other.size and \
+                self.name == other.name
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -642,25 +608,30 @@ class X86MemoryOperand(X86Operand):
         if self._index:
             if self._base:
                 string += sep + "+" + sep
+
             string += self._index
             string += sep + "*" + sep + str(self._scale)
 
-        # TODO: Take into account if it's a 32-bits o 64-bits architecture.
         if self._displacement != 0:
             if self._base or self._index:
                 string += sep + "+" + sep
-            imm_hex = hex(self._displacement & 0xffffffff)
-            string += imm_hex if imm_hex[-1] != 'L' else imm_hex[:-1]
+
+            imm_hex = hex(self._displacement & 2**32-1)
+
+            string += imm_hex[:-1] if imm_hex[-1] == 'L' else imm_hex
 
         string += "]"
 
         return string
 
     def __eq__(self, other):
-        return self.modifier == other.modifier and self.size == other.size and \
-            self.segment == other.segment and self.base == other.base and \
-            self.index == other.index and self.scale == self.scale and \
-            self.displacement == other.displacement
+        return  self.modifier == other.modifier and \
+                self.size == other.size and \
+                self.segment == other.segment and \
+                self.base == other.base and \
+                self.index == other.index and \
+                self.scale == self.scale and \
+                self.displacement == other.displacement
 
     def __ne__(self, other):
         return not self.__eq__(other)
