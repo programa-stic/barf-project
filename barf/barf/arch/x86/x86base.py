@@ -3,13 +3,9 @@ This module contains all lthe classes that handle the x86 instruction
 representation.
 
 """
-import logging
-
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
 from barf.arch import ArchitectureInformation
-
-logger = logging.getLogger(__name__)
 
 class X86ArchitectureInformation(ArchitectureInformation):
     """This class describe the Intel x86 architecture."""
@@ -370,7 +366,7 @@ class X86ArchitectureInformation(ArchitectureInformation):
         self._registers_flags = [name for name, _ in self.regs_flags]
 
 
-class X86InstructionBase(object):
+class X86Instruction(object):
     """Representation of x86 instruction."""
 
     __slots__ = [

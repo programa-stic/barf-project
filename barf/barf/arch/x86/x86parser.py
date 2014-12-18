@@ -1,40 +1,5 @@
 """
 x86 Instruction Parser.
-
-
-id ::= a-zA-Z
-
-prefix ::= id
-
-mnemonic ::= id
-
-modifier ::=   id
-             | id modifier
-
-mem_access ::= lbracket mem_access_mode rbracket
-
-mem_access_mode ::=   id
-                    | id plus id
-                    | id plus num
-                    | id plus id mul num
-                    | id plus id mul num plus num
-                    | id plus id mul num minus num
-                    | id plus id plus num
-                    | id mul num
-                    | id mul num plus num
-                    | num
-
-operand ::=   id
-            | mem_access
-
-instruction ::=   mnemonic modifier operand
-                | mnemonic operand
-                | mnemonic modifier operand comma modifier operand
-                | mnemonic modifier operand comma operand
-                | mnemonic operand comma modifier operand
-                | mnemonic operand comma operand
-                | prefix instruction
-
 """
 
 import copy
@@ -57,7 +22,7 @@ from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
 from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86base import X86ImmediateOperand
-from barf.arch.x86.x86base import X86InstructionBase
+from barf.arch.x86.x86base import X86Instruction
 from barf.arch.x86.x86base import X86MemoryOperand
 from barf.arch.x86.x86base import X86RegisterOperand
 
@@ -73,14 +38,13 @@ modifier_size = {
     "dword ptr"   : 32,
     "word ptr"    : 16,
     "byte ptr"    : 8,
-    "ptr"         : None, # base on architecture size
-    "far ptr"     : None, # base on architecture size
-    "far"         : None, # base on architecture size
+    "ptr"         : None, # Based on architecture size.
+    "far ptr"     : None, # Based on architecture size.
+    "far"         : None, # Based on architecture size.
 }
 
 # Parsing functions
 # ============================================================================ #
-
 def infer_operands_size(operands):
     """Infer x86 instruction operand size based on other operands.
     """
@@ -142,7 +106,7 @@ def parse_instruction(string, location, tokens):
 
     infer_operands_size(operands)
 
-    instr = X86InstructionBase(
+    instr = X86Instruction(
         prefix,
         mnemonic,
         operands,
