@@ -65,9 +65,9 @@ class GadgetClassifier(object):
         # Architecture information.
         self._arch_info = architecture_info
 
-        self._arch_regs = self._arch_info.registers_gp
-        self._arch_regs_parent = self._arch_info.registers_gp_parent
-        self._arch_regs_size = self._arch_info.register_size
+        self._arch_regs = self._arch_info.registers_gp_all
+        self._arch_regs_parent = self._arch_info.registers_gp_base
+        self._arch_regs_size = self._arch_info.registers_size
         self._address_size = self._arch_info.address_size
 
         # Number of simulation iterations.
@@ -609,7 +609,7 @@ class GadgetClassifier(object):
         mod_regs = []
 
         for r in modified_regs:
-            alias, _, _ =  self._arch_info.register_access_mapper().get(r, (None, None, None))
+            alias, _ =  self._arch_info.registers_access_mapper().get(r, (None, None))
 
             if not alias:
                 mod_regs += [r]
@@ -697,19 +697,26 @@ class GadgetClassifier(object):
     def _compute_full_context(self, registers):
         regs_full = {}
 
-        reg_mapper = self._arch_info.register_access_mapper()
-
-        all_regs = self._arch_regs + self._arch_info.flags
+        reg_mapper = self._arch_info.registers_access_mapper()
 
         for reg in self._arch_regs:
-            base_reg_name, value_filter, shift = reg_mapper.get(reg, (None, None, None))
+            base_reg_name, offset = reg_mapper.get(reg, (None, None))
 
             if base_reg_name:
                 reg_value = registers[base_reg_name]
-                reg_value = (reg_value & value_filter) >> shift
+                reg_value = self._extract_value(reg_value, offset, self._arch_info.registers_size[reg])
             else:
                 reg_value = registers[reg]
 
             regs_full[reg] = reg_value
 
         return regs_full
+
+    def _extract_value(self, main_value, offset, size):
+        return (main_value >> offset) & 2**size-1
+
+    def _insert_value(self, main_value, value_to_insert, offset, size):
+        main_value &= ~((2**size-1) << offset)
+        main_value |= (value_to_insert & 2**size-1) << offset
+
+        return main_value

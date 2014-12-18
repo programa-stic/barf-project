@@ -68,7 +68,7 @@ class X86Parser32BitsTests(unittest.TestCase):
     def test_misc_2(self):
         asm = self._parser.parse("fucompi st(1)")
 
-        self.assertEqual(str(asm), "fucompi st(1)")
+        self.assertEqual(str(asm), "fucompi st1")
 
 
 class X86Parser64BitsTests(unittest.TestCase):
@@ -113,12 +113,12 @@ class X86TranslationTests(unittest.TestCase):
         self.smt_translator = SmtTranslator(self.smt_solver, self.arch_info.address_size)
         self.reil_emulator = ReilEmulator(self.arch_info.address_size)
 
-        self.reil_emulator.set_arch_registers(self.arch_info.registers_gp)
-        self.reil_emulator.set_arch_registers_size(self.arch_info.register_size)
-        self.reil_emulator.set_reg_access_mapper(self.arch_info.register_access_mapper())
+        self.reil_emulator.set_arch_registers(self.arch_info.registers_gp_all)
+        self.reil_emulator.set_arch_registers_size(self.arch_info.registers_size)
+        self.reil_emulator.set_reg_access_mapper(self.arch_info.registers_access_mapper())
 
-        self.smt_translator.set_reg_access_mapper(self.arch_info.register_access_mapper())
-        self.smt_translator.set_arch_registers_size(self.arch_info.register_size)
+        self.smt_translator.set_reg_access_mapper(self.arch_info.registers_access_mapper())
+        self.smt_translator.set_arch_registers_size(self.arch_info.registers_size)
 
     def test_lea(self):
         asm = ["lea eax, [ebx + 0x100]"]

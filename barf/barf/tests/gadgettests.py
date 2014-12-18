@@ -24,9 +24,9 @@ class GadgetClassifierTests(unittest.TestCase):
 
         self._ir_emulator = ReilEmulator(self._arch_info.address_size)
 
-        self._ir_emulator.set_arch_registers(self._arch_info.registers_gp)
-        self._ir_emulator.set_arch_registers_size(self._arch_info.register_size)
-        self._ir_emulator.set_reg_access_mapper(self._arch_info.register_access_mapper())
+        self._ir_emulator.set_arch_registers(self._arch_info.registers_gp_all)
+        self._ir_emulator.set_arch_registers_size(self._arch_info.registers_size)
+        self._ir_emulator.set_reg_access_mapper(self._arch_info.registers_access_mapper())
 
         self._g_classifier = GadgetClassifier(self._ir_emulator, self._arch_info)
 
@@ -950,12 +950,12 @@ class GadgetVerifierTests(unittest.TestCase):
         self._smt_translator = SmtTranslator(self._smt_solver, self._arch_info.address_size)
         self._ir_emulator = ReilEmulator(self._arch_info.address_size)
 
-        self._ir_emulator.set_arch_registers(self._arch_info.registers_gp)
-        self._ir_emulator.set_arch_registers_size(self._arch_info.register_size)
-        self._ir_emulator.set_reg_access_mapper(self._arch_info.register_access_mapper())
+        self._ir_emulator.set_arch_registers(self._arch_info.registers_gp_all)
+        self._ir_emulator.set_arch_registers_size(self._arch_info.registers_size)
+        self._ir_emulator.set_reg_access_mapper(self._arch_info.registers_access_mapper())
 
-        self._smt_translator.set_reg_access_mapper(self._arch_info.register_access_mapper())
-        self._smt_translator.set_arch_registers_size(self._arch_info.register_size)
+        self._smt_translator.set_reg_access_mapper(self._arch_info.registers_access_mapper())
+        self._smt_translator.set_arch_registers_size(self._arch_info.registers_size)
 
         self._code_analyzer = CodeAnalyzer(self._smt_solver, self._smt_translator)
 

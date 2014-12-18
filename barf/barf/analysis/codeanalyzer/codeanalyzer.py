@@ -372,7 +372,7 @@ class CodeAnalyzer(object):
         reg_info = self._translator._reg_access_mapper.get(register_name, None)
 
         if reg_info:
-            var_base_name, _, var_shift = reg_info
+            var_base_name, offset = reg_info
 
             if mode == "pre":
                 var_name = self._translator.get_init_name(var_base_name)
@@ -386,7 +386,7 @@ class CodeAnalyzer(object):
             ret_val = self._translator._solver.mkBitVec(var_size, var_name)
             ret_val = smtlibv2.EXTRACT(
                 ret_val,
-                var_shift,
+                offset,
                 self._translator._arch_regs_size[register_name]
             )
         else:

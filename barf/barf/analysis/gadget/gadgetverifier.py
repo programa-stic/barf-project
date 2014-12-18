@@ -110,7 +110,7 @@ class GadgetVerifier(object):
         # Constraints on registers.
         reg_constrs = []
 
-        for name in self._arch_info.registers_base:
+        for name in self._arch_info.registers_gp_base:
             var_initial = self.analyzer.get_register_expr(name, mode="pre")
             var_final = self.analyzer.get_register_expr(name, mode="post")
 
@@ -141,7 +141,7 @@ class GadgetVerifier(object):
         # Check all non-modified registers don't change.
         constrs_mod = []
 
-        for name in self._arch_info.registers_base:
+        for name in self._arch_info.registers_gp_base:
             if name not in [r.name for r in gadget.modified_registers]:
                 var_initial = self.analyzer.get_register_expr(name, mode="pre")
                 var_final = self.analyzer.get_register_expr(name, mode="post")
@@ -167,7 +167,7 @@ class GadgetVerifier(object):
         # Check all non-modified registers don't change.
         constrs_mod = []
 
-        for name in self._arch_info.registers_base:
+        for name in self._arch_info.registers_gp_base:
             if name not in [r.name for r in gadget.modified_registers]:
                 var_initial = self.analyzer.get_register_expr(name, mode="pre")
                 var_final = self.analyzer.get_register_expr(name, mode="post")
@@ -195,7 +195,7 @@ class GadgetVerifier(object):
         # Check all non-modified registers don't change.
         constrs_mod = []
 
-        for name in self._arch_info.registers_base:
+        for name in self._arch_info.registers_gp_base:
             if name not in [r.name for r in gadget.modified_registers]:
                 var_initial = self.analyzer.get_register_expr(name, mode="pre")
                 var_final = self.analyzer.get_register_expr(name, mode="post")
@@ -233,7 +233,7 @@ class GadgetVerifier(object):
         # Check all non-modified registers don't change.
         constrs_mod = []
 
-        for name in self._arch_info.registers_base:
+        for name in self._arch_info.registers_gp_base:
             if name not in [r.name for r in gadget.modified_registers]:
                 var_initial = self.analyzer.get_register_expr(name, mode="pre")
                 var_final = self.analyzer.get_register_expr(name, mode="post")
@@ -271,7 +271,7 @@ class GadgetVerifier(object):
         # Check all non-modified registers don't change.
         constrs_mod = []
 
-        for name in self._arch_info.registers_base:
+        for name in self._arch_info.registers_gp_base:
             if name not in [r.name for r in gadget.modified_registers]:
                 var_initial = self.analyzer.get_register_expr(name, mode="pre")
                 var_final = self.analyzer.get_register_expr(name, mode="post")
@@ -315,7 +315,7 @@ class GadgetVerifier(object):
         # Check all non-modified registers don't change.
         constrs_mod = []
 
-        for name in self._arch_info.registers_base:
+        for name in self._arch_info.registers_gp_base:
             if name not in [r.name for r in gadget.modified_registers]:
                 var_initial = self.analyzer.get_register_expr(name, mode="pre")
                 var_final = self.analyzer.get_register_expr(name, mode="post")
@@ -358,7 +358,7 @@ class GadgetVerifier(object):
         # Check all non-modified registers don't change.
         constrs_mod = []
 
-        for name in self._arch_info.registers_base:
+        for name in self._arch_info.registers_gp_base:
             if name not in [r.name for r in gadget.modified_registers]:
                 var_initial = self.analyzer.get_register_expr(name, mode="pre")
                 var_final = self.analyzer.get_register_expr(name, mode="post")

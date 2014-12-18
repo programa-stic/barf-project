@@ -204,13 +204,13 @@ class SmtTranslator(object):
         reg_info = self._reg_access_mapper.get(operand.name, None)
 
         if reg_info:
-            var_base_name, _, var_shift = reg_info
+            var_base_name, offset = reg_info
 
             var_name = self._get_var_name(var_base_name)
             var_size = self._arch_regs_size[var_base_name]
 
             ret_val = self._solver.mkBitVec(var_size, var_name)
-            ret_val = smtlibv2.EXTRACT(ret_val, var_shift, operand.size)
+            ret_val = smtlibv2.EXTRACT(ret_val, offset, operand.size)
         else:
             var_name = self._get_var_name(operand.name)
             ret_val = self._solver.mkBitVec(operand.size, var_name)
@@ -223,7 +223,7 @@ class SmtTranslator(object):
         reg_info = self._reg_access_mapper.get(operand.name, None)
 
         if reg_info:
-            var_base_name, _, var_shift = reg_info
+            var_base_name, offset = reg_info
 
             old_var_name = self._get_var_name(var_base_name, fresh=False)
 
@@ -234,14 +234,14 @@ class SmtTranslator(object):
 
             ret_val_cpy = ret_val
 
-            ret_val = smtlibv2.EXTRACT(ret_val, var_shift, operand.size)
+            ret_val = smtlibv2.EXTRACT(ret_val, offset, operand.size)
 
             old_ret_val = self._solver.mkBitVec(var_size, old_var_name)
 
             constrs = []
 
             for i in reversed(xrange(0, var_size, 8)):
-                if i >= var_shift and i < var_shift + operand.size:
+                if i >= offset and i < offset + operand.size:
                     continue
 
                 bytes_exprs_1 = smtlibv2.EXTRACT(ret_val_cpy, i, 8)
@@ -573,7 +573,7 @@ class SmtTranslator(object):
             expr = (op1_var == smtlibv2.EXTRACT(op3_var, 0, op1_var.size))
 
 			# Make sure that the values that can take dst operand
-			# do not exceed the range of the source operand. 
+			# do not exceed the range of the source operand.
 			# TODO: Find a better way to enforce this.
             fmt = "#b%0{0}d".format(op3_var.size - op1_var.size)
             imm = smtlibv2.BitVec(op3_var.size - op1_var.size, fmt % 0)

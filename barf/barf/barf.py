@@ -93,12 +93,12 @@ class BARF(object):
 
             self.smt_translator = SmtTranslator(self.smt_solver, self.arch_info.address_size)
 
-            self.ir_emulator.set_arch_registers(self.arch_info.registers_gp)
-            self.ir_emulator.set_arch_registers_size(self.arch_info.register_size)
-            self.ir_emulator.set_reg_access_mapper(self.arch_info.register_access_mapper())
+            self.ir_emulator.set_arch_registers(self.arch_info.registers_gp_all)
+            self.ir_emulator.set_arch_registers_size(self.arch_info.registers_size)
+            self.ir_emulator.set_reg_access_mapper(self.arch_info.registers_access_mapper())
 
-            self.smt_translator.set_reg_access_mapper(self.arch_info.register_access_mapper())
-            self.smt_translator.set_arch_registers_size(self.arch_info.register_size)
+            self.smt_translator.set_reg_access_mapper(self.arch_info.registers_access_mapper())
+            self.smt_translator.set_arch_registers_size(self.arch_info.registers_size)
 
     def _setup_analysis_modules(self):
         """Set up analysis modules.

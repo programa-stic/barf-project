@@ -113,7 +113,7 @@ def parse_operand(string, location, tokens):
 
     if "register" in tokens:
         name = tokens["register"]
-        size = arch_info.register_size[tokens["register"]]
+        size = arch_info.registers_size[tokens["register"]]
 
         oprnd = X86RegisterOperand(name, size)
 
@@ -196,7 +196,7 @@ register = Or([
     Word(alphas),
     Combine(Literal("r") + Word(alphanums)),
     Combine(Literal("st") + Word(nums)),
-    Combine(Literal("st(") + Word(nums) + Literal(")")),
+    Combine(Literal("st") + Suppress(Literal("(")) + Word(nums) + Suppress(Literal(")"))),
     Combine(Literal("xmm") + Word(nums)),
     Combine(Literal("ymm") + Word(nums)),
     Combine(Literal("mm") + Word(nums)),
