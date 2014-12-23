@@ -1722,6 +1722,52 @@ class X86Translator(object):
         tb.add(keep_looping_lbl)
         tb.add(self._builder.gen_jcc(imm0, oprnd0))
 
+    def _translate_loopnz(self, tb, instruction):
+        return self._translate_loopne(tb, instruction)
+
+    def _translate_loope(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        if self._arch_mode == ARCH_X86_MODE_32:
+            counter = ReilRegisterOperand("ecx", 32)
+        elif self._arch_mode == ARCH_X86_MODE_64:
+            counter = ReilRegisterOperand("rcx", 64)
+
+        oprnd0 = tb.read(instruction.operands[0])
+
+        if isinstance(oprnd0, ReilImmediateOperand):
+            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, 40)
+
+        tmp0 = tb.temporal(counter.size)
+
+        counter_zero = tb.temporal(1)
+        counter_not_zero = tb.temporal(1)
+        zf_zero = tb.temporal(1)
+        zf_not_zero = tb.temporal(1)
+        branch_cond = tb.temporal(1)
+
+        imm0 = tb.immediate(1, counter.size)
+
+        keep_looping_lbl = tb.label('keep_looping')
+
+        tb.add(self._builder.gen_str(counter, tmp0))
+        tb.add(self._builder.gen_sub(tmp0, imm0, counter))
+        tb.add(self._builder.gen_bisz(counter, counter_zero))
+        tb.add(self._builder.gen_bisz(self._flags["zf"], zf_zero))
+        tb.add(self._builder.gen_xor(zf_zero, imm0, zf_not_zero))
+        tb.add(self._builder.gen_xor(counter_zero, imm0, counter_not_zero))
+        tb.add(self._builder.gen_and(counter_not_zero, zf_not_zero, branch_cond))
+        tb.add(self._builder.gen_jcc(branch_cond, keep_looping_lbl))
+        tb.add(self._builder.gen_jcc(imm0, end_addr)) # exit loop
+        tb.add(keep_looping_lbl)
+        tb.add(self._builder.gen_jcc(imm0, oprnd0))
+
+    def _translate_loopz(self, tb, instruction):
+        return self._translate_loope(tb, instruction)
+
 # "String Instructions"
 # ============================================================================ #
 
