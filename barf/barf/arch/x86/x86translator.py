@@ -100,7 +100,14 @@ class TranslationBuilder(object):
 
             addr = self._compute_memory_address(x86_operand)
 
-            self.add(self._builder.gen_stm(value, addr))
+            if value.size != x86_operand.size:
+                tmp = self.temporal(x86_operand.size)
+
+                self.add(self._builder.gen_str(value, tmp))
+
+                self.add(self._builder.gen_stm(tmp, addr))
+            else:
+                self.add(self._builder.gen_stm(value, addr))
 
         else:
             raise Exception()
