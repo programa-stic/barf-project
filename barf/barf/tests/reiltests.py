@@ -89,15 +89,18 @@ class ReilEmulatorTests(unittest.TestCase):
 
         self._emulator = ReilEmulator(self._arch_info.address_size)
 
-        self._emulator.set_arch_registers(self._arch_info.registers_gp)
-        self._emulator.set_arch_registers_size(self._arch_info.register_size)
-        self._emulator.set_reg_access_mapper(self._arch_info.register_access_mapper())
+        self._emulator.set_arch_registers(self._arch_info.registers_gp_all)
+        self._emulator.set_arch_registers_size(self._arch_info.registers_size)
+        self._emulator.set_reg_access_mapper(self._arch_info.registers_access_mapper())
 
         self._asm_parser = X86Parser()
         self._translator = X86Translator()
 
     def test_add(self):
         asm_instrs  = self._asm_parser.parse("add eax, ebx")
+
+        self.__set_address(0xdeadbeef, [asm_instrs])
+
         reil_instrs = self._translator.translate(asm_instrs)
 
         regs_initial = {
@@ -121,15 +124,21 @@ class ReilEmulatorTests(unittest.TestCase):
         # 0x08048070 : 83 fb 00         cmp ebx,0x0
         # 0x08048073 : 75 f5            jne 0x0804806a
 
-        asm_instrs  = [(0x08048060, "mov eax,0x0", 5)]
-        asm_instrs += [(0x08048065, "mov ebx,0xa", 5)]
-        asm_instrs += [(0x0804806a, "add eax,0x1", 3)]
-        asm_instrs += [(0x0804806d, "sub ebx,0x1", 3)]
-        asm_instrs += [(0x08048070, "cmp ebx,0x0", 3)]
-        asm_instrs += [(0x08048073, "jne 0x0804806a", 2)]
+        asm_instrs_str  = [(0x08048060, "mov eax,0x0", 5)]
+        asm_instrs_str += [(0x08048065, "mov ebx,0xa", 5)]
+        asm_instrs_str += [(0x0804806a, "add eax,0x1", 3)]
+        asm_instrs_str += [(0x0804806d, "sub ebx,0x1", 3)]
+        asm_instrs_str += [(0x08048070, "cmp ebx,0x0", 3)]
+        asm_instrs_str += [(0x08048073, "jne 0x0804806a", 2)]
 
-        asm_instrs = [self._asm_parser.parse(asm, addr, size)
-                        for addr, asm, size in asm_instrs]
+        asm_instrs = []
+
+        for addr, asm, size in asm_instrs_str:
+            asm_instr = self._asm_parser.parse(asm)
+            asm_instr.address = addr
+            asm_instr.size = size
+
+            asm_instrs.append(asm_instr)
 
         reil_instrs = [self._translator.translate(instr)
                         for instr in asm_instrs]
@@ -148,6 +157,8 @@ class ReilEmulatorTests(unittest.TestCase):
         asm_instrs += [self._asm_parser.parse("mov al, 0x12")]
         asm_instrs += [self._asm_parser.parse("mov ah, 0x34")]
 
+        self.__set_address(0xdeadbeef, asm_instrs)
+
         reil_instrs  = self._translator.translate(asm_instrs[0])
         reil_instrs += self._translator.translate(asm_instrs[1])
         reil_instrs += self._translator.translate(asm_instrs[2])
@@ -160,6 +171,12 @@ class ReilEmulatorTests(unittest.TestCase):
 
         self.assertEqual(regs_final["eax"], 0xdead3412)
 
+    def __set_address(self, address, asm_instrs):
+        addr = address
+
+        for asm_instr in asm_instrs:
+            asm_instr.address = addr
+            addr += 1
 
 class ReilParserTests(unittest.TestCase):
 

@@ -99,6 +99,9 @@ class ReilMemory(object):
         for i in xrange(0, size / 8):
             value = self.read_byte(address + i) << (i * 8) | value
 
+		# Debug...
+        # print "Memory Read: ", hex(address), size, hex(value)
+
         return value
 
     def try_read(self, address, size):
@@ -143,6 +146,9 @@ class ReilMemory(object):
     def write(self, address, size, value):
         """Write arbitrary size content to memory.
         """
+		# Debug...
+        # print "Memory Write: ", hex(address), size, hex(value)
+
         for i in xrange(0, size / 8):
             self.write_byte(address + i, (value >> (i * 8)) & 0xff)
 
@@ -393,7 +399,7 @@ class ReilEmulator(object):
         """
         assert register.size
 
-        base_reg_name, value_filter, shift = self._reg_access_mapper.get(register.name, (register.name, 2**register.size - 1, 0))
+        base_reg_name, offset = self._reg_access_mapper.get(register.name, (register.name, 0))
 
         if base_reg_name not in self._regs:
             self._regs[base_reg_name] = random.randint(0, 2**self._arch_regs_size[base_reg_name] - 1)
@@ -403,21 +409,33 @@ class ReilEmulator(object):
         if keep_track and register.name in self._arch_regs:
             self._regs_read.add(register.name)
 
-        return (reg_value & value_filter) >> shift
+        return self._extract_value(reg_value, offset, register.size)
 
     def _set_reg_value(self, register, value, keep_track=False):
         """Set register value.
         """
         assert register.size
 
-        base_reg_name, value_filter, shift = self._reg_access_mapper.get(register.name, (register.name, 2**register.size - 1, 0))
+        base_reg_name, offset = self._reg_access_mapper.get(register.name, (register.name, 0))
 
-        reg_value  = self._regs.get(base_reg_name, random.randint(0, 2**register.size - 1))
+        reg_value = self._regs.get(base_reg_name, random.randint(0, 2**register.size - 1))
 
-        self._regs[base_reg_name] = (reg_value & ~value_filter) | ((value << shift) & value_filter)
+        self._regs[base_reg_name] = self._insert_value(reg_value, value, offset, register.size)
 
         if keep_track and register.name in self._arch_regs:
             self._regs_written.add(register.name)
+
+		# Debug...
+        # print register, hex(value), base_reg_name, hex(self._regs[base_reg_name])
+
+    def _extract_value(self, main_value, offset, size):
+        return (main_value >> offset) & 2**size-1
+
+    def _insert_value(self, main_value, value_to_insert, offset, size):
+        main_value &= ~((2**size-1) << offset)
+        main_value |= (value_to_insert & 2**size-1) << offset
+
+        return main_value
 
     # Arithmetic instructions
     # ======================================================================== #
