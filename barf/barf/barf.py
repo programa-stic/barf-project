@@ -17,6 +17,13 @@ from analysis.gadget import GadgetVerifier
 from arch.x86.x86base import X86ArchitectureInformation
 from arch.x86.x86disassembler import X86Disassembler
 from arch.x86.x86translator import X86Translator
+
+from arch.arm.armbase import ArmArchitectureInformation
+from arch.arm.armdisassembler import ArmDisassembler
+from arch.arm.armtranslator import ArmTranslator
+
+from arch.arm.armbase import ARCH_ARM_MODE_32
+
 from core.bi import BinaryFile
 from core.reil import ReilEmulator
 from core.smt.smtlibv2 import Z3Solver
@@ -63,26 +70,38 @@ class BARF(object):
 
         if self.binary.architecture == arch.ARCH_X86:
             self._setup_x86_arch()
+        else:
+            self._setup_arm_arch() # TODO: add arch in the binary file class
+
+
+    def _setup_arm_arch(self):
+        """Set up ARM architecture.
+        """
+        self.arch_info = ArmArchitectureInformation(ARCH_ARM_MODE_32)
+        self.disassembler = ArmDisassembler(architecture_mode=ARCH_ARM_MODE_32)
+        self.ir_translator = ArmTranslator(architecture_mode=ARCH_ARM_MODE_32)
 
     def _setup_x86_arch(self):
         """Set up x86 architecture.
         """
         # set up architecture information
         self.arch_info = X86ArchitectureInformation(self.binary.architecture_mode)
+        self.disassembler = X86Disassembler(architecture_mode=self.arch_info.architecture_mode)
+        self.ir_translator = X86Translator(architecture_mode=self.arch_info.architecture_mode)
 
     def _setup_core_modules(self):
         """Set up core modules.
         """
-        self.disassembler = None
+#         self.disassembler = None
         self.ir_emulator = None
-        self.ir_translator = None
+#         self.ir_translator = None
         self.smt_solver = None
         self.smt_translator = None
 
         if self.arch_info:
-            self.disassembler = X86Disassembler(architecture_mode=self.arch_info.architecture_mode)
+            
             self.ir_emulator = ReilEmulator(self.arch_info.address_size)
-            self.ir_translator = X86Translator(architecture_mode=self.arch_info.architecture_mode)
+            
 
             if SMT_SOLVER == "Z3":
                 self.smt_solver = Z3Solver()

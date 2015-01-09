@@ -5,6 +5,11 @@ ARCH_X86 = 0
 ARCH_X86_MODE_32 = 0
 ARCH_X86_MODE_64 = 1
 
+# ARM architecture definition
+ARCH_ARM = 1
+ARCH_ARM_MODE_32 = 0
+ARCH_ARM_MODE_64 = 1
+
 class ArchitectureInformation(object):
 
     def __init__(self):
