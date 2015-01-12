@@ -22,6 +22,7 @@ solver:
 (assert (= t2_0 (bvadd t1_0 t2_0)))
 
 """
+import logging
 import traceback
 
 import barf.core.smt.smtlibv2 as smtlibv2
@@ -30,6 +31,8 @@ from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
 from barf.core.reil.reil import ReilRegisterOperand
 from barf.utils.utils import VariableNamer
+
+logger = logging.getLogger(__name__)
 
 class SmtTranslator(object):
 
@@ -55,6 +58,9 @@ class SmtTranslator(object):
         # A variable name mapper maps variable names to its current
         # 'version' of the variable, e.i., 'eax' -> 'eax_3'
         self._var_name_mappers = {}
+
+        self._arch_regs_size = {}
+        self._reg_access_mapper = {}
 
         # Intructions translators (from REIL to SMT expressions)
         self._instr_translators = {
@@ -89,9 +95,6 @@ class SmtTranslator(object):
             ReilMnemonic.RET : self._translate_ret,
         }
 
-        self._arch_regs_size = {}
-        self._reg_access_mapper = {}
-
     def translate(self, instr):
         """Return the SMT representation of a REIL instruction.
         """
@@ -99,11 +102,12 @@ class SmtTranslator(object):
             translator = self._instr_translators[instr.mnemonic]
 
             return translator(*instr.operands)
-        except Exception as reason:
-            print "[E] SMT Translator error : '%s' (%s)" % (instr, reason)
-            print ""
-            print traceback.format_exc()
-            raise Exception(reason)
+        except:
+            error_msg = "Failed to translate instruction: %s"
+
+            logger.error(error_msg, instr, exc_info=True)
+
+            raise
 
     def get_init_name(self, name):
         """Get initial name of symbol.
@@ -149,11 +153,6 @@ class SmtTranslator(object):
         """
         if name not in self._var_name_mappers:
             self._var_name_mappers[name] = VariableNamer(name)
-
-    def _not_implemented(self, oprnd1, oprnd2, oprnd3):
-        """Raise exception for not implemented translator.
-        """
-        raise NotImplementedError("Not Implemented")
 
     def _get_var_name(self, name, fresh=False):
         """Get variable name.
