@@ -292,28 +292,12 @@ class ReilOperand(object):
 
     __slots__ = [
         '_size',
-        '_tag',
     ]
 
     def __init__(self, size):
 
         # Size of the operand, in bits.
         self._size = size
-
-        # The tag attribute is used for instruction translation. It is
-        # set by ReilParser and used at the moment of a translation
-        # instantiation. For more detail, see arch/x86/x86translator.py
-        self._tag = None
-
-    def __eq__(self, other):
-        """Return self == other.
-        """
-        return type(other) is type(self) and self._size == other._size
-
-    def __ne__(self, other):
-        """Return self != other.
-        """
-        return not self.__eq__(other)
 
     @property
     def size(self):
@@ -327,17 +311,12 @@ class ReilOperand(object):
         """
         self._size = value
 
-    @property
-    def tag(self):
-        """Get operand tag.
-        """
-        return self._tag
+    def __eq__(self, other):
+        return  type(other) is type(self) and \
+                self._size == other._size
 
-    @tag.setter
-    def tag(self, value):
-        """Set operand tag.
-        """
-        self._tag = value
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class ReilImmediateOperand(ReilOperand):
@@ -352,60 +331,31 @@ class ReilImmediateOperand(ReilOperand):
     def __init__(self, immediate, size=None):
         super(ReilImmediateOperand, self).__init__(size)
 
-        if type(immediate) != int and type(immediate) != long:
-            raise Exception("Invalid type : %s" % type(immediate))
+        assert type(immediate) in [int, long], "Invalid immediate value type."
 
-        # Immediate value in two's complement representation.
-        if self._size:
-            self._immediate = (immediate if immediate >= 0 else 2**self._size -(-immediate))
-        else:
-            self._immediate = (immediate if immediate >= 0 else 2**32 -(-immediate))
+        self._immediate = immediate
 
     @property
     def immediate(self):
         """Get immediate.
         """
-        if self._size:
-            rv = self._immediate & (2**self._size-1)
-        else:
-            rv = self._immediate & (2**32-1)
+        if not self._size:
+            raise Exception("Operand size missing.")
 
-        return rv
-
-    @property
-    def size(self):
-        """Get operand size.
-        """
-        return self._size
-
-    @size.setter
-    def size(self, value):
-        """Set operand size.
-        """
-        self._size = value
-
-    @immediate.setter
-    def immediate(self, value):
-        """Set immediate.
-        """
-        self._immediate = value
+        return self._immediate & 2**self._size-1
 
     def __str__(self):
-        """Return string representation of the operand.
-        """
-        if self._size:
-            rv = hex(self._immediate & (2**self._size-1))
-        else:
-            rv = hex(self._immediate & (2**32-1))
+        if not self._size:
+            raise Exception("Operand size missing.")
 
-        return rv if rv[-1] != 'L' else rv[:-1]
+        string = hex(self._immediate & 2**self._size-1)
+
+        return string[:-1] if string[-1] == 'L' else string
 
     def __eq__(self, other):
-        """Return self == other.
-        """
-        return type(other) is type(self) and \
-            self._size == other._size and \
-            self._immediate == other._immediate
+        return  type(other) is type(self) and \
+                self._size == other._size and \
+                self._immediate == other._immediate
 
 
 class ReilRegisterOperand(ReilOperand):
@@ -429,23 +379,13 @@ class ReilRegisterOperand(ReilOperand):
         """
         return self._name
 
-    @name.setter
-    def name(self, value):
-        """Set IR register operand name.
-        """
-        self._name = value
-
     def __str__(self):
-        """Return string representation of the operand.
-        """
         return self._name
 
     def __eq__(self, other):
-        """Return self == other.
-        """
-        return type(other) is type(self) and \
-            self._size == other._size and \
-            self._name == other._name
+        return  type(other) is type(self) and \
+                self._size == other._size and \
+                self._name == other._name
 
 
 class ReilEmptyOperand(ReilRegisterOperand):
@@ -630,10 +570,8 @@ class DualInstruction(object):
         return self._ir_instrs
 
     def __eq__(self, other):
-        return self.address == other.address and \
-            self.asm_instr == other.asm_instr
+        return  self.address == other.address and \
+                self.asm_instr == other.asm_instr
 
     def __ne__(self, other):
-        """Return self != other.
-        """
         return not self.__eq__(other)
