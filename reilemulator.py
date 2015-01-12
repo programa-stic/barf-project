@@ -217,6 +217,13 @@ class ReilEmulator(object):
         # Instruction Pointer.
         self._ip = None
 
+        # Set of read and write registers during execution.
+        self._regs_written = set()
+        self._regs_read = set()
+
+        self._arch_regs = []
+        self._arch_regs_size = {}
+
         # Instruction implementation.
         self._executors = {
             # Arithmetic Instructions
@@ -250,17 +257,14 @@ class ReilEmulator(object):
             ReilMnemonic.RET : self._execute_ret,
         }
 
-        self._regs_written = set()
-        self._regs_read = set()
-
     def execute_lite(self, instructions, context=None):
         """Execute a list of instructions. It does not support loops.
         """
-        if context:
-            self._regs = context.copy()
-
         if verbose:
             print "[+] Executing instructions..."
+
+        if context:
+            self._regs = context.copy()
 
         for index, instr in enumerate(instructions):
             if verbose:
@@ -328,46 +332,52 @@ class ReilEmulator(object):
     def reset(self):
         """Reset emulator. All registers and memory are reset.
         """
-        self._mem = ReilMemory(self._address_size)
-        self._ip = None
         self._regs = {}
+
+        self._mem = ReilMemory(self._address_size)
+
+        self._ip = None
 
         self._regs_written = set()
         self._regs_read = set()
 
     @property
     def registers(self):
-        # return self._regs.copy()
+        """Return registers.
+        """
         return self._regs
 
     @property
     def memory(self):
-        # return self._mem.copy()
+        """Return memory.
+        """
         return self._mem
 
     @property
     def read_registers(self):
-        # return self._regs_read.copy()
+        """Return read (native) registers.
+        """
         return self._regs_read
 
     @property
     def written_registers(self):
-        # return self._regs_written.copy()
+        """Return write (native) registers.
+        """
         return self._regs_written
 
     # ====================================================================== #
     def set_arch_registers(self, registers):
-        """Set registers.
+        """Set native registers.
         """
         self._arch_regs = registers
 
     def set_arch_registers_size(self, registers_size):
-        """Set registers.
+        """Set native registers size.
         """
         self._arch_regs_size = registers_size
 
     def set_reg_access_mapper(self, reg_access_mapper):
-        """Set register access mapper.
+        """Set native register access mapper.
 
         This is necessary as some architecture has register alias. For
         example, in Intel x86 (32 bits), *ax* refers to the lower half
