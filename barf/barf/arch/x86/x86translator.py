@@ -1233,7 +1233,7 @@ class X86Translator(object):
 
         oprnd = tb.read(instruction.operands[0])
         count_tmp = tb.read(instruction.operands[1])
-        size = tb.immediate(instruction.operands[1].size, oprnd.size)
+        size = tb.immediate(instruction.operands[0].size, oprnd.size)
 
         if self._arch_mode == ARCH_X86_MODE_32:
             count_mask = tb.immediate(0x1f, oprnd.size)
@@ -1298,7 +1298,7 @@ class X86Translator(object):
 
         oprnd = tb.read(instruction.operands[0])
         count_tmp = tb.read(instruction.operands[1])
-        size = tb.immediate(instruction.operands[1].size, oprnd.size)
+        size = tb.immediate(instruction.operands[0].size, oprnd.size)
 
         if self._arch_mode == ARCH_X86_MODE_32:
             count_mask = tb.immediate(0x1f, oprnd.size)
@@ -1358,6 +1358,248 @@ class X86Translator(object):
         # undef of
         tb.add(undef_of_lbl)
         self._undefine_flag(tb, self._flags["of"])
+
+        tb.write(instruction.operands[0], result)
+
+    def _translate_rcl(self, tb, instruction):
+        # Flags Affected
+        # The CF flag contains the value of the bit shifted into it.
+        # The OF flag is affected only for single-bit rotates (see
+        # "Description" above); it is undefined for multi-bit rotates.
+        # The SF, ZF, AF, and PF flags are not affected.
+
+        oprnd = tb.read(instruction.operands[0])
+        count_tmp = tb.read(instruction.operands[1])
+        size = tb.immediate(instruction.operands[0].size, oprnd.size)
+
+        tmp_cf_ext = tb.temporal(oprnd.size * 2)
+        tmp_cf_ext_1 = tb.temporal(oprnd.size * 2)
+
+        oprnd_ext = tb.temporal(oprnd.size * 2)
+        oprnd_ext_1 = tb.temporal(oprnd.size * 2)
+        oprnd_ext_tmp = tb.temporal(oprnd.size * 2)
+        oprnd_ext_tmp_l = tb.temporal(oprnd.size)
+        oprnd_ext_tmp_h = tb.temporal(oprnd.size)
+
+        result = tb.temporal(oprnd.size)
+        result_msb = tb.temporal(1)
+
+        tmp1 = tb.temporal(1)
+        tmp1_zero = tb.temporal(1)
+
+        imm1 = tb.immediate(1, oprnd.size)
+        imm2 = tb.immediate(-(oprnd.size+1), oprnd.size * 2)
+        imm3 = tb.immediate(-(oprnd.size + 1), oprnd.size)
+
+        imm4 = tb.immediate(oprnd.size, oprnd.size * 2)
+
+        if oprnd.size == 8:
+            count_mask = tb.immediate(0x1f, oprnd.size)
+            tmp0 = tb.temporal(oprnd.size)
+            count = tb.temporal(oprnd.size)
+            temp_count = tb.temporal(oprnd.size)
+            mod_amount = tb.immediate(9, oprnd.size)
+
+            tb.add(self._builder.gen_str(count_tmp, count))
+            tb.add(self._builder.gen_and(count, count_mask, tmp0))
+            tb.add(self._builder.gen_mod(tmp0, mod_amount, temp_count))
+        elif oprnd.size == 16:
+            count_mask = tb.immediate(0x1f, oprnd.size)
+            tmp0 = tb.temporal(oprnd.size)
+            count = tb.temporal(oprnd.size)
+            temp_count = tb.temporal(oprnd.size)
+            mod_amount = tb.immediate(17, oprnd.size)
+
+            tb.add(self._builder.gen_str(count_tmp, count))
+            tb.add(self._builder.gen_and(count, count_mask, tmp0))
+            tb.add(self._builder.gen_mod(tmp0, mod_amount, temp_count))
+        elif oprnd.size == 32:
+            count_mask = tb.immediate(0x1f, oprnd.size)
+            tmp0 = tb.temporal(oprnd.size)
+            count = tb.temporal(oprnd.size)
+            temp_count = tb.temporal(oprnd.size)
+
+            tb.add(self._builder.gen_str(count_tmp, count))
+            tb.add(self._builder.gen_and(count, count_mask, tmp0))
+            tb.add(self._builder.gen_str(tmp0, temp_count))
+        elif oprnd.size == 64:
+            count_mask = tb.immediate(0x3f, oprnd.size)
+            tmp0 = tb.temporal(oprnd.size)
+            count = tb.temporal(oprnd.size)
+            temp_count = tb.temporal(oprnd.size)
+
+            tb.add(self._builder.gen_str(count_tmp, count))
+            tb.add(self._builder.gen_and(count, count_mask, tmp0))
+            tb.add(self._builder.gen_str(tmp0, temp_count))
+        else:
+            raise Exception("Invalid operand size: %d", oprnd.size)
+
+        tb.add(self._builder.gen_str(oprnd, oprnd_ext_1)) # extend to the double of its size
+
+        # insert cf at bit #size
+        tb.add(self._builder.gen_str(self._flags["cf"], tmp_cf_ext))
+        tb.add(self._builder.gen_bsh(tmp_cf_ext, imm4, tmp_cf_ext_1))
+        tb.add(self._builder.gen_or(tmp_cf_ext_1, oprnd_ext_1, oprnd_ext))
+
+        tb.add(self._builder.gen_bsh(oprnd_ext, temp_count, oprnd_ext_tmp))
+        tb.add(self._builder.gen_bsh(oprnd_ext_tmp, imm2, oprnd_ext_tmp_h))
+        tb.add(self._builder.gen_str(oprnd_ext_tmp, oprnd_ext_tmp_l))
+        tb.add(self._builder.gen_or(oprnd_ext_tmp_l, oprnd_ext_tmp_h, result))
+
+        # compute carry flag
+        tb.add(self._builder.gen_str(result, self._flags["cf"]))
+
+        # compute overflow flag
+        undef_of_lbl = tb.label('undef_of_lbl')
+
+        tb.add(self._builder.gen_sub(count, imm1, tmp1))
+        tb.add(self._builder.gen_bisz(tmp1, tmp1_zero))
+        tb.add(self._builder.gen_jcc(tmp1_zero, undef_of_lbl))
+
+        # compute
+        tb.add(self._builder.gen_bsh(result, imm3, result_msb))
+        tb.add(self._builder.gen_xor(result_msb, self._flags["cf"], self._flags["of"]))
+
+        # undef of
+        tb.add(undef_of_lbl)
+        self._undefine_flag(tb, self._flags["of"])
+
+        tb.write(instruction.operands[0], result)
+
+    def _translate_rcr(self, tb, instruction):
+        # Flags Affected
+        # The CF flag contains the value of the bit shifted into it.
+        # The OF flag is affected only for single-bit rotates (see
+        # "Description" above); it is undefined for multi-bit rotates.
+        # The SF, ZF, AF, and PF flags are not affected.
+
+        # XXX: FIX!
+
+        oprnd = tb.read(instruction.operands[0])
+        count_tmp = tb.read(instruction.operands[1])
+        size = tb.immediate(instruction.operands[0].size, oprnd.size)
+        size_plus_one = tb.immediate(instruction.operands[0].size+1, oprnd.size)
+        size_m_one = tb.immediate(instruction.operands[0].size-1, oprnd.size)
+
+        print oprnd.size
+
+        # if self._arch_mode == ARCH_X86_MODE_32:
+        #     count_mask = tb.immediate(0x1f, oprnd.size)
+        # elif self._arch_mode == ARCH_X86_MODE_64:
+        #     count_mask = tb.immediate(0x3f, oprnd.size)
+
+        tmp0 = tb.temporal(oprnd.size)
+        tmp0_1 = tb.temporal(oprnd.size)
+        count = tb.temporal(oprnd.size)
+        tmp2 = tb.temporal(oprnd.size)
+        temp_count = tb.temporal(oprnd.size)
+        zero = tb.immediate(0, oprnd.size)
+
+        tmp_cf_ext = tb.temporal(oprnd.size * 2)
+        tmp_cf_ext_1 = tb.temporal(oprnd.size * 2)
+
+        oprnd_ext = tb.temporal(oprnd.size * 2)
+        oprnd_ext_1 = tb.temporal(oprnd.size * 2)
+        oprnd_ext_2 = tb.temporal(oprnd.size * 2)
+        oprnd_ext_tmp = tb.temporal(oprnd.size * 2)
+        oprnd_ext_tmp_l = tb.temporal(oprnd.size)
+        oprnd_ext_tmp_h = tb.temporal(oprnd.size)
+
+        result = tb.temporal(oprnd.size)
+        result_msb = tb.temporal(1)
+        result_msb_prev = tb.temporal(1)
+
+        tmp1 = tb.temporal(1)
+        tmp1_zero = tb.temporal(1)
+
+        imm1 = tb.immediate(1, oprnd.size)
+        imm2 = tb.immediate(oprnd.size, oprnd.size * 2)
+        imm3 = tb.immediate(-(oprnd.size + 1), oprnd.size)
+        imm4 = tb.immediate(oprnd.size-1, oprnd.size)
+        imm5 = tb.immediate(oprnd.size-2, oprnd.size)
+        imm6 = tb.immediate(1, oprnd.size * 2)
+
+        if oprnd.size == 8:
+            count_mask = tb.immediate(0x1f, oprnd.size)
+            tmp0 = tb.temporal(oprnd.size)
+            count = tb.temporal(oprnd.size)
+            temp_count = tb.temporal(oprnd.size)
+            mod_amount = tb.immediate(9, oprnd.size)
+
+            tb.add(self._builder.gen_str(count_tmp, count))
+            tb.add(self._builder.gen_and(count, count_mask, tmp0_1))
+            tb.add(self._builder.gen_mod(tmp0_1, mod_amount, tmp0))
+        elif oprnd.size == 16:
+            count_mask = tb.immediate(0x1f, oprnd.size)
+            tmp0 = tb.temporal(oprnd.size)
+            count = tb.temporal(oprnd.size)
+            temp_count = tb.temporal(oprnd.size)
+            mod_amount = tb.immediate(17, oprnd.size)
+
+            tb.add(self._builder.gen_str(count_tmp, count))
+            tb.add(self._builder.gen_and(count, count_mask, tmp0_1))
+            tb.add(self._builder.gen_mod(tmp0_1, mod_amount, tmp0))
+        elif oprnd.size == 32:
+            count_mask = tb.immediate(0x1f, oprnd.size)
+            tmp0 = tb.temporal(oprnd.size)
+            count = tb.temporal(oprnd.size)
+            temp_count = tb.temporal(oprnd.size)
+
+            tb.add(self._builder.gen_str(count_tmp, count))
+            tb.add(self._builder.gen_and(count, count_mask, tmp0))
+            # tb.add(self._builder.gen_str(tmp0, temp_count))
+        elif oprnd.size == 64:
+            count_mask = tb.immediate(0x3f, oprnd.size)
+            tmp0 = tb.temporal(oprnd.size)
+            count = tb.temporal(oprnd.size)
+            temp_count = tb.temporal(oprnd.size)
+
+            tb.add(self._builder.gen_str(count_tmp, count))
+            tb.add(self._builder.gen_and(count, count_mask, tmp0))
+            # tb.add(self._builder.gen_str(tmp0, temp_count))
+        else:
+            raise Exception("Invalid operand size: %d", oprnd.size)
+
+        one = tb.immediate(1, oprnd.size *2)
+
+        tb.add(self._builder.gen_sub(zero, tmp0, temp_count))
+
+        tb.add(self._builder.gen_bsh(oprnd, imm4, oprnd_ext_1)) # shift left
+
+        # insert cf at bit #size
+        tb.add(self._builder.gen_str(self._flags["cf"], tmp_cf_ext))
+        tb.add(self._builder.gen_bsh(tmp_cf_ext, imm4, tmp_cf_ext_1))
+        tb.add(self._builder.gen_or(tmp_cf_ext_1, oprnd_ext_1, oprnd_ext))
+
+        # tb.add(self._builder.gen_bsh(oprnd_ext_2, size, oprnd_ext)) # shift left
+
+        tb.add(self._builder.gen_bsh(oprnd_ext, temp_count, oprnd_ext_tmp))
+        tb.add(self._builder.gen_bsh(oprnd_ext_tmp, imm2, oprnd_ext_tmp_h))
+        tb.add(self._builder.gen_str(oprnd_ext_tmp, oprnd_ext_tmp_l))
+        tb.add(self._builder.gen_or(oprnd_ext_tmp_l, oprnd_ext_tmp_h, result))
+
+        # compute carry flag
+        cf_old = tb.temporal(1)
+        tb.add(self._builder.gen_str(self._flags["cf"], cf_old))
+
+        tb.add(self._builder.gen_bsh(oprnd_ext_tmp_l, imm5, self._flags["cf"]))
+
+        # compute overflow flag
+        undef_of_lbl = tb.label('undef_of_lbl')
+
+        tb.add(self._builder.gen_sub(count, imm1, tmp1))
+        tb.add(self._builder.gen_bisz(tmp1, tmp1_zero))
+        tb.add(self._builder.gen_jcc(tmp1_zero, undef_of_lbl))
+
+        # compute
+        tb.add(self._builder.gen_bsh(oprnd, imm4, result_msb))
+        tb.add(self._builder.gen_xor(result_msb, cf_old, self._flags["of"]))
+
+        # undef of
+        tb.add(undef_of_lbl)
+        self._undefine_flag(tb, self._flags["of"])
+
+
 
         tb.write(instruction.operands[0], result)
 

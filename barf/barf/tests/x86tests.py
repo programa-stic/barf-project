@@ -1041,6 +1041,64 @@ class X86TranslationTests(unittest.TestCase):
             reil_ctx_out
         ))
 
+    def test_rcl(self):
+        asm = ["rcl eax, 8"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        # set carry flag
+        ctx_init['rflags'] = ctx_init['rflags'] | 0x1
+
+        x86_rv, x86_ctx_out = pyasmjit.execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        self.assertTrue(self.__compare_contexts(
+            ctx_init,
+            x86_ctx_out,
+            reil_ctx_out
+        ))
+
+    def test_rcr(self):
+        asm = ["rcr eax, 1"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        # set carry flag
+        ctx_init['rflags'] = ctx_init['rflags'] | 0x1
+
+        x86_rv, x86_ctx_out = pyasmjit.execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        self.assertTrue(self.__compare_contexts(
+            ctx_init,
+            x86_ctx_out,
+            reil_ctx_out
+        ))
+
     def __init_context(self):
         return {
             'rax'    : 0xa,
