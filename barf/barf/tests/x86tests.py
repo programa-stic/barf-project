@@ -1071,7 +1071,7 @@ class X86TranslationTests(unittest.TestCase):
         ))
 
     def test_rcr(self):
-        asm = ["rcr eax, 1"]
+        asm = ["rcr eax, 8"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
 

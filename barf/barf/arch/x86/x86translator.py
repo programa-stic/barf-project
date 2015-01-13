@@ -1473,13 +1473,14 @@ class X86Translator(object):
         # "Description" above); it is undefined for multi-bit rotates.
         # The SF, ZF, AF, and PF flags are not affected.
 
-        # XXX: FIX!
+        # XXX: FIX OF flag
 
         oprnd = tb.read(instruction.operands[0])
         count_tmp = tb.read(instruction.operands[1])
         size = tb.immediate(instruction.operands[0].size, oprnd.size)
         size_plus_one = tb.immediate(instruction.operands[0].size+1, oprnd.size)
         size_m_one = tb.immediate(instruction.operands[0].size-1, oprnd.size)
+        msize = tb.immediate(-instruction.operands[0].size, oprnd.size)
 
         print oprnd.size
 
@@ -1504,6 +1505,7 @@ class X86Translator(object):
         oprnd_ext_tmp = tb.temporal(oprnd.size * 2)
         oprnd_ext_tmp_l = tb.temporal(oprnd.size)
         oprnd_ext_tmp_h = tb.temporal(oprnd.size)
+        oprnd_ext_tmp_h_1 = tb.temporal(oprnd.size)
 
         result = tb.temporal(oprnd.size)
         result_msb = tb.temporal(1)
@@ -1518,6 +1520,7 @@ class X86Translator(object):
         imm4 = tb.immediate(oprnd.size-1, oprnd.size)
         imm5 = tb.immediate(oprnd.size-2, oprnd.size)
         imm6 = tb.immediate(1, oprnd.size * 2)
+        imm7 = tb.immediate(-(oprnd.size-1), oprnd.size)
 
         if oprnd.size == 8:
             count_mask = tb.immediate(0x1f, oprnd.size)
@@ -1561,28 +1564,33 @@ class X86Translator(object):
             raise Exception("Invalid operand size: %d", oprnd.size)
 
         one = tb.immediate(1, oprnd.size *2)
+        mone = tb.immediate(-1, oprnd.size *2)
 
         tb.add(self._builder.gen_sub(zero, tmp0, temp_count))
 
-        tb.add(self._builder.gen_bsh(oprnd, imm4, oprnd_ext_1)) # shift left
+        tb.add(self._builder.gen_bsh(oprnd, one, oprnd_ext_1)) # shift left
+
+        cf_old = tb.temporal(1)
+        tb.add(self._builder.gen_str(self._flags["cf"], cf_old))
 
         # insert cf at bit #size
         tb.add(self._builder.gen_str(self._flags["cf"], tmp_cf_ext))
-        tb.add(self._builder.gen_bsh(tmp_cf_ext, imm4, tmp_cf_ext_1))
-        tb.add(self._builder.gen_or(tmp_cf_ext_1, oprnd_ext_1, oprnd_ext))
+        tb.add(self._builder.gen_or(tmp_cf_ext, oprnd_ext_1, oprnd_ext_2))
 
-        # tb.add(self._builder.gen_bsh(oprnd_ext_2, size, oprnd_ext)) # shift left
+        tb.add(self._builder.gen_bsh(oprnd_ext_2, size, oprnd_ext)) # shift left
 
         tb.add(self._builder.gen_bsh(oprnd_ext, temp_count, oprnd_ext_tmp))
-        tb.add(self._builder.gen_bsh(oprnd_ext_tmp, imm2, oprnd_ext_tmp_h))
+        tb.add(self._builder.gen_bsh(oprnd_ext_tmp, msize, oprnd_ext_tmp_h_1))
+        tb.add(self._builder.gen_str(oprnd_ext_tmp_h_1, self._flags["cf"]))
+        tb.add(self._builder.gen_bsh(oprnd_ext_tmp_h_1, mone, oprnd_ext_tmp_h))
         tb.add(self._builder.gen_str(oprnd_ext_tmp, oprnd_ext_tmp_l))
         tb.add(self._builder.gen_or(oprnd_ext_tmp_l, oprnd_ext_tmp_h, result))
 
         # compute carry flag
-        cf_old = tb.temporal(1)
-        tb.add(self._builder.gen_str(self._flags["cf"], cf_old))
 
-        tb.add(self._builder.gen_bsh(oprnd_ext_tmp_l, imm5, self._flags["cf"]))
+
+
+        # tb.add(self._builder.gen_bsh(oprnd_ext_tmp_l, imm5, self._flags["cf"]))
 
         # compute overflow flag
         undef_of_lbl = tb.label('undef_of_lbl')
@@ -1592,7 +1600,7 @@ class X86Translator(object):
         tb.add(self._builder.gen_jcc(tmp1_zero, undef_of_lbl))
 
         # compute
-        tb.add(self._builder.gen_bsh(oprnd, imm4, result_msb))
+        tb.add(self._builder.gen_bsh(oprnd, imm7, result_msb))
         tb.add(self._builder.gen_xor(result_msb, cf_old, self._flags["of"]))
 
         # undef of
