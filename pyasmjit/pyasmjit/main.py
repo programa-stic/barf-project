@@ -60,6 +60,11 @@ mov r13, [rdi+14*8]
 mov r14, [rdi+15*8]
 mov r15, [rdi+16*8]
 
+;; Load context (flags)
+push qword [rdi+17*8]
+popfq
+
+;; Load rdi value
 mov rdi, [rdi+ 4*8]
 
 ;; Run code
