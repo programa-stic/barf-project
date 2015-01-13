@@ -239,6 +239,8 @@ class X86Translator(object):
         except:
             self._log_translation_exception(instruction)
 
+            raise
+
         return trans_instrs
 
     def _translate(self, instruction):
@@ -1221,6 +1223,143 @@ class X86Translator(object):
             self._undefine_flag(tb, self._flags["af"])
 
         tb.write(instruction.operands[0], tmp6)
+
+    def _translate_rol(self, tb, instruction):
+        # Flags Affected
+        # The CF flag contains the value of the bit shifted into it.
+        # The OF flag is affected only for single-bit rotates (see
+        # "Description" above); it is undefined for multi-bit rotates.
+        # The SF, ZF, AF, and PF flags are not affected.
+
+        oprnd = tb.read(instruction.operands[0])
+        count_tmp = tb.read(instruction.operands[1])
+        size = tb.immediate(instruction.operands[1].size, oprnd.size)
+
+        if self._arch_mode == ARCH_X86_MODE_32:
+            count_mask = tb.immediate(0x1f, oprnd.size)
+        elif self._arch_mode == ARCH_X86_MODE_64:
+            count_mask = tb.immediate(0x3f, oprnd.size)
+
+        tmp0 = tb.temporal(oprnd.size)
+        count = tb.temporal(oprnd.size)
+        temp_count = tb.temporal(oprnd.size)
+
+        oprnd_ext = tb.temporal(oprnd.size * 2)
+        oprnd_ext_tmp = tb.temporal(oprnd.size * 2)
+        oprnd_ext_tmp_l = tb.temporal(oprnd.size)
+        oprnd_ext_tmp_h = tb.temporal(oprnd.size)
+
+        result = tb.temporal(oprnd.size)
+        result_msb = tb.temporal(1)
+
+        tmp1 = tb.temporal(1)
+        tmp1_zero = tb.temporal(1)
+
+        imm1 = tb.immediate(1, oprnd.size)
+        imm2 = tb.immediate(-oprnd.size, oprnd.size * 2)
+        imm3 = tb.immediate(-(oprnd.size + 1), oprnd.size)
+
+        tb.add(self._builder.gen_str(count_tmp, count))
+        tb.add(self._builder.gen_and(count, count_mask, tmp0))
+        tb.add(self._builder.gen_mod(tmp0, size, temp_count))
+
+        tb.add(self._builder.gen_str(oprnd, oprnd_ext)) # extend to the double of its size
+        tb.add(self._builder.gen_bsh(oprnd_ext, temp_count, oprnd_ext_tmp))
+        tb.add(self._builder.gen_bsh(oprnd_ext_tmp, imm2, oprnd_ext_tmp_h))
+        tb.add(self._builder.gen_str(oprnd_ext_tmp, oprnd_ext_tmp_l))
+        tb.add(self._builder.gen_or(oprnd_ext_tmp_l, oprnd_ext_tmp_h, result))
+
+        # compute carry flag
+        tb.add(self._builder.gen_str(result, self._flags["cf"]))
+
+        # compute overflow flag
+        undef_of_lbl = tb.label('undef_of_lbl')
+
+        tb.add(self._builder.gen_sub(tmp0, imm1, tmp1))
+        tb.add(self._builder.gen_bisz(tmp1, tmp1_zero))
+        tb.add(self._builder.gen_jcc(tmp1_zero, undef_of_lbl))
+
+        # compute
+        tb.add(self._builder.gen_bsh(result, imm3, result_msb))
+        tb.add(self._builder.gen_xor(result_msb, self._flags["cf"], self._flags["of"]))
+
+        # undef of
+        tb.add(undef_of_lbl)
+        self._undefine_flag(tb, self._flags["of"])
+
+        tb.write(instruction.operands[0], result)
+
+    def _translate_ror(self, tb, instruction):
+        # Flags Affected
+        # The CF flag contains the value of the bit shifted into it.
+        # The OF flag is affected only for single-bit rotates (see
+        # "Description" above); it is undefined for multi-bit rotates.
+        # The SF, ZF, AF, and PF flags are not affected.
+
+        oprnd = tb.read(instruction.operands[0])
+        count_tmp = tb.read(instruction.operands[1])
+        size = tb.immediate(instruction.operands[1].size, oprnd.size)
+
+        if self._arch_mode == ARCH_X86_MODE_32:
+            count_mask = tb.immediate(0x1f, oprnd.size)
+        elif self._arch_mode == ARCH_X86_MODE_64:
+            count_mask = tb.immediate(0x3f, oprnd.size)
+
+        tmp0 = tb.temporal(oprnd.size)
+        count = tb.temporal(oprnd.size)
+        tmp2 = tb.temporal(oprnd.size)
+        temp_count = tb.temporal(oprnd.size)
+        zero = tb.immediate(0, oprnd.size)
+
+        oprnd_ext = tb.temporal(oprnd.size * 2)
+        oprnd_ext_tmp = tb.temporal(oprnd.size * 2)
+        oprnd_ext_tmp_l = tb.temporal(oprnd.size)
+        oprnd_ext_tmp_h = tb.temporal(oprnd.size)
+
+        result = tb.temporal(oprnd.size)
+        result_msb = tb.temporal(1)
+        result_msb_prev = tb.temporal(1)
+
+        tmp1 = tb.temporal(1)
+        tmp1_zero = tb.temporal(1)
+
+        imm1 = tb.immediate(1, oprnd.size)
+        imm2 = tb.immediate(-oprnd.size, oprnd.size * 2)
+        imm3 = tb.immediate(-(oprnd.size + 1), oprnd.size)
+        imm4 = tb.immediate(oprnd.size-1, oprnd.size)
+        imm5 = tb.immediate(oprnd.size-2, oprnd.size)
+
+        tb.add(self._builder.gen_str(count_tmp, count))
+        tb.add(self._builder.gen_and(count, count_mask, tmp0))
+        tb.add(self._builder.gen_mod(tmp0, size, tmp2))
+        tb.add(self._builder.gen_sub(zero, tmp2, temp_count))
+
+        tb.add(self._builder.gen_bsh(oprnd, size, oprnd_ext)) # shift left
+        tb.add(self._builder.gen_bsh(oprnd_ext, temp_count, oprnd_ext_tmp))
+        tb.add(self._builder.gen_bsh(oprnd_ext_tmp, imm2, oprnd_ext_tmp_h))
+        tb.add(self._builder.gen_str(oprnd_ext_tmp, oprnd_ext_tmp_l))
+        tb.add(self._builder.gen_or(oprnd_ext_tmp_l, oprnd_ext_tmp_h, result))
+
+        # compute carry flag
+        tb.add(self._builder.gen_bsh(result, imm4, self._flags["cf"]))
+
+        # compute overflow flag
+        undef_of_lbl = tb.label('undef_of_lbl')
+
+        tb.add(self._builder.gen_sub(tmp0, imm1, tmp1))
+        tb.add(self._builder.gen_bisz(tmp1, tmp1_zero))
+        tb.add(self._builder.gen_jcc(tmp1_zero, undef_of_lbl))
+
+        # compute
+        tb.add(self._builder.gen_bsh(result, imm3, result_msb))
+        tb.add(self._builder.gen_bsh(result, imm5, result_msb_prev))
+        tb.add(self._builder.gen_xor(result_msb, result_msb_prev, self._flags["of"]))
+
+        # undef of
+        tb.add(undef_of_lbl)
+        self._undefine_flag(tb, self._flags["of"])
+
+        tb.write(instruction.operands[0], result)
 
 # "Bit and Byte Instructions"
 # ============================================================================ #
