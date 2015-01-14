@@ -64,13 +64,21 @@ def infer_operands_size(operands):
             if isinstance(oprnd, X86ImmediateOperand) and not oprnd.size:
                 oprnd.size = arch_info.architecture_size
 
+def parse_immediate(imm_str):
+    if imm_str.startswith("0x"):
+        immediate = int(imm_str, 16)
+    else:
+        immediate = int(imm_str, 10)
+
+    return immediate
+
 def parse_operand(string, location, tokens):
     """Parse an x86 instruction operand.
     """
     modifier = " ".join(tokens.get("modifier", ""))
 
     if "immediate" in tokens:
-        immediate = int("".join(tokens["immediate"]), 16)
+        immediate = parse_immediate("".join(tokens["immediate"]))
         size = modifier_size.get(modifier, None)
 
         oprnd = X86ImmediateOperand(immediate, size)
