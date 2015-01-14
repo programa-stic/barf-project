@@ -436,7 +436,8 @@ class ReilEmulator(object):
             self._regs_written.add(register.name)
 
 		# Debug...
-        # print register, hex(value), base_reg_name, hex(self._regs[base_reg_name])
+        if verbose:
+            print register, hex(value), base_reg_name, hex(self._regs[base_reg_name])
 
     def _extract_value(self, main_value, offset, size):
         return (main_value >> offset) & 2**size-1
