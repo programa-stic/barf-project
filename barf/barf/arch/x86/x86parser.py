@@ -64,11 +64,11 @@ def infer_operands_size(operands):
             if isinstance(oprnd, X86ImmediateOperand) and not oprnd.size:
                 oprnd.size = arch_info.architecture_size
 
-def parse_immediate(imm_str):
-    if imm_str.startswith("0x"):
-        immediate = int(imm_str, 16)
+def parse_immediate(string):
+    if string.startswith("0x") or string.startswith("-0x"):
+        immediate = int(string, 16)
     else:
-        immediate = int(imm_str, 10)
+        immediate = int(string, 10)
 
     return immediate
 
