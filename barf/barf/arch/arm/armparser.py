@@ -18,6 +18,7 @@ from pyparsing import Suppress
 from pyparsing import Word
 from pyparsing import ZeroOrMore
 from pyparsing import Group
+from pyparsing import LineEnd
 
 from barf.arch import ARCH_ARM_MODE_32
 from barf.arch.arm.armbase import ArmArchitectureInformation
@@ -55,7 +56,9 @@ def process_shifter_operand(tokens):
 
 def process_register(tokens):
     name = tokens["name"]
-    size = arch_info.registers_size[name]
+    # TODO: Add all reg sizes
+#     size = arch_info.registers_size[name]
+    size = 32
     oprnd = ArmRegisterOperand(name, size)
     
     return oprnd
@@ -160,12 +163,21 @@ immediate = Group(Optional(Suppress(hashsign)) + (sign +  Or([hex_num, dec_num])
 
 register = Group(Or([
     Combine(Literal("r") + Word(nums)("reg_num")),
+    Combine(Literal("d") + Word(nums)("reg_num")),
+    Combine(Literal("c") + Word(nums)("reg_num")),
+    Combine(Literal("p") + Word(nums)("reg_num")),
     Literal("sp"),
     Literal("lr"),
     Literal("pc"),
     Literal("fp"),
+    Literal("ip"),
+    Literal("sl"),
+    Literal("sb"),
     Literal("cpsr"),
-])("name"))
+    Literal("fpscr"),
+    Literal("apsr"),
+    Literal("cpsr_fc"),
+])("name") + Optional(exclamation))
 
 shift_type = Or([
     Literal("lsl"),
@@ -240,7 +252,8 @@ mnemonic = Word(alphanums)
 
 instruction = (
     mnemonic("mnemonic") +
-    Optional(ZeroOrMore(operand + Suppress(comma)) + operand)("operands")
+    Optional(ZeroOrMore(operand + Suppress(comma)) + operand)("operands") +
+    LineEnd()
 ).setParseAction(parse_instruction)
 
 class ArmParser(object):
@@ -258,26 +271,26 @@ class ArmParser(object):
         """Parse an ARM instruction.
         """
         # Commented to get the exception trace of a parser error.
-#         try:
-        instr_lower = instr.lower()
-
-        if not instr_lower in self._cache:
-            instr_asm = instruction.parseString(instr_lower)[0]
-
-            self._cache[instr_lower] = instr_asm
-
-        instr_asm = copy.deepcopy(self._cache[instr_lower])
+        try:
+            instr_lower = instr.lower()
+    
+            if not instr_lower in self._cache:
+                instr_asm = instruction.parseString(instr_lower)[0]
+    
+                self._cache[instr_lower] = instr_asm
+    
+            instr_asm = copy.deepcopy(self._cache[instr_lower])
 
             # self._check_instruction(instr_asm)
-#         except Exception as e:
-#             instr_asm = None
-# 
-#             error_msg = "Failed to parse instruction: %s"
-# 
-#             logger.error(error_msg, instr, exc_info=True)
-#             
-#             print("Failed to parse instruction: " + instr)
-#             print(e)
+        except Exception as e:
+            instr_asm = None
+ 
+            error_msg = "Failed to parse instruction: %s"
+ 
+            logger.error(error_msg, instr, exc_info=True)
+             
+            print("Failed to parse instruction: " + instr)
+            print("Exception: " + str(e))
 
         return instr_asm
 

@@ -31,6 +31,9 @@ class ArmArchitectureInformation(ArchitectureInformation):
         ("sp", 32),
         ("lr", 32),
         ("fp", 32),
+        ("ip", 32),
+        ("sl", 32),
+        ("sb", 32),
     ]
 
 
@@ -351,8 +354,8 @@ class ArmRegisterOperand(ArmOperand):
     @property
     def name(self):
         """Get register name."""
-        if not self._size:
-            raise Exception("Operand size missing.")
+#         if not self._size:
+#             raise Exception("Operand size missing.")
 
         return self._name
 
