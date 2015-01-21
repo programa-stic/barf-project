@@ -17,14 +17,19 @@ from pyparsing import Or
 from pyparsing import Suppress
 from pyparsing import Word
 from pyparsing import ZeroOrMore
+from pyparsing import Group
 
 from barf.arch import ARCH_ARM_MODE_32
 from barf.arch.arm.armbase import ArmArchitectureInformation
+from barf.arch.arm.armbase import ArmRegisterListOperand
 from barf.arch.arm.armbase import ArmImmediateOperand
 from barf.arch.arm.armbase import ArmInstruction
 from barf.arch.arm.armbase import ArmMemoryOperand
 from barf.arch.arm.armbase import ArmRegisterOperand
 from barf.arch.arm.armbase import ArmShifterOperand
+from barf.arch.arm.armbase import ARM_MEMORY_INDEX_OFFSET
+from barf.arch.arm.armbase import ARM_MEMORY_INDEX_POST
+from barf.arch.arm.armbase import ARM_MEMORY_INDEX_PRE
 
 logger = logging.getLogger(__name__)
 
@@ -32,39 +37,86 @@ arch_info = None
 
 # Parsing functions
 # ============================================================================ #
+def process_shifter_operand(tokens):
+    
+    base = process_register(tokens["base"])
+    sh_type = tokens["type"]
+    amount = tokens.get("amount", None)
+    
+    if amount:
+        if "imm" in amount:
+            amount = ArmImmediateOperand("".join(amount["imm"]))
+        elif "reg" in amount:
+            amount = process_register(amount["reg"])
+        else:
+            raise Exception("Unknown amount type.")
+        
+    return ArmShifterOperand(base, sh_type, amount)
+
+def process_register(tokens):
+    name = tokens["name"]
+    size = arch_info.registers_size[name]
+    oprnd = ArmRegisterOperand(name, size)
+    
+    return oprnd
+
 def parse_operand(string, location, tokens):
     """Parse an ARM instruction operand.
     """
 
-    if "immediate" in tokens:
-        oprnd = ArmImmediateOperand("".join(tokens["immediate"]))
+    if "immediate_operand" in tokens:
+        oprnd = ArmImmediateOperand("".join(tokens["immediate_operand"]))
 
-    if "register" in tokens:
-        name = tokens["register"]
-        size = arch_info.registers_size[tokens["register"]]
+    if "register_operand" in tokens:
+        oprnd =  process_register(tokens["register_operand"])
 
-        oprnd = ArmRegisterOperand(name, size)
+    if "memory_operand" in tokens:
+        mem_oprnd = tokens["memory_operand"]
 
-    if "memory" in tokens:
-        segment = tokens.get("segment", None)
-        base = tokens.get("base", None)
-        index = tokens.get("index", None)
-        scale = int(tokens.get("scale", "0x1"), 16)
-        displacement = int("".join(tokens.get("displacement", "0x0")), 16)
-
-        oprnd = ArmMemoryOperand(segment, base, index, scale, displacement)
-
-    if "shifter_operand" in tokens:
-        reg_base = tokens.get("reg_base", None)
-        shift_type = tokens.get("shift_type", None)
-        
-        if tokens.get("shift_immediate"):
-            oprnd = ArmShifterOperand(ArmRegisterOperand(reg_base), shift_type, ArmImmediateOperand(tokens.get("shift_immediate").get("value")))
-        elif tokens.get("shift_register"):
-            oprnd = ArmShifterOperand(ArmRegisterOperand(reg_base), shift_type, ArmRegisterOperand(tokens.get("shift_register")))
+        if "offset" in mem_oprnd:
+            index_type = ARM_MEMORY_INDEX_OFFSET
+            mem_oprnd = mem_oprnd["offset"]
+        elif "pre" in mem_oprnd:
+            index_type = ARM_MEMORY_INDEX_PRE
+            mem_oprnd = mem_oprnd["pre"]
+        elif "post" in mem_oprnd:
+            index_type = ARM_MEMORY_INDEX_POST
+            mem_oprnd = mem_oprnd["post"]
         else:
-            oprnd = ArmShifterOperand(ArmRegisterOperand(reg_base), shift_type, None)
+            raise Exception("Unknown index type.")
+            
+        reg_base = process_register(mem_oprnd["base"])
+        displacement = mem_oprnd.get("disp", None)
+        disp_minus = True if mem_oprnd.get("minus") else False
         
+        if displacement:
+            if "shift" in displacement:
+                displacement = process_shifter_operand(displacement["shift"])
+            elif "reg" in displacement:
+                displacement = process_register(displacement["reg"])
+            elif "imm" in displacement:
+                displacement = ArmImmediateOperand("".join(displacement["imm"]))
+            else:
+                raise Exception("Unknown displacement type.")
+
+        oprnd = ArmMemoryOperand(reg_base, index_type, displacement, disp_minus)
+        
+    if "shifter_operand" in tokens:
+        oprnd =  process_shifter_operand(tokens["shifter_operand"])
+    
+    if "register_list_operand" in tokens:
+        parsed_reg_list = tokens["register_list_operand"]
+        reg_list = []
+        for reg_range in parsed_reg_list:
+            start_reg = process_register(reg_range[0])
+            if len(reg_range) > 1:
+                end_reg = process_register(reg_range[1])
+                reg_list.append([start_reg, end_reg])
+            else:
+                reg_list.append([start_reg])
+            
+        oprnd = ArmRegisterListOperand(reg_list)
+
     return oprnd
 
 def parse_instruction(string, location, tokens):
@@ -91,23 +143,29 @@ minus    = Literal("-")
 comma    = Literal(",")
 lbracket = Literal("[")
 rbracket = Literal("]")
+lbrace   = Literal("{")
+rbrace   = Literal("}")
 hashsign = Literal("#")
 exclamation    = Literal("!")
+caret   = Literal("^")
 
 hex_num = Combine(Literal("0x") + Word("0123456789abcdef"))
 dec_num = Word("0123456789")
 
 # Operand Parsing
 # ============================================================================ #
-immediate = Optional(Suppress(hashsign)) + Optional(Or([plus, minus])) +  Or([hex_num, dec_num])("value")
+sign = Optional(Or([plus, minus("minus")]))
 
-register = Or([
-    Combine(Literal("r") + Word(nums)),
+immediate = Group(Optional(Suppress(hashsign)) + (sign +  Or([hex_num, dec_num]))("value"))
+
+register = Group(Or([
+    Combine(Literal("r") + Word(nums)("reg_num")),
     Literal("sp"),
     Literal("lr"),
     Literal("pc"),
+    Literal("fp"),
     Literal("cpsr"),
-])
+])("name"))
 
 shift_type = Or([
     Literal("lsl"),
@@ -117,28 +175,71 @@ shift_type = Or([
     Literal("rrx"),
 ])
 
-shift_amount = Or([immediate("shift_immediate"), register("shift_register")])
+shift_amount = Group(Or([immediate("imm"), register("reg")]))
 
-shifter_operand = register("reg_base")  + Suppress(comma) + shift_type("shift_type") + Optional(shift_amount("shift_amount")) # opcional porque RRX no tiene shift_amount
+shifter_operand = Group(register("base") + Suppress(comma) + shift_type("type") + Optional(shift_amount("amount")))
 
+displacement = Group(Or([immediate("imm"), register("reg"), shifter_operand("shift")]))
 
+offset_memory_operand = Group(
+    Suppress(lbracket) + 
+    register("base") +
+    Optional(
+        Suppress(comma) +
+        sign +
+        displacement("disp")
+    ) +
+    Suppress(rbracket)
+)
 
+pre_indexed_memory_operand = Group(
+    Suppress(lbracket) + 
+    register("base") +
+    Suppress(comma) +
+    sign +
+    displacement("disp") +
+    Suppress(rbracket) + 
+    Suppress(exclamation)
+)
 
-operand = (
-#     Optional(modifier)("modifier") +
-#     Or([immediate("immediate"), register("register"), memory("memory")])
-    Or([immediate("immediate"), register("register"), shifter_operand("shifter_operand")])
-).setParseAction(parse_operand)
+post_indexed_memory_operand = Group(
+    Suppress(lbracket) + 
+    register("base") +
+    Suppress(rbracket) +
+    Suppress(comma) +
+    sign +
+    displacement("disp")
+)
+
+memory_operand = Group(Or([
+    offset_memory_operand("offset"),
+    pre_indexed_memory_operand("pre"),
+    post_indexed_memory_operand("post")
+]))
+
+# TODO: Add ! to multiple load store
+register_range = Group(register("start") + Optional(Suppress(minus) + register("end")))
+
+register_list_operand = Group(
+    Suppress(lbrace) +
+    Optional(ZeroOrMore(register_range + Suppress(comma)) + register_range) +
+    Suppress(rbrace)
+)
+
+operand = (Or([
+    immediate("immediate_operand"),
+    register("register_operand"),
+    shifter_operand("shifter_operand"),
+    memory_operand("memory_operand"),
+    register_list_operand("register_list_operand")
+])).setParseAction(parse_operand)
 
 # Instruction Parsing
 # ============================================================================ #
 mnemonic = Word(alphanums)
 
 instruction = (
-#     Optional(prefix)("prefix") +
     mnemonic("mnemonic") +
-#     Optional(ZeroOrMore(operand + Suppress(comma)) + operand)("operands")
-#     (operand + Suppress(comma) + operand + Suppress(comma) + operand)("operands")
     Optional(ZeroOrMore(operand + Suppress(comma)) + operand)("operands")
 ).setParseAction(parse_instruction)
 

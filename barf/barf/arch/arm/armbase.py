@@ -27,6 +27,10 @@ class ArmArchitectureInformation(ArchitectureInformation):
         ("r14", 32),
         ("r15", 32),
         ("cpsr", 32),
+        ("pc", 32),
+        ("sp", 32),
+        ("lr", 32),
+        ("fp", 32),
     ]
 
 
@@ -369,6 +373,51 @@ class ArmRegisterOperand(ArmOperand):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+class ArmRegisterListOperand(ArmOperand):
+    """Representation of ARM register operand."""
+
+    __slots__ = [
+        '_reg_list',
+        '_size',
+    ]
+
+    def __init__(self, reg_list, size=None):
+        super(ArmRegisterListOperand, self).__init__("")
+
+        self._reg_list = reg_list
+        self._size = size
+
+    @property
+    def reg_list(self):
+        """Get register list."""
+        if not self._size:
+            raise Exception("Operand size missing.")
+
+        return self._reg_list
+
+    def __str__(self):
+#         if not self._size:
+#             raise Exception("Operand size missing.")
+
+        string = "{"
+        for i in range(len(self._reg_list)):
+            if i > 0:
+                string += ", "
+            reg_range = self._reg_list[i]
+            string += str(reg_range[0])
+            if len(reg_range) > 1:
+                string += " - " + str(reg_range[1])
+        string += "}"
+
+        return string
+
+    def __eq__(self, other):
+        return  self._list == other._list and \
+                self.size == other.size
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 class ArmShifterOperand(ArmOperand):
     """Representation of ARM register operand."""
 
@@ -408,103 +457,66 @@ class ArmShifterOperand(ArmOperand):
 
     def __eq__(self, other):
         return  self._base_reg == other._base_reg  and \
-                self._shift_type == other._hift_type  and \
+                self._shift_type == other._shift_type  and \
                 self._shift_amount == other._shift_amount
                 
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
+#TODO: cluster constants
+ARM_MEMORY_INDEX_OFFSET = 0
+ARM_MEMORY_INDEX_PRE = 1
+ARM_MEMORY_INDEX_POST = 2
 
 class ArmMemoryOperand(ArmOperand):
     """Representation of ARM memory operand."""
 
     __slots__ = [
-        '_segment',
-        '_base',
-        '_index',
-        '_index',
-        '_scale',
+        '_base_reg',
+        '_index_type',
         '_displacement',
+        '_disp_minus',
+#         '_size',
     ]
 
-    def __init__(self, segment, base, index, scale, displacement):
+    def __init__(self, base_reg, index_type, displacement, disp_minus = False):
         super(ArmMemoryOperand, self).__init__("")
 
-        self._segment = segment
-        self._base = base
-        self._index = index
-        self._scale = scale
+        self._base_reg = base_reg
+        self._index_type = index_type
         self._displacement = displacement
-
-    @property
-    def segment(self):
-        """Get segment selector register."""
-        return self._segment
-
-    @property
-    def base(self):
-        """Get base register."""
-        return self._base
-
-    @property
-    def index(self):
-        """Get index register."""
-        return self._index
-
-    @property
-    def scale(self):
-        """Get scale value."""
-        return self._scale
-
-    @property
-    def displacement(self):
-        """Get displacement value."""
-        return self._displacement
+        self._disp_minus = disp_minus
+#         self._size = size
 
     def __str__(self):
-        sep = ""
+#         if not self._size:
+#             raise Exception("Operand size missing.")
 
-        string = ""
+        # TODO: encapsulate displacement with sign?
+        disp_str = "-" if self._disp_minus else ""
+        disp_str += str(self._displacement)
 
-        if self._modifier:
-            string = self._modifier + " "
-
-        if self._segment:
-            string += self._segment + ":"
-
-        string += "["
-
-        if self._base:
-            string += self._base
-
-        if self._index:
-            if self._base:
-                string += sep + "+" + sep
-
-            string += self._index
-            string += sep + "*" + sep + str(self._scale)
-
-        if self._displacement != 0:
-            if self._base or self._index:
-                string += sep + "+" + sep
-
-            imm_hex = hex(self._displacement & 2**32-1)
-
-            string += imm_hex[:-1] if imm_hex[-1] == 'L' else imm_hex
-
-        string += "]"
+        string = "[" + str(self._base_reg)
+        
+        if (self._index_type == ARM_MEMORY_INDEX_OFFSET):
+            if self._displacement:
+                string += ", " + disp_str
+            string += "]"
+        elif (self._index_type == ARM_MEMORY_INDEX_PRE):
+            string += ", " + disp_str + "]!"
+        elif (self._index_type == ARM_MEMORY_INDEX_POST):
+            string += "], " + disp_str
+        else:
+            raise Exception("Unknown memory index type.")
 
         return string
 
     def __eq__(self, other):
-        return  self.modifier == other.modifier and \
-                self.size == other.size and \
-                self.segment == other.segment and \
-                self.base == other.base and \
-                self.index == other.index and \
-                self.scale == self.scale and \
-                self.displacement == other.displacement
+        return  self._base_reg == other._base_reg  and \
+                self._index_type == other._index_type  and \
+                self._displacement == other._displacement
+                
 
     def __ne__(self, other):
         return not self.__eq__(other)
