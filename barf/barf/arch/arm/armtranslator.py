@@ -5,9 +5,11 @@ import barf
 from barf.arch import ARCH_ARM_MODE_32
 from barf.arch import ARCH_ARM_MODE_64
 from barf.arch.arm.armbase import ArmArchitectureInformation
+from barf.arch.arm.armbase import ArmShifterOperand
 from barf.arch.arm.armbase import ArmImmediateOperand
 from barf.arch.arm.armbase import ArmMemoryOperand
 from barf.arch.arm.armbase import ArmRegisterOperand
+from barf.arch.arm.armbase import ArmRegisterListOperand
 from barf.core.reil import ReilEmptyOperand
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilInstructionBuilder
@@ -15,6 +17,9 @@ from barf.core.reil import ReilInstruction
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
 from barf.utils.utils import VariableNamer
+from barf.arch.arm.armbase import ARM_MEMORY_INDEX_OFFSET
+from barf.arch.arm.armbase import ARM_MEMORY_INDEX_POST
+from barf.arch.arm.armbase import ARM_MEMORY_INDEX_PRE
 
 FULL_TRANSLATION = 0
 LITE_TRANSLATION = 1
@@ -30,6 +35,7 @@ class Label(object):
         string = self.name + ":"
 
         return string
+
 
 class TranslationBuilder(object):
 
@@ -61,8 +67,6 @@ class TranslationBuilder(object):
         for instr in instrs:
             instr.address = address << 8
 
-        instrs = self._resolve_loops(instrs)
-
         return instrs
 
     def read(self, arm_operand):
@@ -75,16 +79,24 @@ class TranslationBuilder(object):
 
             reil_operand = ReilRegisterOperand(arm_operand.name, arm_operand.size)
 
+        elif isinstance(arm_operand, ArmShifterOperand):
+            
+            reil_operand = self._compute_shifter_operand(arm_operand)
+
         elif isinstance(arm_operand, ArmMemoryOperand):
-
+ 
             addr = self._compute_memory_address(arm_operand)
-
+ 
             reil_operand = self.temporal(arm_operand.size)
-
+ 
             self.add(self._builder.gen_ldm(addr, reil_operand))
-
+            
+        elif isinstance(arm_operand, ArmRegisterListOperand):
+ 
+            reil_operand = self._compute_register_list(arm_operand)
+ 
         else:
-            raise Exception()
+            raise NotImplementedError("Instruction Not Implemented: Unknown operand for read operation.")
 
         return reil_operand
 
@@ -97,83 +109,86 @@ class TranslationBuilder(object):
             self.add(self._builder.gen_str(value, reil_operand))
 
         elif isinstance(arm_operand, ArmMemoryOperand):
-
+ 
             addr = self._compute_memory_address(arm_operand)
-
+ 
             self.add(self._builder.gen_stm(value, addr))
 
         else:
-            raise Exception()
+            raise NotImplementedError("Instruction Not Implemented: Unknown operand for write operation.")
 
-    def _resolve_loops(self, instrs):
-        idx_by_labels = {}
-
-        # Collect labels.
-        curr = 0
-        for index, instr in enumerate(instrs):
-            if isinstance(instr, Label):
-                idx_by_labels[instr.name] = curr
-
-                del instrs[index]
+    def _compute_shifter_operand(self, sh_op):
+        
+        base = ReilRegisterOperand(sh_op.base_reg, sh_op.size)
+        
+        if sh_op.shift_amount:
+            ret = self.temporal(sh_op.size)
+            
+            if isinstance(sh_op.shift_amount, ArmImmediateOperand):
+                sh_am = ReilImmediateOperand(sh_op.shift_amount.immediate, sh_op.size)
+            elif isinstance(sh_op.shift_amount, ArmRegisterOperand):
+                sh_am = ReilRegisterOperand(sh_op.shift_amount.name, sh_op.shift_amount.size)
             else:
-                curr += 1
+                raise NotImplementedError("Instruction Not Implemented: Unknown shift amount type.")
+            
+            if (sh_op.shift_type == 'lsl'):
+                self.add(self._builder.gen_bsh(base, sh_am, ret))
+            else:
+                # TODO: Implement other shift types
+                raise NotImplementedError("Instruction Not Implemented: Shift type.")
+        else:
+            ret = base
 
-        # Resolve instruction addresses and JCC targets.
-        for index, instr in enumerate(instrs):
-            assert isinstance(instr, ReilInstruction)
-
-            instr.address |= index
-
-            if instr.mnemonic == ReilMnemonic.JCC:
-                target = instr.operands[2]
-
-                if isinstance(target, Label):
-                    idx = idx_by_labels[target.name]
-                    address = (instr.address & ~0xff) | idx
-
-                    instr.operands[2] = ReilImmediateOperand(address, 40)
-
-        return instrs
+        return ret
 
     def _compute_memory_address(self, mem_operand):
         """Return operand memory access translation.
         """
-        size = self._arch_info.architecture_size
-
-        addr = None
-
-        if mem_operand.base:
-            addr = ReilRegisterOperand(mem_operand.base, size)
-
-        if mem_operand.index and mem_operand.scale != 0x0:
-            index = ReilRegisterOperand(mem_operand.index, size)
-            scale = ReilImmediateOperand(mem_operand.scale, size)
-            scaled_index = self.temporal(size)
-
-            self.add(self._builder.gen_mul(index, scale, scaled_index))
-
-            if addr:
-                tmp = self.temporal(size)
-
-                self.add(self._builder.gen_add(addr, scaled_index, tmp))
-
-                addr = tmp
+        base = ReilRegisterOperand(mem_operand.base_reg.name, mem_operand.size)
+        
+        if mem_operand.displacement:
+            ret = self.temporal(mem_operand.size)
+            
+            if isinstance(mem_operand.displacement, ArmRegisterOperand):
+                disp = ReilRegisterOperand(mem_operand.displacement.name, mem_operand.size)
+            elif isinstance(mem_operand.displacement, ArmImmediateOperand):
+                disp = ReilImmediateOperand(mem_operand.displacement.immediate, mem_operand.size)
+            elif isinstance(mem_operand.displacement, ArmShifterOperand):
+                disp = self._compute_shifter_operand(mem_operand.displacement)
             else:
-                addr = scaled_index
-
-        if mem_operand.displacement and mem_operand.displacement != 0x0:
-            disp = ReilImmediateOperand(mem_operand.displacement, size)
-
-            if addr:
-                tmp = self.temporal(size)
-
-                self.add(self._builder.gen_add(addr, disp, tmp))
-
-                addr = tmp
+                raise NotImplementedError("Instruction Not Implemented")
+    
+            if mem_operand.disp_minus:
+                self.add(self._builder.gen_sub(base, disp, ret))
             else:
-                addr = disp
+                self.add(self._builder.gen_add(base, disp, ret))
 
-        return addr
+            if mem_operand.index_type == ARM_MEMORY_INDEX_PRE:
+                self.add(self._builder.gen_add(base, disp, base))
+        else:
+            ret = base
+
+        return ret
+
+    def _compute_register_list(self, operand):
+        """Return operand register list.
+        """
+        
+        ret = []
+        for reg_range in operand.reg_list:
+            if len(reg_range) == 1:
+                ret.append(ReilRegisterOperand(reg_range[0].name, reg_range[0].size))
+            else:
+                reg_num = int(reg_range[0][1:]) # Assuming the register is named with one letter + number
+                reg_end = int(reg_range[1][1:])
+                if reg_num > reg_end:
+                    raise NotImplementedError("Instruction Not Implemented: Invalid register range.")
+                while reg_num <= reg_end:
+                    ret.append(ReilRegisterOperand(reg_range[0].name[0] + str(reg_num), reg_range[0].size))
+                    reg_num = reg_num + 1
+        
+        return ret
+
 
 class ArmTranslator(object):
 
@@ -208,15 +223,15 @@ class ArmTranslator(object):
         }
 
         if self._arch_mode == ARCH_ARM_MODE_32:
-            self._sp = ReilRegisterOperand("esp", 32)
-            self._bp = ReilRegisterOperand("ebp", 32)
-            self._ip = ReilRegisterOperand("eip", 32)
+            self._sp = ReilRegisterOperand("sp", 32)
+            self._bp = ReilRegisterOperand("bp", 32)
+            self._ip = ReilRegisterOperand("ip", 32)
 
             self._ws = ReilImmediateOperand(4, 32) # word size
         elif self._arch_mode == ARCH_ARM_MODE_64:
-            self._sp = ReilRegisterOperand("rsp", 64)
-            self._bp = ReilRegisterOperand("rbp", 64)
-            self._ip = ReilRegisterOperand("rip", 64)
+            self._sp = ReilRegisterOperand("sp", 64)
+            self._bp = ReilRegisterOperand("bp", 64)
+            self._ip = ReilRegisterOperand("ip", 64)
 
             self._ws = ReilImmediateOperand(8, 64) # word size
 
@@ -225,13 +240,17 @@ class ArmTranslator(object):
         """
         try:
             trans_instrs = self._translate(instruction)
-        except NotImplementedError:
+        except NotImplementedError as e:
             trans_instrs = [self._builder.gen_unkn()]
 
             self._log_not_supported_instruction(instruction)
-        except:
-            self._log_translation_exception(instruction)
+            print("NotImplementedError: " + str(e))
             print(instruction)
+#         except Exception as e:
+#             trans_instrs = [self._builder.gen_unkn()]
+#             self._log_translation_exception(instruction)
+#             print("Exception: " + str(e))
+#             print(instruction)
 
         return trans_instrs
 
@@ -389,7 +408,72 @@ class ArmTranslator(object):
     def _translate_mov(self, tb, instruction):
         # Flags Affected
         # None.
-
+        
         oprnd1 = tb.read(instruction.operands[1])
 
         tb.write(instruction.operands[0], oprnd1)
+
+
+    # TODO: Add post-indexing (pre is included in compute_memory).
+    def _translate_ldr(self, tb, instruction):
+        
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tb.write(instruction.operands[0], oprnd1)
+    
+    def _translate_str(self, tb, instruction):
+        
+        oprnd0 = tb.read(instruction.operands[0])
+
+        tb.write(instruction.operands[1], oprnd0)
+        
+    def _translate_add(self, tb, instruction):
+        oprnd1 = tb.read(instruction.operands[1])
+        oprnd2 = tb.read(instruction.operands[2])
+
+        tmp = tb.temporal(oprnd1.size)
+
+        tb.add(self._builder.gen_add(oprnd1, oprnd2, tmp))
+
+        tb.write(instruction.operands[0], tmp)
+
+    def _translate_sub(self, tb, instruction):
+        oprnd1 = tb.read(instruction.operands[1])
+        oprnd2 = tb.read(instruction.operands[2])
+
+        tmp = tb.temporal(oprnd1.size)
+
+        tb.add(self._builder.gen_sub(oprnd1, oprnd2, tmp))
+
+        tb.write(instruction.operands[0], tmp)
+
+    def _translate_push(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        oprnd0 = tb.read(instruction.operands[0])
+
+        tmp0 = tb.temporal(self._sp.size)
+
+        # TODO RESPECT REGISTER ORDER
+        oprnd0.reverse() # Assuming the register list was in order
+        for reg in oprnd0:
+            tb.add(self._builder.gen_sub(self._sp, self._ws, tmp0))
+            tb.add(self._builder.gen_str(tmp0, self._sp))
+            tb.add(self._builder.gen_stm(reg, self._sp))
+
+    def _translate_pop(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+#         size = self._arch_info.architecture_size
+
+        oprnd0 = tb.read(instruction.operands[0])
+
+        tmp0 = tb.temporal(self._sp.size)
+
+        # TODO RESPECT REGISTER ORDER
+        for reg in oprnd0:
+            tb.add(self._builder.gen_ldm(self._sp, reg))
+            tb.add(self._builder.gen_add(self._sp, self._ws, tmp0))
+            tb.add(self._builder.gen_str(tmp0, self._sp))

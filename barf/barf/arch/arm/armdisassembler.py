@@ -53,5 +53,11 @@ class ArmDisassembler(Disassembler):
             address, size, mnemonic, op_str = disasm[0]
 
             asm = str(mnemonic + " " + op_str).strip()
+        else:
+            # TODO: Hack to bypass immediate constants embedded in the text section that do not conform to any valid instruction.
+            asm = "nop"
+            size = 32
+            mnemonic = "nop"
+            op_str = ""
 
         return asm, size

@@ -46,19 +46,17 @@ def process_shifter_operand(tokens):
     
     if amount:
         if "imm" in amount:
-            amount = ArmImmediateOperand("".join(amount["imm"]))
+            amount = ArmImmediateOperand("".join(amount["imm"]), arch_info.operand_size)
         elif "reg" in amount:
             amount = process_register(amount["reg"])
         else:
             raise Exception("Unknown amount type.")
         
-    return ArmShifterOperand(base, sh_type, amount)
+    return ArmShifterOperand(base, sh_type, amount, base.size)
 
 def process_register(tokens):
     name = tokens["name"]
-    # TODO: Add all reg sizes
-#     size = arch_info.registers_size[name]
-    size = 32
+    size = arch_info.registers_size[name]
     oprnd = ArmRegisterOperand(name, size)
     
     return oprnd
@@ -68,7 +66,8 @@ def parse_operand(string, location, tokens):
     """
 
     if "immediate_operand" in tokens:
-        oprnd = ArmImmediateOperand("".join(tokens["immediate_operand"]))
+        size = arch_info.operand_size
+        oprnd = ArmImmediateOperand("".join(tokens["immediate_operand"]), size)
 
     if "register_operand" in tokens:
         oprnd =  process_register(tokens["register_operand"])
@@ -98,11 +97,13 @@ def parse_operand(string, location, tokens):
             elif "reg" in displacement:
                 displacement = process_register(displacement["reg"])
             elif "imm" in displacement:
-                displacement = ArmImmediateOperand("".join(displacement["imm"]))
+                displacement = ArmImmediateOperand("".join(displacement["imm"]), arch_info.operand_size)
             else:
                 raise Exception("Unknown displacement type.")
 
-        oprnd = ArmMemoryOperand(reg_base, index_type, displacement, disp_minus)
+        size = arch_info.operand_size
+        # TODO: Add sizes for LDR/STR variations (half word, byte, double word)
+        oprnd = ArmMemoryOperand(reg_base, index_type, displacement, disp_minus, size)
         
     if "shifter_operand" in tokens:
         oprnd =  process_shifter_operand(tokens["shifter_operand"])
@@ -118,7 +119,7 @@ def parse_operand(string, location, tokens):
             else:
                 reg_list.append([start_reg])
             
-        oprnd = ArmRegisterListOperand(reg_list)
+        oprnd = ArmRegisterListOperand(reg_list, reg_list[0][0].size)
 
     return oprnd
 
@@ -284,11 +285,8 @@ class ArmParser(object):
             # self._check_instruction(instr_asm)
         except Exception as e:
             instr_asm = None
- 
             error_msg = "Failed to parse instruction: %s"
- 
             logger.error(error_msg, instr, exc_info=True)
-             
             print("Failed to parse instruction: " + instr)
             print("Exception: " + str(e))
 

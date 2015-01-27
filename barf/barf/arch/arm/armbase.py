@@ -4,6 +4,7 @@ representation.
 
 """
 from barf.arch import ARCH_ARM_MODE_32
+from barf.arch import ARCH_ARM_MODE_64
 from barf.arch import ArchitectureInformation
 
 class ArmArchitectureInformation(ArchitectureInformation):
@@ -64,6 +65,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
     def architecture_size(self):
         arch_size_map = {
             ARCH_ARM_MODE_32 : 32,
+            ARCH_ARM_MODE_64 : 64,
         }
 
         return arch_size_map[self._arch_mode]
@@ -72,6 +74,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
     def operand_size(self):
         operand_size_map = {
             ARCH_ARM_MODE_32 : 32,
+            ARCH_ARM_MODE_64 : 64,
         }
 
         return operand_size_map[self._arch_mode]
@@ -80,6 +83,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
     def address_size(self):
         address_size_map = {
             ARCH_ARM_MODE_32 : 32,
+            ARCH_ARM_MODE_64 : 64,
         }
 
         return address_size_map[self._arch_mode]
@@ -119,7 +123,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
         reg_mapper = {
         }
 
-        flags_reg = "eflags"
+        flags_reg = "cpsr"
 #         else:
 #             reg_mapper = {
 #             }
@@ -293,9 +297,10 @@ class ArmImmediateOperand(ArmOperand):
     __slots__ = [
         '_immediate',
         '_base_hex',
+        '_size',
     ]
 
-    def __init__(self, immediate):
+    def __init__(self, immediate, size=None):
         super(ArmImmediateOperand, self).__init__("")
         
         self._base_hex = True
@@ -311,12 +316,13 @@ class ArmImmediateOperand(ArmOperand):
         assert type(immediate) in [int, long], "Invalid immediate value type."
 
         self._immediate = immediate
+        self._size = size
 
     @property
     def immediate(self):
         """Get immediate."""
-#         if not self._size:
-#             raise Exception("Operand size missing.")
+        if not self._size:
+            raise Exception("Operand size missing.")
 
         return self._immediate
 
@@ -354,8 +360,8 @@ class ArmRegisterOperand(ArmOperand):
     @property
     def name(self):
         """Get register name."""
-#         if not self._size:
-#             raise Exception("Operand size missing.")
+        if not self._size:
+            raise Exception("Operand size missing.")
 
         return self._name
 
@@ -428,29 +434,41 @@ class ArmShifterOperand(ArmOperand):
         '_base_reg',
         '_shift_type',
         '_shift_amount',
-#         '_size',
+        '_size',
     ]
 
-    def __init__(self, base_reg, shift_type, shift_amount):
+    def __init__(self, base_reg, shift_type, shift_amount, size=None):
         super(ArmShifterOperand, self).__init__("")
 
         self._base_reg = base_reg
         self._shift_type = shift_type
         self._shift_amount = shift_amount
-#         self._size = size
-        
+        self._size = size
+    
+    @property
+    def base_reg(self):
+        """Get base register."""
+        if not self._size:
+            raise Exception("Operand size missing.")
+        return self._base_reg
 
-#     @property
-#     def name(self):
-#         """Get register name."""
-#         if not self._size:
-#             raise Exception("Operand size missing.")
-# 
-#         return self._name
+    @property
+    def shift_type(self):
+        """Get shift type."""
+        if not self._size:
+            raise Exception("Operand size missing.")
+        return self._shift_type
+
+    @property
+    def shift_amount(self):
+        """Get shift amount."""
+        if not self._size:
+            raise Exception("Operand size missing.")
+        return self._shift_amount
 
     def __str__(self):
-#         if not self._size:
-#             raise Exception("Operand size missing.")
+        if not self._size:
+            raise Exception("Operand size missing.")
 
         string  = str(self._base_reg) + ", " + str(self._shift_type)
         if self._shift_amount:
@@ -480,21 +498,54 @@ class ArmMemoryOperand(ArmOperand):
         '_index_type',
         '_displacement',
         '_disp_minus',
-#         '_size',
+        '_size',
     ]
 
-    def __init__(self, base_reg, index_type, displacement, disp_minus = False):
+    def __init__(self, base_reg, index_type, displacement, disp_minus = False, size=None):
         super(ArmMemoryOperand, self).__init__("")
 
         self._base_reg = base_reg
         self._index_type = index_type
         self._displacement = displacement
         self._disp_minus = disp_minus
-#         self._size = size
+        self._size = size
+
+    @property
+    def base_reg(self):
+        """Get base register."""
+        if not self._size:
+            raise Exception("Operand size missing.")
+
+        return self._base_reg
+
+    @property
+    def displacement(self):
+        """Get displacement to the base register."""
+        if not self._size:
+            raise Exception("Operand size missing.")
+
+        return self._displacement
+
+    @property
+    def index_type(self):
+        """Get type of memory indexing."""
+        if not self._size:
+            raise Exception("Operand size missing.")
+
+        return self._index_type
+
+    @property
+    def disp_minus(self):
+        """Get sign of displacemnt."""
+        if not self._size:
+            raise Exception("Operand size missing.")
+
+        return self._disp_minus
+
 
     def __str__(self):
-#         if not self._size:
-#             raise Exception("Operand size missing.")
+        if not self._size:
+            raise Exception("Operand size missing.")
 
         # TODO: encapsulate displacement with sign?
         disp_str = "-" if self._disp_minus else ""
