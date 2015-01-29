@@ -1187,7 +1187,10 @@ class CVC4Solver(object):
 
         # print "ret 1: ", ret
 
-        var_name, ret = ret[2:-2].split(' ', 1)
+        ret = ret[2:-2]
+        var_name, ret = ret[:ret.rfind('(')], ret[ret.rfind('('):]
+
+        # var_name, ret = ret[2:-2].split(' ', 1)
 
         # print "ret 2: ", ret
 
