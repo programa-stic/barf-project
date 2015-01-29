@@ -20,6 +20,21 @@ from barf.utils.utils import VariableNamer
 from barf.arch.arm.armbase import ARM_MEMORY_INDEX_OFFSET
 from barf.arch.arm.armbase import ARM_MEMORY_INDEX_POST
 from barf.arch.arm.armbase import ARM_MEMORY_INDEX_PRE
+from barf.arch.arm.armbase import ARM_COND_CODE_EQ
+from barf.arch.arm.armbase import ARM_COND_CODE_NE
+from barf.arch.arm.armbase import ARM_COND_CODE_CS
+from barf.arch.arm.armbase import ARM_COND_CODE_CC
+from barf.arch.arm.armbase import ARM_COND_CODE_MI
+from barf.arch.arm.armbase import ARM_COND_CODE_PL
+from barf.arch.arm.armbase import ARM_COND_CODE_VS
+from barf.arch.arm.armbase import ARM_COND_CODE_VC
+from barf.arch.arm.armbase import ARM_COND_CODE_HI
+from barf.arch.arm.armbase import ARM_COND_CODE_LS
+from barf.arch.arm.armbase import ARM_COND_CODE_GE
+from barf.arch.arm.armbase import ARM_COND_CODE_LT
+from barf.arch.arm.armbase import ARM_COND_CODE_GT
+from barf.arch.arm.armbase import ARM_COND_CODE_LE
+from barf.arch.arm.armbase import ARM_COND_CODE_AL
 
 FULL_TRANSLATION = 0
 LITE_TRANSLATION = 1
@@ -66,6 +81,8 @@ class TranslationBuilder(object):
 
         for instr in instrs:
             instr.address = address << 8
+            
+        instrs = self._resolve_loops(instrs)
 
         return instrs
 
@@ -117,9 +134,39 @@ class TranslationBuilder(object):
         else:
             raise NotImplementedError("Instruction Not Implemented: Unknown operand for write operation.")
 
+    def _resolve_loops(self, instrs):
+        idx_by_labels = {}
+
+        # Collect labels.
+        curr = 0
+        for index, instr in enumerate(instrs):
+            if isinstance(instr, Label):
+                idx_by_labels[instr.name] = curr
+
+                del instrs[index]
+            else:
+                curr += 1
+
+        # Resolve instruction addresses and JCC targets.
+        for index, instr in enumerate(instrs):
+            assert isinstance(instr, ReilInstruction)
+
+            instr.address |= index
+
+            if instr.mnemonic == ReilMnemonic.JCC:
+                target = instr.operands[2]
+
+                if isinstance(target, Label):
+                    idx = idx_by_labels[target.name]
+                    address = (instr.address & ~0xff) | idx
+
+                    instr.operands[2] = ReilImmediateOperand(address, 40)
+
+        return instrs
+
     def _compute_shifter_operand(self, sh_op):
         
-        base = ReilRegisterOperand(sh_op.base_reg, sh_op.size)
+        base = ReilRegisterOperand(sh_op.base_reg.name, sh_op.size)
         
         if sh_op.shift_amount:
             ret = self.temporal(sh_op.size)
@@ -213,13 +260,10 @@ class ArmTranslator(object):
         self._builder = ReilInstructionBuilder()
 
         self._flags = {
-            "af" : ReilRegisterOperand("af", 1),
-            "cf" : ReilRegisterOperand("cf", 1),
-            "df" : ReilRegisterOperand("df", 1),
-            "of" : ReilRegisterOperand("of", 1),
-            "pf" : ReilRegisterOperand("pf", 1),
-            "sf" : ReilRegisterOperand("sf", 1),
+            "nf" : ReilRegisterOperand("nf", 1),
             "zf" : ReilRegisterOperand("zf", 1),
+            "cf" : ReilRegisterOperand("cf", 1),
+            "vf" : ReilRegisterOperand("vf", 1),
         }
 
         if self._arch_mode == ARCH_ARM_MODE_32:
@@ -260,6 +304,7 @@ class ArmTranslator(object):
         :param instruction: a arm instruction
         :type instruction: ArmInstruction
         """
+        
         # Retrieve translation function.
         translator_name = "_translate_" + instruction.mnemonic
         translator_fn = getattr(self, translator_name, self._not_implemented)
@@ -267,8 +312,19 @@ class ArmTranslator(object):
         # Translate instruction.
         tb = TranslationBuilder(self._ir_name_generator, self._arch_mode)
 
+        # Pre-processing: evaluate flags
+        nop_cc_lbl = tb.label('condition_code_not_met')
+        self._evaluate_condition_code(tb, instruction, nop_cc_lbl)
+        
+        
         translator_fn(tb, instruction)
 
+
+        # Post-processing: update flags
+        pass
+    
+        tb.add(nop_cc_lbl)
+        
         return tb.instanciate(instruction.address)
 
     def reset(self):
@@ -319,29 +375,17 @@ class ArmTranslator(object):
 
 # "Flags"
 # ============================================================================ #
-    def _update_af(self, tb, oprnd0, oprnd1, result):
-        # TODO: Implement
-        pass
-
-    def _update_pf(self, tb, oprnd0, oprnd1, result):
-        # TODO: Implement
-        pass
-
-    def _update_sf(self, tb, oprnd0, oprnd1, result):
+    def _update_nf(self, tb, oprnd0, oprnd1, result):
         # Create temporal variables.
         tmp0 = tb.temporal(result.size)
 
         mask0 = tb.immediate(2**result.size-1, result.size)
         shift0 = tb.immediate(-(result.size-1), result.size)
 
-        sf = self._flags["sf"]
-
         tb.add(self._builder.gen_and(result, mask0, tmp0))  # filter sign bit
-        tb.add(self._builder.gen_bsh(tmp0, shift0, sf))     # extract sign bit
+        tb.add(self._builder.gen_bsh(tmp0, shift0, self._flags["nf"]))     # extract sign bit
 
-    def _update_of(self, tb, oprnd0, oprnd1, result):
-        of = self._flags["of"]
-
+    def _update_vf(self, tb, oprnd0, oprnd1, result):
         imm0 = tb.immediate(2**(oprnd0.size-1), oprnd0.size)
         imm1 = tb.immediate(1, oprnd0.size)
         imm3 = tb.immediate(-(oprnd0.size-1), oprnd0.size)
@@ -362,7 +406,7 @@ class ArmTranslator(object):
         tb.add(self._builder.gen_xor(tmp3, imm1, tmp4))     # sign bit oprnd0 ^ sign bit oprnd1 ^ 1
         tb.add(self._builder.gen_xor(tmp0, tmp2, tmp5))     # sign bit oprnd0 ^ sign bit result
         tb.add(self._builder.gen_and(tmp4, tmp5, tmp6))     # (sign bit oprnd0 ^ sign bit oprnd1 ^ 1) & (sign bit oprnd0 ^ sign bit result)
-        tb.add(self._builder.gen_bsh(tmp6, imm3, of))
+        tb.add(self._builder.gen_bsh(tmp6, imm3, self._flags["vf"]))
 
     def _update_cf(self, tb, oprnd0, oprnd1, result):
         cf = self._flags["cf"]
@@ -402,6 +446,116 @@ class ArmTranslator(object):
         imm = tb.immediate(1, flag.size)
 
         tb.add(self._builder.gen_str(imm, flag))
+        
+    def _all_ones_imm(self, tb, reg):
+        return tb.immediate((2**reg.size) - 1, reg.size)
+                            
+    def _negate_reg(self, tb, reg):
+        neg = tb.temporal(reg.size)
+        tb.add(self._builder.gen_xor(reg, self._all_ones_imm(tb, reg), neg))
+        return neg
+    
+    def _and_regs(self, tb, reg1, reg2):
+        ret = tb.temporal(reg1.size)
+        tb.add(self._builder.gen_and(reg1, reg2, ret))
+        return ret
+        
+    def _or_regs(self, tb, reg1, reg2):
+        ret = tb.temporal(reg1.size)
+        tb.add(self._builder.gen_or(reg1, reg2, ret))
+        return ret
+        
+    def _xor_regs(self, tb, reg1, reg2):
+        ret = tb.temporal(reg1.size)
+        tb.add(self._builder.gen_xor(reg1, reg2, ret))
+        return ret
+        
+    def _equal_regs(self, tb, reg1, reg2):
+        return self._negate_reg(tb, self._xor_regs(tb, reg1, reg2))
+        
+    # EQ: Z set
+    def _evaluate_eq(self, tb):
+        return self._flags["zf"]
+
+    # NE: Z clear
+    def _evaluate_ne(self, tb):
+        return self._negate_reg(tb, self._flags["zf"])
+    
+    # CS: C set
+    def _evaluate_cs(self, tb):
+        return self._flags["cf"]
+
+    # CC: C clear
+    def _evaluate_cc(self, tb):
+        return self._negate_reg(tb, self._flags["cf"])
+    
+    # MI: N set
+    def _evaluate_mi(self, tb):
+        return self._flags["nf"]
+
+    # PL: N clear
+    def _evaluate_pl(self, tb):
+        return self._negate_reg(tb, self._flags["nf"])
+    
+    # VS: V set
+    def _evaluate_vs(self, tb):
+        return self._flags["vf"]
+
+    # VC: V clear
+    def _evaluate_vc(self, tb):
+        return self._negate_reg(tb, self._flags["vf"])
+    
+    # HI: C set and Z clear
+    def _evaluate_hi(self, tb):
+        return self._and_regs(tb, self._flags["cf"], self._negate_reg(tb, self._flags["zf"]))
+
+    # LS: C clear or Z set
+    def _evaluate_ls(self, tb):
+        return self._or_regs(tb, self._negate_reg(tb, self._flags["cf"]), self._flags["zf"])
+    
+    # GE: N == V
+    def _evaluate_ge(self, tb):
+        return self._equal_regs(tb, self._flags["nf"], self._flags["vf"])
+
+    # LT: N != V
+    def _evaluate_lt(self, tb):
+        return self._negate_reg(tb, self._evaluate_ge(tb))
+    
+    # GT: (Z == 0) and (N == V)
+    def _evaluate_gt(self, tb):
+        return self._and_regs(tb, self._negate_reg(tb, self._flags["zf"]), self._evaluate_ge(tb))
+
+    # LE: (Z == 1) or (N != V)
+    def _evaluate_le(self, tb):
+        return self._or_regs(tb, self._flags["zf"], self._evaluate_lt(tb))
+    
+    def _evaluate_condition_code(self, tb, instruction, nop_label):
+        if (instruction.condition_code == ARM_COND_CODE_AL):
+            return
+        
+        eval_cc_fn = {
+            ARM_COND_CODE_EQ : self._evaluate_eq,
+            ARM_COND_CODE_NE : self._evaluate_ne,
+            ARM_COND_CODE_CS : self._evaluate_cs,
+            ARM_COND_CODE_CC : self._evaluate_cc,
+            ARM_COND_CODE_MI : self._evaluate_mi,
+            ARM_COND_CODE_PL : self._evaluate_pl,
+            ARM_COND_CODE_VS : self._evaluate_vs,
+            ARM_COND_CODE_VC : self._evaluate_vc,
+            ARM_COND_CODE_HI : self._evaluate_hi,
+            ARM_COND_CODE_LS : self._evaluate_ls,
+            ARM_COND_CODE_GE : self._evaluate_ge,
+            ARM_COND_CODE_LT : self._evaluate_lt,
+            ARM_COND_CODE_GT : self._evaluate_gt,
+            ARM_COND_CODE_LE : self._evaluate_le,
+        }
+        
+        neg_cond = self._negate_reg(tb, eval_cc_fn[instruction.condition_code](tb))
+        
+        tb.add(self._builder.gen_jcc(neg_cond, nop_label))
+        
+        return 
+    
 
 # "Data Transfer Instructions"
 # ============================================================================ #

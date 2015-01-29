@@ -31,6 +31,7 @@ from barf.arch.arm.armbase import ArmShifterOperand
 from barf.arch.arm.armbase import ARM_MEMORY_INDEX_OFFSET
 from barf.arch.arm.armbase import ARM_MEMORY_INDEX_POST
 from barf.arch.arm.armbase import ARM_MEMORY_INDEX_PRE
+from barf.arch.arm.armbase import cc_mapper
 
 logger = logging.getLogger(__name__)
 
@@ -126,16 +127,21 @@ def parse_operand(string, location, tokens):
 def parse_instruction(string, location, tokens):
     """Parse an ARM instruction.
     """
-    prefix = tokens.get("prefix", None)
     mnemonic = tokens.get("mnemonic")
     operands = [op for op in tokens.get("operands", [])]
-
+    
     instr = ArmInstruction(
-        prefix,
-        mnemonic,
+        string,                   
+        mnemonic["ins"],
         operands,
         arch_info.architecture_mode
     )
+    
+    if "cc" in mnemonic:
+        instr.condition_code = cc_mapper[mnemonic["cc"]]
+    
+    if "uf" in mnemonic:
+        instr.update_flags = True
 
     return instr
 
@@ -249,7 +255,44 @@ operand = (Or([
 
 # Instruction Parsing
 # ============================================================================ #
-mnemonic = Word(alphanums)
+condition_code = Optional(Or([
+    Literal("eq"),
+    Literal("ne"),
+    
+    Literal("cs"), Literal("hs"),
+    Literal("cc"), Literal("lo"),
+    
+    Literal("mi"),
+    Literal("pl"),
+    
+    Literal("vs"),
+    Literal("vc"),
+    
+    Literal("hi"),
+    Literal("ls"),
+
+    Literal("ge"),
+    Literal("lt"),
+    
+    Literal("gt"),
+    Literal("le"),
+    
+    Literal("al"),
+]))("cc")
+
+update_flags = Optional(Literal("s"))("uf")
+
+mnemonic = Group(Or([
+    Combine(Literal("mov")("ins") + condition_code + update_flags),
+    
+    Combine(Literal("ldr")("ins") + condition_code),
+    Combine(Literal("str")("ins") + condition_code),
+    
+    Combine(Literal("add")("ins") + condition_code + update_flags),
+    Combine(Literal("sub")("ins") + condition_code + update_flags),
+    
+    Word(alphanums)("ins"),
+]))
 
 instruction = (
     mnemonic("mnemonic") +

@@ -169,33 +169,72 @@ class ArmArchitectureInformation(ArchitectureInformation):
 
         self._registers_flags = [name for name, _ in self.regs_flags]
 
+ARM_COND_CODE_EQ = 0
+ARM_COND_CODE_NE = 1
+ARM_COND_CODE_CS = 2
+ARM_COND_CODE_CC = 3
+ARM_COND_CODE_MI = 4
+ARM_COND_CODE_PL = 5
+ARM_COND_CODE_VS = 6
+ARM_COND_CODE_VC = 7
+ARM_COND_CODE_HI = 8
+ARM_COND_CODE_LS = 9
+ARM_COND_CODE_GE = 10
+ARM_COND_CODE_LT = 11
+ARM_COND_CODE_GT = 12
+ARM_COND_CODE_LE = 13
+ARM_COND_CODE_AL = 14
+
+cc_mapper = {
+    "eq" : ARM_COND_CODE_EQ,
+    "ne" : ARM_COND_CODE_NE,
+    "cs" : ARM_COND_CODE_CS,
+    "hs" : ARM_COND_CODE_CS,
+    "cc" : ARM_COND_CODE_CC,
+    "lo" : ARM_COND_CODE_CC,
+    "mi" : ARM_COND_CODE_MI,
+    "pl" : ARM_COND_CODE_PL,
+    "vs" : ARM_COND_CODE_VS,
+    "vc" : ARM_COND_CODE_VC,
+    "hi" : ARM_COND_CODE_HI,
+    "ls" : ARM_COND_CODE_LS,
+    "ge" : ARM_COND_CODE_GE,
+    "lt" : ARM_COND_CODE_LT,
+    "gt" : ARM_COND_CODE_GT,
+    "le" : ARM_COND_CODE_LE,
+    "al" : ARM_COND_CODE_AL,
+}
 
 class ArmInstruction(object):
     """Representation of ARM instruction."""
 
     __slots__ = [
-        '_prefix',
+        '_orig_instr',
         '_mnemonic',
         '_operands',
         '_bytes',
         '_size',
         '_address',
         '_arch_mode',
+        '_condition_code',
+        '_update_flags',
     ]
 
-    def __init__(self, prefix, mnemonic, operands, arch_mode):
-        self._prefix = prefix
+    def __init__(self, orig_instr, mnemonic, operands, arch_mode):
+        self._orig_instr = orig_instr
         self._mnemonic = mnemonic
         self._operands = operands
         self._bytes = ""
         self._size = None
         self._address = None
         self._arch_mode = arch_mode
+        self._condition_code = ARM_COND_CODE_AL
+        self._update_flags = False
 
     @property
-    def prefix(self):
-        """Get instruction prefix."""
-        return self._prefix
+    def orig_instr(self):
+        """Get instruction string before parsing."""
+        return self._orig_instr
 
     @property
     def mnemonic(self):
@@ -236,12 +275,28 @@ class ArmInstruction(object):
     def address(self, value):
         """Set instruction address."""
         self._address = value
+        
+    @property
+    def condition_code(self):
+        return self._condition_code
+
+    @condition_code.setter
+    def condition_code(self, value):
+        self._condition_code = value
+
+    @property
+    def update_flags(self):
+        return self._update_flags
+
+    @update_flags.setter
+    def update_flags(self, value):
+        self._update_flags = value
+
 
     def __str__(self):
         operands_str = ", ".join([str(oprnd) for oprnd in self._operands])
 
-        string  = self._prefix + " " if self._prefix else ""
-        string += self._mnemonic
+        string = self._mnemonic
         string += " " + operands_str if operands_str else ""
 
         return string
