@@ -51,7 +51,6 @@ class Label(object):
 
         return string
 
-
 class TranslationBuilder(object):
 
     def __init__(self, ir_name_generator, architecture_mode):
@@ -62,7 +61,7 @@ class TranslationBuilder(object):
         self._instructions = []
 
         self._builder = ReilInstructionBuilder()
-
+        
     def add(self, instr):
         self._instructions.append(instr)
 
@@ -376,49 +375,35 @@ class ArmTranslator(object):
 # "Flags"
 # ============================================================================ #
     def _update_nf(self, tb, oprnd0, oprnd1, result):
-        # Create temporal variables.
-        tmp0 = tb.temporal(result.size)
+        sign = self._extract_bit(tb, result, oprnd0.size - 1)
+        tb.add(self._builder.gen_str(sign, self._flags["nf"]))
 
-        mask0 = tb.immediate(2**result.size-1, result.size)
-        shift0 = tb.immediate(-(result.size-1), result.size)
-
-        tb.add(self._builder.gen_and(result, mask0, tmp0))  # filter sign bit
-        tb.add(self._builder.gen_bsh(tmp0, shift0, self._flags["nf"]))     # extract sign bit
-
-    def _update_vf(self, tb, oprnd0, oprnd1, result):
-        imm0 = tb.immediate(2**(oprnd0.size-1), oprnd0.size)
-        imm1 = tb.immediate(1, oprnd0.size)
-        imm3 = tb.immediate(-(oprnd0.size-1), oprnd0.size)
-        imm4 = tb.immediate(2**(oprnd0.size-1), result.size)
-
-        tmp0 = tb.temporal(oprnd0.size)
-        tmp1 = tb.temporal(oprnd1.size)
-        tmp2 = tb.temporal(oprnd0.size)
-        tmp3 = tb.temporal(oprnd0.size)
-        tmp4 = tb.temporal(oprnd0.size)
-        tmp5 = tb.temporal(oprnd0.size)
-        tmp6 = tb.temporal(oprnd0.size)
-
-        tb.add(self._builder.gen_and(oprnd0, imm0, tmp0))   # filter sign bit oprnd 1
-        tb.add(self._builder.gen_and(oprnd1, imm0, tmp1))   # filter sign bit oprnd 2
-        tb.add(self._builder.gen_and(result, imm4, tmp2))   # filter sign bit result
-        tb.add(self._builder.gen_xor(tmp0, tmp1, tmp3))     # sign bit oprnd0 ^ sign bit oprnd1
-        tb.add(self._builder.gen_xor(tmp3, imm1, tmp4))     # sign bit oprnd0 ^ sign bit oprnd1 ^ 1
-        tb.add(self._builder.gen_xor(tmp0, tmp2, tmp5))     # sign bit oprnd0 ^ sign bit result
-        tb.add(self._builder.gen_and(tmp4, tmp5, tmp6))     # (sign bit oprnd0 ^ sign bit oprnd1 ^ 1) & (sign bit oprnd0 ^ sign bit result)
-        tb.add(self._builder.gen_bsh(tmp6, imm3, self._flags["vf"]))
-
-    def _update_cf(self, tb, oprnd0, oprnd1, result):
-        cf = self._flags["cf"]
-
-        imm0 = tb.immediate(2**oprnd0.size, result.size)
-        imm1 = tb.immediate(-oprnd0.size, result.size)
-
-        tmp0 = tb.temporal(result.size)
-
-        tb.add(self._builder.gen_and(result, imm0, tmp0))   # filter carry bit
-        tb.add(self._builder.gen_bsh(tmp0, imm1, cf))
-
+    def _carry_from(self, tb, oprnd0, oprnd1, result):
+        assert (result.size == oprnd0.size * 2)
+        
+        carry = self._extract_bit(tb, result, oprnd0.size)
+        tb.add(self._builder.gen_str(carry, self._flags["cf"]))
+        
+    def _borrow_from(self, tb, oprnd0, oprnd1, result):
+        # BorrowFrom as defined in the ARM Reference Manual has the same implementation as CarryFrom
+        self._carry_from(tb, oprnd0, oprnd1, result)
+        
+    def _overflow_from_add(self, tb, oprnd0, oprnd1, result):
+        op1_sign = self._extract_bit(tb, oprnd0, oprnd0.size - 1)
+        op2_sign = self._extract_bit(tb, oprnd1, oprnd0.size - 1)
+        res_sign = self._extract_bit(tb, result, oprnd0.size - 1)
+        
+        overflow =  self._and_regs(tb, self._equal_regs(tb, op1_sign, op2_sign), self._unequal_regs(tb, op1_sign, res_sign))
+        tb.add(self._builder.gen_str(overflow, self._flags["vf"]))
+        
+    def _overflow_from_sub(self, tb, oprnd0, oprnd1, result):
+        op1_sign = self._extract_bit(tb, oprnd0, oprnd0.size - 1)
+        op2_sign = self._extract_bit(tb, oprnd1, oprnd0.size - 1)
+        res_sign = self._extract_bit(tb, result, oprnd0.size - 1)
+        
+        overflow = self._and_regs(tb, self._unequal_regs(tb, op1_sign, op2_sign), self._unequal_regs(tb, op1_sign, res_sign))
+        tb.add(self._builder.gen_str(overflow, self._flags["vf"]))
+        
     def _update_zf(self, tb, oprnd0, oprnd1, result):
         zf = self._flags["zf"]
 
@@ -428,6 +413,76 @@ class ArmTranslator(object):
 
         tb.add(self._builder.gen_and(result, imm0, tmp0))  # filter low part of result
         tb.add(self._builder.gen_bisz(tmp0, zf))
+        
+    def _shifter_carry_out(self, tb, shifter_operand, oprnd0, oprnd1, result):
+        if isinstance(shifter_operand, ArmImmediateOperand):
+            # Assuming rotate_imm == 0 then shifter_carry_out = C flag => C flag unchanged
+            return
+        elif isinstance(shifter_operand, ArmRegisterOperand):
+            # shifter_carry_out = C flag => C flag unchanged
+            return
+        elif isinstance(shifter_operand, ArmShifterOperand):
+            base = ReilRegisterOperand(shifter_operand.base_reg.name, shifter_operand.size)
+            shift_type = shifter_operand.shift_type
+            shift_amount = shifter_operand.shift_amount
+            
+            if (shift_type == 'lsl'):
+                
+                if isinstance(shift_amount, ArmImmediateOperand):
+                    if shift_amount.immediate == 0:
+                        # (shifter_carry_out = C Flag)
+                        return
+                    else:
+                        # shifter_carry_out = Rm[32 - shift_imm]
+                        shift_carry_out = self._extract_bit(tb, base, 32 - shift_amount.immediate)
+                        
+                elif isinstance(shift_amount, ArmRegisterOperand):
+                    # TODO: 
+                    # if Rs[7:0] == 0 then
+                    #     shifter_carry_out = C Flag
+                    # else if Rs[7:0] < 32 then
+                    #     shifter_carry_out = Rm[32 - Rs[7:0]]
+                    # else if Rs[7:0] == 32 then
+                    #     shifter_carry_out = Rm[0]
+                    # else /* Rs[7:0] > 32 */
+                    #     shifter_carry_out = 0
+                    pass
+                    
+                else:
+                    raise Exception("shifter_carry_out: Unknown shift amount type.")
+                
+            else:
+                # TODO: Implement other shift types
+                raise NotImplementedError("Instruction Not Implemented: shifter_carry_out: shift type " + shifter_operand.shift_type)
+            
+        else:
+            raise Exception("shifter_carry_out: Unknown operand type.")
+
+        tb.add(self._builder.gen_str(shift_carry_out, self._flags["cf"]))
+    
+    def _update_flags_data_proc_add(self, tb, oprnd0, oprnd1, result):
+        self._update_zf(tb, oprnd0, oprnd1, result)
+        self._update_nf(tb, oprnd0, oprnd1, result)
+        self._carry_from(tb, oprnd0, oprnd1, result)
+        self._overflow_from_add(tb, oprnd0, oprnd1, result)
+
+    def _update_flags_data_proc_sub(self, tb, oprnd0, oprnd1, result):
+        self._update_zf(tb, oprnd0, oprnd1, result)
+        self._update_nf(tb, oprnd0, oprnd1, result)
+        self._borrow_from(tb, oprnd0, oprnd1, result)
+        self._overflow_from_sub(tb, oprnd0, oprnd1, result)
+
+    def _update_flags_data_proc_other(self, tb, shifter_operand, oprnd0, oprnd1, result):
+        self._update_zf(tb, oprnd0, oprnd1, result)
+        self._update_nf(tb, oprnd0, oprnd1, result)
+        self._shifter_carry_out(tb, shifter_operand, oprnd0, oprnd1, result)
+        # Overflow Flag (V) unaffected
+
+    def _update_flags_other(self, tb, oprnd0, oprnd1, result):
+        self._update_zf(tb, oprnd0, oprnd1, result)
+        self._update_nf(tb, oprnd0, oprnd1, result)
+        # Carry Flag (C) unaffected
+        # Overflow Flag (V) unaffected
 
     def _undefine_flag(self, tb, flag):
         # NOTE: In every test I've made, each time a flag is leave
@@ -472,6 +527,19 @@ class ArmTranslator(object):
         
     def _equal_regs(self, tb, reg1, reg2):
         return self._negate_reg(tb, self._xor_regs(tb, reg1, reg2))
+    
+    def _unequal_regs(self, tb, reg1, reg2):
+        return self._xor_regs(tb, reg1, reg2)
+    
+    def _extract_bit(self, tb, reg, bit):
+        assert(bit >= 0 and bit < reg.size)
+        tmp = tb.temporal(reg.size)
+        ret = tb.temporal(1)
+
+        tb.add(self._builder.gen_bsh(reg, tb.immediate(-bit, reg.size), tmp)) # shift to LSB
+        tb.add(self._builder.gen_and(tmp, tb.immediate(1, reg.size), ret)) # filter LSB
+        
+        return ret
         
     # EQ: Z set
     def _evaluate_eq(self, tb):
@@ -560,13 +628,13 @@ class ArmTranslator(object):
 # "Data Transfer Instructions"
 # ============================================================================ #
     def _translate_mov(self, tb, instruction):
-        # Flags Affected
-        # None.
         
         oprnd1 = tb.read(instruction.operands[1])
 
         tb.write(instruction.operands[0], oprnd1)
-
+        
+        if instruction.update_flags:
+            self._update_flags_data_proc_other(tb, instruction.operands[1], None, None, oprnd1)
 
     # TODO: Add post-indexing (pre is included in compute_memory).
     def _translate_ldr(self, tb, instruction):
@@ -585,21 +653,47 @@ class ArmTranslator(object):
         oprnd1 = tb.read(instruction.operands[1])
         oprnd2 = tb.read(instruction.operands[2])
 
-        tmp = tb.temporal(oprnd1.size)
+        result = tb.temporal(oprnd1.size * 2)
 
-        tb.add(self._builder.gen_add(oprnd1, oprnd2, tmp))
+        tb.add(self._builder.gen_add(oprnd1, oprnd2, result))
 
-        tb.write(instruction.operands[0], tmp)
+        tb.write(instruction.operands[0], result)
+        
+        if instruction.update_flags:
+            self._update_flags_data_proc_add(tb, oprnd1, oprnd2, result)
 
     def _translate_sub(self, tb, instruction):
         oprnd1 = tb.read(instruction.operands[1])
         oprnd2 = tb.read(instruction.operands[2])
 
-        tmp = tb.temporal(oprnd1.size)
+        result = tb.temporal(oprnd1.size * 2)
 
-        tb.add(self._builder.gen_sub(oprnd1, oprnd2, tmp))
+        tb.add(self._builder.gen_sub(oprnd1, oprnd2, result))
 
-        tb.write(instruction.operands[0], tmp)
+        tb.write(instruction.operands[0], result)
+
+        if instruction.update_flags:
+            self._update_flags_data_proc_sub(tb, oprnd1, oprnd2, result)
+
+    def _translate_cmn(self, tb, instruction):
+        oprnd1 = tb.read(instruction.operands[0])
+        oprnd2 = tb.read(instruction.operands[1])
+
+        result = tb.temporal(oprnd1.size * 2)
+
+        tb.add(self._builder.gen_add(oprnd1, oprnd2, result))
+
+        self._update_flags_data_proc_add(tb, oprnd1, oprnd2, result) # S = 1 (implied in the instruction)
+
+    def _translate_cmp(self, tb, instruction):
+        oprnd1 = tb.read(instruction.operands[0])
+        oprnd2 = tb.read(instruction.operands[1])
+
+        result = tb.temporal(oprnd1.size * 2)
+
+        tb.add(self._builder.gen_sub(oprnd1, oprnd2, result))
+
+        self._update_flags_data_proc_sub(tb, oprnd1, oprnd2, result) # S = 1 (implied in the instruction)
 
     def _translate_push(self, tb, instruction):
         # Flags Affected

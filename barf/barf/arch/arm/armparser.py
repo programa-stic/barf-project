@@ -290,6 +290,8 @@ mnemonic = Group(Or([
     
     Combine(Literal("add")("ins") + condition_code + update_flags),
     Combine(Literal("sub")("ins") + condition_code + update_flags),
+    Combine(Literal("cmp")("ins") + condition_code),
+    Combine(Literal("cmn")("ins") + condition_code),
     
     Word(alphanums)("ins"),
 ]))
