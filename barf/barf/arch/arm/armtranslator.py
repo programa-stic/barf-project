@@ -137,14 +137,29 @@ class TranslationBuilder(object):
         idx_by_labels = {}
 
         # Collect labels.
-        curr = 0
-        for index, instr in enumerate(instrs):
-            if isinstance(instr, Label):
-                idx_by_labels[instr.name] = curr
+#         curr = 0
+#         for index, instr in enumerate(instrs):
+#             if isinstance(instr, Label):
+#                 idx_by_labels[instr.name] = curr
+# 
+#                 del instrs[index]
+#             else:
+#                 curr += 1
 
-                del instrs[index]
+
+        # TODO: Hack to avoid deleting while iterating
+        instrs_no_labels = []
+        curr = 0
+        for i in instrs:
+            if isinstance(i, Label):
+                idx_by_labels[i.name] = curr
             else:
+                instrs_no_labels.append(i)
                 curr += 1
+            
+        instrs[:] = instrs_no_labels
+
+
 
         # Resolve instruction addresses and JCC targets.
         for index, instr in enumerate(instrs):
@@ -193,7 +208,7 @@ class TranslationBuilder(object):
         base = ReilRegisterOperand(mem_operand.base_reg.name, mem_operand.size)
         
         if mem_operand.displacement:
-            ret = self.temporal(mem_operand.size)
+            address = self.temporal(mem_operand.size)
             
             if isinstance(mem_operand.displacement, ArmRegisterOperand):
                 disp = ReilRegisterOperand(mem_operand.displacement.name, mem_operand.size)
@@ -202,19 +217,34 @@ class TranslationBuilder(object):
             elif isinstance(mem_operand.displacement, ArmShifterOperand):
                 disp = self._compute_shifter_operand(mem_operand.displacement)
             else:
-                raise NotImplementedError("Instruction Not Implemented")
-    
-            if mem_operand.disp_minus:
-                self.add(self._builder.gen_sub(base, disp, ret))
-            else:
-                self.add(self._builder.gen_add(base, disp, ret))
-
+                raise Exception("_compute_memory_address: displacement type unknown")
+            
             if mem_operand.index_type == ARM_MEMORY_INDEX_PRE:
-                self.add(self._builder.gen_add(base, disp, base))
-        else:
-            ret = base
+                if mem_operand.disp_minus:
+                    self.add(self._builder.gen_sub(base, disp, address))
+                else:
+                    self.add(self._builder.gen_add(base, disp, address))
+                self.add(self._builder.gen_str(address, base))
+            elif mem_operand.index_type == ARM_MEMORY_INDEX_OFFSET:
+                if mem_operand.disp_minus:
+                    self.add(self._builder.gen_sub(base, disp, address))
+                else:
+                    self.add(self._builder.gen_add(base, disp, address))
+            elif mem_operand.index_type == ARM_MEMORY_INDEX_POST:
+                self.add(self._builder.gen_str(base, address))
+                tmp = self.temporal(base.size)
+                if mem_operand.disp_minus:
+                    self.add(self._builder.gen_sub(base, disp, tmp))
+                else:
+                    self.add(self._builder.gen_add(base, disp, tmp))
+                self.add(self._builder.gen_str(tmp, base))
+            else:
+                raise Exception("_compute_memory_address: indexing type unknown")
 
-        return ret
+        else:
+            address = base
+
+        return address
 
     def _compute_register_list(self, operand):
         """Return operand register list.
@@ -378,17 +408,17 @@ class ArmTranslator(object):
         sign = self._extract_bit(tb, result, oprnd0.size - 1)
         tb.add(self._builder.gen_str(sign, self._flags["nf"]))
 
-    def _carry_from(self, tb, oprnd0, oprnd1, result):
+    def _carry_from_uf(self, tb, oprnd0, oprnd1, result):
         assert (result.size == oprnd0.size * 2)
         
         carry = self._extract_bit(tb, result, oprnd0.size)
         tb.add(self._builder.gen_str(carry, self._flags["cf"]))
         
-    def _borrow_from(self, tb, oprnd0, oprnd1, result):
+    def _borrow_from_uf(self, tb, oprnd0, oprnd1, result):
         # BorrowFrom as defined in the ARM Reference Manual has the same implementation as CarryFrom
-        self._carry_from(tb, oprnd0, oprnd1, result)
+        self._carry_from_uf(tb, oprnd0, oprnd1, result)
         
-    def _overflow_from_add(self, tb, oprnd0, oprnd1, result):
+    def _overflow_from_add_uf(self, tb, oprnd0, oprnd1, result):
         op1_sign = self._extract_bit(tb, oprnd0, oprnd0.size - 1)
         op2_sign = self._extract_bit(tb, oprnd1, oprnd0.size - 1)
         res_sign = self._extract_bit(tb, result, oprnd0.size - 1)
@@ -401,8 +431,11 @@ class ArmTranslator(object):
         op2_sign = self._extract_bit(tb, oprnd1, oprnd0.size - 1)
         res_sign = self._extract_bit(tb, result, oprnd0.size - 1)
         
-        overflow = self._and_regs(tb, self._unequal_regs(tb, op1_sign, op2_sign), self._unequal_regs(tb, op1_sign, res_sign))
-        tb.add(self._builder.gen_str(overflow, self._flags["vf"]))
+        return self._and_regs(tb, self._unequal_regs(tb, op1_sign, op2_sign), self._unequal_regs(tb, op1_sign, res_sign))
+        
+    # Evaluate overflow and update the flag
+    def _overflow_from_sub_uf(self, tb, oprnd0, oprnd1, result):
+        tb.add(self._builder.gen_str(self._overflow_from_sub(tb, oprnd0, oprnd1, result), self._flags["vf"]))
         
     def _update_zf(self, tb, oprnd0, oprnd1, result):
         zf = self._flags["zf"]
@@ -437,8 +470,8 @@ class ArmTranslator(object):
                         shift_carry_out = self._extract_bit(tb, base, 32 - shift_amount.immediate)
                         
                 elif isinstance(shift_amount, ArmRegisterOperand):
-                    # TODO: 
-                    # if Rs[7:0] == 0 then
+                    # Rs: register with shift amount
+                    # if Rs[7:0] == 0 then            
                     #     shifter_carry_out = C Flag
                     # else if Rs[7:0] < 32 then
                     #     shifter_carry_out = Rm[32 - Rs[7:0]]
@@ -446,7 +479,37 @@ class ArmTranslator(object):
                     #     shifter_carry_out = Rm[0]
                     # else /* Rs[7:0] > 32 */
                     #     shifter_carry_out = 0
-                    pass
+                    
+                    shift_carry_out = tb.temporal(1)
+                    tb.add(self._builder.gen_str(self._flags["cf"], shift_carry_out))
+                    rs = ReilRegisterOperand(shift_amount.name, shift_amount.size)
+                    rs_7_0 = self._and_regs(tb, rs, tb.immediate(0xFF, rs.size))
+                    
+                    end_label = tb.label('end_label')
+                    rs_greater_32_label = tb.label('rs_greater_32_label')
+                    
+                    # if Rs[7:0] == 0 then            
+                    #     shifter_carry_out = C Flag
+                    self._jump_if_zero(tb, rs_7_0, end_label) # shift_carry_out already has the C flag set, so do nothing
+                    
+                    tb.add(self._builder.gen_jcc(self._greater_than_or_equal(tb, rs_7_0, tb.immediate(33, rs_7_0.size)),
+                                                 rs_greater_32_label))
+                    
+                    # Rs > 0 and Rs <= 32
+                    #     shifter_carry_out = Rm[32 - Rs[7:0]]
+                    extract_bit_number = tb.temporal(rs_7_0.size)
+                    tb.add(self._builder.gen_sub(tb.immediate(32, rs_7_0.size), rs_7_0, extract_bit_number))
+                    tb.add(self._builder.gen_str(self._extract_bit_with_register(tb, base, extract_bit_number),
+                                                 shift_carry_out))
+                    self._jump_to(tb, end_label)
+                    
+                    # else /* Rs[7:0] > 32 */
+                    #     shifter_carry_out = 0
+                    tb.add(rs_greater_32_label)
+                    tb.add(self._builder.gen_str(tb.immediate(0, 1), shift_carry_out))
+#                     self._jump_to(tb, end_label)
+                    
+                    tb.add(end_label)
                     
                 else:
                     raise Exception("shifter_carry_out: Unknown shift amount type.")
@@ -463,13 +526,13 @@ class ArmTranslator(object):
     def _update_flags_data_proc_add(self, tb, oprnd0, oprnd1, result):
         self._update_zf(tb, oprnd0, oprnd1, result)
         self._update_nf(tb, oprnd0, oprnd1, result)
-        self._carry_from(tb, oprnd0, oprnd1, result)
-        self._overflow_from_add(tb, oprnd0, oprnd1, result)
+        self._carry_from_uf(tb, oprnd0, oprnd1, result)
+        self._overflow_from_add_uf(tb, oprnd0, oprnd1, result)
 
     def _update_flags_data_proc_sub(self, tb, oprnd0, oprnd1, result):
         self._update_zf(tb, oprnd0, oprnd1, result)
         self._update_nf(tb, oprnd0, oprnd1, result)
-        self._borrow_from(tb, oprnd0, oprnd1, result)
+        self._borrow_from_uf(tb, oprnd0, oprnd1, result)
         self._overflow_from_sub(tb, oprnd0, oprnd1, result)
 
     def _update_flags_data_proc_other(self, tb, shifter_operand, oprnd0, oprnd1, result):
@@ -540,6 +603,44 @@ class ArmTranslator(object):
         tb.add(self._builder.gen_and(tmp, tb.immediate(1, reg.size), ret)) # filter LSB
         
         return ret
+
+    # Same as before but the bit number is indicated by a register and it will be resolved at runtime
+    def _extract_bit_with_register(self, tb, reg, bit):
+        # assert(bit >= 0 and bit < reg.size2) # It is assumed, it is not checked
+        tmp = tb.temporal(reg.size)
+        neg_bit = tb.temporal(reg.size)
+        ret = tb.temporal(1)
+
+        tb.add(self._builder.gen_sub(tb.immediate(0, bit.size), bit, neg_bit)) # as left bit is indicated by a negative number
+        tb.add(self._builder.gen_bsh(reg, neg_bit, tmp)) # shift to LSB
+        tb.add(self._builder.gen_and(tmp, tb.immediate(1, reg.size), ret)) # filter LSB
+        
+        return ret
+
+    def _extract_msb(self, tb, reg):
+        return self._extract_bit(tb, reg, reg.size - 1)
+    
+    def _extract_sign_bit(self, tb, reg):
+        return self._extract_msb(self, tb, reg)
+    
+    def _greater_than_or_equal(self, tb, reg1, reg2):
+        assert(reg1.size == reg2.size)
+        result = tb.temporal(reg1.size * 2)
+        
+        tb.add(self._builder.gen_sub(reg1, reg2, result))
+        
+        sign = self._extract_bit(tb, result, reg1.size - 1)
+        overflow = self._overflow_from_sub(tb, reg1, reg2, result)
+        
+        return self._equal_regs(tb, sign, overflow)
+    
+    def _jump_to(self, tb, label):
+        tb.add(self._builder.gen_jcc(tb.immediate(1, 1), label))
+    
+    def _jump_if_zero(self, tb, reg, label):
+        is_zero = tb.temporal(1)
+        tb.add(self._builder.gen_bisz(reg, is_zero))
+        tb.add(self._builder.gen_jcc(is_zero, label))
         
     # EQ: Z set
     def _evaluate_eq(self, tb):
@@ -636,7 +737,45 @@ class ArmTranslator(object):
         if instruction.update_flags:
             self._update_flags_data_proc_other(tb, instruction.operands[1], None, None, oprnd1)
 
-    # TODO: Add post-indexing (pre is included in compute_memory).
+    def _translate_and(self, tb, instruction):
+        oprnd1 = tb.read(instruction.operands[1])
+        oprnd2 = tb.read(instruction.operands[2])
+
+        result = tb.temporal(oprnd1.size)
+
+        tb.add(self._builder.gen_and(oprnd1, oprnd2, result))
+
+        tb.write(instruction.operands[0], result)
+        
+        if instruction.update_flags:
+            self._update_flags_data_proc_other(tb, instruction.operands[2], oprnd1, oprnd2, result)
+
+    def _translate_orr(self, tb, instruction):
+        oprnd1 = tb.read(instruction.operands[1])
+        oprnd2 = tb.read(instruction.operands[2])
+
+        result = tb.temporal(oprnd1.size)
+
+        tb.add(self._builder.gen_or(oprnd1, oprnd2, result))
+
+        tb.write(instruction.operands[0], result)
+        
+        if instruction.update_flags:
+            self._update_flags_data_proc_other(tb, instruction.operands[2], oprnd1, oprnd2, result)
+
+    def _translate_eor(self, tb, instruction):
+        oprnd1 = tb.read(instruction.operands[1])
+        oprnd2 = tb.read(instruction.operands[2])
+
+        result = tb.temporal(oprnd1.size)
+
+        tb.add(self._builder.gen_xor(oprnd1, oprnd2, result))
+
+        tb.write(instruction.operands[0], result)
+        
+        if instruction.update_flags:
+            self._update_flags_data_proc_other(tb, instruction.operands[2], oprnd1, oprnd2, result)
+
     def _translate_ldr(self, tb, instruction):
         
         oprnd1 = tb.read(instruction.operands[1])

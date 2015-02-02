@@ -284,6 +284,10 @@ update_flags = Optional(Literal("s"))("uf")
 
 mnemonic = Group(Or([
     Combine(Literal("mov")("ins") + condition_code + update_flags),
+    Combine(Literal("and")("ins") + condition_code + update_flags),
+    Combine(Literal("and")("ins") + update_flags + condition_code), # TODO: Capstone is returning the order inverted (example: andseq)
+    Combine(Literal("eor")("ins") + condition_code + update_flags),
+    Combine(Literal("orr")("ins") + condition_code + update_flags),
     
     Combine(Literal("ldr")("ins") + condition_code),
     Combine(Literal("str")("ins") + condition_code),
