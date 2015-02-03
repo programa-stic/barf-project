@@ -205,6 +205,40 @@ cc_mapper = {
     "al" : ARM_COND_CODE_AL,
 }
 
+ARM_LDM_STM_IA = 0
+ARM_LDM_STM_IB = 1
+ARM_LDM_STM_DA = 2
+ARM_LDM_STM_DB = 3
+ARM_LDM_STM_FD = 4
+ARM_LDM_STM_FA = 5
+ARM_LDM_STM_ED = 6
+ARM_LDM_STM_EA = 7
+
+ldm_stm_am_mapper = {
+    "ia" : ARM_LDM_STM_IA,
+    "ib" : ARM_LDM_STM_IB,
+    "da" : ARM_LDM_STM_DA,
+    "db" : ARM_LDM_STM_DB,
+    "fd" : ARM_LDM_STM_FD,
+    "fa" : ARM_LDM_STM_FA,
+    "ed" : ARM_LDM_STM_ED,
+    "ea" : ARM_LDM_STM_EA,
+}
+
+ldm_stack_am_to_non_stack_am = {
+    ARM_LDM_STM_FA : ARM_LDM_STM_DA,
+    ARM_LDM_STM_FD : ARM_LDM_STM_IA,
+    ARM_LDM_STM_EA : ARM_LDM_STM_DB,
+    ARM_LDM_STM_ED : ARM_LDM_STM_IB,
+}
+
+stm_stack_am_to_non_stack_am = {
+    ARM_LDM_STM_ED : ARM_LDM_STM_DA,
+    ARM_LDM_STM_EA : ARM_LDM_STM_IA,
+    ARM_LDM_STM_FD : ARM_LDM_STM_DB,
+    ARM_LDM_STM_FA : ARM_LDM_STM_IB,
+}
+
 class ArmInstruction(object):
     """Representation of ARM instruction."""
 
@@ -218,6 +252,7 @@ class ArmInstruction(object):
         '_arch_mode',
         '_condition_code',
         '_update_flags',
+        '_ldm_stm_addr_mode',
     ]
 
     def __init__(self, orig_instr, mnemonic, operands, arch_mode):
@@ -230,6 +265,7 @@ class ArmInstruction(object):
         self._arch_mode = arch_mode
         self._condition_code = ARM_COND_CODE_AL
         self._update_flags = False
+        self._ldm_stm_addr_mode = ARM_LDM_STM_IA
 
     @property
     def orig_instr(self):
@@ -245,6 +281,11 @@ class ArmInstruction(object):
     def operands(self):
         """Get instruction operands."""
         return self._operands
+
+    @operands.setter
+    def operands(self, value):
+        """Set instruction operands."""
+        self._operands = value
 
     @property
     def bytes(self):
@@ -292,6 +333,13 @@ class ArmInstruction(object):
     def update_flags(self, value):
         self._update_flags = value
 
+    @property
+    def ldm_stm_addr_mode(self):
+        return self._ldm_stm_addr_mode
+
+    @ldm_stm_addr_mode.setter
+    def ldm_stm_addr_mode(self, value):
+        self._ldm_stm_addr_mode = value
 
     def __str__(self):
         operands_str = ", ".join([str(oprnd) for oprnd in self._operands])
@@ -404,6 +452,7 @@ class ArmRegisterOperand(ArmOperand):
     __slots__ = [
         '_name',
         '_size',
+        '_wb',
     ]
 
     def __init__(self, name, size=None):
@@ -411,6 +460,7 @@ class ArmRegisterOperand(ArmOperand):
 
         self._name = name
         self._size = size
+        self._wb = False
 
     @property
     def name(self):
@@ -419,6 +469,14 @@ class ArmRegisterOperand(ArmOperand):
             raise Exception("Operand size missing.")
 
         return self._name
+
+    @property
+    def wb(self):
+        return self._wb
+
+    @wb.setter
+    def wb(self, value):
+        self._wb = value
 
     def __str__(self):
 #         if not self._size:

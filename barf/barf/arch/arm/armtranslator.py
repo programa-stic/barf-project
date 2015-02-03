@@ -35,7 +35,13 @@ from barf.arch.arm.armbase import ARM_COND_CODE_LT
 from barf.arch.arm.armbase import ARM_COND_CODE_GT
 from barf.arch.arm.armbase import ARM_COND_CODE_LE
 from barf.arch.arm.armbase import ARM_COND_CODE_AL
-
+from barf.arch.arm.armbase import ARM_LDM_STM_IA
+from barf.arch.arm.armbase import ARM_LDM_STM_IB
+from barf.arch.arm.armbase import ARM_LDM_STM_DA
+from barf.arch.arm.armbase import ARM_LDM_STM_DB
+from barf.arch.arm.armbase import ARM_LDM_STM_FD
+from barf.arch.arm.armbase import ldm_stack_am_to_non_stack_am
+from barf.arch.arm.armbase import stm_stack_am_to_non_stack_am
 FULL_TRANSLATION = 0
 LITE_TRANSLATION = 1
 
@@ -642,6 +648,19 @@ class ArmTranslator(object):
         tb.add(self._builder.gen_bisz(reg, is_zero))
         tb.add(self._builder.gen_jcc(is_zero, label))
         
+    def _add_to_reg(self, tb, reg, value):
+        res = tb.temporal(reg.size)
+        tb.add(self._builder.gen_add(reg, value, res))
+        
+        return res
+
+    def _sub_to_reg(self, tb, reg, value):
+        res = tb.temporal(reg.size)
+        tb.add(self._builder.gen_sub(reg, value, res))
+        
+        return res
+
+        
     # EQ: Z set
     def _evaluate_eq(self, tb):
         return self._flags["zf"]
@@ -735,7 +754,7 @@ class ArmTranslator(object):
         tb.write(instruction.operands[0], oprnd1)
         
         if instruction.update_flags:
-            self._update_flags_data_proc_other(tb, instruction.operands[1], None, None, oprnd1)
+            self._update_flags_data_proc_other(tb, instruction.operands[1], oprnd1, None, oprnd1)
 
     def _translate_and(self, tb, instruction):
         oprnd1 = tb.read(instruction.operands[1])
@@ -834,33 +853,75 @@ class ArmTranslator(object):
 
         self._update_flags_data_proc_sub(tb, oprnd1, oprnd2, result) # S = 1 (implied in the instruction)
 
+    def _translate_ldm(self, tb, instruction):
+        self._translate_ldm_stm(tb, instruction, True)
+    
+    def _translate_stm(self, tb, instruction):
+        self._translate_ldm_stm(tb, instruction, False)
+    
+    # TODO: RESPECT REGISTER ORDER
+    # LDM and STM have exactly the same logic except one loads and the other stores
+    def _translate_ldm_stm(self, tb, instruction, load = True):
+        base = tb.read(instruction.operands[0])
+        reg_list = tb.read(instruction.operands[1])
+        
+        if load:
+            load_store_fn = self._builder.gen_ldm
+            # Convert stack addressing modes to non-stack addressing modes
+            if instruction.ldm_stm_addr_mode in ldm_stack_am_to_non_stack_am:
+                instruction.ldm_stm_addr_mode = ldm_stack_am_to_non_stack_am[instruction.ldm_stm_addr_mode]
+        else: # Store
+            load_store_fn = self._builder.gen_stm
+            if instruction.ldm_stm_addr_mode in stm_stack_am_to_non_stack_am:
+                instruction.ldm_stm_addr_mode = stm_stack_am_to_non_stack_am[instruction.ldm_stm_addr_mode]
+
+        pointer = tb.temporal(base.size)
+        tb.add(self._builder.gen_str(base, pointer))
+        base_size_bytes = ReilImmediateOperand(base.size / 8, base.size)
+        reg_list_size_bytes = ReilImmediateOperand(base.size / 8 * len(reg_list), base.size)
+        
+        if instruction.ldm_stm_addr_mode == ARM_LDM_STM_IA:
+            for reg in reg_list:
+                tb.add(load_store_fn(pointer, reg))
+                pointer = self._add_to_reg(tb, pointer, base_size_bytes)
+        elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_IB:
+            for reg in reg_list:
+                pointer = self._add_to_reg(tb, pointer, base_size_bytes)
+                tb.add(load_store_fn(pointer, reg))
+        elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_DA:
+            reg_list.reverse() # Assuming the registry list was in increasing registry number
+            for reg in reg_list:
+                tb.add(load_store_fn(pointer, reg))
+                pointer = self._sub_to_reg(tb, pointer, base_size_bytes)
+        elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_DB:
+            reg_list.reverse()
+            for reg in reg_list:
+                pointer = self._sub_to_reg(tb, pointer, base_size_bytes)
+                tb.add(load_store_fn(pointer, reg))
+        else:
+                raise Exception("Unknown addressing mode.")
+        
+        # Write-back
+        if instruction.operands[0].wb:
+            if instruction.ldm_stm_addr_mode == ARM_LDM_STM_IA or instruction.ldm_stm_addr_mode == ARM_LDM_STM_IB:
+                tmp = self._add_to_reg(tb, base, reg_list_size_bytes)
+            elif instruction.ldm_stm_addr_mode == ARM_LDM_STM_DA or instruction.ldm_stm_addr_mode == ARM_LDM_STM_DB:
+                tmp = self._sub_to_reg(tb, base, reg_list_size_bytes)
+            tb.add(self._builder.gen_str(tmp, base))
+
+    # PUSH and POP are equivalent to STM and LDM in FD mode with the SP (and write-back)
+    # Instructions are modified to adapt it to the LDM/STM interface
+    def _translate_push_pop(self, tb, instruction, translate_fn):
+        sp_name = "sp"
+        sp_size = instruction.operands[0].reg_list[0][0].size # Infer it from the registers list
+        sp_reg = ArmRegisterOperand(sp_name, sp_size)
+        sp_reg.wb = True
+        instruction.operands = [sp_reg, instruction.operands[0]]
+        instruction.ldm_stm_addr_mode = ARM_LDM_STM_FD
+        translate_fn(tb, instruction)
+
     def _translate_push(self, tb, instruction):
-        # Flags Affected
-        # None.
-
-        oprnd0 = tb.read(instruction.operands[0])
-
-        tmp0 = tb.temporal(self._sp.size)
-
-        # TODO RESPECT REGISTER ORDER
-        oprnd0.reverse() # Assuming the register list was in order
-        for reg in oprnd0:
-            tb.add(self._builder.gen_sub(self._sp, self._ws, tmp0))
-            tb.add(self._builder.gen_str(tmp0, self._sp))
-            tb.add(self._builder.gen_stm(reg, self._sp))
+        self._translate_push_pop(tb, instruction, self._translate_stm)
 
     def _translate_pop(self, tb, instruction):
-        # Flags Affected
-        # None.
-
-#         size = self._arch_info.architecture_size
-
-        oprnd0 = tb.read(instruction.operands[0])
-
-        tmp0 = tb.temporal(self._sp.size)
-
-        # TODO RESPECT REGISTER ORDER
-        for reg in oprnd0:
-            tb.add(self._builder.gen_ldm(self._sp, reg))
-            tb.add(self._builder.gen_add(self._sp, self._ws, tmp0))
-            tb.add(self._builder.gen_str(tmp0, self._sp))
+        self._translate_push_pop(tb, instruction, self._translate_ldm)

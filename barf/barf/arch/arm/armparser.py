@@ -32,6 +32,7 @@ from barf.arch.arm.armbase import ARM_MEMORY_INDEX_OFFSET
 from barf.arch.arm.armbase import ARM_MEMORY_INDEX_POST
 from barf.arch.arm.armbase import ARM_MEMORY_INDEX_PRE
 from barf.arch.arm.armbase import cc_mapper
+from barf.arch.arm.armbase import ldm_stm_am_mapper
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,11 @@ def parse_operand(string, location, tokens):
 
     if "register_operand" in tokens:
         oprnd =  process_register(tokens["register_operand"])
+        
+        # TODO: Figure out where to really store this flag, instead of in the register class
+        if "wb" in tokens["register_operand"]:
+            oprnd.wb = True
+        
 
     if "memory_operand" in tokens:
         mem_oprnd = tokens["memory_operand"]
@@ -143,6 +149,11 @@ def parse_instruction(string, location, tokens):
     if "uf" in mnemonic:
         instr.update_flags = True
 
+    if "ldm_stm_addr_mode" in mnemonic:
+        # TODO: REMOVE
+        print "REMOVE THIS DEBUG: " + str(mnemonic["ldm_stm_addr_mode"])
+        instr.ldm_stm_addr_mode = ldm_stm_am_mapper[mnemonic["ldm_stm_addr_mode"]]
+
     return instr
 
 # Grammar Rules
@@ -184,7 +195,7 @@ register = Group(Or([
     Literal("fpscr"),
     Literal("apsr"),
     Literal("cpsr_fc"),
-])("name") + Optional(exclamation))
+])("name") + Optional(exclamation)("wb"))
 
 shift_type = Or([
     Literal("lsl"),
@@ -280,6 +291,18 @@ condition_code = Optional(Or([
     Literal("al"),
 ]))("cc")
 
+ldm_stm_addr_mode = Optional(Or([
+    Literal("ia"),
+    Literal("ib"),
+    Literal("da"),
+    Literal("db"),
+    
+    Literal("fd"),
+    Literal("fa"),
+    Literal("ed"),
+    Literal("ea"),
+]))("ldm_stm_addr_mode")
+
 update_flags = Optional(Literal("s"))("uf")
 
 mnemonic = Group(Or([
@@ -291,6 +314,9 @@ mnemonic = Group(Or([
     
     Combine(Literal("ldr")("ins") + condition_code),
     Combine(Literal("str")("ins") + condition_code),
+    
+    Combine(Literal("ldm")("ins") + condition_code + ldm_stm_addr_mode),
+    Combine(Literal("stm")("ins") + condition_code + ldm_stm_addr_mode),
     
     Combine(Literal("add")("ins") + condition_code + update_flags),
     Combine(Literal("sub")("ins") + condition_code + update_flags),
