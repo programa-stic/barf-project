@@ -58,7 +58,10 @@ def process_shifter_operand(tokens):
 
 def process_register(tokens):
     name = tokens["name"]
-    size = arch_info.registers_size[name]
+    if name in arch_info.registers_size:
+        size = arch_info.registers_size[name]
+    else:
+        size = arch_info.architecture_size
     oprnd = ArmRegisterOperand(name, size)
     
     return oprnd
@@ -323,6 +326,9 @@ mnemonic = Group(Or([
     Combine(Literal("cmp")("ins") + condition_code),
     Combine(Literal("cmn")("ins") + condition_code),
     
+    Combine(Literal("b")("ins") + condition_code),
+    Combine(Literal("bl")("ins") + condition_code),
+
     Word(alphanums)("ins"),
 ]))
 

@@ -303,14 +303,14 @@ class ArmTranslator(object):
 
         if self._arch_mode == ARCH_ARM_MODE_32:
             self._sp = ReilRegisterOperand("sp", 32)
-            self._bp = ReilRegisterOperand("bp", 32)
-            self._ip = ReilRegisterOperand("ip", 32)
+            self._pc = ReilRegisterOperand("pc", 32)
+            self._lr = ReilRegisterOperand("lr", 32)
 
             self._ws = ReilImmediateOperand(4, 32) # word size
         elif self._arch_mode == ARCH_ARM_MODE_64:
             self._sp = ReilRegisterOperand("sp", 64)
-            self._bp = ReilRegisterOperand("bp", 64)
-            self._ip = ReilRegisterOperand("ip", 64)
+            self._pc = ReilRegisterOperand("pc", 64)
+            self._lr = ReilRegisterOperand("lr", 64)
 
             self._ws = ReilImmediateOperand(8, 64) # word size
 
@@ -355,9 +355,6 @@ class ArmTranslator(object):
         translator_fn(tb, instruction)
 
 
-        # Post-processing: update flags
-        pass
-    
         tb.add(nop_cc_lbl)
         
         return tb.instanciate(instruction.address)
@@ -640,8 +637,8 @@ class ArmTranslator(object):
         
         return self._equal_regs(tb, sign, overflow)
     
-    def _jump_to(self, tb, label):
-        tb.add(self._builder.gen_jcc(tb.immediate(1, 1), label))
+    def _jump_to(self, tb, target):
+        tb.add(self._builder.gen_jcc(tb.immediate(1, 1), target))
     
     def _jump_if_zero(self, tb, reg, label):
         is_zero = tb.temporal(1)
@@ -877,26 +874,25 @@ class ArmTranslator(object):
 
         pointer = tb.temporal(base.size)
         tb.add(self._builder.gen_str(base, pointer))
-        base_size_bytes = ReilImmediateOperand(base.size / 8, base.size)
-        reg_list_size_bytes = ReilImmediateOperand(base.size / 8 * len(reg_list), base.size)
+        reg_list_size_bytes = ReilImmediateOperand(self._ws.immediate * len(reg_list), base.size)
         
         if instruction.ldm_stm_addr_mode == ARM_LDM_STM_IA:
             for reg in reg_list:
                 tb.add(load_store_fn(pointer, reg))
-                pointer = self._add_to_reg(tb, pointer, base_size_bytes)
+                pointer = self._add_to_reg(tb, pointer, self._ws)
         elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_IB:
             for reg in reg_list:
-                pointer = self._add_to_reg(tb, pointer, base_size_bytes)
+                pointer = self._add_to_reg(tb, pointer, self._ws)
                 tb.add(load_store_fn(pointer, reg))
         elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_DA:
             reg_list.reverse() # Assuming the registry list was in increasing registry number
             for reg in reg_list:
                 tb.add(load_store_fn(pointer, reg))
-                pointer = self._sub_to_reg(tb, pointer, base_size_bytes)
+                pointer = self._sub_to_reg(tb, pointer, self._ws)
         elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_DB:
             reg_list.reverse()
             for reg in reg_list:
-                pointer = self._sub_to_reg(tb, pointer, base_size_bytes)
+                pointer = self._sub_to_reg(tb, pointer, self._ws)
                 tb.add(load_store_fn(pointer, reg))
         else:
                 raise Exception("Unknown addressing mode.")
@@ -925,3 +921,17 @@ class ArmTranslator(object):
 
     def _translate_pop(self, tb, instruction):
         self._translate_push_pop(tb, instruction, self._translate_ldm)
+
+    def _translate_b(self, tb, instruction):
+        self._translate_branch(tb, instruction, link = False)
+    
+    def _translate_bl(self, tb, instruction):
+        self._translate_branch(tb, instruction, link = True)
+    
+    def _translate_branch(self, tb, instruction, link):
+        target = tb.read(instruction.operands[0])
+        target = ReilImmediateOperand(target.immediate << 8, target.size + 8)
+            
+        if (link):
+            tb.add(self._builder.gen_add(self._pc, self._ws, self._lr))
+        self._jump_to(tb, target)
