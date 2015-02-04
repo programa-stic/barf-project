@@ -88,24 +88,24 @@ load_context_from_dict(PyObject *dict, context_t *ctx)
 void
 save_context_to_dict(PyObject *dict, context_t *ctx)
 {
-    PyDict_SetItemString(dict,    "rax", Py_BuildValue("I",    ctx->rax));
-    PyDict_SetItemString(dict,    "rbx", Py_BuildValue("I",    ctx->rbx));
-    PyDict_SetItemString(dict,    "rcx", Py_BuildValue("I",    ctx->rcx));
-    PyDict_SetItemString(dict,    "rdx", Py_BuildValue("I",    ctx->rdx));
-    PyDict_SetItemString(dict,    "rdi", Py_BuildValue("I",    ctx->rdi));
-    PyDict_SetItemString(dict,    "rsi", Py_BuildValue("I",    ctx->rsi));
-    PyDict_SetItemString(dict,    "rbp", Py_BuildValue("I",    ctx->rbp));
-    PyDict_SetItemString(dict,    "rsp", Py_BuildValue("I",    ctx->rsp));
-    PyDict_SetItemString(dict,    "rip", Py_BuildValue("I",    ctx->rip));
-    PyDict_SetItemString(dict,     "r8", Py_BuildValue("I",     ctx->r8));
-    PyDict_SetItemString(dict,     "r9", Py_BuildValue("I",     ctx->r9));
-    PyDict_SetItemString(dict,    "r10", Py_BuildValue("I",    ctx->r10));
-    PyDict_SetItemString(dict,    "r11", Py_BuildValue("I",    ctx->r11));
-    PyDict_SetItemString(dict,    "r12", Py_BuildValue("I",    ctx->r12));
-    PyDict_SetItemString(dict,    "r13", Py_BuildValue("I",    ctx->r13));
-    PyDict_SetItemString(dict,    "r14", Py_BuildValue("I",    ctx->r14));
-    PyDict_SetItemString(dict,    "r15", Py_BuildValue("I",    ctx->r15));
-    PyDict_SetItemString(dict, "rflags", Py_BuildValue("I", ctx->rflags));
+    PyDict_SetItemString(dict,    "rax", Py_BuildValue("k",    ctx->rax));
+    PyDict_SetItemString(dict,    "rbx", Py_BuildValue("k",    ctx->rbx));
+    PyDict_SetItemString(dict,    "rcx", Py_BuildValue("k",    ctx->rcx));
+    PyDict_SetItemString(dict,    "rdx", Py_BuildValue("k",    ctx->rdx));
+    PyDict_SetItemString(dict,    "rdi", Py_BuildValue("k",    ctx->rdi));
+    PyDict_SetItemString(dict,    "rsi", Py_BuildValue("k",    ctx->rsi));
+    PyDict_SetItemString(dict,    "rbp", Py_BuildValue("k",    ctx->rbp));
+    PyDict_SetItemString(dict,    "rsp", Py_BuildValue("k",    ctx->rsp));
+    PyDict_SetItemString(dict,    "rip", Py_BuildValue("k",    ctx->rip));
+    PyDict_SetItemString(dict,     "r8", Py_BuildValue("k",     ctx->r8));
+    PyDict_SetItemString(dict,     "r9", Py_BuildValue("k",     ctx->r9));
+    PyDict_SetItemString(dict,    "r10", Py_BuildValue("k",    ctx->r10));
+    PyDict_SetItemString(dict,    "r11", Py_BuildValue("k",    ctx->r11));
+    PyDict_SetItemString(dict,    "r12", Py_BuildValue("k",    ctx->r12));
+    PyDict_SetItemString(dict,    "r13", Py_BuildValue("k",    ctx->r13));
+    PyDict_SetItemString(dict,    "r14", Py_BuildValue("k",    ctx->r14));
+    PyDict_SetItemString(dict,    "r15", Py_BuildValue("k",    ctx->r15));
+    PyDict_SetItemString(dict, "rflags", Py_BuildValue("k", ctx->rflags));
 }
 
 unsigned long
