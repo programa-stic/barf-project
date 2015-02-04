@@ -42,6 +42,10 @@ class TranslationBuilder(object):
 
         self._builder = ReilInstructionBuilder()
 
+        self._regs_mapper = self._arch_info.registers_access_mapper()
+
+        self._regs_size = self._arch_info.registers_size
+
     def add(self, instr):
         self._instructions.append(instr)
 
@@ -93,6 +97,16 @@ class TranslationBuilder(object):
         if isinstance(x86_operand, barf.arch.x86.x86base.X86RegisterOperand):
 
             reil_operand = ReilRegisterOperand(x86_operand.name, x86_operand.size)
+
+            if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and \
+                x86_operand.size == 32:
+                if x86_operand.name in self._regs_mapper:
+                    base_reg, offset = self._regs_mapper[x86_operand.name]
+
+                    reil_operand_base = ReilRegisterOperand(base_reg, self._regs_size[base_reg])
+                    reil_immediate = ReilImmediateOperand(0x0, self._regs_size[base_reg])
+
+                self.add(self._builder.gen_str(reil_immediate, reil_operand_base))
 
             self.add(self._builder.gen_str(value, reil_operand))
 
