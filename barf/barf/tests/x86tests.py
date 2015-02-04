@@ -1,3 +1,6 @@
+import os
+import pickle
+import random
 import unittest
 
 import pyasmjit
@@ -120,6 +123,8 @@ class X86TranslationTests(unittest.TestCase):
         self.smt_translator.set_reg_access_mapper(self.arch_info.registers_access_mapper())
         self.smt_translator.set_arch_registers_size(self.arch_info.registers_size)
 
+        self.context_filename = "failing_context.data"
+
     def test_lea(self):
         asm = ["lea eax, [ebx + 0x100]"]
 
@@ -140,11 +145,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_cld(self):
         asm = ["cld"]
@@ -166,11 +172,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_clc(self):
         asm = ["clc"]
@@ -192,11 +199,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_nop(self):
         asm = ["nop"]
@@ -218,11 +226,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_test(self):
         asm = ["test eax, ebx"]
@@ -244,11 +253,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_not(self):
         asm = ["not eax"]
@@ -270,11 +280,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_xor(self):
         asm = ["xor eax, ebx"]
@@ -296,11 +307,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_or(self):
         asm = ["or eax, ebx"]
@@ -322,11 +334,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_and(self):
         asm = ["and eax, ebx"]
@@ -348,11 +361,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_cmp(self):
         asm = ["cmp eax, ebx"]
@@ -374,11 +388,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_neg(self):
         asm = ["neg eax"]
@@ -400,11 +415,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_dec(self):
         asm = ["dec eax"]
@@ -426,11 +442,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_inc(self):
         asm = ["inc eax"]
@@ -452,11 +469,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_div(self):
         asm = ["div ebx"]
@@ -483,11 +501,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_imul(self):
         asm = ["imul eax, ebx"]
@@ -509,11 +528,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_mul(self):
         asm = ["mul ebx"]
@@ -535,11 +555,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_sbb(self):
         asm = ["sbb eax, ebx"]
@@ -561,11 +582,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_sub(self):
         asm = ["sub eax, ebx"]
@@ -587,11 +609,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_adc(self):
         asm = ["adc eax, ebx"]
@@ -613,11 +636,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_add(self):
         asm = ["add eax, ebx"]
@@ -639,11 +663,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_xchg(self):
         asm = ["xchg eax, ebx"]
@@ -665,11 +690,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_movzx(self):
         asm = ["movzx eax, bx"]
@@ -691,11 +717,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_mov(self):
         asm = ["mov eax, ebx"]
@@ -717,11 +744,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_shr(self):
         asm = ["shr eax, 3"]
@@ -743,11 +771,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_shl(self):
         asm = ["shl eax, 3"]
@@ -769,11 +798,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_sal(self):
         asm = ["sal eax, 3"]
@@ -795,11 +825,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_sar(self):
         asm = ["sar eax, 3"]
@@ -821,11 +852,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_stc(self):
         asm = ["stc"]
@@ -848,11 +880,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_setne(self):
         asm = ["setne al"]
@@ -875,11 +908,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_sete(self):
         asm = ["sete al"]
@@ -902,11 +936,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_setb(self):
         asm = ["setb al"]
@@ -929,11 +964,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_setbe(self):
         asm = ["setbe al"]
@@ -956,11 +992,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_setg(self):
         asm = ["setg al"]
@@ -983,11 +1020,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_rol(self):
         asm = ["rol eax, 8"]
@@ -1009,11 +1047,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_ror(self):
         asm = ["ror eax, 8"]
@@ -1035,11 +1074,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_rcl(self):
         asm = ["rcl eax, 8"]
@@ -1064,11 +1104,12 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_rcr(self):
         asm = ["rcr eax, 8"]
@@ -1093,79 +1134,103 @@ class X86TranslationTests(unittest.TestCase):
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-        self.assertTrue(self.__compare_contexts(
-            ctx_init,
-            x86_ctx_out,
-            reil_ctx_out
-        ))
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def __init_context(self):
-        return {
-            'rax'    : 0xa,
-            'rbx'    : 0x2,
-            'rcx'    : 0xb,
-            'rdx'    : 0xc,
-            'rdi'    : 0xd,
-            'rsi'    : 0xe,
-            'rflags' : 0x202,
-        }
+        """Initialize register with random values.
+        """
+        if os.path.isfile(self.context_filename):
+            context = self.__load_failing_context()
+        else:
+            context = self.__create_random_context()
+
+        return context
+
+    def __create_random_context(self):
+        context = {}
+
+        for reg in self.arch_info.registers_gp_base:
+            if reg not in ['rsp', 'rip', 'rbp']:
+                min_value, max_value = 0, 2**self.arch_info.operand_size - 1
+                context[reg] = random.randint(min_value, max_value)
+
+        context['rflags'] = 0x202
+
+        return context
+
+    def __load_failing_context(self):
+        f = open(self.context_filename, "rb")
+        context = pickle.load(f)
+        f.close()
+
+        return context
+
+    def __save_failing_context(self, context):
+        f = open(self.context_filename, "wb")
+        pickle.dump(context, f)
+        f.close()        
 
     def __compare_contexts(self, context_init, x86_context, reil_context):
         match = True
-
-        fmt = "%s (x86)  : %s (%s)"
-
-        mask = 2**64-1
-
-        for reg in sorted(context_init.keys()):
-            if ((2**64-1) & x86_context[reg]) != ((2**64-1) & reil_context[reg]):
-                x86_value = x86_context[reg] & mask
-                reil_value = reil_context[reg] & mask
-
-                if reg in ['rflags', 'eflags']:
-                    x86_flags_str = self.__print_flags(x86_context[reg])
-                    reil_flags_str = self.__print_flags(reil_context[reg])
-
-                    print ("%s (x86)  : %s (%s)" % (reg, hex(x86_value), x86_flags_str))
-                    print ("%s (reil) : %s (%s)" % (reg, hex(reil_value), reil_flags_str))
-                else:
-                    print ("%s (x86)  : %s " % (reg, hex(x86_value)))
-                    print ("%s (reil) : %s " % (reg, hex(reil_value)))
-
-                match = False
-                break
-
-        if not match:
-            self.__print_contexts(context_init, x86_context, reil_context)
-
-        return match
-
-    def __print_contexts(self, context_init, x86_context, reil_context):
-        header_fmt = "{0:^8s} : {1:>16s} ?= {2:<16s}"
-        header = header_fmt.format("Register", "x86", "REIL")
-        ruler  = "-" * len(header)
-
-        print(header)
-        print(ruler)
-
-        fmt = "{0:>8s} : {1:016x} {eq} {2:016x} ({1:>5d} {eq} {2:<5d}) {marker}"
         mask = 2**64-1
 
         for reg in sorted(context_init.keys()):
             if (x86_context[reg] & mask) != (reil_context[reg] & mask):
-                eq = "!="
-                marker = "<"
-            else:
-                eq = "=="
-                marker = ""
+                match = False
+                break
 
-            print fmt.format(
+        return match
+
+    def __print_contexts(self, context_init, x86_context, reil_context):
+        out = "Contexts don't match!\n\n"
+
+        header_fmt = " {0:^8s} : {1:^16s} | {2:>16s} ?= {3:<16s}\n"
+        header = header_fmt.format("Register", "Initial", "x86", "REIL")
+        ruler = "-" * len(header) + "\n"
+
+        out += header
+        out += ruler
+
+        fmt = " {0:>8s} : {1:016x} | {2:016x} {eq} {3:016x} {marker}\n"
+
+        mask = 2**64-1
+
+        for reg in sorted(context_init.keys()):
+            if (x86_context[reg] & mask) != (reil_context[reg] & mask):
+                eq, marker = "!=", "<"
+            else:
+                eq, marker = "==", ""
+
+            out += fmt.format(
                 reg,
-                (2**64-1) & x86_context[reg],
-                (2**64-1) & reil_context[reg],
+                context_init[reg] & mask,
+                x86_context[reg] & mask,
+                reil_context[reg] & mask,
                 eq=eq,
                 marker=marker
             )
+
+        # Pretty print flags.
+        reg = "rflags"
+        fmt = "{0:s} ({1:>4s}) : {2:016x} ({3:s})"
+
+        x86_value = x86_context[reg] & mask
+        reil_value = reil_context[reg] & mask
+
+        if x86_value != reil_value:
+            x86_flags_str = self.__print_flags(x86_context[reg])
+            reil_flags_str = self.__print_flags(reil_context[reg])
+
+            out += "\n"
+            out += fmt.format(reg, "x86", x86_value, x86_flags_str) + "\n"
+            out += fmt.format(reg, "reil", reil_value, reil_flags_str)
+
+        return out
 
     def __print_flags(self, flags_reg):
         # flags
@@ -1182,12 +1247,21 @@ class X86TranslationTests(unittest.TestCase):
         out = ""
 
         for bit, flag in flags.items():
-            if flags_reg & 2**bit:
-                out += flag.upper() + " "
-            else:
-                out += flag.lower() + " "
+            flag_str = flag.upper() if flags_reg & 2**bit else flag.lower()
+            out +=  flag_str + " "
 
         return out[:-1]
+
+    def __fix_reil_flag(self, reil_context, x86_context, flag):
+        reil_context_out = dict(reil_context)
+
+        flags_reg = 'eflags' if 'eflags' in reil_context_out else 'rflags'
+
+        _, bit = self.arch_info.registers_access_mapper()[flag]
+
+        reil_context_out[flags_reg] |= (x86_context[flags_reg] & 2**bit)
+
+        return reil_context_out
 
     def __fix_reil_flags(self, reil_context, x86_context):
         reil_context_out = dict(reil_context)
