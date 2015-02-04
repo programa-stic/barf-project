@@ -17,7 +17,7 @@ from barf.core.reil import DualInstruction
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
 
-logger = logging.getLogger("GadgetFinder")
+logger = logging.getLogger(__name__)
 
 class GadgetFinder(object):
 
@@ -93,9 +93,6 @@ class GadgetFinder(object):
             try:
                 ins_ir = self._ir_trans.translate(asm_instr)
             except:
-                logger.debug("[-] Error: GadgetFinder")
-                logger.debug("asm: " + str(asm_instr))
-                logger.debug("bytes: " + "".join("\\x%02x" % ord(b) for b in asm_instr.bytes))
                 continue
 
             # build gadget
@@ -143,9 +140,6 @@ class GadgetFinder(object):
             try:
                 ir_instrs = self._ir_trans.translate(asm_instr)
             except:
-                logger.debug("[-] Error: GadgetFinder")
-                logger.debug("asm: " + str(asm_instr))
-                logger.debug("bytes: " + "".join("\\x%02x" % ord(b) for b in asm_instr.bytes))
                 continue
 
             if self._is_valid_ins(ir_instrs, asm_instr):
