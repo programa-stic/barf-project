@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased][unreleased]
 ### Fixed
+- Fixes in x86 instruction translations (mostly flags update issues.)
 - Fix missing registers in X86ArchitectureInformation class.
 - Fix SMT translation for STR instruction when dst operand is bigger than src operand.
 
@@ -13,7 +14,7 @@ All notable changes to this project will be documented in this file.
 - BARFgadgets now supports gadgets ending in RET-imm16, JMP and CALL instructions.
 
 ### Changed
-- Overall improvements to x86 arch package (major changes).
+- Overall improvements to x86 arch package (major changes that ended up in performance increase of translation up to 3x!).
 - Overall improvements to reil package (minor changes).
 - New reil translation scheme for x86 instructions.
 - x86Translator and x86InstructionTranslator modules were merged.

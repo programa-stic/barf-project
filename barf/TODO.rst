@@ -34,17 +34,6 @@ General:
 * Improve instruction support.
 * Improve translation tests.
 * Review flags handling. Use {E/R}Flags as a register instead of flags aliases such as CF.
-* Now each flag alias has a size of 1 byte. During REIL emulation, make sure they always use just LSB.
-
-x86:
-
-* X86ArchitectureInformation needs major refactoring.
-* Add register reader and writer functionality to the X86ArchitectureInformation class.
-* Merge x86Translator and x86InstructionTranslator modules.
-* Find a better way to translate to REIL.
-* Refactor out REIL instruction checking function from x86instructiontranslation module to the reil module.
-* Remove '?' placeholder for instruction templates and from parser.
-* Rethink x86instruction module. Try to use functionalities provided by Capstone instead.
 
 ``analysis`` package
 ~~~~~~~~~~~~~~~~~~~~
@@ -54,13 +43,11 @@ Gadget:
 * Refactor gadget module.
 * Refactor out gadgets from analysis package (move it to tools/gadgets).
 * Improve verification. Include modified registers, flags and memory locations where necessary (verify that they don't change.)
-* Search for more gadgets type: call, jmp, sysenter, int 0x80.
+* Search for more gadgets type: sysenter, int 0x80.
 * Add support for missing arithmetic operations: *, /, %, <<, >>.
 * Rename Arithmetic Gadget a BinaryOps Gadget.
 * Improve performance of the gadgetfinder module.
 * Add support for semantic search of gadgets (create small language for the purpose.)
-* Move core functionality of gadgetverifier module to codeanalyzer module. Then, use codeanalyzer module.
-* Fix verfication of gadgets that access memory. Use proper checks (this requieres changes in smttranslator module.)
 * Unify use of ArchitectureInformation class in gadget{classifier,verifier} modules.
 
 Code Analyzer:
