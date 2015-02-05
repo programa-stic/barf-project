@@ -435,7 +435,7 @@ class ReilEmulator(object):
         if keep_track and register.name in self._arch_regs:
             self._regs_written.add(register.name)
 
-		# Debug...
+        # Debug
         if verbose:
             print register, hex(value), base_reg_name, hex(self._regs[base_reg_name])
 
