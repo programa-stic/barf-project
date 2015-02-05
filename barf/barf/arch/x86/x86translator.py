@@ -316,6 +316,23 @@ class X86Translator(object):
     def _not_implemented(self, tb, instruction):
         raise NotImplementedError("Instruction Not Implemented")
 
+    def _extract_bit(self, tb, reg, bit):
+        assert(bit >= 0 and bit < reg.size)
+        
+        tmp = tb.temporal(reg.size)
+        ret = tb.temporal(1)
+
+        tb.add(self._builder.gen_bsh(reg, tb.immediate(-bit, reg.size), tmp))   # shift to LSB
+        tb.add(self._builder.gen_and(tmp, tb.immediate(1, reg.size), ret))      # filter LSB
+
+        return ret
+
+    def _extract_msb(self, tb, reg):
+        return self._extract_bit(tb, reg, reg.size - 1)
+
+    def _extract_sign_bit(self, tb, reg):
+        return self._extract_msb(tb, reg)
+
 # Translators
 # ============================================================================ #
 # ============================================================================ #
@@ -334,8 +351,8 @@ class X86Translator(object):
         # Create temporal variables.
         tmp0 = tb.temporal(result.size)
 
-        mask0 = tb.immediate(2**result.size-1, result.size)
-        shift0 = tb.immediate(-(result.size-1), result.size)
+        mask0 = tb.immediate(2**(oprnd0.size-1), result.size)
+        shift0 = tb.immediate(-(oprnd0.size-1), result.size)
 
         sf = self._flags["sf"]
 
@@ -343,29 +360,61 @@ class X86Translator(object):
         tb.add(self._builder.gen_bsh(tmp0, shift0, sf))     # extract sign bit
 
     def _update_of(self, tb, oprnd0, oprnd1, result):
+        assert oprnd0.size == oprnd1.size
+
         of = self._flags["of"]
 
-        imm0 = tb.immediate(2**(oprnd0.size-1), oprnd0.size)
-        imm1 = tb.immediate(1, oprnd0.size)
-        imm3 = tb.immediate(-(oprnd0.size-1), oprnd0.size)
-        imm4 = tb.immediate(2**(oprnd0.size-1), result.size)
+        imm0 = tb.immediate(1, 1)
 
-        tmp0 = tb.temporal(oprnd0.size)
-        tmp1 = tb.temporal(oprnd1.size)
-        tmp2 = tb.temporal(oprnd0.size)
-        tmp3 = tb.temporal(oprnd0.size)
-        tmp4 = tb.temporal(oprnd0.size)
-        tmp5 = tb.temporal(oprnd0.size)
-        tmp6 = tb.temporal(oprnd0.size)
+        tmp0 = tb.temporal(1)
+        tmp1 = tb.temporal(1)
+        tmp2 = tb.temporal(1)
+        tmp3 = tb.temporal(1)
 
-        tb.add(self._builder.gen_and(oprnd0, imm0, tmp0))   # filter sign bit oprnd 1
-        tb.add(self._builder.gen_and(oprnd1, imm0, tmp1))   # filter sign bit oprnd 2
-        tb.add(self._builder.gen_and(result, imm4, tmp2))   # filter sign bit result
-        tb.add(self._builder.gen_xor(tmp0, tmp1, tmp3))     # sign bit oprnd0 ^ sign bit oprnd1
-        tb.add(self._builder.gen_xor(tmp3, imm1, tmp4))     # sign bit oprnd0 ^ sign bit oprnd1 ^ 1
-        tb.add(self._builder.gen_xor(tmp0, tmp2, tmp5))     # sign bit oprnd0 ^ sign bit result
-        tb.add(self._builder.gen_and(tmp4, tmp5, tmp6))     # (sign bit oprnd0 ^ sign bit oprnd1 ^ 1) & (sign bit oprnd0 ^ sign bit result)
-        tb.add(self._builder.gen_bsh(tmp6, imm3, of))
+        # Extract sign bit.
+        oprnd0_sign = self._extract_sign_bit(tb, oprnd0)
+        oprnd1_sign = self._extract_sign_bit(tb, oprnd1)
+        result_sign = self._extract_bit(tb, result, oprnd0.size - 1)
+
+        # Compute OF.
+        tb.add(self._builder.gen_xor(oprnd0_sign, oprnd1_sign, tmp0))   # (sign bit oprnd0 ^ sign bit oprnd1)
+        tb.add(self._builder.gen_xor(tmp0, imm0, tmp1))                 # (sign bit oprnd0 ^ sign bit oprnd1 ^ 1)
+        tb.add(self._builder.gen_xor(oprnd0_sign, result_sign, tmp2))   # (sign bit oprnd0 ^ sign bit result)
+        tb.add(self._builder.gen_and(tmp1, tmp2, tmp3))                 # (sign bit oprnd0 ^ sign bit oprnd1 ^ 1) & (sign bit oprnd0 ^ sign bit result)
+
+        # Save result.
+        tb.add(self._builder.gen_str(tmp3, of))
+
+    def _update_of_sub(self, tb, oprnd0, oprnd1, result):
+        assert oprnd0.size == oprnd1.size
+
+        of = self._flags["of"]
+
+        imm0 = tb.immediate(1, 1)
+
+        tmp0 = tb.temporal(1)
+        tmp1 = tb.temporal(1)
+        tmp2 = tb.temporal(1)
+        tmp3 = tb.temporal(1)
+
+        oprnd1_sign = tb.temporal(1)
+
+        # Extract sign bit.
+        oprnd0_sign = self._extract_sign_bit(tb, oprnd0)
+        oprnd1_sign_tmp = self._extract_sign_bit(tb, oprnd1)
+        result_sign = self._extract_bit(tb, result, oprnd0.size - 1)
+
+        # Invert sign bit of oprnd2.
+        tb.add(self._builder.gen_xor(oprnd1_sign_tmp, imm0, oprnd1_sign))
+
+        # Compute OF.
+        tb.add(self._builder.gen_xor(oprnd0_sign, oprnd1_sign, tmp0))   # (sign bit oprnd0 ^ sign bit oprnd1)
+        tb.add(self._builder.gen_xor(tmp0, imm0, tmp1))                 # (sign bit oprnd0 ^ sign bit oprnd1 ^ 1)
+        tb.add(self._builder.gen_xor(oprnd0_sign, result_sign, tmp2))   # (sign bit oprnd0 ^ sign bit result)
+        tb.add(self._builder.gen_and(tmp1, tmp2, tmp3))                 # (sign bit oprnd0 ^ sign bit oprnd1 ^ 1) & (sign bit oprnd0 ^ sign bit result)
+
+        # Save result.
+        tb.add(self._builder.gen_str(tmp3, of))
 
     def _update_cf(self, tb, oprnd0, oprnd1, result):
         cf = self._flags["cf"]
@@ -527,7 +576,7 @@ class X86Translator(object):
 
         if self._translation_mode == FULL_TRANSLATION:
             # Flags : OF, SF, ZF, AF, PF, CF
-            self._update_of(tb, oprnd0, oprnd1, tmp0)
+            self._update_of_sub(tb, oprnd0, oprnd1, tmp0)
             self._update_sf(tb, oprnd0, oprnd1, tmp0)
             self._update_zf(tb, oprnd0, oprnd1, tmp0)
             self._update_af(tb, oprnd0, oprnd1, tmp0)
@@ -602,13 +651,23 @@ class X86Translator(object):
             result_high = ReilRegisterOperand("edx", 32)
         elif oprnd0.size == 64:
             oprnd1 = ReilRegisterOperand("rax", 64)
-            tmp0 = tb.temporal(64)
+            tmp0 = tb.temporal(128)
             result_low = ReilRegisterOperand("rax", 64)
             result_high = ReilRegisterOperand("rdx", 64)
 
         imm0 = tb.immediate(-oprnd0.size, oprnd0.size*2)
 
         tb.add(self._builder.gen_mul(oprnd0, oprnd1, tmp0))
+
+        # Clean rax and rdx registers.
+        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and \
+            oprnd0.size == 32:
+
+            zero = tb.immediate(0, 64)
+
+            tb.add(self._builder.gen_str(zero, ReilRegisterOperand("rdx", 64)))
+            tb.add(self._builder.gen_str(zero, ReilRegisterOperand("rax", 64)))
+
         tb.add(self._builder.gen_bsh(tmp0, imm0, result_high))
         tb.add(self._builder.gen_str(tmp0, result_low))
 
@@ -854,11 +913,11 @@ class X86Translator(object):
 
         if self._translation_mode == FULL_TRANSLATION:
             # Flags : OF, SF, ZF, AF, PF
-            self._update_of(tb, oprnd0, oprnd0, tmp0)
-            self._update_sf(tb, oprnd0, oprnd0, tmp0)
-            self._update_zf(tb, oprnd0, oprnd0, tmp0)
-            self._update_af(tb, oprnd0, oprnd0, tmp0)
-            self._update_pf(tb, oprnd0, oprnd0, tmp0)
+            self._update_of_sub(tb, oprnd0, imm0, tmp0)
+            self._update_sf(tb, oprnd0, imm0, tmp0)
+            self._update_zf(tb, oprnd0, imm0, tmp0)
+            self._update_af(tb, oprnd0, imm0, tmp0)
+            self._update_pf(tb, oprnd0, imm0, tmp0)
 
         tb.write(instruction.operands[0], tmp0)
 
@@ -887,7 +946,7 @@ class X86Translator(object):
 
         if self._translation_mode == FULL_TRANSLATION:
             # Flags : OF, SF, ZF, AF, PF
-            self._update_of(tb, oprnd0, oprnd0, tmp1)
+            self._update_of_sub(tb, oprnd0, oprnd0, tmp1)
             self._update_sf(tb, oprnd0, oprnd0, tmp1)
             self._update_zf(tb, oprnd0, oprnd0, tmp1)
             self._update_af(tb, oprnd0, oprnd0, tmp1)
@@ -909,7 +968,7 @@ class X86Translator(object):
 
         # Flags : CF, OF, SF, ZF, AF, PF
         self._update_cf(tb, oprnd0, oprnd1, tmp0)
-        self._update_of(tb, oprnd0, oprnd1, tmp0)
+        self._update_of_sub(tb, oprnd0, oprnd1, tmp0)
         self._update_sf(tb, oprnd0, oprnd1, tmp0)
         self._update_zf(tb, oprnd0, oprnd1, tmp0)
         self._update_af(tb, oprnd0, oprnd1, tmp0)
