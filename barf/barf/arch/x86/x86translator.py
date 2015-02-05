@@ -196,6 +196,90 @@ class TranslationBuilder(object):
 
         return addr
 
+def check_operands_size(instr, arch_size):
+    if instr.mnemonic in [  ReilMnemonic.ADD, ReilMnemonic.SUB,
+                            ReilMnemonic.MUL, ReilMnemonic.DIV,
+                            ReilMnemonic.MOD,
+                            ReilMnemonic.AND, ReilMnemonic.OR,
+                            ReilMnemonic.XOR]:
+        # operand0 : Source 1 (Literal or register)
+        # operand1 : Source 2 (Literal or register)
+        # operand2 : Destination resgister
+
+        # Check that source operands have the same size.
+        assert instr.operands[0].size == instr.operands[1].size, \
+            "Invalid operands size: %s" % instr
+
+    elif instr.mnemonic in [ReilMnemonic.BSH]:
+        # operand0 : Source 1 (Literal or register)
+        # operand1 : Source 2 (Literal or register)
+        # operand2 : Destination resgister
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.LDM]:
+        # operand0 : Source address (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        assert instr.operands[0].size == arch_size, \
+            "Invalid operands size: %s" % instr
+
+    elif instr.mnemonic in [ReilMnemonic.STM]:
+        # operand0 : Value to store (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination address (Literal or register)
+
+        assert instr.operands[2].size == arch_size, \
+            "Invalid operands size: %s" % instr
+
+    elif instr.mnemonic in [ReilMnemonic.STR]:
+        # operand0 : Value to store (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.BISZ]:
+        # operand0 : Value to compare (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.JCC]:
+        # operand0 : Condition (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        # FIX: operand2.size should be arch_size + 1 byte
+
+        # assert instr.operands[2].size == arch_size + 8, \
+        #     "Invalid operands size: %s" % instr
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.UNKN]:
+        # operand0 : Empty register
+        # operand1 : Empty register
+        # operand2 : Empty register
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.UNDEF]:
+        # operand0 : Empty register
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.NOP]:
+        # operand0 : Empty register
+        # operand1 : Empty register
+        # operand2 : Empty register
+
+        pass
+
 class X86Translator(object):
 
     """x86 to IR Translator."""
@@ -254,6 +338,19 @@ class X86Translator(object):
             self._log_translation_exception(instruction)
 
             raise
+
+        # Some sanity check....
+        for instr in trans_instrs:
+            try:
+                check_operands_size(instr, self._arch_info.architecture_size)
+            except:
+                logger.error(
+                    "Invalid operand size: %s (%s)", 
+                    instr, 
+                    instruction
+                )
+
+                raise
 
         return trans_instrs
 
@@ -890,11 +987,11 @@ class X86Translator(object):
 
         if self._translation_mode == FULL_TRANSLATION:
             # Flags : OF, SF, ZF, AF, PF
-            self._update_of(tb, oprnd0, oprnd0, tmp0)
-            self._update_sf(tb, oprnd0, oprnd0, tmp0)
-            self._update_zf(tb, oprnd0, oprnd0, tmp0)
-            self._update_af(tb, oprnd0, oprnd0, tmp0)
-            self._update_pf(tb, oprnd0, oprnd0, tmp0)
+            self._update_of(tb, oprnd0, imm0, tmp0)
+            self._update_sf(tb, oprnd0, imm0, tmp0)
+            self._update_zf(tb, oprnd0, imm0, tmp0)
+            self._update_af(tb, oprnd0, imm0, tmp0)
+            self._update_pf(tb, oprnd0, imm0, tmp0)
 
         tb.write(instruction.operands[0], tmp0)
 
@@ -2167,6 +2264,7 @@ class X86Translator(object):
         branch_cond = tb.temporal(1)
 
         imm0 = tb.immediate(1, counter.size)
+        imm1 = tb.immediate(1, 1)
 
         keep_looping_lbl = tb.label('keep_looping')
 
@@ -2174,7 +2272,7 @@ class X86Translator(object):
         tb.add(self._builder.gen_sub(tmp0, imm0, counter))
         tb.add(self._builder.gen_bisz(counter, counter_zero))
         tb.add(self._builder.gen_bisz(self._flags["zf"], zf_zero))
-        tb.add(self._builder.gen_xor(counter_zero, imm0, counter_not_zero))
+        tb.add(self._builder.gen_xor(counter_zero, imm1, counter_not_zero))
         tb.add(self._builder.gen_and(counter_not_zero, zf_zero, branch_cond))
         tb.add(self._builder.gen_jcc(branch_cond, keep_looping_lbl))
         tb.add(self._builder.gen_jcc(imm0, end_addr)) # exit loop
