@@ -804,6 +804,11 @@ class X86TranslationTests(unittest.TestCase):
         # Undefined flags...
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
 
+        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # not cover by this test.
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -833,6 +838,11 @@ class X86TranslationTests(unittest.TestCase):
 
         # Undefined flags...
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+
+        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # not cover by this test.
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
@@ -864,6 +874,11 @@ class X86TranslationTests(unittest.TestCase):
         # Undefined flags...
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
 
+        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # not cover by this test.
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -893,6 +908,11 @@ class X86TranslationTests(unittest.TestCase):
 
         # Undefined flags...
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+
+        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # not cover by this test.
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
@@ -1089,8 +1109,11 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
-        # NOTE: OF can be left undefined in some cases. It is not cover
-        # by the test.
+        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # not cover by this test.
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -1118,8 +1141,11 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
-        # NOTE: OF can be left undefined in some cases. It is not cover
-        # by the test.
+        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # not cover by this test.
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -1150,8 +1176,11 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
-        # NOTE: OF can be left undefined in some cases. It is not cover
-        # by the test.
+        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # not cover by this test.
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -1162,7 +1191,7 @@ class X86TranslationTests(unittest.TestCase):
         self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_rcr(self):
-        asm = ["rcr eax, 8"]
+        asm = ["rcr eax, 3"]
 
         x86_instrs = map(self.x86_parser.parse, asm)
 
@@ -1182,8 +1211,11 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
-        # NOTE: OF can be left undefined in some cases. It is not cover
-        # by the test.
+        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # not cover by this test.
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -1309,20 +1341,22 @@ class X86TranslationTests(unittest.TestCase):
 
         flags_reg = 'eflags' if 'eflags' in reil_context_out else 'rflags'
 
+        arch_size = self.arch_info.architecture_size
+
         _, bit = self.arch_info.registers_access_mapper()[flag]
 
+        # Clean flag.
+        reil_context_out[flags_reg] &= ~(2**bit) & (2**32-1)
+
+        # Copy flag.
         reil_context_out[flags_reg] |= (x86_context[flags_reg] & 2**bit)
 
         return reil_context_out
 
     def __fix_reil_flags(self, reil_context, x86_context):
-        reil_context_out = dict(reil_context)
-
-        flags_reg = 'eflags' if 'eflags' in reil_context_out else 'rflags'
-
         # Remove this when AF and PF are implemented.
-        reil_context_out[flags_reg] |= (x86_context[flags_reg] & 2**4) # AF
-        reil_context_out[flags_reg] |= (x86_context[flags_reg] & 2**2) # PF
+        reil_context_out = self.__fix_reil_flag(reil_context, x86_context, "af")
+        reil_context_out = self.__fix_reil_flag(reil_context, x86_context, "pf")
 
         return reil_context_out
 
