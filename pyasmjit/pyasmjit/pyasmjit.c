@@ -25,6 +25,26 @@ typedef struct {
     unsigned long rflags;   // 17
 } context_t;
 
+typedef struct {
+    unsigned long r0;
+    unsigned long r1;
+    unsigned long r2;
+    unsigned long r3;
+    unsigned long r4;
+    unsigned long r5;
+    unsigned long r6;
+    unsigned long r7;
+    unsigned long r8;
+    unsigned long r9;
+    unsigned long r10;
+    unsigned long r11;
+    unsigned long r12;
+    unsigned long r13;
+    unsigned long r14;
+    unsigned long r15;
+    unsigned long apsr;
+} arm_context_t;
+
 void
 print_context(context_t *ctx)
 {
@@ -50,6 +70,30 @@ print_context(context_t *ctx)
     printf("rflags : 0x%016lx @ %p\n", ctx->rflags, &ctx->rflags);
 }
 
+void
+print_arm_context(arm_context_t *ctx)
+{
+    printf("ctx @ %p\n", ctx);
+
+    printf("   r0  : 0x%016lx @ %p\n",    ctx->r0,    &ctx->r0);
+    printf("   r1  : 0x%016lx @ %p\n",    ctx->r1,    &ctx->r1);
+    printf("   r2  : 0x%016lx @ %p\n",    ctx->r2,    &ctx->r2);
+    printf("   r3  : 0x%016lx @ %p\n",    ctx->r3,    &ctx->r3);
+    printf("   r4  : 0x%016lx @ %p\n",    ctx->r4,    &ctx->r4);
+    printf("   r5  : 0x%016lx @ %p\n",    ctx->r5,    &ctx->r5);
+    printf("   r6  : 0x%016lx @ %p\n",    ctx->r6,    &ctx->r6);
+    printf("   r7  : 0x%016lx @ %p\n",    ctx->r7,    &ctx->r7);
+    printf("   r8  : 0x%016lx @ %p\n",     ctx->r8,     &ctx->r8);
+    printf("   r9  : 0x%016lx @ %p\n",     ctx->r9,     &ctx->r9);
+    printf("   r10 : 0x%016lx @ %p\n",    ctx->r10,    &ctx->r10);
+    printf("   r11 : 0x%016lx @ %p\n",    ctx->r11,    &ctx->r11);
+    printf("   r12 : 0x%016lx @ %p\n",    ctx->r12,    &ctx->r12);
+    printf("   r13 : 0x%016lx @ %p\n",    ctx->r13,    &ctx->r13);
+    printf("   r14 : 0x%016lx @ %p\n",    ctx->r14,    &ctx->r14);
+    printf("   r15 : 0x%016lx @ %p\n",    ctx->r15,    &ctx->r15);
+    printf("  apsr : 0x%016lx @ %p\n", ctx->apsr, &ctx->apsr);
+}
+
 unsigned long
 load_register_from_dict(PyObject *dict, const char *reg, unsigned long _default)
 {
@@ -60,6 +104,28 @@ load_register_from_dict(PyObject *dict, const char *reg, unsigned long _default)
     }
 
     return rv;
+}
+
+void
+load_arm_context_from_dict(PyObject *dict, arm_context_t *ctx)
+{
+    ctx->r0     = load_register_from_dict(dict,    "r0",     0);
+    ctx->r1     = load_register_from_dict(dict,    "r1",     0);
+    ctx->r2     = load_register_from_dict(dict,    "r2",     0);
+    ctx->r3     = load_register_from_dict(dict,    "r3",     0);
+    ctx->r4     = load_register_from_dict(dict,    "r4",     0);
+    ctx->r5     = load_register_from_dict(dict,    "r5",     0);
+    ctx->r6     = load_register_from_dict(dict,    "r6",     0);
+    ctx->r7     = load_register_from_dict(dict,    "r7",     0);
+    ctx->r8     = load_register_from_dict(dict,     "r8",     0);
+    ctx->r9     = load_register_from_dict(dict,     "r9",     0);
+    ctx->r10    = load_register_from_dict(dict,    "r10",     0);
+    ctx->r11    = load_register_from_dict(dict,    "r11",     0);
+    ctx->r12    = load_register_from_dict(dict,    "r12",     0);
+    ctx->r13    = load_register_from_dict(dict,    "r13",     0);
+    ctx->r14    = load_register_from_dict(dict,    "r14",     0);
+    ctx->r15    = load_register_from_dict(dict,    "r15",     0);
+    ctx->apsr = load_register_from_dict(dict, "apsr", 0);
 }
 
 void
@@ -108,6 +174,28 @@ save_context_to_dict(PyObject *dict, context_t *ctx)
     PyDict_SetItemString(dict, "rflags", Py_BuildValue("k", ctx->rflags));
 }
 
+void
+save_arm_context_to_dict(PyObject *dict, arm_context_t *ctx)
+{
+    PyDict_SetItemString(dict,    "r0", Py_BuildValue("I",    ctx->r0));
+    PyDict_SetItemString(dict,    "r1", Py_BuildValue("I",    ctx->r1));
+    PyDict_SetItemString(dict,    "r2", Py_BuildValue("I",    ctx->r2));
+    PyDict_SetItemString(dict,    "r3", Py_BuildValue("I",    ctx->r3));
+    PyDict_SetItemString(dict,    "r4", Py_BuildValue("I",    ctx->r4));
+    PyDict_SetItemString(dict,    "r5", Py_BuildValue("I",    ctx->r5));
+    PyDict_SetItemString(dict,    "r6", Py_BuildValue("I",    ctx->r6));
+    PyDict_SetItemString(dict,    "r7", Py_BuildValue("I",    ctx->r7));
+    PyDict_SetItemString(dict,     "r8", Py_BuildValue("I",     ctx->r8));
+    PyDict_SetItemString(dict,     "r9", Py_BuildValue("I",     ctx->r9));
+    PyDict_SetItemString(dict,    "r10", Py_BuildValue("I",    ctx->r10));
+    PyDict_SetItemString(dict,    "r11", Py_BuildValue("I",    ctx->r11));
+    PyDict_SetItemString(dict,    "r12", Py_BuildValue("I",    ctx->r12));
+    PyDict_SetItemString(dict,    "r13", Py_BuildValue("I",    ctx->r13));
+    PyDict_SetItemString(dict,    "r14", Py_BuildValue("I",    ctx->r14));
+    PyDict_SetItemString(dict,    "r15", Py_BuildValue("I",    ctx->r15));
+    PyDict_SetItemString(dict, "apsr", Py_BuildValue("I", ctx->apsr));
+}
+
 unsigned long
 run(unsigned char *data, unsigned int size, context_t *ctx) {
     /* Allocate executable memory */
@@ -115,7 +203,11 @@ run(unsigned char *data, unsigned int size, context_t *ctx) {
         NULL,
         size,
         PROT_WRITE | PROT_EXEC,
-        MAP_ANONYMOUS | MAP_PRIVATE | MAP_32BIT,
+#if defined (__x86_64__)
+		MAP_ANONYMOUS | MAP_PRIVATE | MAP_32BIT,
+#else
+        MAP_ANONYMOUS | MAP_PRIVATE,
+#endif
         -1,
         0
     );
@@ -173,11 +265,81 @@ py_jit(PyObject * self, PyObject * args)
     return Py_BuildValue("IO", rv, dict_out);
 }
 
+unsigned long
+arm_run(unsigned char *data, unsigned int size, arm_context_t *ctx) {
+    /* Allocate executable memory */
+    void *mem = mmap(
+        NULL,
+        size,
+        PROT_WRITE | PROT_EXEC,
+        MAP_ANONYMOUS | MAP_PRIVATE,
+        -1,
+        0
+    );
+
+    /* Return on error */
+    if (mem == MAP_FAILED) {
+        return -1;
+    }
+
+    /* Copy binary code into allocated memory */
+    memcpy(mem, data, size);
+
+    /* Typecast allocated memory to a function pointer */
+    void (*func) () = mem;
+    
+    print_arm_context(ctx);
+
+    /* Run code */
+    func(ctx);
+    
+    print_arm_context(ctx);
+
+    /* Free up allocated memory */
+    munmap(mem, size);
+
+    return 0;
+}
+
+/*
+ * Function to be called from Python
+ */
+PyObject *
+py_arm_jit(PyObject * self, PyObject * args)
+{
+    unsigned char   *data;
+    unsigned int     size;
+    unsigned int     rv;
+    PyObject        *dict_in;
+    PyObject        *dict_out = PyDict_New();
+    arm_context_t        ctx;
+
+    /* Check newly created dict is not null */
+    if (dict_out == NULL)
+        return Py_BuildValue("I{}", -1);
+
+    /* Parse input arguments */
+    PyArg_ParseTuple(args, "s#O!", &data, &size, &PyDict_Type, &dict_in);
+
+    /* Load context from input dictionary */
+    load_arm_context_from_dict(dict_in, &ctx);
+
+    /* Run input code */
+    rv = arm_run(data, size, &ctx);
+
+    /* Save context to output dictionary */
+    save_arm_context_to_dict(dict_out, &ctx);
+
+    /* Build return value and return */
+    return Py_BuildValue("IO", rv, dict_out);
+}
+
 /*
  * Bind Python function names to our C functions
  */
 static PyMethodDef pyasmjit_methods[] = {
     {"jit", py_jit, METH_VARARGS},
+    {"arm_jit", py_arm_jit, METH_VARARGS},
     {NULL, NULL}
 };
 

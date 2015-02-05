@@ -130,6 +130,13 @@ pop rbp
 ret
 """
 
+template_arm_assembly = """\
+
+/* Run code */
+{code}
+
+"""
+
 def execute(assembly, context):
     # Initialize return values
     rc  = 0
@@ -170,3 +177,48 @@ def execute(assembly, context):
     os.remove(f_obj.name)
 
     return rc, ctx
+
+def arm_execute(assembly, context):
+    # Initialize return values
+    rc  = 0
+    ctx = {}
+
+    # Instantiate assembly template.
+    assembly = template_arm_assembly.format(code=assembly)
+
+    # Create temporary files for compilation.
+    f_asm = tempfile.NamedTemporaryFile(delete=False)
+    f_obj = tempfile.NamedTemporaryFile(delete=False)
+    f_bin = tempfile.NamedTemporaryFile(delete=False)
+
+    # Write assembly to a file.
+    f_asm.write(assembly)
+    f_asm.close()
+
+    # Run nasm.
+    cmd = "gcc -c -x assembler {asm} -o {obj}; objcopy -O binary {obj} {bin};".format( \
+                asm = f_asm.name, obj = f_obj.name, bin = f_bin.name)
+    return_code = subprocess.call(cmd, shell=True)
+    
+    # Check for assembler errors.
+    if return_code == 0:
+        # Read binary code.
+        binary = ""
+        byte = f_bin.read(1)
+        while byte:
+            binary += byte
+            byte = f_bin.read(1)
+        f_bin.close()
+
+        # Run binary code.
+        rc, ctx = pyasmjit.arm_jit(binary, context)
+    else:
+        rc = return_code
+
+    # Remove temporary files.
+    os.remove(f_asm.name)
+    os.remove(f_obj.name)
+    os.remove(f_bin.name)
+
+    return rc, ctx
+
