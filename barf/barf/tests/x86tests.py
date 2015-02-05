@@ -251,6 +251,9 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -305,6 +308,9 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -332,6 +338,9 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -358,6 +367,9 @@ class X86TranslationTests(unittest.TestCase):
             0xdeadbeef << 8,
             context=ctx_init
         )
+
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
@@ -499,6 +511,14 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "sf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "zf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "pf")
+
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -525,6 +545,12 @@ class X86TranslationTests(unittest.TestCase):
             0xdeadbeef << 8,
             context=ctx_init
         )
+
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "sf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "zf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "pf")
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
@@ -554,6 +580,12 @@ class X86TranslationTests(unittest.TestCase):
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "sf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "zf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "pf")
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
 
@@ -769,6 +801,9 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -795,6 +830,9 @@ class X86TranslationTests(unittest.TestCase):
             0xdeadbeef << 8,
             context=ctx_init
         )
+
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
@@ -823,6 +861,9 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -849,6 +890,9 @@ class X86TranslationTests(unittest.TestCase):
             0xdeadbeef << 8,
             context=ctx_init
         )
+
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
@@ -1045,6 +1089,8 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
+        # NOTE: OF can be left undefined in some cases. It is not cover
+        # by the test.
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -1072,6 +1118,8 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
+        # NOTE: OF can be left undefined in some cases. It is not cover
+        # by the test.
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -1102,6 +1150,8 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
+        # NOTE: OF can be left undefined in some cases. It is not cover
+        # by the test.
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
@@ -1132,6 +1182,8 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
+        # NOTE: OF can be left undefined in some cases. It is not cover
+        # by the test.
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
