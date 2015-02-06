@@ -99,7 +99,7 @@ class ReilMemory(object):
         for i in xrange(0, size / 8):
             value = self.read_byte(address + i) << (i * 8) | value
 
-		# Debug...
+        # Debug...
         # print "Memory Read: ", hex(address), size, hex(value)
 
         return value
@@ -146,7 +146,7 @@ class ReilMemory(object):
     def write(self, address, size, value):
         """Write arbitrary size content to memory.
         """
-		# Debug...
+        # Debug...
         # print "Memory Write: ", hex(address), size, hex(value)
 
         for i in xrange(0, size / 8):
@@ -419,7 +419,13 @@ class ReilEmulator(object):
         if keep_track and register.name in self._arch_regs:
             self._regs_read.add(register.name)
 
-        return self._extract_value(reg_value, offset, register.size)
+        value = self._extract_value(reg_value, offset, register.size)
+
+        # Debug
+        if verbose:
+            print "          r{ %s = %s (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name]))
+
+        return value
 
     def _set_reg_value(self, register, value, keep_track=False):
         """Set register value.
@@ -437,7 +443,7 @@ class ReilEmulator(object):
 
         # Debug
         if verbose:
-            print register, hex(value), base_reg_name, hex(self._regs[base_reg_name])
+            print "          w{ %s = %s (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name]))
 
     def _extract_value(self, main_value, offset, size):
         return (main_value >> offset) & 2**size-1
