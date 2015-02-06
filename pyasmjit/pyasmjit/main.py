@@ -132,38 +132,38 @@ ret
 
 template_arm_assembly = """\
 /* Save registers */
-push {r0 - r12, lr}
+push {{r0 - r12, lr}}
 
 /* Save flags (user mode) */
 mrs r1, apsr
-push {r1}
+push {{r1}}
 
 /* Save context pointer (redundant, it was saved before, but done for code clarity) */
-push {r0}
+push {{r0}}
 
 /* Load context */
 ldr r1, [r0, #(16 * 4)]
 msr apsr_nzcvq, r1
-ldm r0, {r0 - r12}
+ldm r0, {{r0 - r12}}
 
 /* Run code */
 {code}
 
 /* TODO: lr is used as scratch register when saving the context so its value is not saved correctly */
 /* Restore context pointer */
-pop {lr}
+pop {{lr}}
 
 /* Save context */
-stm lr, {r0 - r12}
+stm lr, {{r0 - r12}}
 mrs r1, apsr
 str r1, [lr, #(16 * 4)]
 
 /* Restore flags */
-pop r1
+pop {{r1}}
 msr apsr_nzcvq, r1
 
 /* Restore registers */
-pop {r0 - r12, lr}
+pop {{r0 - r12, lr}}
 
 /* Return */
 blx lr

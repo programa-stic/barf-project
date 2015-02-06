@@ -5,32 +5,11 @@ from pprint import pprint
 
 code = """\
 
-push {r0 - r12}
-
-
-ldr r1, [r0, #(16 * 4)]
-msr apsr_nzcvq, r1
-
-# FALTA R0!!
-add r0, r0, #4
-ldm r0, {r1 - r12}
-sub r0, r0, #4
-
-
-# CODE:
-add r1, r2, r3
-
-
-add r0, r0, #4
-stm r0, {r1 - r12}
-sub r0, r0, #4
-
-mrs r1, apsr
-str r1, [r0, #(16 * 4)]
-
-pop {r0 - r12}
-
-blx lr
+movs r8, r2, lsl #31
+mov r7, #0x7FFFFFFF
+mov r8, #0x7FFFFFFF
+adds r7, r7, r8
+#subs r10, r10, #0xFFFFFFFF
 """
 
 context_in = {
@@ -40,6 +19,13 @@ context_in = {
     'r3' : 0x3,
     'r4' : 0x4,
     'r5' : 0x5,
+    'r6' : 0x6,
+    'r7' : 0x7,
+    'r8' : 0x8,
+    'r9' : 0x9,
+    'r10' : 0xa,
+    'r11' : 0xb,
+    'r12' : 0xc,
     'apsr' : 0x0,
 }
 
