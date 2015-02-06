@@ -259,6 +259,7 @@ class ReilInstruction(object):
             size_str = str(oprnd.size) if oprnd.size else ""
 
             sizes = {
+                256 : "DDQWORD",
                 128 : "DQWORD",
                 72  : "POINTER",
                 64  : "QWORD",

@@ -694,13 +694,15 @@ class X86Translator(object):
         tmp1 = tb.temporal(oprnd0.size*2)
         tmp2 = tb.temporal(oprnd0.size*2)
 
+        # FIX: This translation generates a wrong result for the OF flag
+        # for some inputs.
         tb.add(self._builder.gen_sub(oprnd0, oprnd1, tmp0))
         tb.add(self._builder.gen_str(self._flags["cf"], tmp1))
         tb.add(self._builder.gen_sub(oprnd0, oprnd1, tmp2))
 
         if self._translation_mode == FULL_TRANSLATION:
             # Flags : OF, SF, ZF, AF, PF, CF
-            self._update_of(tb, oprnd0, oprnd1, tmp2)
+            self._update_of_sub(tb, oprnd0, oprnd1, tmp2)
             self._update_sf(tb, oprnd0, oprnd1, tmp2)
             self._update_zf(tb, oprnd0, oprnd1, tmp2)
             self._update_af(tb, oprnd0, oprnd1, tmp2)
@@ -1667,13 +1669,15 @@ class X86Translator(object):
         temp_count = tb.temporal(oprnd0.size)
         zero = tb.immediate(0, oprnd0.size)
 
-        tmp_cf_ext = tb.temporal(oprnd0.size * 2)
-        tmp_cf_ext_1 = tb.temporal(oprnd0.size * 2)
+        # TODO: Improve this translation. It uses unecessary large 
+        # register...
+        tmp_cf_ext = tb.temporal(oprnd0.size * 4)
+        tmp_cf_ext_1 = tb.temporal(oprnd0.size * 4)
 
-        oprnd_ext = tb.temporal(oprnd0.size * 2)
-        oprnd_ext_1 = tb.temporal(oprnd0.size * 2)
-        oprnd_ext_2 = tb.temporal(oprnd0.size * 2)
-        oprnd_ext_shifted = tb.temporal(oprnd0.size * 2)
+        oprnd_ext = tb.temporal(oprnd0.size * 4)
+        oprnd_ext_1 = tb.temporal(oprnd0.size * 4)
+        oprnd_ext_2 = tb.temporal(oprnd0.size * 4)
+        oprnd_ext_shifted = tb.temporal(oprnd0.size * 4)
         oprnd_ext_shifted_l = tb.temporal(oprnd0.size)
         oprnd_ext_shifted_h = tb.temporal(oprnd0.size)
         oprnd_ext_shifted_h_1 = tb.temporal(oprnd0.size)
