@@ -27,14 +27,14 @@ class ArmArchitectureInformation(ArchitectureInformation):
         ("r13", 32),
         ("r14", 32),
         ("r15", 32),
-        ("cpsr", 32),
-        ("pc", 32),
-        ("sp", 32),
-        ("lr", 32),
-        ("fp", 32),
-        ("ip", 32),
-        ("sl", 32),
-        ("sb", 32),
+#         ("cpsr", 32),
+#         ("pc", 32),
+#         ("sp", 32),
+#         ("lr", 32),
+#         ("fp", 32),
+#         ("ip", 32),
+#         ("sl", 32),
+#         ("sb", 32),
     ]
 
 
@@ -149,7 +149,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
 
         registers_gp_all = self.regs_32
 
-#         self._registers_gp_base = [name for name, _ in self.regs_32_base]
+        self._registers_gp_base = [name for name, _ in self.regs_32]
 #         else:
 #             registers_all += self.regs_64 + \
 #                              self.regs_xmm_64 + \
