@@ -644,6 +644,8 @@ class ArmTranslator(object):
         self._update_zf(tb, oprnd0, oprnd1, result)
         self._update_nf(tb, oprnd0, oprnd1, result)
         self._borrow_from_uf(tb, oprnd0, oprnd1, result)
+        # C Flag = NOT BorrowFrom (to be used by subsequent instructions like SBC and RSC)
+        tb.add(self._builder.gen_str(tb._negate_reg(self._flags["cf"]), self._flags["cf"]))
         tb._overflow_from_sub(oprnd0, oprnd1, result)
 
     def _update_flags_data_proc_other(self, tb, shifter_operand, oprnd0, oprnd1, result):
