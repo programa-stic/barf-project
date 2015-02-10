@@ -106,7 +106,7 @@ class TranslationBuilder(object):
                     reil_operand_base = ReilRegisterOperand(base_reg, self._regs_size[base_reg])
                     reil_immediate = ReilImmediateOperand(0x0, self._regs_size[base_reg])
 
-                self.add(self._builder.gen_str(reil_immediate, reil_operand_base))
+                    self.add(self._builder.gen_str(reil_immediate, reil_operand_base))
 
             self.add(self._builder.gen_str(value, reil_operand))
 
