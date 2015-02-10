@@ -27,8 +27,8 @@ from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
 from barf.core.reil.reil import ReilRegisterOperand
 
-# verbose = False
-verbose = True
+verbose = False
+# verbose = True
 
 REIL_MEMORY_ENDIANNESS_LE = 0x0     # Little Endian
 REIL_MEMORY_ENDIANNESS_BE = 0x1     # Big Endian
@@ -106,7 +106,7 @@ class ReilMemory(object):
         for i in xrange(0, size / 8):
             value = self.read_byte(address + i) << (i * 8) | value
 
-            tainted = tainted or self._taints[address + i]
+            tainted = tainted or self._taints.get(address + i, False)
 
         # Debug...
         # print "Memory Read: ", hex(address), size, hex(value)
@@ -476,8 +476,6 @@ class ReilEmulator(object):
         if base_reg_name not in self._regs:
             self._regs[base_reg_name] = random.randint(0, 2**self._arch_regs_size[base_reg_name] - 1)
 
-        # print self._taints
-
         reg_value = self._regs[base_reg_name]
         taint = self._taints.get(register.name, False)
 
@@ -496,8 +494,6 @@ class ReilEmulator(object):
     def _set_reg_value(self, register, value, keep_track=False, tainted=None):
         """Set register value.
         """
-        # print "registers taint: ", self._taints
-
         assert register.size
 
         base_reg_name, offset = self._reg_access_mapper.get(register.name, (register.name, 0))
@@ -563,10 +559,6 @@ class ReilEmulator(object):
 
         # Taint progagation.
         op3_taint = op1_taint or op2_taint
-
-        # print op1_taint
-        # print op2_taint
-        # print op3_taint
 
         self._set_reg_value(instr.operands[2], op3_val, keep_track=True, tainted=op3_taint)
 
