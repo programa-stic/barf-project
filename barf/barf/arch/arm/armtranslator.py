@@ -270,7 +270,103 @@ class TranslationBuilder(object):
                     reg_num = reg_num + 1
         
         return ret
+    
+    def _all_ones_imm(self, reg):
+        return self.immediate((2**reg.size) - 1, reg.size)
 
+    def _negate_reg(self, reg):
+        neg = self.temporal(reg.size)
+        self.add(self._builder.gen_xor(reg, self._all_ones_imm(reg), neg))
+        return neg
+    
+    def _and_regs(self, reg1, reg2):
+        ret = self.temporal(reg1.size)
+        self.add(self._builder.gen_and(reg1, reg2, ret))
+        return ret
+        
+    def _or_regs(self, reg1, reg2):
+        ret = self.temporal(reg1.size)
+        self.add(self._builder.gen_or(reg1, reg2, ret))
+        return ret
+        
+    def _xor_regs(self, reg1, reg2):
+        ret = self.temporal(reg1.size)
+        self.add(self._builder.gen_xor(reg1, reg2, ret))
+        return ret
+        
+    def _equal_regs(self, reg1, reg2):
+        return self._negate_reg(self._xor_regs(reg1, reg2))
+    
+    def _unequal_regs(self, reg1, reg2):
+        return self._xor_regs(reg1, reg2)
+    
+    def _extract_bit(self, reg, bit):
+        assert(bit >= 0 and bit < reg.size)
+        tmp = self.temporal(reg.size)
+        ret = self.temporal(1)
+
+        self.add(self._builder.gen_bsh(reg, self.immediate(-bit, reg.size), tmp)) # shift to LSB
+        self.add(self._builder.gen_and(tmp, self.immediate(1, reg.size), ret)) # filter LSB
+        
+        return ret
+
+    # Same as before but the bit number is indicated by a register and it will be resolved at runtime
+    def _extract_bit_with_register(self, reg, bit):
+        # assert(bit >= 0 and bit < reg.size2) # It is assumed, it is not checked
+        tmp = self.temporal(reg.size)
+        neg_bit = self.temporal(reg.size)
+        ret = self.temporal(1)
+
+        self.add(self._builder.gen_sub(self.immediate(0, bit.size), bit, neg_bit)) # as left bit is indicated by a negative number
+        self.add(self._builder.gen_bsh(reg, neg_bit, tmp)) # shift to LSB
+        self.add(self._builder.gen_and(tmp, self.immediate(1, reg.size), ret)) # filter LSB
+        
+        return ret
+
+    def _extract_msb(self, reg):
+        return self._extract_bit(reg, reg.size - 1)
+    
+    def _extract_sign_bit(self, reg):
+        return self._extract_msb(self, reg)
+    
+    def _greater_than_or_equal(self, reg1, reg2):
+        assert(reg1.size == reg2.size)
+        result = self.temporal(reg1.size * 2)
+        
+        self.add(self._builder.gen_sub(reg1, reg2, result))
+        
+        sign = self._extract_bit(result, reg1.size - 1)
+        overflow = self._overflow_from_sub(reg1, reg2, result)
+        
+        return self._equal_regs(sign, overflow)
+    
+    def _jump_to(self, target):
+        self.add(self._builder.gen_jcc(self.immediate(1, 1), target))
+    
+    def _jump_if_zero(self, reg, label):
+        is_zero = self.temporal(1)
+        self.add(self._builder.gen_bisz(reg, is_zero))
+        self.add(self._builder.gen_jcc(is_zero, label))
+        
+    def _add_to_reg(self, reg, value):
+        res = self.temporal(reg.size)
+        self.add(self._builder.gen_add(reg, value, res))
+        
+        return res
+
+    def _sub_to_reg(self, reg, value):
+        res = self.temporal(reg.size)
+        self.add(self._builder.gen_sub(reg, value, res))
+        
+        return res
+
+    def _overflow_from_sub(self, oprnd0, oprnd1, result):
+        op1_sign = self._extract_bit(oprnd0, oprnd0.size - 1)
+        op2_sign = self._extract_bit(oprnd1, oprnd0.size - 1)
+        res_sign = self._extract_bit(result, oprnd0.size - 1)
+        
+        return self._and_regs(self._unequal_regs(op1_sign, op2_sign), self._unequal_regs(op1_sign, res_sign))
+        
 
 class ArmTranslator(object):
 
@@ -408,13 +504,13 @@ class ArmTranslator(object):
 # "Flags"
 # ============================================================================ #
     def _update_nf(self, tb, oprnd0, oprnd1, result):
-        sign = self._extract_bit(tb, result, oprnd0.size - 1)
+        sign = tb._extract_bit(result, oprnd0.size - 1)
         tb.add(self._builder.gen_str(sign, self._flags["nf"]))
 
     def _carry_from_uf(self, tb, oprnd0, oprnd1, result):
         assert (result.size == oprnd0.size * 2)
         
-        carry = self._extract_bit(tb, result, oprnd0.size)
+        carry = tb._extract_bit(result, oprnd0.size)
         tb.add(self._builder.gen_str(carry, self._flags["cf"]))
         
     def _borrow_from_uf(self, tb, oprnd0, oprnd1, result):
@@ -422,23 +518,16 @@ class ArmTranslator(object):
         self._carry_from_uf(tb, oprnd0, oprnd1, result)
         
     def _overflow_from_add_uf(self, tb, oprnd0, oprnd1, result):
-        op1_sign = self._extract_bit(tb, oprnd0, oprnd0.size - 1)
-        op2_sign = self._extract_bit(tb, oprnd1, oprnd0.size - 1)
-        res_sign = self._extract_bit(tb, result, oprnd0.size - 1)
+        op1_sign = tb._extract_bit(oprnd0, oprnd0.size - 1)
+        op2_sign = tb._extract_bit(oprnd1, oprnd0.size - 1)
+        res_sign = tb._extract_bit(result, oprnd0.size - 1)
         
-        overflow =  self._and_regs(tb, self._equal_regs(tb, op1_sign, op2_sign), self._unequal_regs(tb, op1_sign, res_sign))
+        overflow =  tb._and_regs(tb._equal_regs(op1_sign, op2_sign), tb._unequal_regs(op1_sign, res_sign))
         tb.add(self._builder.gen_str(overflow, self._flags["vf"]))
-        
-    def _overflow_from_sub(self, tb, oprnd0, oprnd1, result):
-        op1_sign = self._extract_bit(tb, oprnd0, oprnd0.size - 1)
-        op2_sign = self._extract_bit(tb, oprnd1, oprnd0.size - 1)
-        res_sign = self._extract_bit(tb, result, oprnd0.size - 1)
-        
-        return self._and_regs(tb, self._unequal_regs(tb, op1_sign, op2_sign), self._unequal_regs(tb, op1_sign, res_sign))
         
     # Evaluate overflow and update the flag
     def _overflow_from_sub_uf(self, tb, oprnd0, oprnd1, result):
-        tb.add(self._builder.gen_str(self._overflow_from_sub(tb, oprnd0, oprnd1, result), self._flags["vf"]))
+        tb.add(self._builder.gen_str(tb._overflow_from_sub(oprnd0, oprnd1, result), self._flags["vf"]))
         
     def _update_zf(self, tb, oprnd0, oprnd1, result):
         zf = self._flags["zf"]
@@ -470,7 +559,7 @@ class ArmTranslator(object):
                         return
                     else:
                         # shifter_carry_out = Rm[32 - shift_imm]
-                        shift_carry_out = self._extract_bit(tb, base, 32 - shift_amount.immediate)
+                        shift_carry_out = tb._extract_bit(base, 32 - shift_amount.immediate)
                         
                 elif isinstance(shift_amount, ArmRegisterOperand):
                     # Rs: register with shift amount
@@ -486,31 +575,31 @@ class ArmTranslator(object):
                     shift_carry_out = tb.temporal(1)
                     tb.add(self._builder.gen_str(self._flags["cf"], shift_carry_out))
                     rs = ReilRegisterOperand(shift_amount.name, shift_amount.size)
-                    rs_7_0 = self._and_regs(tb, rs, tb.immediate(0xFF, rs.size))
+                    rs_7_0 = tb._and_regs(rs, tb.immediate(0xFF, rs.size))
                     
                     end_label = tb.label('end_label')
                     rs_greater_32_label = tb.label('rs_greater_32_label')
                     
                     # if Rs[7:0] == 0 then            
                     #     shifter_carry_out = C Flag
-                    self._jump_if_zero(tb, rs_7_0, end_label) # shift_carry_out already has the C flag set, so do nothing
+                    tb._jump_if_zero(rs_7_0, end_label) # shift_carry_out already has the C flag set, so do nothing
                     
-                    tb.add(self._builder.gen_jcc(self._greater_than_or_equal(tb, rs_7_0, tb.immediate(33, rs_7_0.size)),
+                    tb.add(self._builder.gen_jcc(tb._greater_than_or_equal(rs_7_0, tb.immediate(33, rs_7_0.size)),
                                                  rs_greater_32_label))
                     
                     # Rs > 0 and Rs <= 32
                     #     shifter_carry_out = Rm[32 - Rs[7:0]]
                     extract_bit_number = tb.temporal(rs_7_0.size)
                     tb.add(self._builder.gen_sub(tb.immediate(32, rs_7_0.size), rs_7_0, extract_bit_number))
-                    tb.add(self._builder.gen_str(self._extract_bit_with_register(tb, base, extract_bit_number),
+                    tb.add(self._builder.gen_str(tb._extract_bit_with_register(base, extract_bit_number),
                                                  shift_carry_out))
-                    self._jump_to(tb, end_label)
+                    tb._jump_to(end_label)
                     
                     # else /* Rs[7:0] > 32 */
                     #     shifter_carry_out = 0
                     tb.add(rs_greater_32_label)
                     tb.add(self._builder.gen_str(tb.immediate(0, 1), shift_carry_out))
-#                     self._jump_to(tb, end_label)
+#                     tb._jump_to(end_label)
                     
                     tb.add(end_label)
                     
@@ -536,7 +625,7 @@ class ArmTranslator(object):
         self._update_zf(tb, oprnd0, oprnd1, result)
         self._update_nf(tb, oprnd0, oprnd1, result)
         self._borrow_from_uf(tb, oprnd0, oprnd1, result)
-        self._overflow_from_sub(tb, oprnd0, oprnd1, result)
+        tb._overflow_from_sub(oprnd0, oprnd1, result)
 
     def _update_flags_data_proc_other(self, tb, shifter_operand, oprnd0, oprnd1, result):
         self._update_zf(tb, oprnd0, oprnd1, result)
@@ -568,95 +657,6 @@ class ArmTranslator(object):
 
         tb.add(self._builder.gen_str(imm, flag))
         
-    def _all_ones_imm(self, tb, reg):
-        return tb.immediate((2**reg.size) - 1, reg.size)
-                            
-    def _negate_reg(self, tb, reg):
-        neg = tb.temporal(reg.size)
-        tb.add(self._builder.gen_xor(reg, self._all_ones_imm(tb, reg), neg))
-        return neg
-    
-    def _and_regs(self, tb, reg1, reg2):
-        ret = tb.temporal(reg1.size)
-        tb.add(self._builder.gen_and(reg1, reg2, ret))
-        return ret
-        
-    def _or_regs(self, tb, reg1, reg2):
-        ret = tb.temporal(reg1.size)
-        tb.add(self._builder.gen_or(reg1, reg2, ret))
-        return ret
-        
-    def _xor_regs(self, tb, reg1, reg2):
-        ret = tb.temporal(reg1.size)
-        tb.add(self._builder.gen_xor(reg1, reg2, ret))
-        return ret
-        
-    def _equal_regs(self, tb, reg1, reg2):
-        return self._negate_reg(tb, self._xor_regs(tb, reg1, reg2))
-    
-    def _unequal_regs(self, tb, reg1, reg2):
-        return self._xor_regs(tb, reg1, reg2)
-    
-    def _extract_bit(self, tb, reg, bit):
-        assert(bit >= 0 and bit < reg.size)
-        tmp = tb.temporal(reg.size)
-        ret = tb.temporal(1)
-
-        tb.add(self._builder.gen_bsh(reg, tb.immediate(-bit, reg.size), tmp)) # shift to LSB
-        tb.add(self._builder.gen_and(tmp, tb.immediate(1, reg.size), ret)) # filter LSB
-        
-        return ret
-
-    # Same as before but the bit number is indicated by a register and it will be resolved at runtime
-    def _extract_bit_with_register(self, tb, reg, bit):
-        # assert(bit >= 0 and bit < reg.size2) # It is assumed, it is not checked
-        tmp = tb.temporal(reg.size)
-        neg_bit = tb.temporal(reg.size)
-        ret = tb.temporal(1)
-
-        tb.add(self._builder.gen_sub(tb.immediate(0, bit.size), bit, neg_bit)) # as left bit is indicated by a negative number
-        tb.add(self._builder.gen_bsh(reg, neg_bit, tmp)) # shift to LSB
-        tb.add(self._builder.gen_and(tmp, tb.immediate(1, reg.size), ret)) # filter LSB
-        
-        return ret
-
-    def _extract_msb(self, tb, reg):
-        return self._extract_bit(tb, reg, reg.size - 1)
-    
-    def _extract_sign_bit(self, tb, reg):
-        return self._extract_msb(self, tb, reg)
-    
-    def _greater_than_or_equal(self, tb, reg1, reg2):
-        assert(reg1.size == reg2.size)
-        result = tb.temporal(reg1.size * 2)
-        
-        tb.add(self._builder.gen_sub(reg1, reg2, result))
-        
-        sign = self._extract_bit(tb, result, reg1.size - 1)
-        overflow = self._overflow_from_sub(tb, reg1, reg2, result)
-        
-        return self._equal_regs(tb, sign, overflow)
-    
-    def _jump_to(self, tb, target):
-        tb.add(self._builder.gen_jcc(tb.immediate(1, 1), target))
-    
-    def _jump_if_zero(self, tb, reg, label):
-        is_zero = tb.temporal(1)
-        tb.add(self._builder.gen_bisz(reg, is_zero))
-        tb.add(self._builder.gen_jcc(is_zero, label))
-        
-    def _add_to_reg(self, tb, reg, value):
-        res = tb.temporal(reg.size)
-        tb.add(self._builder.gen_add(reg, value, res))
-        
-        return res
-
-    def _sub_to_reg(self, tb, reg, value):
-        res = tb.temporal(reg.size)
-        tb.add(self._builder.gen_sub(reg, value, res))
-        
-        return res
-
         
     # EQ: Z set
     def _evaluate_eq(self, tb):
@@ -664,7 +664,7 @@ class ArmTranslator(object):
 
     # NE: Z clear
     def _evaluate_ne(self, tb):
-        return self._negate_reg(tb, self._flags["zf"])
+        return tb._all_ones_imm(self._flags["zf"])
     
     # CS: C set
     def _evaluate_cs(self, tb):
@@ -672,7 +672,7 @@ class ArmTranslator(object):
 
     # CC: C clear
     def _evaluate_cc(self, tb):
-        return self._negate_reg(tb, self._flags["cf"])
+        return tb._all_ones_imm(self._flags["cf"])
     
     # MI: N set
     def _evaluate_mi(self, tb):
@@ -680,7 +680,7 @@ class ArmTranslator(object):
 
     # PL: N clear
     def _evaluate_pl(self, tb):
-        return self._negate_reg(tb, self._flags["nf"])
+        return tb._all_ones_imm(self._flags["nf"])
     
     # VS: V set
     def _evaluate_vs(self, tb):
@@ -688,31 +688,31 @@ class ArmTranslator(object):
 
     # VC: V clear
     def _evaluate_vc(self, tb):
-        return self._negate_reg(tb, self._flags["vf"])
+        return tb._all_ones_imm(self._flags["vf"])
     
     # HI: C set and Z clear
     def _evaluate_hi(self, tb):
-        return self._and_regs(tb, self._flags["cf"], self._negate_reg(tb, self._flags["zf"]))
+        return tb._and_regs(self._flags["cf"], tb._all_ones_imm(self._flags["zf"]))
 
     # LS: C clear or Z set
     def _evaluate_ls(self, tb):
-        return self._or_regs(tb, self._negate_reg(tb, self._flags["cf"]), self._flags["zf"])
+        return tb._or_regs(tb._all_ones_imm(self._flags["cf"]), self._flags["zf"])
     
     # GE: N == V
     def _evaluate_ge(self, tb):
-        return self._equal_regs(tb, self._flags["nf"], self._flags["vf"])
+        return tb._equal_regs(self._flags["nf"], self._flags["vf"])
 
     # LT: N != V
     def _evaluate_lt(self, tb):
-        return self._negate_reg(tb, self._evaluate_ge(tb))
+        return tb._all_ones_imm(self._evaluate_ge(tb))
     
     # GT: (Z == 0) and (N == V)
     def _evaluate_gt(self, tb):
-        return self._and_regs(tb, self._negate_reg(tb, self._flags["zf"]), self._evaluate_ge(tb))
+        return tb._and_regs(tb._all_ones_imm(self._flags["zf"]), self._evaluate_ge(tb))
 
     # LE: (Z == 1) or (N != V)
     def _evaluate_le(self, tb):
-        return self._or_regs(tb, self._flags["zf"], self._evaluate_lt(tb))
+        return tb._or_regs(self._flags["zf"], self._evaluate_lt(tb))
     
     def _evaluate_condition_code(self, tb, instruction, nop_label):
         if (instruction.condition_code == ARM_COND_CODE_AL):
@@ -735,7 +735,7 @@ class ArmTranslator(object):
             ARM_COND_CODE_LE : self._evaluate_le,
         }
         
-        neg_cond = self._negate_reg(tb, eval_cc_fn[instruction.condition_code](tb))
+        neg_cond = tb._all_ones_imm(eval_cc_fn[instruction.condition_code](tb))
         
         tb.add(self._builder.gen_jcc(neg_cond, nop_label))
         
@@ -879,20 +879,20 @@ class ArmTranslator(object):
         if instruction.ldm_stm_addr_mode == ARM_LDM_STM_IA:
             for reg in reg_list:
                 tb.add(load_store_fn(pointer, reg))
-                pointer = self._add_to_reg(tb, pointer, self._ws)
+                pointer = tb._add_to_reg(pointer, self._ws)
         elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_IB:
             for reg in reg_list:
-                pointer = self._add_to_reg(tb, pointer, self._ws)
+                pointer = tb._add_to_reg(pointer, self._ws)
                 tb.add(load_store_fn(pointer, reg))
         elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_DA:
             reg_list.reverse() # Assuming the registry list was in increasing registry number
             for reg in reg_list:
                 tb.add(load_store_fn(pointer, reg))
-                pointer = self._sub_to_reg(tb, pointer, self._ws)
+                pointer = tb._sub_to_reg(pointer, self._ws)
         elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_DB:
             reg_list.reverse()
             for reg in reg_list:
-                pointer = self._sub_to_reg(tb, pointer, self._ws)
+                pointer = tb._sub_to_reg(pointer, self._ws)
                 tb.add(load_store_fn(pointer, reg))
         else:
                 raise Exception("Unknown addressing mode.")
@@ -900,9 +900,9 @@ class ArmTranslator(object):
         # Write-back
         if instruction.operands[0].wb:
             if instruction.ldm_stm_addr_mode == ARM_LDM_STM_IA or instruction.ldm_stm_addr_mode == ARM_LDM_STM_IB:
-                tmp = self._add_to_reg(tb, base, reg_list_size_bytes)
+                tmp = tb._add_to_reg(base, reg_list_size_bytes)
             elif instruction.ldm_stm_addr_mode == ARM_LDM_STM_DA or instruction.ldm_stm_addr_mode == ARM_LDM_STM_DB:
-                tmp = self._sub_to_reg(tb, base, reg_list_size_bytes)
+                tmp = tb._sub_to_reg(base, reg_list_size_bytes)
             tb.add(self._builder.gen_str(tmp, base))
 
     # PUSH and POP are equivalent to STM and LDM in FD mode with the SP (and write-back)
@@ -934,4 +934,4 @@ class ArmTranslator(object):
             
         if (link):
             tb.add(self._builder.gen_add(self._pc, self._ws, self._lr))
-        self._jump_to(tb, target)
+        tb._jump_to(target)
