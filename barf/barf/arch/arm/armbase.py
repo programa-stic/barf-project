@@ -123,7 +123,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
         reg_mapper = {
         }
 
-        flags_reg = "cpsr"
+        flags_reg = "apsr"
 #         else:
 #             reg_mapper = {
 #             }
