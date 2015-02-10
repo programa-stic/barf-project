@@ -205,6 +205,12 @@ class ReilInstruction(object):
         """
         return self._mnemonic
 
+    @property
+    def mnemonic_str(self):
+        """Get instruction mnemonic as string.
+        """
+        return ReilMnemonic.to_string(self._mnemonic)
+
     @mnemonic.setter
     def mnemonic(self, value):
         """Set instruction mnemonic.
