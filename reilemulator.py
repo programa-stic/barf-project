@@ -27,8 +27,8 @@ from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
 from barf.core.reil.reil import ReilRegisterOperand
 
-verbose = False
-# verbose = True
+# verbose = False
+verbose = True
 
 REIL_MEMORY_ENDIANNESS_LE = 0x0     # Little Endian
 REIL_MEMORY_ENDIANNESS_BE = 0x1     # Big Endian
@@ -52,6 +52,8 @@ class ReilMemory(object):
 
         # Dictionary that implements the memory itself.
         self._memory = {}
+
+        self._taints = {}
 
         # Previous state of memory. Requiere for some *special*
         # functions.
@@ -82,7 +84,7 @@ class ReilMemory(object):
 
         return True, self._memory_prev[address]
 
-    def write_byte(self, address, value):
+    def write_byte(self, address, value, tainted=None):
         """Write byte in memory.
         """
         # Save previous address content.
@@ -91,18 +93,28 @@ class ReilMemory(object):
 
         self._memory[address] = value & 0xff
 
+        if tainted is not None:
+            self._taints[address] = tainted
+
     def read(self, address, size):
         """Read arbitrary size content from memory.
         """
         value = 0x0
 
+        tainted = False
+
         for i in xrange(0, size / 8):
             value = self.read_byte(address + i) << (i * 8) | value
+
+            tainted = tainted or self._taints[address + i]
 
         # Debug...
         # print "Memory Read: ", hex(address), size, hex(value)
 
-        return value
+        if verbose:
+            self._debug_print_read_mem(address, value, tainted)
+
+        return value, tainted
 
     def try_read(self, address, size):
         """Try to read memory content at specified address.
@@ -143,16 +155,19 @@ class ReilMemory(object):
 
         return True, value
 
-    def write(self, address, size, value):
+    def write(self, address, size, value, tainted=None):
         """Write arbitrary size content to memory.
         """
         # Debug...
         # print "Memory Write: ", hex(address), size, hex(value)
 
         for i in xrange(0, size / 8):
-            self.write_byte(address + i, (value >> (i * 8)) & 0xff)
+            self.write_byte(address + i, (value >> (i * 8)) & 0xff, tainted)
 
         self._write_count += 1
+
+        if verbose:
+            self._debug_print_write_mem(address, value, tainted)
 
     def read_inverse(self, value, size):
         """Return a list of memory addresses that contain the specified value.
@@ -196,6 +211,43 @@ class ReilMemory(object):
 
         return "\n".join(lines)
 
+    def taint(self, address, size):
+        for i in xrange(0, size / 8):
+            self._taints[address + i] = True
+
+        # print "mem taint:", self._taints
+
+    def is_tainted(self, address, size):
+        tainted = False
+
+        for i in xrange(0, size / 8):
+            tainted = tainted or self._taints[address + i]
+
+    def _debug_print_read_mem(self, addr, val, tainted):
+        fmt = "{indent}r{{ {addr:08x} = {val:08x} [{taint:s}]}}"
+
+        taint = "T" if tainted else "-"
+
+        msg = fmt.format(
+            indent=" "*10, addr=addr , val=val, taint=taint
+        )
+
+        # print "          r{ %s = %s [%d] (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name]))
+
+        print(msg)
+
+    def _debug_print_write_mem(self, addr, val, tainted):
+        fmt = "{indent}w{{ {addr:08x} = {val:08x} [{taint:s}]}}"
+
+        taint = "T" if tainted else "-"
+
+        msg = fmt.format(
+            indent=" "*10, addr=addr , val=val, taint=taint
+        )
+
+        # print "          r{ %s = %s [%d] (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name]))
+
+        print(msg)
 
 class ReilEmulator(object):
 
@@ -256,6 +308,8 @@ class ReilEmulator(object):
             # Ad hoc Instructions
             ReilMnemonic.RET : self._execute_ret,
         }
+
+        self._taints = {}
 
     def execute_lite(self, instructions, context=None):
         """Execute a list of instructions. It does not support loops.
@@ -392,6 +446,14 @@ class ReilEmulator(object):
         """
         self._reg_access_mapper = reg_access_mapper
 
+    def is_tainted(self, register_name):
+        return self._taints.get(register_name, False)
+
+    def taint(self, register_name):
+        self._taints[register_name] = True
+
+        print self._taints
+
     # Auxiliary functions
     # ======================================================================== #
     def _get_operand_value(self, operand):
@@ -400,7 +462,7 @@ class ReilEmulator(object):
         if type(operand) == ReilRegisterOperand:
             return self._get_reg_value(operand, keep_track=True)
         elif type(operand) == ReilImmediateOperand:
-            return operand.immediate
+            return operand.immediate, False
         else:
             raise Exception("Unknown operand type : %s" % str(operand))
 
@@ -414,7 +476,10 @@ class ReilEmulator(object):
         if base_reg_name not in self._regs:
             self._regs[base_reg_name] = random.randint(0, 2**self._arch_regs_size[base_reg_name] - 1)
 
+        # print self._taints
+
         reg_value = self._regs[base_reg_name]
+        taint = self._taints.get(register.name, False)
 
         if keep_track and register.name in self._arch_regs:
             self._regs_read.add(register.name)
@@ -423,13 +488,16 @@ class ReilEmulator(object):
 
         # Debug
         if verbose:
-            print "          r{ %s = %s (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name]))
+            # print "          r{ %s = %s (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name]))
+            self._debug_print_get_reg_value(register, value, base_reg_name, reg_value, taint)
 
-        return value
+        return value, taint
 
-    def _set_reg_value(self, register, value, keep_track=False):
+    def _set_reg_value(self, register, value, keep_track=False, tainted=None):
         """Set register value.
         """
+        # print "registers taint: ", self._taints
+
         assert register.size
 
         base_reg_name, offset = self._reg_access_mapper.get(register.name, (register.name, 0))
@@ -438,12 +506,16 @@ class ReilEmulator(object):
 
         self._regs[base_reg_name] = self._insert_value(reg_value, value, offset, register.size)
 
+        if tainted is not None:
+            self._taints[register.name] = tainted
+
         if keep_track and register.name in self._arch_regs:
             self._regs_written.add(register.name)
 
         # Debug
         if verbose:
-            print "          w{ %s = %s (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name]))
+            self._debug_print_set_reg_value(register, value, base_reg_name, self._regs[base_reg_name], tainted)
+            # print "          w{ %s = %s (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name]))
 
     def _extract_value(self, main_value, offset, size):
         return (main_value >> offset) & 2**size-1
@@ -454,27 +526,63 @@ class ReilEmulator(object):
 
         return main_value
 
+    def _debug_print_get_reg_value(self, reg, val, base_reg, base_val, tainted):
+        fmt = "{indent}r{{ {reg:s} = {val:08x} [{taint:s}] ({base_reg:s} = {base_val:08x})}}"
+
+        taint = "T" if tainted else "-"
+
+        msg = fmt.format(
+            indent=" "*10, reg=reg , val=val, base_reg=base_reg, base_val=base_val, taint=taint
+        )
+
+        # print "          r{ %s = %s [%d] (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name]))
+
+        print(msg)
+
+    def _debug_print_set_reg_value(self, reg, val, base_reg, base_val, tainted):
+        fmt = "{indent}w{{ {reg:s} = {val:08x} [{taint:s}] ({base_reg:s} = {base_val:08x})}}"
+
+        taint = "T" if tainted else "-"
+
+        msg = fmt.format(
+            indent=" "*10, reg=reg , val=val, base_reg=base_reg, base_val=base_val, taint=taint
+        )
+
+        # print "          r{ %s = %s [%d] (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name]))
+
+        print(msg)
+
     # Arithmetic instructions
     # ======================================================================== #
     def _execute_add(self, instr):
         """Execute ADD instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
+        op1_val, op1_taint = self._get_operand_value(instr.operands[0])
+        op2_val, op2_taint = self._get_operand_value(instr.operands[1])
         op3_val = op1_val + op2_val
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Taint progagation.
+        op3_taint = op1_taint or op2_taint
+
+        # print op1_taint
+        # print op2_taint
+        # print op3_taint
+
+        self._set_reg_value(instr.operands[2], op3_val, keep_track=True, tainted=op3_taint)
 
         return None
 
     def _execute_sub(self, instr):
         """Execute SUB instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
+        op1_val, op1_taint = self._get_operand_value(instr.operands[0])
+        op2_val, op2_taint = self._get_operand_value(instr.operands[1])
         op3_val = op1_val - op2_val
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Taint progagation.
+        op3_taint = op1_taint or op2_taint
+
+        self._set_reg_value(instr.operands[2], op3_val, keep_track=True, tainted=op3_taint)
 
         # print "op1_val: ", op1_val
         # print "op2_val: ", op2_val
@@ -487,11 +595,14 @@ class ReilEmulator(object):
     def _execute_mul(self, instr):
         """Execute MUL instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
+        op1_val, op1_taint = self._get_operand_value(instr.operands[0])
+        op2_val, op2_taint = self._get_operand_value(instr.operands[1])
         op3_val = op1_val * op2_val
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Taint progagation.
+        op3_taint = op1_taint or op2_taint
+
+        self._set_reg_value(instr.operands[2], op3_val, keep_track=True, tainted=op3_taint)
 
         return None
 
@@ -500,11 +611,14 @@ class ReilEmulator(object):
         """
         # TODO: See how to manage exceptions (instr.operands[1] == 0)
 
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
+        op1_val, op1_taint = self._get_operand_value(instr.operands[0])
+        op2_val, op2_taint = self._get_operand_value(instr.operands[1])
         op3_val = op1_val / op2_val
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Taint progagation.
+        op3_taint = op1_taint or op2_taint
+
+        self._set_reg_value(instr.operands[2], op3_val, keep_track=True, tainted=op3_taint)
 
         return None
 
@@ -513,19 +627,22 @@ class ReilEmulator(object):
         """
         # TODO: See how to manage exceptions (instr.operands[1] == 0)
 
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
+        op1_val, op1_taint = self._get_operand_value(instr.operands[0])
+        op2_val, op2_taint = self._get_operand_value(instr.operands[1])
         op3_val = op1_val % op2_val
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Taint progagation.
+        op3_taint = op1_taint or op2_taint
+
+        self._set_reg_value(instr.operands[2], op3_val, keep_track=True, tainted=op3_taint)
 
         return None
 
     def _execute_bsh(self, instr):
         """Execute BSH instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
+        op1_val, op1_taint = self._get_operand_value(instr.operands[0])
+        op2_val, op2_taint = self._get_operand_value(instr.operands[1])
 
         # Check sign bit.
         if op2_val & (2**(instr.operands[1].size-1)) == 0:
@@ -542,7 +659,10 @@ class ReilEmulator(object):
 
         # print "bsh {0}, {1}, {2}".format(op1_val, op2_val, op3_val)
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Taint progagation.
+        op3_taint = op1_taint or op2_taint
+
+        self._set_reg_value(instr.operands[2], op3_val, keep_track=True, tainted=op3_taint)
 
         return None
 
@@ -551,8 +671,8 @@ class ReilEmulator(object):
     def _execute_and(self, instr):
         """Execute AND instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
+        op1_val, op1_taint = self._get_operand_value(instr.operands[0])
+        op2_val, op2_taint = self._get_operand_value(instr.operands[1])
         op3_val = op1_val & op2_val
 
         # print "op1_val: ", op1_val
@@ -561,15 +681,18 @@ class ReilEmulator(object):
 
         # print "and {0}, {1}, {2}".format(op1_val, op2_val, op3_val)
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Taint progagation.
+        op3_taint = op1_taint or op2_taint
+
+        self._set_reg_value(instr.operands[2], op3_val, keep_track=True, tainted=op3_taint)
 
         return None
 
     def _execute_or(self, instr):
         """Execute OR instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
+        op1_val, op1_taint = self._get_operand_value(instr.operands[0])
+        op2_val, op2_taint = self._get_operand_value(instr.operands[1])
         op3_val = op1_val | op2_val
 
         # print "op1_val: ", op1_val
@@ -578,18 +701,24 @@ class ReilEmulator(object):
 
         # print "or {0}, {1}, {2}".format(op1_val, op2_val, op3_val)
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Taint progagation.
+        op3_taint = op1_taint or op2_taint
+
+        self._set_reg_value(instr.operands[2], op3_val, keep_track=True, tainted=op3_taint)
 
         return None
 
     def _execute_xor(self, instr):
         """Execute XOR instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
+        op1_val, op1_taint = self._get_operand_value(instr.operands[0])
+        op2_val, op2_taint = self._get_operand_value(instr.operands[1])
         op3_val = op1_val ^ op2_val
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Taint progagation.
+        op3_taint = op1_taint or op2_taint
+
+        self._set_reg_value(instr.operands[2], op3_val, keep_track=True, tainted=op3_taint)
 
         return None
 
@@ -601,10 +730,13 @@ class ReilEmulator(object):
         assert instr.operands[0].size == self._address_size
         assert instr.operands[2].size in [8, 16, 32, 64]
 
-        mem_addr = self._get_operand_value(instr.operands[0])
-        value = self._mem.read(mem_addr, instr.operands[2].size)
+        mem_addr, mem_addr_taint = self._get_operand_value(instr.operands[0])
+        value, value_taint = self._mem.read(mem_addr, instr.operands[2].size)
 
-        self._set_reg_value(instr.operands[2], value, keep_track=True)
+        # Taint progagation.
+        op3_taint = mem_addr_taint or value_taint
+
+        self._set_reg_value(instr.operands[2], value, keep_track=True, tainted=op3_taint)
 
         return None
 
@@ -614,10 +746,13 @@ class ReilEmulator(object):
         assert instr.operands[0].size in [8, 16, 32, 64]
         assert instr.operands[2].size == self._address_size
 
-        value    = self._get_operand_value(instr.operands[0])
-        mem_addr = self._get_operand_value(instr.operands[2])
+        value, value_taint = self._get_operand_value(instr.operands[0])
+        mem_addr, mem_addr_taint = self._get_operand_value(instr.operands[2])
 
-        self._mem.write(mem_addr, instr.operands[0].size, value)
+        # Taint progagation.
+        op3_taint = value_taint
+
+        self._mem.write(mem_addr, instr.operands[0].size, value, tainted=op3_taint)
 
         return None
 
@@ -625,14 +760,17 @@ class ReilEmulator(object):
         """Execute STR instruction.
         """
 
-        value = self._get_operand_value(instr.operands[0])
+        value, value_taint = self._get_operand_value(instr.operands[0])
 
         # print "op1_val: ", value
         # print "op3_val: ", value
 
         # print "str {0}, EMPTY, {1}".format(value, value)
 
-        self._set_reg_value(instr.operands[2], value, keep_track=True)
+        # Taint progagation.
+        op3_taint = value_taint
+
+        self._set_reg_value(instr.operands[2], value, keep_track=True, tainted=op3_taint)
 
         return None
 
@@ -641,18 +779,21 @@ class ReilEmulator(object):
     def _execute_bisz(self, instr):
         """Execute BISZ instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
+        op1_val, op1_taint = self._get_operand_value(instr.operands[0])
         op3_val = 1 if op1_val == 0 else 0
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Taint progagation.
+        op3_taint = op1_taint
+
+        self._set_reg_value(instr.operands[2], op3_val, keep_track=True, tainted=op3_taint)
 
         return None
 
     def _execute_jcc(self, instr):
         """Execute JCC instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op3_val = self._get_operand_value(instr.operands[2])
+        op1_val, op1_taint = self._get_operand_value(instr.operands[0])
+        op3_val, op3_taint = self._get_operand_value(instr.operands[2])
 
         if op1_val == 1:
             return op3_val
@@ -666,7 +807,10 @@ class ReilEmulator(object):
         """
         op3_val = random.randint(0, instr.operands[2].size)
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Taint progagation.
+        op3_taint = False
+
+        self._set_reg_value(instr.operands[2], op3_val, keep_track=True, tainted=op3_taint)
 
         return None
 
