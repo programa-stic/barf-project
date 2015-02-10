@@ -471,6 +471,8 @@ class ArmTranslator(object):
 
 
         tb.add(nop_cc_lbl)
+        # TODO: Added NOP so there is a REIL instruction to jump to, otherwise it fails during REIL execution
+        tb.add(self._builder.gen_nop())
         
         return tb.instanciate(instruction.address)
 
