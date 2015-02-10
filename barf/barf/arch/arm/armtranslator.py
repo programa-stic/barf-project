@@ -199,7 +199,26 @@ class TranslationBuilder(object):
                 raise NotImplementedError("Instruction Not Implemented: Unknown shift amount type.")
             
             if (sh_op.shift_type == 'lsl'):
-                self.add(self._builder.gen_bsh(base, sh_am, ret))
+                if isinstance(sh_am, ReilImmediateOperand):
+                    self.add(self._builder.gen_bsh(base, sh_am, ret))
+                else:
+                    sh_am_greater_32_label = self.label('sh_am_greater_32_label')
+                    sh_am_end_label = self.label('sh_am_end_label')
+                    
+                    sh_am_7_0 = self._and_regs(sh_am, self.immediate(0xFF, sh_am.size))
+                    
+                    self.add(self._builder.gen_jcc(self._greater_than_or_equal(sh_am_7_0, self.immediate(33, sh_am_7_0.size)),
+                                                 sh_am_greater_32_label))
+                    
+                    # Shift < 32 => shifter_operand = base lsl sh_am
+                    self.add(self._builder.gen_bsh(base, sh_am, ret))
+                    self._jump_to(sh_am_end_label)
+                    
+                    # Shift >= 32 => shifter_operand = 0
+                    self.add(sh_am_greater_32_label)
+                    self.add(self._builder.gen_str(self.immediate(0x0, ret.size), ret))
+                    
+                    self.add(sh_am_end_label)
             else:
                 # TODO: Implement other shift types
                 raise NotImplementedError("Instruction Not Implemented: Shift type.")
