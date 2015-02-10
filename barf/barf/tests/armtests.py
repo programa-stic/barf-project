@@ -121,10 +121,11 @@ class ArmTranslationTests(unittest.TestCase):
     def __init_context(self):
         """Initialize register with random values.
         """
-        if os.path.isfile(self.context_filename):
-            context = self.__load_failing_context()
-        else:
-            context = self.__create_random_context()
+        #if os.path.isfile(self.context_filename):
+        #    context = self.__load_failing_context()
+        #else:
+        #    context = self.__create_random_context()
+        context = self.__create_random_context()
 
         return context
 
@@ -136,7 +137,9 @@ class ArmTranslationTests(unittest.TestCase):
                 min_value, max_value = 0, 2**self.arch_info.operand_size - 1
                 context[reg] = random.randint(min_value, max_value)
 
-        context['apsr'] = 0x10
+        # Only highest 4 bits (N, C, Z, V) are randomized, the rest are left in the default (user mode) value
+        context['apsr'] = 0x00000010
+        context['apsr'] |= random.randint(0x0, 0xF) << 28
 
         return context
 
@@ -173,7 +176,7 @@ class ArmTranslationTests(unittest.TestCase):
         out += header
         out += ruler
 
-        fmt = " {0:>8s} : {1:016x} | {2:016x} {eq} {3:016x} {marker}\n"
+        fmt = " {0:>8s} : {1:08x} | {2:08x} {eq} {3:08x} {marker}\n"
 
         mask = 2**64-1
 
@@ -194,7 +197,7 @@ class ArmTranslationTests(unittest.TestCase):
 
         # Pretty print flags.
         reg = "apsr"
-        fmt = "{0:s} ({1:>4s}) : {2:016x} ({3:s})"
+        fmt = "{0:s} ({1:>4s}) : {2:08x} ({3:s})"
 
         arm_value = arm_context[reg] & mask
         reil_value = reil_context[reg] & mask
@@ -257,8 +260,8 @@ class ArmTranslationTests(unittest.TestCase):
             arm_instr.address = addr
             addr += 1
 
-    def test_and(self):
-        asm = ["and r1, r2, r3"]
+    def _test_asm_instruction(self, asm):
+        print(asm)
 
         arm_instrs = map(self.arm_parser.parse, asm)
 
@@ -275,8 +278,6 @@ class ArmTranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
-#         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, arm_ctx_out)
-
         cmp_result = self.__compare_contexts(ctx_init, arm_ctx_out, reil_ctx_out)
 
         if not cmp_result:
@@ -284,6 +285,63 @@ class ArmTranslationTests(unittest.TestCase):
 
         self.assertTrue(cmp_result, self.__print_contexts(ctx_init, arm_ctx_out, reil_ctx_out))
 
+    # TODO: R13 (SP), R14 (LR), R15 (PC) are outside testing scope for now
+    
+    def test_data_proc_inst(self):
+        inst_samples = [
+            # No flags
+            ["mov r0, r1"],
+            ["mov r3, r8"],
+            ["mov r5, r8"],
+            ["and r0, r1, r2"],
+            ["and r0, r6, #0x33"],
+            ["orr r3, r5, r8"],
+            ["orr r3, r5, #0x79"],
+            ["orr r3, r5, r8, lsl #0x19"],
+            ["eor r3, r5, r8"],
+            ["eor r8, r4, r5, lsl r6"],
+            ["eor r8, r4, r5, lsl #0x11"],
+            ["add r8, r9, r11"],
+            ["sub r0, r3, r12"],
+            ["cmp r3, r12"],
+            ["cmn r3, r12"],
+            ['mov r8, r5, lsl r6'],
+            ['eor r8, r4, r5, lsl r6'],
+            
+            # Flags update
+            ["movs r0, #0"],
+            ["movs r0, #-10"],
+            ["mov r0, #0x7FFFFFFF", "mov r1, r0", "adds r3, r0, r1"],
+            ["mov r0, #0x7FFFFFFF", "mov r1, r0", "subs r3, r0, r1"],
+            ["mov r0, #0x00FFFFFF", "add r1, r0, #10", "subs r3, r0, r1"],
+            ["mov r0, #0xFFFFFFFF", "adds r3, r0, #10"],
+            ["mov r0, #0x7FFFFFFF", "mov r1,  #5", "adds r3, r0, r1"],
+            ["mov r0, #0x80000000", "mov r1,  #5", "subs r3, r0, r1"],
+            
+            
+            # Flags evaluation
+            ["moveq r0, r1"],
+            ["movne r3, r8"],
+            ["movcs r5, r8"],
+            ["andcc r0, r1, r2"],
+            ["andmi r0, r6, #0x33"],
+            ["orrpl r3, r5, r8"],
+            ["orrvs r3, r5, #0x79"],
+            ["orrvc r3, r5, r8, lsl #0x19"],
+            ["eorhi r3, r5, r8"],
+            ["eorls r8, r4, r5, lsl r6"],
+            ["eorge r8, r4, r5, lsl #0x11"],
+            ["addlt r8, r9, r11"],
+            ["subgt r0, r3, r12"],
+            ["cmple r3, r12"],
+            ["cmnal r3, r12"],
+            ["addhs r8, r9, r11"],
+            ["sublo r0, r3, r12"],
+        ]
+        
+        
+        for i in inst_samples:
+            self._test_asm_instruction(i)
 
 def main():
     unittest.main()

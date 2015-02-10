@@ -75,23 +75,23 @@ print_arm_context(arm_context_t *ctx)
 {
     printf("ctx @ %p\n", ctx);
 
-    printf("   r0  : 0x%016lx @ %p\n",    ctx->r0,    &ctx->r0);
-    printf("   r1  : 0x%016lx @ %p\n",    ctx->r1,    &ctx->r1);
-    printf("   r2  : 0x%016lx @ %p\n",    ctx->r2,    &ctx->r2);
-    printf("   r3  : 0x%016lx @ %p\n",    ctx->r3,    &ctx->r3);
-    printf("   r4  : 0x%016lx @ %p\n",    ctx->r4,    &ctx->r4);
-    printf("   r5  : 0x%016lx @ %p\n",    ctx->r5,    &ctx->r5);
-    printf("   r6  : 0x%016lx @ %p\n",    ctx->r6,    &ctx->r6);
-    printf("   r7  : 0x%016lx @ %p\n",    ctx->r7,    &ctx->r7);
-    printf("   r8  : 0x%016lx @ %p\n",     ctx->r8,     &ctx->r8);
-    printf("   r9  : 0x%016lx @ %p\n",     ctx->r9,     &ctx->r9);
-    printf("   r10 : 0x%016lx @ %p\n",    ctx->r10,    &ctx->r10);
-    printf("   r11 : 0x%016lx @ %p\n",    ctx->r11,    &ctx->r11);
-    printf("   r12 : 0x%016lx @ %p\n",    ctx->r12,    &ctx->r12);
-    printf("   r13 : 0x%016lx @ %p\n",    ctx->r13,    &ctx->r13);
-    printf("   r14 : 0x%016lx @ %p\n",    ctx->r14,    &ctx->r14);
-    printf("   r15 : 0x%016lx @ %p\n",    ctx->r15,    &ctx->r15);
-    printf("  apsr : 0x%016lx @ %p\n", ctx->apsr, &ctx->apsr);
+    printf("   r0  : 0x%08lx @ %p\n",    ctx->r0,    &ctx->r0);
+    printf("   r1  : 0x%08lx @ %p\n",    ctx->r1,    &ctx->r1);
+    printf("   r2  : 0x%08lx @ %p\n",    ctx->r2,    &ctx->r2);
+    printf("   r3  : 0x%08lx @ %p\n",    ctx->r3,    &ctx->r3);
+    printf("   r4  : 0x%08lx @ %p\n",    ctx->r4,    &ctx->r4);
+    printf("   r5  : 0x%08lx @ %p\n",    ctx->r5,    &ctx->r5);
+    printf("   r6  : 0x%08lx @ %p\n",    ctx->r6,    &ctx->r6);
+    printf("   r7  : 0x%08lx @ %p\n",    ctx->r7,    &ctx->r7);
+    printf("   r8  : 0x%08lx @ %p\n",     ctx->r8,     &ctx->r8);
+    printf("   r9  : 0x%08lx @ %p\n",     ctx->r9,     &ctx->r9);
+    printf("   r10 : 0x%08lx @ %p\n",    ctx->r10,    &ctx->r10);
+    printf("   r11 : 0x%08lx @ %p\n",    ctx->r11,    &ctx->r11);
+    printf("   r12 : 0x%08lx @ %p\n",    ctx->r12,    &ctx->r12);
+    printf("   r13 : 0x%08lx @ %p\n",    ctx->r13,    &ctx->r13);
+    printf("   r14 : 0x%08lx @ %p\n",    ctx->r14,    &ctx->r14);
+    printf("   r15 : 0x%08lx @ %p\n",    ctx->r15,    &ctx->r15);
+    printf("  apsr : 0x%08lx @ %p\n", ctx->apsr, &ctx->apsr);
 }
 
 unsigned long
