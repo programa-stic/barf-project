@@ -687,7 +687,7 @@ class ArmTranslator(object):
 
     # NE: Z clear
     def _evaluate_ne(self, tb):
-        return tb._all_ones_imm(self._flags["zf"])
+        return tb._negate_reg(self._flags["zf"])
     
     # CS: C set
     def _evaluate_cs(self, tb):
@@ -695,7 +695,7 @@ class ArmTranslator(object):
 
     # CC: C clear
     def _evaluate_cc(self, tb):
-        return tb._all_ones_imm(self._flags["cf"])
+        return tb._negate_reg(self._flags["cf"])
     
     # MI: N set
     def _evaluate_mi(self, tb):
@@ -703,7 +703,7 @@ class ArmTranslator(object):
 
     # PL: N clear
     def _evaluate_pl(self, tb):
-        return tb._all_ones_imm(self._flags["nf"])
+        return tb._negate_reg(self._flags["nf"])
     
     # VS: V set
     def _evaluate_vs(self, tb):
@@ -711,15 +711,15 @@ class ArmTranslator(object):
 
     # VC: V clear
     def _evaluate_vc(self, tb):
-        return tb._all_ones_imm(self._flags["vf"])
+        return tb._negate_reg(self._flags["vf"])
     
     # HI: C set and Z clear
     def _evaluate_hi(self, tb):
-        return tb._and_regs(self._flags["cf"], tb._all_ones_imm(self._flags["zf"]))
+        return tb._and_regs(self._flags["cf"], tb._negate_reg(self._flags["zf"]))
 
     # LS: C clear or Z set
     def _evaluate_ls(self, tb):
-        return tb._or_regs(tb._all_ones_imm(self._flags["cf"]), self._flags["zf"])
+        return tb._or_regs(tb._negate_reg(self._flags["cf"]), self._flags["zf"])
     
     # GE: N == V
     def _evaluate_ge(self, tb):
@@ -727,11 +727,11 @@ class ArmTranslator(object):
 
     # LT: N != V
     def _evaluate_lt(self, tb):
-        return tb._all_ones_imm(self._evaluate_ge(tb))
+        return tb._negate_reg(self._evaluate_ge(tb))
     
     # GT: (Z == 0) and (N == V)
     def _evaluate_gt(self, tb):
-        return tb._and_regs(tb._all_ones_imm(self._flags["zf"]), self._evaluate_ge(tb))
+        return tb._and_regs(tb._negate_reg(self._flags["zf"]), self._evaluate_ge(tb))
 
     # LE: (Z == 1) or (N != V)
     def _evaluate_le(self, tb):
@@ -758,7 +758,7 @@ class ArmTranslator(object):
             ARM_COND_CODE_LE : self._evaluate_le,
         }
         
-        neg_cond = tb._all_ones_imm(eval_cc_fn[instruction.condition_code](tb))
+        neg_cond = tb._negate_reg(eval_cc_fn[instruction.condition_code](tb))
         
         tb.add(self._builder.gen_jcc(neg_cond, nop_label))
         
