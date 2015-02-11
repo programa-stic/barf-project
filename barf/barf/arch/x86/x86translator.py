@@ -2311,6 +2311,7 @@ class X86Translator(object):
         branch_cond = tb.temporal(1)
 
         imm0 = tb.immediate(1, counter.size)
+        imm1 = tb.immediate(1, 1)
 
         keep_looping_lbl = tb.label('keep_looping')
 
@@ -2318,8 +2319,8 @@ class X86Translator(object):
         tb.add(self._builder.gen_sub(tmp0, imm0, counter))
         tb.add(self._builder.gen_bisz(counter, counter_zero))
         tb.add(self._builder.gen_bisz(self._flags["zf"], zf_zero))
-        tb.add(self._builder.gen_xor(zf_zero, imm0, zf_not_zero))
-        tb.add(self._builder.gen_xor(counter_zero, imm0, counter_not_zero))
+        tb.add(self._builder.gen_xor(zf_zero, imm1, zf_not_zero))
+        tb.add(self._builder.gen_xor(counter_zero, imm1, counter_not_zero))
         tb.add(self._builder.gen_and(counter_not_zero, zf_not_zero, branch_cond))
         tb.add(self._builder.gen_jcc(branch_cond, keep_looping_lbl))
         tb.add(self._builder.gen_jcc(imm0, end_addr)) # exit loop
