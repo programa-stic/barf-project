@@ -27,8 +27,8 @@ from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
 from barf.core.reil.reil import ReilRegisterOperand
 
-verbose = False
-# verbose = True
+# verbose = False
+verbose = True
 
 REIL_MEMORY_ENDIANNESS_LE = 0x0     # Little Endian
 REIL_MEMORY_ENDIANNESS_BE = 0x1     # Big Endian
@@ -446,13 +446,40 @@ class ReilEmulator(object):
         """
         self._reg_access_mapper = reg_access_mapper
 
+    def get_taint(self, register_name):
+        return self.is_tainted(register_name)
+
+    def set_taint(self, register_name, taint):
+        mapper = self._reg_access_mapper
+
+        if register_name in mapper:
+            base_reg, _ = mapper[register_name]
+
+            self._taints[base_reg] = taint
+        else:
+            self._taints[register_name] = taint
+
     def is_tainted(self, register_name):
-        return self._taints.get(register_name, False)
+        mapper = self._reg_access_mapper
+
+        if register_name in mapper:
+            base_reg, _ = mapper[register_name]
+
+            return self._taints.get(base_reg, False)
+        else:
+            return self._taints.get(register_name, False)
 
     def taint(self, register_name):
-        self._taints[register_name] = True
+        mapper = self._reg_access_mapper
 
-        print self._taints
+        if register_name in mapper:
+            base_reg, _ = mapper[register_name]
+
+            self._taints[base_reg] = True
+        else:
+            self._taints[register_name] = True
+
+        # print self._taints
 
     # Auxiliary functions
     # ======================================================================== #
@@ -477,7 +504,7 @@ class ReilEmulator(object):
             self._regs[base_reg_name] = random.randint(0, 2**self._arch_regs_size[base_reg_name] - 1)
 
         reg_value = self._regs[base_reg_name]
-        taint = self._taints.get(register.name, False)
+        taint = self.get_taint(register.name)
 
         if keep_track and register.name in self._arch_regs:
             self._regs_read.add(register.name)
@@ -503,7 +530,7 @@ class ReilEmulator(object):
         self._regs[base_reg_name] = self._insert_value(reg_value, value, offset, register.size)
 
         if tainted is not None:
-            self._taints[register.name] = tainted
+            self.set_taint(register.name, tainted)
 
         if keep_track and register.name in self._arch_regs:
             self._regs_written.add(register.name)
@@ -525,7 +552,7 @@ class ReilEmulator(object):
     def _debug_print_get_reg_value(self, reg, val, base_reg, base_val, tainted):
         fmt = "{indent}r{{ {reg:s} = {val:08x} [{taint:s}] ({base_reg:s} = {base_val:08x})}}"
 
-        taint = "T" if tainted else "-"
+        taint = "T" if tainted == True else "-"
 
         msg = fmt.format(
             indent=" "*10, reg=reg , val=val, base_reg=base_reg, base_val=base_val, taint=taint
