@@ -27,7 +27,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
         ("r13", 32),
         ("r14", 32),
         ("r15", 32),
-#         ("cpsr", 32),
+        ("apsr", 32),
 #         ("pc", 32),
 #         ("sp", 32),
 #         ("lr", 32),

@@ -328,6 +328,7 @@ mnemonic = Group(Or([
     
     Combine(Literal("b")("ins") + condition_code),
     Combine(Literal("bl")("ins") + condition_code),
+    Combine(Literal("bx")("ins") + condition_code),
 
     Word(alphanums)("ins"),
 ]))

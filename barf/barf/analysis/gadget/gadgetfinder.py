@@ -116,6 +116,84 @@ class GadgetFinder(object):
 
         return candidates
 
+    def find_arm(self, start_address, end_address, byte_depth=20, instrs_depth=2):
+        """Find gadgets.
+        """
+        self._max_bytes = byte_depth
+        self._instrs_depth = instrs_depth
+
+        trans_mode_old = self._ir_trans.translation_mode
+
+        self._ir_trans.translation_mode = LITE_TRANSLATION
+
+        candidates = self._find_arm_candidates(start_address, end_address)
+
+        self._ir_trans.translation_mode = trans_mode_old
+
+        return candidates
+
+    # Auxiliary functions
+    # ======================================================================== #
+    def _find_arm_candidates(self, start_address, end_address):
+        """Finds possible 'RET-ended' gadgets.
+        """
+        roots = []
+
+        # find gadget tail
+        for addr in xrange(start_address, end_address + 1):
+            # TODO: Make this 'speed improvement' architecture-agnostic
+            # TODO: Add thumb
+            # TODO: Little-Endian
+            op_codes = [
+                "\x1e\xff\x2f\xe1",     # bx lr
+            ]
+
+            #TODO: improve logic
+            oc_found = False
+            for oc in op_codes:
+                if self._mem[addr:min(addr+4, end_address + 1)] == oc: # TODO: Add thumb (+2)
+                    oc_found = True
+                    break
+            if not oc_found:
+                continue
+
+            asm_instr = self._disasm.disassemble(
+                self._mem[addr:min(addr+32, end_address + 1)], # TODO: Add thumb (+16)
+                addr
+            )
+
+            if not asm_instr:
+                continue
+
+            # restarts ir register numbering
+            self._ir_trans.reset()
+
+            try:
+                ins_ir = self._ir_trans.translate(asm_instr)
+            except:
+                continue
+
+            # build gadget
+#             if ins_ir[-1] and (ins_ir[-1].mnemonic == ReilMnemonic.RET \
+#                 or (ins_ir[-1].mnemonic == ReilMnemonic.JCC and isinstance(ins_ir[-1].operands[2], ReilRegisterOperand))):
+
+            root = GadgetTreeNode(DualInstruction(addr, asm_instr, ins_ir))
+
+            roots.append(root)
+
+            self._build_from(addr, root, start_address, self._instrs_depth)
+
+        # filter roots with no children
+        roots = [r for r in roots if len(r.get_children()) > 0]
+
+        # build gadgets
+        root_gadgets = [self._build_gadgets(r) for r in roots]
+
+        # flatten root gadget list
+        candidates = [item for l in root_gadgets for item in l]
+
+        return candidates
+
     def _build_from(self, address, root, base_address, depth = 2):
         """Build gadget recursively.
         """

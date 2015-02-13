@@ -951,6 +951,10 @@ class ArmTranslator(object):
     def _translate_bl(self, tb, instruction):
         self._translate_branch(tb, instruction, link = True)
     
+    # TODO: dummy translate to recognize bx in the gadget finder
+    def _translate_bx(self, tb, instruction):
+        pass
+    
     def _translate_branch(self, tb, instruction, link):
         target = tb.read(instruction.operands[0])
         target = ReilImmediateOperand(target.immediate << 8, target.size + 8)
