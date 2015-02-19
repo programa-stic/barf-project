@@ -403,6 +403,22 @@ class CodeAnalyzer(object):
 
         return ret_val
 
+    def get_tmp_register_expr(self, register_name, register_size, mode="post"):
+        """Return a smt bit vector that represents a register.
+        """
+        if mode == "pre":
+            var_name = self._translator.get_init_name(register_name)
+        elif mode == "post":
+            var_name = self._translator.get_curr_name(register_name)
+        else:
+            raise Exception()
+
+        var_size = register_size
+
+        ret_val = self._solver.mkBitVec(var_size, var_name)
+
+        return ret_val
+
     def get_memory_expr(self, address, size, mode="post"):
         """Return a smt bit vector that represents a memory location.
         """
