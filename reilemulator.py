@@ -221,7 +221,9 @@ class ReilMemory(object):
         tainted = False
 
         for i in xrange(0, size / 8):
-            tainted = tainted or self._taints[address + i]
+            tainted = tainted or self._taints.get(address + i, False)
+
+        return tainted
 
     def _debug_print_read_mem(self, addr, val, tainted):
         fmt = "{indent}r{{ {addr:08x} = {val:08x} [{taint:s}]}}"
