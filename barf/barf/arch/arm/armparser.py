@@ -153,8 +153,6 @@ def parse_instruction(string, location, tokens):
         instr.update_flags = True
 
     if "ldm_stm_addr_mode" in mnemonic:
-        # TODO: REMOVE
-        print "REMOVE THIS DEBUG: " + str(mnemonic["ldm_stm_addr_mode"])
         instr.ldm_stm_addr_mode = ldm_stm_am_mapper[mnemonic["ldm_stm_addr_mode"]]
 
     return instr
@@ -250,7 +248,6 @@ memory_operand = Group(Or([
     post_indexed_memory_operand("post")
 ]))
 
-# TODO: Add ! to multiple load store
 register_range = Group(register("start") + Optional(Suppress(minus) + register("end")))
 
 register_list_operand = Group(
@@ -308,12 +305,16 @@ ldm_stm_addr_mode = Optional(Or([
 
 update_flags = Optional(Literal("s"))("uf")
 
+cc_plus_uf = Or([
+    condition_code + update_flags,
+    update_flags + condition_code, # Capstone sometimes inverts the order (e.g. andseq)
+])
+
 mnemonic = Group(Or([
-    Combine(Literal("mov")("ins") + condition_code + update_flags),
-    Combine(Literal("and")("ins") + condition_code + update_flags),
-    Combine(Literal("and")("ins") + update_flags + condition_code), # TODO: Capstone is returning the order inverted (example: andseq)
-    Combine(Literal("eor")("ins") + condition_code + update_flags),
-    Combine(Literal("orr")("ins") + condition_code + update_flags),
+    Combine(Literal("mov")("ins") + cc_plus_uf),
+    Combine(Literal("and")("ins") + cc_plus_uf),
+    Combine(Literal("eor")("ins") + cc_plus_uf),
+    Combine(Literal("orr")("ins") + cc_plus_uf),
     
     Combine(Literal("ldr")("ins") + condition_code),
     Combine(Literal("str")("ins") + condition_code),
@@ -321,8 +322,8 @@ mnemonic = Group(Or([
     Combine(Literal("ldm")("ins") + condition_code + ldm_stm_addr_mode),
     Combine(Literal("stm")("ins") + condition_code + ldm_stm_addr_mode),
     
-    Combine(Literal("add")("ins") + condition_code + update_flags),
-    Combine(Literal("sub")("ins") + condition_code + update_flags),
+    Combine(Literal("add")("ins") + cc_plus_uf),
+    Combine(Literal("sub")("ins") + cc_plus_uf),
     Combine(Literal("cmp")("ins") + condition_code),
     Combine(Literal("cmn")("ins") + condition_code),
     
