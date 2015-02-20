@@ -184,14 +184,17 @@ ARM_COND_CODE_LT = 11
 ARM_COND_CODE_GT = 12
 ARM_COND_CODE_LE = 13
 ARM_COND_CODE_AL = 14
+ARM_COND_CODE_HS = 15
+ARM_COND_CODE_LO = 16
+
 
 cc_mapper = {
     "eq" : ARM_COND_CODE_EQ,
     "ne" : ARM_COND_CODE_NE,
     "cs" : ARM_COND_CODE_CS,
-    "hs" : ARM_COND_CODE_CS,
+    "hs" : ARM_COND_CODE_HS,
     "cc" : ARM_COND_CODE_CC,
-    "lo" : ARM_COND_CODE_CC,
+    "lo" : ARM_COND_CODE_LO,
     "mi" : ARM_COND_CODE_MI,
     "pl" : ARM_COND_CODE_PL,
     "vs" : ARM_COND_CODE_VS,
@@ -204,6 +207,8 @@ cc_mapper = {
     "le" : ARM_COND_CODE_LE,
     "al" : ARM_COND_CODE_AL,
 }
+
+cc_inverse_mapper = {v: k for k, v in cc_mapper.items()}
 
 ARM_LDM_STM_IA = 0
 ARM_LDM_STM_IB = 1
@@ -225,6 +230,8 @@ ldm_stm_am_mapper = {
     "ea" : ARM_LDM_STM_EA,
 }
 
+ldm_stm_am_inverse_mapper = {v: k for k, v in ldm_stm_am_mapper.items()}
+
 ldm_stack_am_to_non_stack_am = {
     ARM_LDM_STM_FA : ARM_LDM_STM_DA,
     ARM_LDM_STM_FD : ARM_LDM_STM_IA,
@@ -238,6 +245,10 @@ stm_stack_am_to_non_stack_am = {
     ARM_LDM_STM_FD : ARM_LDM_STM_DB,
     ARM_LDM_STM_FA : ARM_LDM_STM_IB,
 }
+
+ARM_MEMORY_INDEX_OFFSET = 0
+ARM_MEMORY_INDEX_PRE = 1
+ARM_MEMORY_INDEX_POST = 2
 
 class ArmInstruction(object):
     """Representation of ARM instruction."""
@@ -263,9 +274,9 @@ class ArmInstruction(object):
         self._size = None
         self._address = None
         self._arch_mode = arch_mode
-        self._condition_code = ARM_COND_CODE_AL
+        self._condition_code = None
         self._update_flags = False
-        self._ldm_stm_addr_mode = ARM_LDM_STM_IA
+        self._ldm_stm_addr_mode = None
 
     @property
     def orig_instr(self):
@@ -344,7 +355,11 @@ class ArmInstruction(object):
     def __str__(self):
         operands_str = ", ".join([str(oprnd) for oprnd in self._operands])
 
-        string = self._mnemonic
+        string = self.mnemonic
+        if self.condition_code is not None:
+            string += cc_inverse_mapper[self.condition_code]
+        if self.ldm_stm_addr_mode is not None:
+            string += ldm_stm_am_inverse_mapper[self.ldm_stm_addr_mode]
         string += " " + operands_str if operands_str else ""
 
         return string
@@ -598,10 +613,6 @@ class ArmShifterOperand(ArmOperand):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-#TODO: cluster constants
-ARM_MEMORY_INDEX_OFFSET = 0
-ARM_MEMORY_INDEX_PRE = 1
-ARM_MEMORY_INDEX_POST = 2
 
 class ArmMemoryOperand(ArmOperand):
     """Representation of ARM memory operand."""
@@ -660,7 +671,6 @@ class ArmMemoryOperand(ArmOperand):
         if not self._size:
             raise Exception("Operand size missing.")
 
-        # TODO: encapsulate displacement with sign?
         disp_str = "-" if self._disp_minus else ""
         disp_str += str(self._displacement)
 

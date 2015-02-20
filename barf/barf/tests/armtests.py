@@ -45,7 +45,24 @@ class ArmParser32BitsTests(unittest.TestCase):
             "add r9, r5, r5, lsl #3",
             "sub r10, r9, r8, lsr #4",
             "mov r12, r4, ror r3",
-            "rsb r9, r5, r8, rrx"
+            "rsb r9, r5, r8, rrx",
+            
+            # Same with conditino codes
+            "addeq r0, r0, r1, lsl #4",
+            "movne r0, #0",
+            "addcs r3, r3, #1",
+            "cmpcc r7, #1000",
+            "bicmi r9, r8, #0xff00",
+            "movpl r2, r0",
+            "addvs r4, r3, r2",
+            "cmpvc r7, r8",
+            "movhi r2, r0, lsl #2",
+            "addls r9, r5, r5, lsl #3",
+            "subge r10, r9, r8, lsr #4",
+            "movlt r12, r4, ror r3",
+            "rsbgt r9, r5, r8, rrx",
+            "rsble r9, r5, r8, rrx",
+            "rsbal r9, r5, r8, rrx",
         ]
            
         for i in inst_samples:
@@ -92,12 +109,11 @@ class ArmParser32BitsTests(unittest.TestCase):
             "strh r2, [r5], #8",
               
             #A3.12.1 (examples of load/store multiple)
-            # TODO: Fix how ldm/stm are printed (regarding addressing mode aliases)
-#             "stmfd r13, {r0 - r12, lr}",
-#             "ldmfd r13, {r0 - r12, pc}",
-#             "ldmia r0, {r5 - r8}",
-#             "stmda r1, {r2, r5, r7, r11}",
-#             "stmda r1, {r1, r6 - r9, r11}",
+            "stmfd r13, {r0 - r12, lr}",
+            "ldmfd r13, {r0 - r12, pc}",
+            "ldmia r0, {r5 - r8}",
+            "stmda r1, {r2, r5, r7, r11}",
+            "stmda r1, {r1, r6 - r9, r11}",
         ]
           
         for i in inst_samples:
@@ -389,7 +405,7 @@ class ArmGadgetClassifierTests(unittest.TestCase):
     def test_move_register_1(self):
         # testing : dst_reg <- src_reg
         binary  = "\x04\x00\xa0\xe1"                     # 0x00 : (4)  mov    r0, r4
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary += "\x31\xff\x2f\xe1"                     # 0x04 : (4)  blx    r1
         
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -408,6 +424,8 @@ class ArmGadgetClassifierTests(unittest.TestCase):
         # testing : dst_reg <- src_reg
         binary  = "\x00\x00\x84\xe2"                     # 0x00 : (4)  add    r0, r4, #0
         binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+#         binary += "\x00\x80\xbd\xe8"                     # 0x04 : (4)  pop     {pc} # TODO: Not supported yet because it's not an excplicit jump
+
         
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -569,7 +587,7 @@ class ArmGadgetClassifierTests(unittest.TestCase):
         self.assertEquals(len(g_classified), 1)
  
         self.assertEquals(g_classified[0].type, GadgetType.LoadMemory)
-        self.assertEquals(g_classified[0].sources, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x0, 32)]) # TODO: why the extra 0?
+        self.assertEquals(g_classified[0].sources, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("r3", 32)])
  
         self.assertEquals(len(g_classified[0].modified_registers), 0)

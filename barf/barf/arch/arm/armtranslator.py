@@ -24,6 +24,8 @@ from barf.arch.arm.armbase import ARM_COND_CODE_EQ
 from barf.arch.arm.armbase import ARM_COND_CODE_NE
 from barf.arch.arm.armbase import ARM_COND_CODE_CS
 from barf.arch.arm.armbase import ARM_COND_CODE_CC
+from barf.arch.arm.armbase import ARM_COND_CODE_HS
+from barf.arch.arm.armbase import ARM_COND_CODE_LO
 from barf.arch.arm.armbase import ARM_COND_CODE_MI
 from barf.arch.arm.armbase import ARM_COND_CODE_PL
 from barf.arch.arm.armbase import ARM_COND_CODE_VS
@@ -464,7 +466,8 @@ class ArmTranslator(object):
 
         # Pre-processing: evaluate flags
         nop_cc_lbl = tb.label('condition_code_not_met')
-        self._evaluate_condition_code(tb, instruction, nop_cc_lbl)
+        if (instruction.condition_code is not None):
+            self._evaluate_condition_code(tb, instruction, nop_cc_lbl)
         
         
         translator_fn(tb, instruction)
@@ -745,7 +748,9 @@ class ArmTranslator(object):
             ARM_COND_CODE_EQ : self._evaluate_eq,
             ARM_COND_CODE_NE : self._evaluate_ne,
             ARM_COND_CODE_CS : self._evaluate_cs,
+            ARM_COND_CODE_HS : self._evaluate_cs,
             ARM_COND_CODE_CC : self._evaluate_cc,
+            ARM_COND_CODE_LO : self._evaluate_cc,
             ARM_COND_CODE_MI : self._evaluate_mi,
             ARM_COND_CODE_PL : self._evaluate_pl,
             ARM_COND_CODE_VS : self._evaluate_vs,
@@ -879,11 +884,14 @@ class ArmTranslator(object):
     def _translate_stm(self, tb, instruction):
         self._translate_ldm_stm(tb, instruction, False)
     
-    # TODO: RESPECT REGISTER ORDER
     # LDM and STM have exactly the same logic except one loads and the other stores
+    # It is assumed that the disassembler (for example Capstone) writes the register list in increasing order
     def _translate_ldm_stm(self, tb, instruction, load = True):
         base = tb.read(instruction.operands[0])
         reg_list = tb.read(instruction.operands[1])
+        
+        if instruction.ldm_stm_addr_mode == None:
+            instruction.ldm_stm_addr_mode = ARM_LDM_STM_IA # default mode for load and store
         
         if load:
             load_store_fn = self._builder.gen_ldm
@@ -951,8 +959,10 @@ class ArmTranslator(object):
     def _translate_bl(self, tb, instruction):
         self._translate_branch(tb, instruction, link = True)
     
-    # TODO: dummy translate to recognize bx in the gadget finder
+    # TODO: dummy translate to recognize bx/blx in the gadget finder
     def _translate_bx(self, tb, instruction):
+        pass
+    def _translate_blx(self, tb, instruction):
         pass
     
     def _translate_branch(self, tb, instruction, link):
