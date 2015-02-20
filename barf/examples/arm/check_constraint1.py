@@ -39,7 +39,7 @@ if __name__ == "__main__":
     #     8474:    e12fff1e     bx    lr
 
     start_addr = 0x8444
-    end_addr = 0x8474 - 4 # TODO SKIP BX
+    end_addr = 0x8474 - 4 # (-4): Skip bx
 
     # Add instructions to analyze
     print("[+] Adding instructions to the analyzer...")
