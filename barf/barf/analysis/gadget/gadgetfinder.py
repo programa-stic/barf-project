@@ -8,6 +8,7 @@ agnostic.
 
 """
 import logging
+import re
 
 from barf.analysis.gadget import GadgetType
 from barf.analysis.gadget import RawGadget
@@ -144,17 +145,22 @@ class GadgetFinder(object):
             # TODO: Make this 'speed improvement' architecture-agnostic
             # TODO: Add thumb
             # TODO: Little-Endian
-            op_codes = [
-                "\x1e\xff\x2f\xe1",     # bx lr
-            ]
+            
+            # From ROPgadget:
+            free_jump_gadgets = [
+                "[\x10-\x19\x1e]{1}\xff\x2f\xe1",  # bx   reg
+                "[\x30-\x39\x3e]{1}\xff\x2f\xe1",  # blx  reg
+                "[\x00-\xff]{1}\x80\xbd\xe8",       # pop {,pc}
+              ]
 
-            #TODO: improve logic
-            oc_found = False
-            for oc in op_codes:
-                if self._mem[addr:min(addr+4, end_address + 1)] == oc: # TODO: Add thumb (+2)
-                    oc_found = True
+            # TODO: Evaluate performance
+            gad_found = False
+            for gad in free_jump_gadgets:
+                if len(re.findall(gad, "".join(self._mem[addr:min(addr+4, end_address + 1)]))) > 0: # TODO: Add thumb (+2)
+                    gad_found = True
+                    print("FOUND")
                     break
-            if not oc_found:
+            if not gad_found:
                 continue
 
             asm_instr = self._disasm.disassemble(
