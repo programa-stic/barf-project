@@ -278,6 +278,9 @@ class ReilEmulator(object):
         self._arch_regs = []
         self._arch_regs_size = {}
 
+        self._mem_written = set()
+        self._mem_read = set()
+
         # Instruction implementation.
         self._executors = {
             # Arithmetic Instructions
@@ -321,6 +324,10 @@ class ReilEmulator(object):
 
         if context:
             self._regs = context.copy()
+
+        # Reset mem written/read loggers.
+        self._mem_written = set()
+        self._mem_read = set()
 
         for index, instr in enumerate(instructions):
             if verbose:
@@ -759,6 +766,8 @@ class ReilEmulator(object):
 
         self._set_reg_value(instr.operands[2], value, keep_track=True, tainted=op3_taint)
 
+        self._mem_read.add(mem_addr)
+
         return None
 
     def _execute_stm(self, instr):
@@ -774,6 +783,8 @@ class ReilEmulator(object):
         op3_taint = value_taint
 
         self._mem.write(mem_addr, instr.operands[0].size, value, tainted=op3_taint)
+
+        self._mem_written.add(mem_addr)
 
         return None
 
