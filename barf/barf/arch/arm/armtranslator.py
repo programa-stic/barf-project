@@ -213,7 +213,7 @@ class TranslationBuilder(object):
                                                  sh_am_greater_32_label))
                     
                     # Shift < 32 => shifter_operand = base lsl sh_am
-                    self.add(self._builder.gen_bsh(base, sh_am, ret))
+                    self.add(self._builder.gen_bsh(base, sh_am_7_0, ret))
                     self._jump_to(sh_am_end_label)
                     
                     # Shift >= 32 => shifter_operand = 0
