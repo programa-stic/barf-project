@@ -858,6 +858,20 @@ class ArmTranslator(object):
         if instruction.update_flags:
             self._update_flags_data_proc_sub(tb, oprnd1, oprnd2, result)
 
+    def _translate_mul(self, tb, instruction):
+        oprnd1 = tb.read(instruction.operands[1])
+        oprnd2 = tb.read(instruction.operands[2])
+
+        result = tb.temporal(oprnd1.size * 2)
+
+        tb.add(self._builder.gen_mul(oprnd1, oprnd2, result))
+
+        tb.write(instruction.operands[0], result)
+        
+        if instruction.update_flags:
+            self._update_zf(tb, oprnd1, oprnd2, result)
+            self._update_nf(tb, oprnd1, oprnd2, result)
+
     def _translate_cmn(self, tb, instruction):
         oprnd1 = tb.read(instruction.operands[0])
         oprnd2 = tb.read(instruction.operands[1])

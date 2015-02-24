@@ -333,6 +333,9 @@ class ArmTranslationTests(unittest.TestCase):
             ["cmn r3, r12"],
             ['mov r8, r5, lsl r6'],
             ['eor r8, r4, r5, lsl r6'],
+            ['mul r3, r4, r8'],
+            ["mov r8, #0", 'mul r3, r4, r8'],
+            ['mul r3, r4, r4'],
               
             # Flags update
             ["movs r0, #0"],

@@ -327,6 +327,8 @@ mnemonic = Group(Or([
     Combine(Literal("cmp")("ins") + condition_code),
     Combine(Literal("cmn")("ins") + condition_code),
     
+    Combine(Literal("mul")("ins") + cc_plus_uf),
+
     Combine(Literal("b")("ins") + condition_code),
     Combine(Literal("bl")("ins") + condition_code),
     Combine(Literal("bx")("ins") + condition_code),
