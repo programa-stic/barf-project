@@ -366,6 +366,26 @@ class CodeAnalyzer(object):
             self.write_addrs = []
 
     # ======================================================================== #
+    def set_arch_info(self, arch_info):
+        self._arch_info = arch_info
+
+    def get_operand_var(self, operand):
+        return self._translator._translate_src_oprnd(operand)
+
+    def get_operand_expr(self, operand, mode="post"):
+        if isinstance(operand, ReilRegisterOperand):
+            if operand.name in self._arch_info.registers_gp_all:
+                expr = self.get_register_expr(operand.name, mode=mode)
+            else:
+                expr = self.get_tmp_register_expr(
+                        operand.name, operand.size, mode=mode)
+        elif isinstance(operand, ReilRegisterOperand):
+            expr = self.get_immediate_expr(operand.immediate, operand.size)
+        else:
+            raise Exception("Invalid operand: %s" % str(operand))
+
+        return expr
+
     def get_register_expr(self, register_name, mode="post"):
         """Return a smt bit vector that represents a register.
         """
@@ -452,6 +472,9 @@ class CodeAnalyzer(object):
             mem = self._translator.get_memory()
 
         return mem
+
+    def add_constraint(self, contraint):
+        self._solver.add(contraint)
 
     def add_instruction(self, reil_instruction):
         """Add an instruction for analysis.
