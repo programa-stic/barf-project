@@ -56,7 +56,7 @@ class ArmDisassembler(Disassembler):
         else:
             # TODO: Hack to bypass immediate constants embedded in the text section that do not conform to any valid instruction.
             asm = "nop"
-            size = 32
+            size = 4
             mnemonic = "nop"
             op_str = ""
 
