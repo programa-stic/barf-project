@@ -374,7 +374,7 @@ class CodeAnalyzer(object):
 
     def get_operand_expr(self, operand, mode="post"):
         if isinstance(operand, ReilRegisterOperand):
-            if operand.name in self._arch_info.registers_gp_all:
+            if operand.name in self._arch_info.registers_flags:
                 expr = self.get_register_expr(operand.name, mode=mode)
             else:
                 expr = self.get_tmp_register_expr(
