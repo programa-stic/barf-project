@@ -218,23 +218,15 @@ class ReilMemory(object):
     # ======================================================================== #
     def _debug_read_memory(self, addr, val, tainted):
         fmt = "{indent}r{{ m[{addr:08x}] = {val:08x} [{taint:s}]}}"
-
         taint = "T" if tainted else "-"
-
-        msg = fmt.format(
-            indent=" "*10, addr=addr , val=val, taint=taint
-        )
+        msg = fmt.format(indent=" "*10, addr=addr , val=val, taint=taint)
 
         print(msg)
 
     def _debug_write_memory(self, addr, val, tainted):
         fmt = "{indent}w{{ m[{addr:08x}] = {val:08x} [{taint:s}]}}"
-
         taint = "T" if tainted else "-"
-
-        msg = fmt.format(
-            indent=" "*10, addr=addr , val=val, taint=taint
-        )
+        msg = fmt.format(indent=" "*10, addr=addr , val=val, taint=taint)
 
         print(msg)
 
@@ -396,6 +388,18 @@ class ReilEmulator(object):
         """Return registers.
         """
         return self._regs
+
+    @property
+    def context(self):
+        """Set context.
+        """
+        return self._regs
+
+    @context.setter
+    def context(self, value):
+        """Get context.
+        """
+        self._regs = dict(value)
 
     @property
     def memory(self):
