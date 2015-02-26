@@ -2,6 +2,7 @@ import os
 import pickle
 import random
 import unittest
+import struct
 
 import pyasmjit
 
@@ -297,7 +298,7 @@ class ArmTranslationTests(unittest.TestCase):
   
         ctx_init = self.__init_context()
   
-        arm_rv, arm_ctx_out = pyasmjit.arm_execute("\n".join(asm), ctx_init)
+        arm_rv, arm_ctx_out, _ = pyasmjit.arm_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
             reil_instrs,
             0xdeadbeef << 8,
@@ -311,6 +312,63 @@ class ArmTranslationTests(unittest.TestCase):
   
         self.assertTrue(cmp_result, self.__print_contexts(ctx_init, arm_ctx_out, reil_ctx_out))
   
+    # TODO: Merge with previous test function
+    def _test_asm_instruction_with_mem(self, asm, reg_mem):
+        print(asm)
+        
+        mem_dir = pyasmjit.arm_reserve()
+        
+        # print("DIR (in Python): " + hex(mem_dir))
+        
+        arm_instrs = map(self.arm_parser.parse, asm)
+        
+        self.__set_address(0xdeadbeef, arm_instrs)
+        
+        reil_instrs = map(self.arm_translator.translate, arm_instrs)
+        
+        ctx_init = self.__init_context()
+        
+        ctx_init[reg_mem] = mem_dir
+        
+        arm_rv, arm_ctx_out, arm_mem_out = pyasmjit.arm_execute("\n".join(asm), ctx_init)
+        
+        self.reil_emulator._mem._memory = {} # TODO: Check how to clean emulator memory.
+        
+        #for reil_instr in reil_instrs:
+        #    for r in reil_instr:
+        #        print("{0:14}{1}".format("", r))
+
+        
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        base_dir = mem_dir
+
+        #print("reil_mem_out._memory: " + str(reil_mem_out._memory))
+       # for k, v in reil_mem_out._memory.iteritems():
+        #     print(hex(k) + ": " + hex(v))
+        for idx, b in enumerate(struct.unpack("B" * len(arm_mem_out), arm_mem_out)):
+            if (base_dir + idx) in reil_mem_out._memory: # TODO: Don't access variable directly.
+                #print("idx: " + hex(idx))
+               # print("B: " + hex(b))
+               # print("reil_mem_out._memory[base_dir + idx]: " + hex(reil_mem_out._memory[base_dir + idx]))
+                self.assertTrue(b == reil_mem_out._memory[base_dir + idx])
+            else:
+                #print("B: " + hex(b))
+                self.assertTrue(b == 0x0) # Memory in pyasmjit is initialized to 0
+        
+        
+        cmp_result = self.__compare_contexts(ctx_init, arm_ctx_out, reil_ctx_out)
+        
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+        
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, arm_ctx_out, reil_ctx_out))
+
+
     # TODO: R13 (SP), R14 (LR), R15 (PC) are outside testing scope for now
       
     def test_data_proc_inst(self):
@@ -372,7 +430,27 @@ class ArmTranslationTests(unittest.TestCase):
         for i in inst_samples:
             self._test_asm_instruction(i)
 
+    # R12 is loaded with the memory address
+    def test_mem_inst(self):
+        inst_samples = [
+            ["str r0, [r12]", "ldr  r1, [r12]"],
+            ["stm r12!, {r0 - r4}",   "ldmdb r12, {r5 - r9}"],
+            ["stmia r12, {r8 - r9}",  "ldmia r12, {r1 - r2}"],
+            ["stmib r12!, {r11}",    "ldmda r12!, {r3}"],
+            ["add r12, r12, #0x100", "stmda r12, {r9 - r11}",   "ldmda r12, {r1 - r3}"],
+            ["add r12, r12, #0x100", "stmdb r12!, {r3}",   "ldmia r12!, {r9}"],
+            ["add r12, r12, #0x100", "stmfd r12, {r2 - r4}"],
+            ["stmfa r12!, {r1 - r4}"],
+            ["add r12, r12, #0x100", "stmed r12, {r6 - r9}"],
+            ["stmea r12!, {r5 - r7}"],
+            ["mov r0, r13", "mov r13, r12", "push {r1 - r10}", "pop {r2 - r11}", "mov r13, r0", "mov r0, #0"], # The last inst. is needed because the emulator has no access to the real value of native r13 (SP) which is not passed in the context
+            ["mov r0, r13", "mov r13, r12", "push {r2 - r11}", "pop {r1 - r10}", "mov r13, r0", "mov r0, #0"],
+        ]
 
+        for i in inst_samples:
+            self._test_asm_instruction_with_mem(i, 'r12')
+            
+            
 class ArmGadgetClassifierTests(unittest.TestCase):
 
     def setUp(self):

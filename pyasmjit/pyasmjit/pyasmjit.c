@@ -301,6 +301,10 @@ arm_run(unsigned char *data, unsigned int size, arm_context_t *ctx) {
     return 0;
 }
 
+/* TODO: Memory: See where to locate this information. */
+void * arm_mem_pool = 0;
+unsigned int arm_mem_pool_size = 0;
+
 /*
  * Function to be called from Python
  */
@@ -329,9 +333,42 @@ py_arm_jit(PyObject * self, PyObject * args)
 
     /* Save context to output dictionary */
     save_arm_context_to_dict(dict_out, &ctx);
+    
+    /* TODO: Check that if pool is null it doesn't break the function. */
+    PyObject *py_buffer = Py_BuildValue("s#", arm_mem_pool, arm_mem_pool_size);
+    
+    /* Build return value and return */
+    return Py_BuildValue("IOO", rv, dict_out, py_buffer);
+}
+
+/*
+ * Function to be called from Python
+ */
+PyObject *
+py_arm_reserve(PyObject * self, PyObject * args)
+{
+    unsigned int     size;
+    
+    size = 4096; /* TODO: Pass size as parameter */
+    
+    arm_mem_pool_size = size;
+    
+    /* Allocate executable memory */
+    arm_mem_pool = mmap(
+        NULL,
+        size,
+        PROT_WRITE,
+        MAP_ANONYMOUS | MAP_PRIVATE,
+        -1,
+        0
+    );
+    
+    memset(arm_mem_pool, 0, arm_mem_pool_size);
+    
+    // printf("DIR (in C): %x\n", arm_mem_pool);
 
     /* Build return value and return */
-    return Py_BuildValue("IO", rv, dict_out);
+    return Py_BuildValue("I", arm_mem_pool);
 }
 
 /*
@@ -340,6 +377,7 @@ py_arm_jit(PyObject * self, PyObject * args)
 static PyMethodDef pyasmjit_methods[] = {
     {"jit", py_jit, METH_VARARGS},
     {"arm_jit", py_arm_jit, METH_VARARGS},
+    {"arm_reserve", py_arm_reserve, METH_VARARGS},
     {NULL, NULL}
 };
 

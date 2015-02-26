@@ -282,8 +282,8 @@ class TranslationBuilder(object):
             if len(reg_range) == 1:
                 ret.append(ReilRegisterOperand(reg_range[0].name, reg_range[0].size))
             else:
-                reg_num = int(reg_range[0][1:]) # Assuming the register is named with one letter + number
-                reg_end = int(reg_range[1][1:])
+                reg_num = int(reg_range[0].name[1:]) # Assuming the register is named with one letter + number
+                reg_end = int(reg_range[1].name[1:])
                 if reg_num > reg_end:
                     raise NotImplementedError("Instruction Not Implemented: Invalid register range.")
                 while reg_num <= reg_end:
@@ -419,15 +419,15 @@ class ArmTranslator(object):
         }
 
         if self._arch_mode == ARCH_ARM_MODE_32:
-            self._sp = ReilRegisterOperand("sp", 32)
-            self._pc = ReilRegisterOperand("pc", 32)
-            self._lr = ReilRegisterOperand("lr", 32)
+            self._sp = ReilRegisterOperand("r13", 32) # TODO: Implement alias
+            self._pc = ReilRegisterOperand("r14", 32)
+            self._lr = ReilRegisterOperand("r15", 32)
 
             self._ws = ReilImmediateOperand(4, 32) # word size
         elif self._arch_mode == ARCH_ARM_MODE_64:
-            self._sp = ReilRegisterOperand("sp", 64)
-            self._pc = ReilRegisterOperand("pc", 64)
-            self._lr = ReilRegisterOperand("lr", 64)
+            self._sp = ReilRegisterOperand("r13", 64)
+            self._pc = ReilRegisterOperand("r14", 64)
+            self._lr = ReilRegisterOperand("r15", 64)
 
             self._ws = ReilImmediateOperand(8, 64) # word size
 
@@ -440,8 +440,8 @@ class ArmTranslator(object):
             trans_instrs = [self._builder.gen_unkn()]
 
             self._log_not_supported_instruction(instruction)
-            print("NotImplementedError: " + str(e))
-            print(instruction)
+            #print("NotImplementedError: " + str(e))
+           # print(instruction)
 #         except Exception as e:
 #             trans_instrs = [self._builder.gen_unkn()]
 #             self._log_translation_exception(instruction)
@@ -908,12 +908,12 @@ class ArmTranslator(object):
             instruction.ldm_stm_addr_mode = ARM_LDM_STM_IA # default mode for load and store
         
         if load:
-            load_store_fn = self._builder.gen_ldm
+            load_store_fn = self._load_value
             # Convert stack addressing modes to non-stack addressing modes
             if instruction.ldm_stm_addr_mode in ldm_stack_am_to_non_stack_am:
                 instruction.ldm_stm_addr_mode = ldm_stack_am_to_non_stack_am[instruction.ldm_stm_addr_mode]
         else: # Store
-            load_store_fn = self._builder.gen_stm
+            load_store_fn = self._store_value
             if instruction.ldm_stm_addr_mode in stm_stack_am_to_non_stack_am:
                 instruction.ldm_stm_addr_mode = stm_stack_am_to_non_stack_am[instruction.ldm_stm_addr_mode]
 
@@ -923,22 +923,22 @@ class ArmTranslator(object):
         
         if instruction.ldm_stm_addr_mode == ARM_LDM_STM_IA:
             for reg in reg_list:
-                tb.add(load_store_fn(pointer, reg))
+                load_store_fn(tb, pointer, reg)
                 pointer = tb._add_to_reg(pointer, self._ws)
         elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_IB:
             for reg in reg_list:
                 pointer = tb._add_to_reg(pointer, self._ws)
-                tb.add(load_store_fn(pointer, reg))
+                load_store_fn(tb, pointer, reg)
         elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_DA:
             reg_list.reverse() # Assuming the registry list was in increasing registry number
             for reg in reg_list:
-                tb.add(load_store_fn(pointer, reg))
+                load_store_fn(tb, pointer, reg)
                 pointer = tb._sub_to_reg(pointer, self._ws)
         elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_DB:
             reg_list.reverse()
             for reg in reg_list:
                 pointer = tb._sub_to_reg(pointer, self._ws)
-                tb.add(load_store_fn(pointer, reg))
+                load_store_fn(tb, pointer, reg)
         else:
                 raise Exception("Unknown addressing mode.")
         
@@ -950,10 +950,17 @@ class ArmTranslator(object):
                 tmp = tb._sub_to_reg(base, reg_list_size_bytes)
             tb.add(self._builder.gen_str(tmp, base))
 
+    def _load_value(self, tb, mem_dir, value):
+        tb.add(self._builder.gen_ldm(mem_dir, value))
+
+    def _store_value(self, tb, mem_dir, value):
+        tb.add(self._builder.gen_stm(value, mem_dir))
+
+
     # PUSH and POP are equivalent to STM and LDM in FD mode with the SP (and write-back)
     # Instructions are modified to adapt it to the LDM/STM interface
     def _translate_push_pop(self, tb, instruction, translate_fn):
-        sp_name = "sp"
+        sp_name = "r13" # TODO: Use self._sp
         sp_size = instruction.operands[0].reg_list[0][0].size # Infer it from the registers list
         sp_reg = ArmRegisterOperand(sp_name, sp_size)
         sp_reg.wb = True

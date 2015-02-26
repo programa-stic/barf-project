@@ -243,7 +243,7 @@ def arm_execute(assembly, context):
         f_bin.close()
 
         # Run binary code.
-        rc, ctx = pyasmjit.arm_jit(binary, context)
+        rc, ctx, mem = pyasmjit.arm_jit(binary, context)
     else:
         rc = return_code
 
@@ -252,5 +252,9 @@ def arm_execute(assembly, context):
     os.remove(f_obj.name)
     os.remove(f_bin.name)
 
-    return rc, ctx
+    return rc, ctx, mem
+
+def arm_reserve():
+    return pyasmjit.arm_reserve()
+
 
