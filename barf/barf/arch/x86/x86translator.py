@@ -2,6 +2,9 @@ import logging
 
 import barf
 
+from barf.arch.translator import Label
+from barf.arch.translator import TranslationBuilder
+
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
 from barf.arch.x86.x86base import X86ArchitectureInformation
@@ -21,53 +24,17 @@ LITE_TRANSLATION = 1
 
 logger = logging.getLogger(__name__)
 
-class Label(object):
 
-    def __init__(self, name):
-        self.name = name
-
-    def __str__(self):
-        string = self.name + ":"
-
-        return string
-
-class TranslationBuilder(object):
+class X86TranslationBuilder(TranslationBuilder):
 
     def __init__(self, ir_name_generator, architecture_mode):
-        self._ir_name_generator = ir_name_generator
+        super(X86TranslationBuilder, self).__init__(ir_name_generator, architecture_mode)
 
         self._arch_info = X86ArchitectureInformation(architecture_mode)
-
-        self._instructions = []
-
-        self._builder = ReilInstructionBuilder()
 
         self._regs_mapper = self._arch_info.registers_access_mapper()
 
         self._regs_size = self._arch_info.registers_size
-
-    def add(self, instr):
-        self._instructions.append(instr)
-
-    def temporal(self, size):
-        return ReilRegisterOperand(self._ir_name_generator.get_next(), size)
-
-    def immediate(self, value, size):
-        return ReilImmediateOperand(value, size)
-
-    def label(self, name):
-        return Label(name)
-
-    def instanciate(self, address):
-        # Set instructions address.
-        instrs = self._instructions
-
-        for instr in instrs:
-            instr.address = address << 8
-
-        instrs = self._resolve_loops(instrs)
-
-        return instrs
 
     def read(self, x86_operand):
 
@@ -125,36 +92,6 @@ class TranslationBuilder(object):
 
         else:
             raise Exception()
-
-    def _resolve_loops(self, instrs):
-        idx_by_labels = {}
-
-        # Collect labels.
-        curr = 0
-        for index, instr in enumerate(instrs):
-            if isinstance(instr, Label):
-                idx_by_labels[instr.name] = curr
-
-                del instrs[index]
-            else:
-                curr += 1
-
-        # Resolve instruction addresses and JCC targets.
-        for index, instr in enumerate(instrs):
-            assert isinstance(instr, ReilInstruction)
-
-            instr.address |= index
-
-            if instr.mnemonic == ReilMnemonic.JCC:
-                target = instr.operands[2]
-
-                if isinstance(target, Label):
-                    idx = idx_by_labels[target.name]
-                    address = (instr.address & ~0xff) | idx
-
-                    instr.operands[2] = ReilImmediateOperand(address, 40)
-
-        return instrs
 
     def _compute_memory_address(self, mem_operand):
         """Return operand memory access translation.
@@ -345,8 +282,8 @@ class X86Translator(object):
                 check_operands_size(instr, self._arch_info.architecture_size)
             except:
                 logger.error(
-                    "Invalid operand size: %s (%s)", 
-                    instr, 
+                    "Invalid operand size: %s (%s)",
+                    instr,
                     instruction
                 )
 
@@ -365,7 +302,7 @@ class X86Translator(object):
         translator_fn = getattr(self, translator_name, self._not_implemented)
 
         # Translate instruction.
-        tb = TranslationBuilder(self._ir_name_generator, self._arch_mode)
+        tb = X86TranslationBuilder(self._ir_name_generator, self._arch_mode)
 
         translator_fn(tb, instruction)
 
@@ -415,7 +352,7 @@ class X86Translator(object):
 
     def _extract_bit(self, tb, reg, bit):
         assert(bit >= 0 and bit < reg.size)
-        
+
         tmp = tb.temporal(reg.size)
         ret = tb.temporal(1)
 
@@ -1669,7 +1606,7 @@ class X86Translator(object):
         temp_count = tb.temporal(oprnd0.size)
         zero = tb.immediate(0, oprnd0.size)
 
-        # TODO: Improve this translation. It uses unecessary large 
+        # TODO: Improve this translation. It uses unecessary large
         # register...
         tmp_cf_ext = tb.temporal(oprnd0.size * 4)
         tmp_cf_ext_1 = tb.temporal(oprnd0.size * 4)

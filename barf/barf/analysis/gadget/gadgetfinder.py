@@ -145,7 +145,7 @@ class GadgetFinder(object):
             # TODO: Make this 'speed improvement' architecture-agnostic
             # TODO: Add thumb
             # TODO: Little-Endian
-            
+
             # From ROPgadget:
             free_jump_gadgets = [
                 "[\x10-\x19\x1e]{1}\xff\x2f\xe1",  # bx   reg

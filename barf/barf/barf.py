@@ -99,9 +99,7 @@ class BARF(object):
         self.smt_translator = None
 
         if self.arch_info:
-            
             self.ir_emulator = ReilEmulator(self.arch_info.address_size)
-            
 
             if SMT_SOLVER == "Z3":
                 self.smt_solver = Z3Solver()
