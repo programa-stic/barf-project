@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 
 import pyasmjit
-from pprint import pprint
 
 code = """\
 
@@ -29,11 +28,9 @@ context_in = {
     'apsr' : 0x0,
 }
 
-# print code
-# print context_in
+print code
+print context_in
 
 rv, context_out = pyasmjit.arm_execute(code, context_in)
 
-# pprint({k: hex(v) for k, v in context_out.items()})
-
-print("APSR: " + hex(context_out['apsr']))
+print context_out

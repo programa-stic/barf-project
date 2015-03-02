@@ -59,8 +59,8 @@ print_context(context_t *ctx)
     printf("   rbp : 0x%016lx @ %p\n",    ctx->rbp,    &ctx->rbp);
     printf("   rsp : 0x%016lx @ %p\n",    ctx->rsp,    &ctx->rsp);
     printf("   rip : 0x%016lx @ %p\n",    ctx->rip,    &ctx->rip);
-    printf("   r8  : 0x%016lx @ %p\n",     ctx->r8,     &ctx->r8);
-    printf("   r9  : 0x%016lx @ %p\n",     ctx->r9,     &ctx->r9);
+    printf("    r8 : 0x%016lx @ %p\n",     ctx->r8,     &ctx->r8);
+    printf("    r9 : 0x%016lx @ %p\n",     ctx->r9,     &ctx->r9);
     printf("   r10 : 0x%016lx @ %p\n",    ctx->r10,    &ctx->r10);
     printf("   r11 : 0x%016lx @ %p\n",    ctx->r11,    &ctx->r11);
     printf("   r12 : 0x%016lx @ %p\n",    ctx->r12,    &ctx->r12);
@@ -75,22 +75,22 @@ print_arm_context(arm_context_t *ctx)
 {
     printf("ctx @ %p\n", ctx);
 
-    printf("   r0  : 0x%08lx @ %p\n",    ctx->r0,    &ctx->r0);
-    printf("   r1  : 0x%08lx @ %p\n",    ctx->r1,    &ctx->r1);
-    printf("   r2  : 0x%08lx @ %p\n",    ctx->r2,    &ctx->r2);
-    printf("   r3  : 0x%08lx @ %p\n",    ctx->r3,    &ctx->r3);
-    printf("   r4  : 0x%08lx @ %p\n",    ctx->r4,    &ctx->r4);
-    printf("   r5  : 0x%08lx @ %p\n",    ctx->r5,    &ctx->r5);
-    printf("   r6  : 0x%08lx @ %p\n",    ctx->r6,    &ctx->r6);
-    printf("   r7  : 0x%08lx @ %p\n",    ctx->r7,    &ctx->r7);
-    printf("   r8  : 0x%08lx @ %p\n",     ctx->r8,     &ctx->r8);
-    printf("   r9  : 0x%08lx @ %p\n",     ctx->r9,     &ctx->r9);
-    printf("   r10 : 0x%08lx @ %p\n",    ctx->r10,    &ctx->r10);
-    printf("   r11 : 0x%08lx @ %p\n",    ctx->r11,    &ctx->r11);
-    printf("   r12 : 0x%08lx @ %p\n",    ctx->r12,    &ctx->r12);
-    printf("   r13 : 0x%08lx @ %p\n",    ctx->r13,    &ctx->r13);
-    printf("   r14 : 0x%08lx @ %p\n",    ctx->r14,    &ctx->r14);
-    printf("   r15 : 0x%08lx @ %p\n",    ctx->r15,    &ctx->r15);
+    printf("    r0 : 0x%08lx @ %p\n",   ctx->r0,   &ctx->r0);
+    printf("    r1 : 0x%08lx @ %p\n",   ctx->r1,   &ctx->r1);
+    printf("    r2 : 0x%08lx @ %p\n",   ctx->r2,   &ctx->r2);
+    printf("    r3 : 0x%08lx @ %p\n",   ctx->r3,   &ctx->r3);
+    printf("    r4 : 0x%08lx @ %p\n",   ctx->r4,   &ctx->r4);
+    printf("    r5 : 0x%08lx @ %p\n",   ctx->r5,   &ctx->r5);
+    printf("    r6 : 0x%08lx @ %p\n",   ctx->r6,   &ctx->r6);
+    printf("    r7 : 0x%08lx @ %p\n",   ctx->r7,   &ctx->r7);
+    printf("    r8 : 0x%08lx @ %p\n",   ctx->r8,   &ctx->r8);
+    printf("    r9 : 0x%08lx @ %p\n",   ctx->r9,   &ctx->r9);
+    printf("   r10 : 0x%08lx @ %p\n",  ctx->r10,  &ctx->r10);
+    printf("   r11 : 0x%08lx @ %p\n",  ctx->r11,  &ctx->r11);
+    printf("   r12 : 0x%08lx @ %p\n",  ctx->r12,  &ctx->r12);
+    printf("   r13 : 0x%08lx @ %p\n",  ctx->r13,  &ctx->r13);
+    printf("   r14 : 0x%08lx @ %p\n",  ctx->r14,  &ctx->r14);
+    printf("   r15 : 0x%08lx @ %p\n",  ctx->r15,  &ctx->r15);
     printf("  apsr : 0x%08lx @ %p\n", ctx->apsr, &ctx->apsr);
 }
 
@@ -109,22 +109,22 @@ load_register_from_dict(PyObject *dict, const char *reg, unsigned long _default)
 void
 load_arm_context_from_dict(PyObject *dict, arm_context_t *ctx)
 {
-    ctx->r0     = load_register_from_dict(dict,    "r0",     0);
-    ctx->r1     = load_register_from_dict(dict,    "r1",     0);
-    ctx->r2     = load_register_from_dict(dict,    "r2",     0);
-    ctx->r3     = load_register_from_dict(dict,    "r3",     0);
-    ctx->r4     = load_register_from_dict(dict,    "r4",     0);
-    ctx->r5     = load_register_from_dict(dict,    "r5",     0);
-    ctx->r6     = load_register_from_dict(dict,    "r6",     0);
-    ctx->r7     = load_register_from_dict(dict,    "r7",     0);
-    ctx->r8     = load_register_from_dict(dict,     "r8",     0);
-    ctx->r9     = load_register_from_dict(dict,     "r9",     0);
-    ctx->r10    = load_register_from_dict(dict,    "r10",     0);
-    ctx->r11    = load_register_from_dict(dict,    "r11",     0);
-    ctx->r12    = load_register_from_dict(dict,    "r12",     0);
-    ctx->r13    = load_register_from_dict(dict,    "r13",     0);
-    ctx->r14    = load_register_from_dict(dict,    "r14",     0);
-    ctx->r15    = load_register_from_dict(dict,    "r15",     0);
+    ctx->r0   = load_register_from_dict(dict,   "r0", 0);
+    ctx->r1   = load_register_from_dict(dict,   "r1", 0);
+    ctx->r2   = load_register_from_dict(dict,   "r2", 0);
+    ctx->r3   = load_register_from_dict(dict,   "r3", 0);
+    ctx->r4   = load_register_from_dict(dict,   "r4", 0);
+    ctx->r5   = load_register_from_dict(dict,   "r5", 0);
+    ctx->r6   = load_register_from_dict(dict,   "r6", 0);
+    ctx->r7   = load_register_from_dict(dict,   "r7", 0);
+    ctx->r8   = load_register_from_dict(dict,   "r8", 0);
+    ctx->r9   = load_register_from_dict(dict,   "r9", 0);
+    ctx->r10  = load_register_from_dict(dict,  "r10", 0);
+    ctx->r11  = load_register_from_dict(dict,  "r11", 0);
+    ctx->r12  = load_register_from_dict(dict,  "r12", 0);
+    ctx->r13  = load_register_from_dict(dict,  "r13", 0);
+    ctx->r14  = load_register_from_dict(dict,  "r14", 0);
+    ctx->r15  = load_register_from_dict(dict,  "r15", 0);
     ctx->apsr = load_register_from_dict(dict, "apsr", 0);
 }
 
@@ -177,22 +177,22 @@ save_context_to_dict(PyObject *dict, context_t *ctx)
 void
 save_arm_context_to_dict(PyObject *dict, arm_context_t *ctx)
 {
-    PyDict_SetItemString(dict,    "r0", Py_BuildValue("I",    ctx->r0));
-    PyDict_SetItemString(dict,    "r1", Py_BuildValue("I",    ctx->r1));
-    PyDict_SetItemString(dict,    "r2", Py_BuildValue("I",    ctx->r2));
-    PyDict_SetItemString(dict,    "r3", Py_BuildValue("I",    ctx->r3));
-    PyDict_SetItemString(dict,    "r4", Py_BuildValue("I",    ctx->r4));
-    PyDict_SetItemString(dict,    "r5", Py_BuildValue("I",    ctx->r5));
-    PyDict_SetItemString(dict,    "r6", Py_BuildValue("I",    ctx->r6));
-    PyDict_SetItemString(dict,    "r7", Py_BuildValue("I",    ctx->r7));
-    PyDict_SetItemString(dict,     "r8", Py_BuildValue("I",     ctx->r8));
-    PyDict_SetItemString(dict,     "r9", Py_BuildValue("I",     ctx->r9));
-    PyDict_SetItemString(dict,    "r10", Py_BuildValue("I",    ctx->r10));
-    PyDict_SetItemString(dict,    "r11", Py_BuildValue("I",    ctx->r11));
-    PyDict_SetItemString(dict,    "r12", Py_BuildValue("I",    ctx->r12));
-    PyDict_SetItemString(dict,    "r13", Py_BuildValue("I",    ctx->r13));
-    PyDict_SetItemString(dict,    "r14", Py_BuildValue("I",    ctx->r14));
-    PyDict_SetItemString(dict,    "r15", Py_BuildValue("I",    ctx->r15));
+    PyDict_SetItemString(dict,   "r0", Py_BuildValue("I",  ctx->r0));
+    PyDict_SetItemString(dict,   "r1", Py_BuildValue("I",  ctx->r1));
+    PyDict_SetItemString(dict,   "r2", Py_BuildValue("I",  ctx->r2));
+    PyDict_SetItemString(dict,   "r3", Py_BuildValue("I",  ctx->r3));
+    PyDict_SetItemString(dict,   "r4", Py_BuildValue("I",  ctx->r4));
+    PyDict_SetItemString(dict,   "r5", Py_BuildValue("I",  ctx->r5));
+    PyDict_SetItemString(dict,   "r6", Py_BuildValue("I",  ctx->r6));
+    PyDict_SetItemString(dict,   "r7", Py_BuildValue("I",  ctx->r7));
+    PyDict_SetItemString(dict,   "r8", Py_BuildValue("I",  ctx->r8));
+    PyDict_SetItemString(dict,   "r9", Py_BuildValue("I",  ctx->r9));
+    PyDict_SetItemString(dict,  "r10", Py_BuildValue("I", ctx->r10));
+    PyDict_SetItemString(dict,  "r11", Py_BuildValue("I", ctx->r11));
+    PyDict_SetItemString(dict,  "r12", Py_BuildValue("I", ctx->r12));
+    PyDict_SetItemString(dict,  "r13", Py_BuildValue("I", ctx->r13));
+    PyDict_SetItemString(dict,  "r14", Py_BuildValue("I", ctx->r14));
+    PyDict_SetItemString(dict,  "r15", Py_BuildValue("I", ctx->r15));
     PyDict_SetItemString(dict, "apsr", Py_BuildValue("I", ctx->apsr));
 }
 
@@ -287,12 +287,12 @@ arm_run(unsigned char *data, unsigned int size, arm_context_t *ctx) {
 
     /* Typecast allocated memory to a function pointer */
     void (*func) () = mem;
-    
+
     print_arm_context(ctx);
 
     /* Run code */
     func(ctx);
-    
+
     print_arm_context(ctx);
 
     /* Free up allocated memory */
@@ -333,10 +333,10 @@ py_arm_jit(PyObject * self, PyObject * args)
 
     /* Save context to output dictionary */
     save_arm_context_to_dict(dict_out, &ctx);
-    
+
     /* TODO: Check that if pool is null it doesn't break the function. */
     PyObject *py_buffer = Py_BuildValue("s#", arm_mem_pool, arm_mem_pool_size);
-    
+
     /* Build return value and return */
     return Py_BuildValue("IOO", rv, dict_out, py_buffer);
 }
@@ -348,11 +348,11 @@ PyObject *
 py_arm_reserve(PyObject * self, PyObject * args)
 {
     unsigned int     size;
-    
+
     size = 4096; /* TODO: Pass size as parameter */
-    
+
     arm_mem_pool_size = size;
-    
+
     /* Allocate executable memory */
     arm_mem_pool = mmap(
         NULL,
@@ -362,9 +362,9 @@ py_arm_reserve(PyObject * self, PyObject * args)
         -1,
         0
     );
-    
+
     memset(arm_mem_pool, 0, arm_mem_pool_size);
-    
+
     // printf("DIR (in C): %x\n", arm_mem_pool);
 
     /* Build return value and return */
