@@ -1,7 +1,5 @@
 import unittest
-import networkx
 
-from barf.analysis.basicblock.basicblock import BasicBlock
 from barf.analysis.basicblock.basicblock import BasicBlockBuilder
 from barf.analysis.basicblock.basicblock import BasicBlockGraph
 from barf.analysis.codeanalyzer.codeanalyzer import CodeAnalyzer
@@ -16,7 +14,8 @@ from barf.core.bi import Memory
 from barf.core.smt.smtlibv2 import Z3Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
-verbose = False
+VERBOSE = False
+
 
 class MemoryMock(Memory):
 
@@ -55,7 +54,7 @@ class CodeAnalyzerTests(unittest.TestCase):
         self._bb_builder = BasicBlockBuilder(self._disasm, self._memory, self._ir_translator)
 
     def test_check_path_satisfiability(self):
-        if verbose:
+        if VERBOSE:
             print "[+] Test: test_check_path_satisfiability"
 
         # binary : stack1
@@ -124,7 +123,7 @@ class CodeAnalyzerTests(unittest.TestCase):
         codeAnalyzer.set_context(GenericContext(registers, flags, memory))
 
         for bb_path in bb_graph.all_simple_bb_paths(start, end):
-            if verbose:
+            if VERBOSE:
                 print "[+] Checking path satisfiability :"
                 print "      From : %s" % hex(start)
                 print "      To : %s" % hex(end)
@@ -132,15 +131,15 @@ class CodeAnalyzerTests(unittest.TestCase):
 
             is_sat = codeAnalyzer.check_path_satisfiability(bb_path, start, verbose=False)
 
-            if verbose:
+            if VERBOSE:
                 print "[+] Satisfiability : %s" % str(is_sat)
 
             self.assertTrue(is_sat)
 
-            if is_sat and verbose:
+            if is_sat and VERBOSE:
                 print codeAnalyzer.get_context()
 
-            if verbose:
+            if VERBOSE:
                 print ":" * 80
                 print ""
 

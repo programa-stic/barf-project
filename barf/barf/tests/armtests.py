@@ -1,4 +1,3 @@
-import os
 import pickle
 import random
 import unittest
@@ -6,25 +5,14 @@ import struct
 
 import pyasmjit
 
-from barf.analysis.codeanalyzer import CodeAnalyzer
-from barf.analysis.gadget.gadget import GadgetType
-from barf.analysis.gadget.gadgetclassifier import GadgetClassifier
-from barf.analysis.gadget.gadgetfinder import GadgetFinder
-from barf.analysis.gadget.gadgetverifier import GadgetVerifier
-from barf.arch.arm.armbase import ArmArchitectureInformation
-from barf.arch.arm.armtranslator import ArmTranslator
-from barf.arch.arm.armdisassembler import ArmDisassembler
 from barf.arch import ARCH_ARM_MODE_32
-from barf.arch.arm.armtranslator import FULL_TRANSLATION
-from barf.arch.arm.armtranslator import LITE_TRANSLATION
+from barf.arch.arm.armbase import ArmArchitectureInformation
 from barf.arch.arm.armparser import ArmParser
+from barf.arch.arm.armtranslator import ArmTranslator
+from barf.arch.arm.armtranslator import FULL_TRANSLATION
 from barf.core.reil import ReilEmulator
 from barf.core.smt.smtlibv2 import Z3Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
-from barf.core.reil import ReilEmptyOperand
-from barf.core.reil import ReilEmulator
-from barf.core.reil import ReilImmediateOperand
-from barf.core.reil import ReilRegisterOperand
 
 
 class ArmParser32BitsTests(unittest.TestCase):

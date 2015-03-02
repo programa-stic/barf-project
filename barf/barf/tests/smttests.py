@@ -1,14 +1,12 @@
 import unittest
 
-from barf.core.reil import ReilEmulator
-from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilParser
 from barf.core.smt.smtlibv2 import BitVec
 from barf.core.smt.smtlibv2 import Z3Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
-from barf.utils.utils import VariableNamer
 
-verbose = False
+VERBOSE = False
+
 
 class SmtTranslatorTests(unittest.TestCase):
 
@@ -19,7 +17,7 @@ class SmtTranslatorTests(unittest.TestCase):
         self._translator = SmtTranslator(self._solver, self._address_size)
 
     def test_add_reg_reg(self):
-        if verbose:
+        if VERBOSE:
             print "\n[+] Test: test_add_reg_reg"
 
         # add eax, ebx
@@ -38,7 +36,7 @@ class SmtTranslatorTests(unittest.TestCase):
         self._solver.reset()
 
         # translate instructions to formulae
-        if verbose:
+        if VERBOSE:
             print "[+] Instructions:"
             for instr in instrs:
                 trans = self._translator.translate(instr)
@@ -54,7 +52,7 @@ class SmtTranslatorTests(unittest.TestCase):
             self._solver.mkBitVec(32, self._translator.get_init_name("eax")) != 42,
         ]
 
-        if verbose:
+        if VERBOSE:
             print "[+] Constraints :"
             for i, constr in enumerate(constraints):
                 self._solver.add(constr)
@@ -64,7 +62,7 @@ class SmtTranslatorTests(unittest.TestCase):
         # check satisfiability
         is_sat = self._solver.check() == 'sat'
 
-        if verbose:
+        if VERBOSE:
             print "[+] Satisfiability : %s" % str(is_sat)
 
             if is_sat:
@@ -76,7 +74,7 @@ class SmtTranslatorTests(unittest.TestCase):
         self.assertEqual(is_sat, True)
 
     def test_add_reg_mem(self):
-        if verbose:
+        if VERBOSE:
             print "\n[+] Test: test_add_reg_mem"
 
         # add eax, [ebx]
@@ -99,7 +97,7 @@ class SmtTranslatorTests(unittest.TestCase):
         self._solver.reset()
 
         # translate instructions to formulae
-        if verbose:
+        if VERBOSE:
             print "[+] Instructions:"
             for instr in instrs:
                 trans = self._translator.translate(instr)
@@ -115,7 +113,7 @@ class SmtTranslatorTests(unittest.TestCase):
             self._solver.mkBitVec(32, self._translator.get_init_name("eax")) != 42,
         ]
 
-        if verbose:
+        if VERBOSE:
             print "[+] Constraints :"
             for i, constr in enumerate(constraints):
                 self._solver.add(constr)
@@ -125,7 +123,7 @@ class SmtTranslatorTests(unittest.TestCase):
         # check satisfiability
         is_sat = self._solver.check() == 'sat'
 
-        if verbose:
+        if VERBOSE:
             print "[+] Satisfiability : %s" % str(is_sat)
 
             if is_sat:
@@ -137,7 +135,7 @@ class SmtTranslatorTests(unittest.TestCase):
         self.assertEqual(is_sat, True)
 
     def test_add_mem_reg(self):
-        if verbose:
+        if VERBOSE:
             print "\n[+] Test: test_add_mem_reg"
 
         # add [eax], ebx
@@ -165,13 +163,13 @@ class SmtTranslatorTests(unittest.TestCase):
 
         constraint = (mem[eax] != 42)
 
-        if verbose:
+        if VERBOSE:
             print "constraint : %s" % constraint
 
         self._solver.add(constraint)
 
         # translate instructions to formulae
-        if verbose:
+        if VERBOSE:
             print "[+] Instructions:"
             for instr in instrs:
                 trans = self._translator.translate(instr)
@@ -187,7 +185,7 @@ class SmtTranslatorTests(unittest.TestCase):
             self._solver.mkBitVec(32, self._translator.get_init_name("t0")) != 42,
         ]
 
-        if verbose:
+        if VERBOSE:
             print "[+] Constraints :"
             for i, constr in enumerate(constraints):
                 self._solver.add(constr)
@@ -197,7 +195,7 @@ class SmtTranslatorTests(unittest.TestCase):
         # check satisfiability
         is_sat = self._solver.check() == 'sat'
 
-        if verbose:
+        if VERBOSE:
             print "[+] Satisfiability : %s" % str(is_sat)
 
             if is_sat:
@@ -211,7 +209,7 @@ class SmtTranslatorTests(unittest.TestCase):
         self.assertEqual(is_sat, True)
 
     def test_add_mem_reg_2(self):
-        if verbose:
+        if VERBOSE:
             print "\n[+] Test: test_add_mem_reg_2"
 
         # add [eax + 0x1000], ebx
@@ -245,13 +243,13 @@ class SmtTranslatorTests(unittest.TestCase):
 
         constraint = (mem[eax + off] != 42)
 
-        if verbose:
+        if VERBOSE:
             print "constraint : %s" % constraint
 
         self._solver.add(constraint)
 
         # translate instructions to formulae
-        if verbose:
+        if VERBOSE:
             print "[+] Instructions:"
             for instr in instrs:
                 trans = self._translator.translate(instr)
@@ -267,7 +265,7 @@ class SmtTranslatorTests(unittest.TestCase):
             self._solver.mkBitVec(32, self._translator.get_init_name("t1")) != 42,
         ]
 
-        if verbose:
+        if VERBOSE:
             print "[+] Constraints :"
 
             for i, constr in enumerate(constraints):
@@ -278,7 +276,7 @@ class SmtTranslatorTests(unittest.TestCase):
         # check satisfiability
         is_sat = self._solver.check() == 'sat'
 
-        if verbose:
+        if VERBOSE:
             print "[+] Satisfiability : %s" % str(is_sat)
 
             if is_sat:
@@ -293,7 +291,7 @@ class SmtTranslatorTests(unittest.TestCase):
         self.assertEqual(is_sat, True)
 
     def test_mul(self):
-        if verbose:
+        if VERBOSE:
             print "\n[+] Test: test_mul"
 
         instrs = self._parser.parse([
@@ -309,7 +307,7 @@ class SmtTranslatorTests(unittest.TestCase):
         self._solver.reset()
 
         # translate instructions to formulae
-        if verbose:
+        if VERBOSE:
             print "[+] Instructions:"
             for instr in instrs:
                 trans = self._translator.translate(instr)
@@ -325,7 +323,7 @@ class SmtTranslatorTests(unittest.TestCase):
             self._solver.mkBitVec(32, self._translator.get_init_name("t0")) != 0,
         ]
 
-        if verbose:
+        if VERBOSE:
             print "[+] Constraints :"
             for i, constr in enumerate(constraints):
                 self._solver.add(constr)
@@ -335,7 +333,7 @@ class SmtTranslatorTests(unittest.TestCase):
         # check satisfiability
         is_sat = self._solver.check() == 'sat'
 
-        if verbose:
+        if VERBOSE:
             print "[+] Satisfiability : %s" % str(is_sat)
 
             if is_sat:

@@ -14,41 +14,51 @@ from analysis.codeanalyzer import CodeAnalyzer
 from analysis.gadget import GadgetClassifier
 from analysis.gadget import GadgetFinder
 from analysis.gadget import GadgetVerifier
-from arch.x86.x86base import X86ArchitectureInformation
-from arch.x86.x86disassembler import X86Disassembler
-from arch.x86.x86translator import X86Translator
-
+from arch.arm.armbase import ARCH_ARM_MODE_32
 from arch.arm.armbase import ArmArchitectureInformation
 from arch.arm.armdisassembler import ArmDisassembler
 from arch.arm.armtranslator import ArmTranslator
-
-from arch.arm.armbase import ARCH_ARM_MODE_32
-
+from arch.x86.x86base import X86ArchitectureInformation
+from arch.x86.x86disassembler import X86Disassembler
+from arch.x86.x86translator import X86Translator
 from core.bi import BinaryFile
 from core.reil import ReilEmulator
-from core.smt.smtlibv2 import Z3Solver
 from core.smt.smtlibv2 import CVC4Solver
-
+from core.smt.smtlibv2 import Z3Solver
 from core.smt.smttranslator import SmtTranslator
 
 logging.basicConfig(
-    filename = os.path.dirname(os.path.realpath(__file__)) + os.sep + "log/barf." + str(int(time.time())) + ".log",
-    format = "%(asctime)s: %(name)s:%(levelname)s: %(message)s",
-    level = logging.DEBUG
+    filename=os.path.dirname(os.path.realpath(__file__)) + os.sep + "log/barf." + str(int(time.time())) + ".log",
+    format="%(asctime)s: %(name)s:%(levelname)s: %(message)s",
+    level=logging.DEBUG
 )
 
-verbose = False
+VERBOSE = False
 
 # Choose between SMT Solvers...
-SMT_SOLVER  = "Z3"
-# SMT_SOLVER  = "CVC4"
+SMT_SOLVER = "Z3"
+# SMT_SOLVER = "CVC4"
 
 class BARF(object):
     """Binary Analysis Framework."""
 
     def __init__(self, filename):
-        if verbose:
+        if VERBOSE:
             print("[+] BARF: Initializing...")
+
+        self.code_analyzer = None
+        self.ir_translator = None
+        self.binary = None
+        self.smt_solver = None
+        self.gadget_classifier = None
+        self.gadget_verifier = None
+        self.arch_info = None
+        self.gadget_finder = None
+        self.text_section = None
+        self.disassembler = None
+        self.smt_translator = None
+        self.ir_emulator = None
+        self.bb_builder = None
 
         self.open(filename)
 
@@ -71,8 +81,8 @@ class BARF(object):
         if self.binary.architecture == arch.ARCH_X86:
             self._setup_x86_arch()
         else:
-            self._setup_arm_arch() # TODO: add arch in the binary file class
-
+            # TODO: add arch in the binary file class
+            self._setup_arm_arch()
 
     def _setup_arm_arch(self):
         """Set up ARM architecture.
@@ -84,17 +94,17 @@ class BARF(object):
     def _setup_x86_arch(self):
         """Set up x86 architecture.
         """
-        # set up architecture information
-        self.arch_info = X86ArchitectureInformation(self.binary.architecture_mode)
-        self.disassembler = X86Disassembler(architecture_mode=self.arch_info.architecture_mode)
-        self.ir_translator = X86Translator(architecture_mode=self.arch_info.architecture_mode)
+        arch_mode = self.binary.architecture_mode
+
+        # Set up architecture information
+        self.arch_info = X86ArchitectureInformation(arch_mode)
+        self.disassembler = X86Disassembler(architecture_mode=arch_mode)
+        self.ir_translator = X86Translator(architecture_mode=arch_mode)
 
     def _setup_core_modules(self):
         """Set up core modules.
         """
-#         self.disassembler = None
         self.ir_emulator = None
-#         self.ir_translator = None
         self.smt_solver = None
         self.smt_translator = None
 
@@ -126,8 +136,8 @@ class BARF(object):
         ## code analyzer
         self.code_analyzer = CodeAnalyzer(self.smt_solver, self.smt_translator)
 
-        # TODO: This should not be part of the framework, but something that
-        # it is build upon.
+        # TODO: This should not be part of the framework, but something
+        # that it is build upon it.
         ## gadget
         self.gadget_classifier = GadgetClassifier(self.ir_emulator, self.arch_info)
         self.gadget_finder = GadgetFinder(self.disassembler, self.text_section, self.ir_translator)
@@ -165,7 +175,7 @@ class BARF(object):
 
         self.ir_translator.reset()
 
-        for addr, asm, size in self.disassemble(start_addr, end_addr):
+        for addr, asm, _ in self.disassemble(start_addr, end_addr):
             yield addr, asm, self.ir_translator.translate(asm)
 
     def disassemble(self, ea_start=None, ea_end=None):
@@ -197,7 +207,7 @@ class BARF(object):
             # update instruction pointer
             curr_addr += asm.size
 
-    def recover_cfg(self, ea_start=None, ea_end=None, mode=None):
+    def recover_cfg(self, ea_start=None, ea_end=None):
         """Recover CFG
 
         :param ea_start: start address
@@ -217,7 +227,7 @@ class BARF(object):
 
         return bb_graph
 
-    def recover_bbs(self, ea_start=None, ea_end=None, mode=None):
+    def recover_bbs(self, ea_start=None, ea_end=None):
         """Recover basic blocks.
 
         :param ea_start: start address
@@ -257,11 +267,11 @@ class BARF(object):
         # load memory
         if 'memory' in context:
             for addr, val in context['memory'].items():
-                self.ir_emulator.get_memory().write(addr, 32, val)
+                self.ir_emulator.memory.write(addr, 32, val)
 
-        instrs = [reil for addr, asm, reil in self.translate(ea_start, ea_end)]
+        instrs = [reil for _, _, reil in self.translate(ea_start, ea_end)]
 
-        self.ir_emulator.execute(instrs, ea_start << 8, end_address=ea_end << 8)
+        self.ir_emulator.execute(instrs, start_addr << 8, end_address=end_addr << 8)
 
         context_out = {}
 

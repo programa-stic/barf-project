@@ -4,11 +4,10 @@ from barf.arch import ARCH_X86_MODE_32
 from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86parser import X86Parser
 from barf.arch.x86.x86translator import X86Translator
-from barf.core.reil import ReilEmptyOperand
 from barf.core.reil import ReilEmulator
 from barf.core.reil import ReilMemory
 from barf.core.reil import ReilParser
-from barf.utils.utils import VariableNamer
+
 
 class ReilMemoryTests(unittest.TestCase):
 
