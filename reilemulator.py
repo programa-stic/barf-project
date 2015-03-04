@@ -337,8 +337,8 @@ class ReilEmulator(object):
             instr = instructions[main_index][sub_index]
 
             if verbose:
-                # print("    0x%08x:%02x : %s" % (self._ip >> 8, self._ip & 0xff, instr))
-                print "    %03d : %s" % (main_index, instr)
+                print("    0x%08x:%02x : %s" % (self._ip >> 8, self._ip & 0xff, instr))
+                # print "    %03d : %s" % (main_index, instr)
 
             # execute instruction
             next_addr = self._executors[instr.mnemonic](instr)
