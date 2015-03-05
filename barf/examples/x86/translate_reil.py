@@ -10,7 +10,7 @@ if __name__ == "__main__":
     # Open file
     #
     try:
-        filename = os.path.abspath("../samples/toy/branch4")
+        filename = os.path.abspath("../../samples/toy/x86/branch4")
         barf = BARF(filename)
     except Exception as err:
         print err

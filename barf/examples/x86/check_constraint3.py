@@ -10,7 +10,7 @@ if __name__ == "__main__":
     # Open file
     #
     try:
-        filename = os.path.abspath("../samples/toy/constraint3")
+        filename = os.path.abspath("../../samples/toy/x86/constraint3")
         barf = BARF(filename)
     except Exception as err:
         print err
