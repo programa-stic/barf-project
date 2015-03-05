@@ -28,13 +28,16 @@ class ArmArchitectureInformation(ArchitectureInformation):
         ("r14", 32),
         ("r15", 32),
         ("apsr", 32),
-#         ("pc", 32),
-#         ("sp", 32),
-#         ("lr", 32),
-#         ("fp", 32),
-#         ("ip", 32),
-#         ("sl", 32),
-#         ("sb", 32),
+        
+        
+        # ALIAS
+        ("pc", 32),
+        ("sp", 32),
+        ("lr", 32),
+        ("fp", 32),
+        ("ip", 32),
+        ("sl", 32),
+        ("sb", 32),
     ]
 
 

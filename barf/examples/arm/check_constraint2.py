@@ -10,7 +10,7 @@ if __name__ == "__main__":
     # Open file
     #
     try:
-        filename = os.path.abspath("../../samples/toy/arm/constraint1")
+        filename = os.path.abspath("../../samples/toy/arm/constraint2")
         barf = BARF(filename)
     except Exception as err:
         print err
@@ -27,9 +27,9 @@ if __name__ == "__main__":
     #     8390:    e52db004     push    {fp}        ; (str fp, [sp, #-4]!)
     #     8394:    e28db000     add    fp, sp, #0
     #     8398:    e24dd014     sub    sp, sp, #20
-    #     839c:    e51b2008     ldr    r2, [fp, #-8]
-    #     83a0:    e51b300c     ldr    r3, [fp, #-12]
-    #     83a4:    e0823003     add    r3, r2, r3
+    #     839c:    e51b3008     ldr    r3, [fp, #-8]
+    #     83a0:    e51b200c     ldr    r2, [fp, #-12]
+    #     83a4:    e0030392     mul    r3, r2, r3
     #     83a8:    e2833005     add    r3, r3, #5
     #     83ac:    e50b3010     str    r3, [fp, #-16]
     #     83b0:    e51b3010     ldr    r3, [fp, #-16]
@@ -56,11 +56,12 @@ if __name__ == "__main__":
     print("[+] Adding pre and post conditions to the analyzer...")
 
     # Get smt expression for eax and ebp registers
-    fp = barf.code_analyzer.get_register_expr("fp")
+    r3 = barf.code_analyzer.get_register_expr("r3", mode="post")
+    fp = barf.code_analyzer.get_register_expr("fp", mode="post")
 
     # Get smt expressions for memory locations (each one of 4 bytes)
-    a = barf.code_analyzer.get_memory_expr(fp - 0x08, 4)
-    b = barf.code_analyzer.get_memory_expr(fp - 0x0c, 4)
+    a = barf.code_analyzer.get_memory_expr(fp - 0x8, 4)
+    b = barf.code_analyzer.get_memory_expr(fp - 0xc, 4)
     c = barf.code_analyzer.get_memory_expr(fp - 0x10, 4)
 
     # Set range for variable a and b
@@ -68,7 +69,7 @@ if __name__ == "__main__":
     barf.code_analyzer.set_preconditions([b >= 2, b <= 100])
 
     # Set desired value for the result
-    barf.code_analyzer.set_postconditions([c >= 26, c <= 28])
+    barf.code_analyzer.set_postcondition(c == 15)
 
     # Check satisfiability
     print("[+] Check for satisfiability...")
@@ -77,15 +78,17 @@ if __name__ == "__main__":
         print("    SAT! :: Possible assigments : ")
 
         # Get concrete value for expressions
+        r3_val = barf.code_analyzer.get_expr_value(r3)
         a_val = barf.code_analyzer.get_expr_value(a)
         b_val = barf.code_analyzer.get_expr_value(b)
         c_val = barf.code_analyzer.get_expr_value(c)
 
         # Print values
+        print("     r3 : 0x{0:08x} ({0})".format(r3_val))
         print("      a : 0x{0:08x} ({0})".format(a_val))
         print("      b : 0x{0:08x} ({0})".format(b_val))
         print("      c : 0x{0:08x} ({0})".format(c_val))
 
-        assert(a_val + b_val + 5 == c_val)
+        assert(a_val * b_val + 5 == c_val)
     else:
         print("    UNSAT!")

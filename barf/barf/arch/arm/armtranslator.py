@@ -798,16 +798,25 @@ class ArmTranslator(object):
     def _translate_bl(self, tb, instruction):
         self._translate_branch(tb, instruction, link = True)
 
-    # TODO: dummy translate to recognize bx/blx in the gadget finder
+    # TODO: Thumb
     def _translate_bx(self, tb, instruction):
-        pass
+        self._translate_branch(tb, instruction, link = False)
     def _translate_blx(self, tb, instruction):
-        pass
+        self._translate_branch(tb, instruction, link = True)
 
     def _translate_branch(self, tb, instruction, link):
-        target = tb.read(instruction.operands[0])
-        target = ReilImmediateOperand(target.immediate << 8, target.size + 8)
+        
+        arm_operand = instruction.operands[0]
 
+        if isinstance(arm_operand, ArmImmediateOperand):
+            target = ReilImmediateOperand((instruction.address + tb.read(arm_operand).immediate + 8) << 8, self._pc.size)
+        elif isinstance(arm_operand, ArmRegisterOperand):
+            target = ReilRegisterOperand(arm_operand.name, arm_operand.size)
+            target = tb._and_regs(target, ReilImmediateOperand(0xFFFFFFFE, target.size))
+            target = tb._shift_reg(target, ReilImmediateOperand(8, target.size))
+        else:
+            raise NotImplementedError("Instruction Not Implemented: Unknown operand for branch operation.")
+            
         if (link):
-            tb.add(self._builder.gen_add(self._pc, self._ws, self._lr))
+            tb.add(self._builder.gen_add(ReilImmediateOperand(instruction.address, self._pc.size), self._ws, self._lr))
         tb._jump_to(target)

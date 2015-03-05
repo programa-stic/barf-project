@@ -122,6 +122,11 @@ class TranslationBuilder(object):
 
     def _unequal_regs(self, reg1, reg2):
         return self._xor_regs(reg1, reg2)
+    
+    def _shift_reg(self, reg, sh):
+        ret = self.temporal(reg.size)
+        self.add(self._builder.gen_bsh(reg, sh, ret))
+        return ret
 
     def _extract_bit(self, reg, bit):
         assert(bit >= 0 and bit < reg.size)
