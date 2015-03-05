@@ -230,10 +230,14 @@ class BasicBlockGraph(object):
                 for bb_addr in gr.node.keys():
                     dump = self._dump_bb(self._bb_by_addr[bb_addr], print_ir)
 
-                    label = "{<f0> 0x%08x | %s}" % (bb_addr, dump)
-
                     # html-encode colon character
-                    label = label.replace(":", "&#58;")
+                    dump = dump.replace("!", "&#33;")
+                    dump = dump.replace("#", "&#35;")
+                    dump = dump.replace(":", "&#58;")
+                    dump = dump.replace("{", "&#123;")
+                    dump = dump.replace("}", "&#125;")
+
+                    label = "{<f0> 0x%08x | %s}" % (bb_addr, dump)
 
                     nodes[bb_addr] = Node(bb_addr, label=label, **node_format)
 
