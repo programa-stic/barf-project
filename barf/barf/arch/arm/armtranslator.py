@@ -283,17 +283,10 @@ class ArmTranslator(object):
         tb = ArmTranslationBuilder(self._ir_name_generator, self._arch_mode)
 
         # Pre-processing: evaluate flags
-        nop_cc_lbl = tb.label('condition_code_not_met')
         if (instruction.condition_code is not None):
-            self._evaluate_condition_code(tb, instruction, nop_cc_lbl)
-
+            self._evaluate_condition_code(tb, instruction)
 
         translator_fn(tb, instruction)
-
-
-        tb.add(nop_cc_lbl)
-        # TODO: Added NOP so there is a REIL instruction to jump to, otherwise it fails during REIL execution
-        tb.add(self._builder.gen_nop())
 
         return tb.instanciate(instruction.address)
 
@@ -558,7 +551,7 @@ class ArmTranslator(object):
     def _evaluate_le(self, tb):
         return tb._or_regs(self._flags["zf"], self._evaluate_lt(tb))
 
-    def _evaluate_condition_code(self, tb, instruction, nop_label):
+    def _evaluate_condition_code(self, tb, instruction):
         if (instruction.condition_code == ARM_COND_CODE_AL):
             return
 
@@ -583,7 +576,10 @@ class ArmTranslator(object):
 
         neg_cond = tb._negate_reg(eval_cc_fn[instruction.condition_code](tb))
 
-        tb.add(self._builder.gen_jcc(neg_cond, nop_label))
+        # Jump to the next instruction.
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, 40)
+
+        tb.add(self._builder.gen_jcc(neg_cond, end_addr))
 
         return
 
@@ -801,22 +797,24 @@ class ArmTranslator(object):
     # TODO: Thumb
     def _translate_bx(self, tb, instruction):
         self._translate_branch(tb, instruction, link = False)
+
     def _translate_blx(self, tb, instruction):
         self._translate_branch(tb, instruction, link = True)
 
     def _translate_branch(self, tb, instruction, link):
-        
+
         arm_operand = instruction.operands[0]
 
         if isinstance(arm_operand, ArmImmediateOperand):
-            target = ReilImmediateOperand((instruction.address + tb.read(arm_operand).immediate + 8) << 8, self._pc.size)
+            target = ReilImmediateOperand(tb.read(arm_operand).immediate << 8, self._pc.size)
         elif isinstance(arm_operand, ArmRegisterOperand):
             target = ReilRegisterOperand(arm_operand.name, arm_operand.size)
             target = tb._and_regs(target, ReilImmediateOperand(0xFFFFFFFE, target.size))
             target = tb._shift_reg(target, ReilImmediateOperand(8, target.size))
         else:
             raise NotImplementedError("Instruction Not Implemented: Unknown operand for branch operation.")
-            
+
         if (link):
             tb.add(self._builder.gen_add(ReilImmediateOperand(instruction.address, self._pc.size), self._ws, self._lr))
+
         tb._jump_to(target)
