@@ -366,6 +366,12 @@ class ReilEmulator(object):
             # update instruction counter
             instr_count += 1
 
+            if self._ip == end_address:
+                if verbose:
+                    print("[+] End address reached...")
+
+                break
+
         if verbose:
             print("[+] Executed instruction count : %d" % instr_count)
 
