@@ -1,65 +1,51 @@
 ARM
 ===
 
-This is the framework for translating ARM instructions to REIL.
+This document explains the framework developed to translate ARM instructions to REIL, which is located in ``barf/barf/arch/arm``.
 
-Located in the ``/barf/barf/arch/arm``.
+Currently the target architecture is only ARM 32 bits, without Thumb.
 
-Currently the target is only ARM 32 bits, without Thumb.
+The ARM port was implemented based on the x86 translation code (first ISA implemented), and this documentation primarily focuses on the differences between the two of them. This means that the BARF framework (with the x86 implementation) should to be understood before reading this (with a basic knowledge of the ARM architecture itself), it is not a standalone documentation.
 
-The ARM port was implemented based on the x86 (first ISA implemented), and this documentation primarily focus on the differences between the two of them. This means that the BARF framework (with the x86 implementation) needs to be understood before reading this (with a basic knowledge of the ARM architecture itself), it is not a standalone documentation.
-
-As a reference the ARM Architecture Reference Manual was used.
+As a reference, the ARM Architecture Reference Manual was used.
 
 * http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.subset.architecture.reference/index.html
+
 
 Extending the instruction set
 =============================
 
-Basic steps to add a new instruction, without knowing exactly the ARM framework used in BARF (described in the following sections of this document). This can work for very easy cases, but for more complex ones the framework will have to be studied in more depth.
+This secion aims at describing the basic steps needed to add a new ARM instruction to the list (as of now only the most basic instructions are supported), without a thorough understanding of the ARM framework. Depending of the complexity of the instruction to be emulated, more knwoldege of the inner working will be needed.
 
-TODO: basic steps.
+The first step is to add the instruction template to the parser (``armparser.py``) in the ``mnemonic`` definition, the basic template is ``Combine(Literal("<inst_base>")("ins") + <inst_mod>),``, where ``<inst_base>`` is the mnemonic instruction without the modifiers like the conditional execution code (EQ, NE, etc.) or the update APSR flag (S). These are added in ``<inst_mod>``, they have to be previously defined. The condition codes and update flags are already defined as ``condition_code`` and ``update_flags``, and the combination of both as ``cc_plus_uf``. The modifiers are joined together with a plus sign (+).
+
+Then the translation code is added to the translator (``armtranslator.py``). A new function has to be added to ``ArmTranslator`` with the pattern ``_translate_<inst_base>`` where ``<inst_base>`` is the one defined in the parser. The typical construction of a translation function is to read the ARM operands, process the instruction, write them back and update the flags if necessary. Good examples of this approach are ``_translate_add`` and ``_translate_and`` functions.
+
+For more complex instructions (with addressing modes for example), the framework has to be studied in more depth.
+
 
 Base information
 ================
 
-Located in ``armbase.py``.
+Located in ``armbase.py`` are the basic definitions of the ARM architecture. The ``ArmInstruction`` class was created, similar to the ``X86Instruction`` without the prefix, and several ARM operand classes. To the standard immediate, register and memory operand classes the ``ArmShiftedRegisterOperand`` and the ``ArmRegisterListOperand`` were added, to represent a register shifted by another register (or immediate), and the register list (e.g. ``{r0 - r4, lr}``) used for the LDM/STM instructions.
 
-The ``ArmInstruction`` class was created, similar to the ``X86Instruction`` without the prefix, and several ARM operand classes. To the standard immediate, register and memory operand classes the ``ArmShifterOperand`` and the ``ArmRegisterListOperand`` were added, to represent the ``shifter_operand`` (from the data-processing instructions) and the register list from the LDM/STM instructions.
-
-As only the ARM 32 bits was implemented the ``registers_access_mapper`` and the registers itself are considerably simpler than the x86 counterparts (where there are alias to lower register parts). 
+As only the ARM 32 bits was implemented, the ``registers_access_mapper`` and the registers itself are considerably simpler than the x86 counterparts (where there are alias to lower register parts). 
 
 
 Disassembler
 ===========
 
-Located in ``armdisassembler.py``.
+Located in ``armdisassembler.py``. Based on the Capstone engine, is pretty much the same as the x86 disassembler with the difference in how it handles unknown instructions. In the function ``_cs_disassemble_one`` if Capstone can't disassembled the instruction (possibly because it's a 32 bit constant) it returns an 32 bit ARM NOP instruction, so the disassembly process doesn't stop.
 
-Based on the Capstone engine, is pretty much the same as the x86 disassembler with the difference in how it handles unknown instructions. In the function ``_cs_disassemble_one`` if Capstone can't disassembled the instruction (possibly because it's a 32 bit constant) it returns an 32 bit ARM NOP instruction, so the disassembly process doesn't stop.
-
-The reason behind this is that ARM 32 bits fixed instruction size doesn't allow to handle large constants, so these are normal stored in the ``.data`` section along with the ARM code (normally right below the function that references it). This means that there is data mixed with the ARM instructions. In a binary without symbols instructions and constants cannot be easily turned apart.
+The reason behind this is that ARM 32 bits fixed instruction size doesn't allow to handle large constants, so these are normal stored in the ``.data`` section along with the ARM code (normally right below the function that references it). This means that there is data mixed with the ARM instructions. In a binary without symbols instructions and constants cannot be easily told apart.
 
 
 Parser
 ======
 
-Located in ``armparser.py``.
+Located in ``armparser.py``. The basic logic is the same as in x86. Based on the ``pyparsing`` python package, with the instruction assumed to have the format ``<mnemonic> <operand_0>, <operand_1>, ..., <operand_n>``. The structure of the operands and the instruction are defined with the corresponding parsing functions ``parse_operand`` and ``parse_instruction``. There is a parsing function for every type of operand defined in the base information.
 
-The basic logic is the same as in x86. Based on the ``pyparsing`` python package, with the instruction assumed to have the format ``<mnemonic> <operand_0>, <operand_1>, ..., <operand_n>``. The structure of the operands and the instruction are defined with the corresponding parsing functions ``parse_operand`` and ``parse_instruction``. There is a functionality for every type of operand defined in the base information.
-
-One key difference with the x86 parser is the use of the ``Group`` function from ``pyparsing`` that encapsulates a ``ParserElement`` definition allowing it to be reused and with the internal names not mixed with the rest where the ``ParserElement`` is included.
-
-The concept of the ``shifter_operand`` and the class itself it's abused to make the parsing logic simpler. The proper ``shifter_operand`` is defined only for the Data-processing instructions, in the addressing mode 1 of the ARM manual. It can take basically 3 formats:
-
-* Immediate
-* Register
-* Register, Displacement type(LSL, LSR, etc.) Register/Immediate
-
-The ``ArmShifterOperand`` actually represents only the most complex format, the third one, with the first two having their own operand types (``ArmImmediateOperand`` and ``ArmRegisterOperand``).
-
-In turn, because of its similarity, this same operand is reused in the Addressing Mode 2, used for LDR/STR instruction, in the cases 3, 6, 9 (as described in the ARM reference manual), where the offset is composed of a register and a displacement and an immediate (but not a register). Generalizing these two operands allow reutilization of code, as one describe this operand on the parser (using the ``Group`` function) as a register plus an offset, where the offset is actually the ``shifter_operand`` (for cases 3, 6 and 9 of Addressing Mode 2).
-
-Again this is an abuse of the ARM taxonomy, it generalizes more than it should, but assuming the parser will only receive valid instructions it works and greatly simplifies the code. A better approach would be to redefine basic structures like the register shift by another register as internal structures of the framework and later rebrand it to the according ARM operand types.
+One key difference with the x86 parser is the use of the ``Group`` function from ``pyparsing`` that encapsulates a ``ParserElement`` definition, allowing it to be reused and with the internal names not mixed with the rest where the ``ParserElement`` is included (which is what happens if the ``Group`` function is not used when a ``ParserElement`` is included inside another).
 
 The parser analyses the operands and the instruction mnemonic in separate instructions (and different moments, the operands are analyzed first), but some ARM instructions include flags encoded as different literal characters with the operands that really concern the instruction as a whole and not the operand itself. An example of that is the LDM instruction with the structure: ``LDM{<cond>}<addrsssing_mode> <Rn>{!}, <registers>`` where the exclamation signs indicates that the instruction will modify (*write-back*) the base register (``Rn``). This *flag* will be spotted by the parser when it's analyzing the first operand and has to pass this information somehow to the instructions, represented in the ``ArmInstruction`` class. The most convenient way found, without resorting to global variables, and due to the fact that the ``pyparsing`` functions don't have access to the ``ArmParser`` class, was to include flags like this in the respective operand classes, in this example the ``ArmRegisterOperand``. which has the ``wb`` (*write-back*) property specifically to code this flag in the LDM/STM instructions. This is not ideal as this property belongs more to the instruction class itself rather than the register operand class.
 
