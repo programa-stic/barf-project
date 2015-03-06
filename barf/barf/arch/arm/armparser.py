@@ -306,8 +306,8 @@ ldm_stm_addr_mode = Optional(Or([
 update_flags = Optional(Literal("s"))("uf")
 
 cc_plus_uf = Or([
-    condition_code + update_flags,
-    update_flags + condition_code, # Capstone sometimes inverts the order (e.g. andseq)
+    condition_code + update_flags, # pre-UAL syntax
+    update_flags + condition_code, # UAL syntax
 ])
 
 mnemonic = Group(Or([
