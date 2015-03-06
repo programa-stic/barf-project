@@ -801,11 +801,13 @@ class ArmTranslator(object):
         arm_operand = instruction.operands[0]
 
         if isinstance(arm_operand, ArmImmediateOperand):
-            target = ReilImmediateOperand(tb.read(arm_operand).immediate << 8, self._pc.size)
+            target = ReilImmediateOperand(tb.read(arm_operand).immediate << 8, self._pc.size * 2) # (* 2) to store a shifted address
         elif isinstance(arm_operand, ArmRegisterOperand):
             target = ReilRegisterOperand(arm_operand.name, arm_operand.size)
             target = tb._and_regs(target, ReilImmediateOperand(0xFFFFFFFE, target.size))
-            target = tb._shift_reg(target, ReilImmediateOperand(8, target.size))
+            tmp = tb.temporal(target.size * 2) # (* 2) to store a shifted address
+            tb.add(self._builder.gen_bsh(target, ReilImmediateOperand(8, target.size), tmp))
+            target = tmp
         else:
             raise NotImplementedError("Instruction Not Implemented: Unknown operand for branch operation.")
 
