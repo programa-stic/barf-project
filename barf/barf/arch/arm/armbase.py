@@ -34,6 +34,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
         ("sp", 32),
         ("lr", 32),
         ("pc", 32),
+        ("fp", 32),
     ]
     regs_flags = [
         ("nf", 1),
@@ -118,6 +119,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
     def registers_access_mapper(self):
 #         if self._arch_mode == ARCH_ARM_MODE_32:
         reg_mapper = {
+            "fp" : ("r11", 0),
             "sp" : ("r13", 0),
             "lr" : ("r14", 0),
             "pc" : ("r15", 0),
