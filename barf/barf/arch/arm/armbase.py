@@ -263,7 +263,7 @@ class ArmInstruction(object):
         self._mnemonic = mnemonic
         self._operands = operands
         self._bytes = ""
-        self._size = None
+        self._size = 4 # TODO: Thumb
         self._address = None
         self._arch_mode = arch_mode
         self._condition_code = None
