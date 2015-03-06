@@ -28,10 +28,13 @@ class ArmArchitectureInformation(ArchitectureInformation):
         ("r14", 32),
         ("r15", 32),
         ("apsr", 32),
-        
     ]
-
-
+    
+    regs_32_alias = [
+        ("sp", 32),
+        ("lr", 32),
+        ("pc", 32),
+    ]
     regs_flags = [
         ("nf", 1),
         ("zf", 1),
@@ -115,6 +118,9 @@ class ArmArchitectureInformation(ArchitectureInformation):
     def registers_access_mapper(self):
 #         if self._arch_mode == ARCH_ARM_MODE_32:
         reg_mapper = {
+            "sp" : ("r13", 0),
+            "lr" : ("r14", 0),
+            "pc" : ("r15", 0),
         }
 
         flags_reg = "apsr"
@@ -136,22 +142,10 @@ class ArmArchitectureInformation(ArchitectureInformation):
         return reg_mapper
 
     def _load_registers(self):
-        registers_all = self.regs_flags
-
-#         if self._arch_mode == ARCH_ARM_MODE_32:
-        registers_all += self.regs_32
-
-        registers_gp_all = self.regs_32
-
-        self._registers_gp_base = [name for name, _ in self.regs_32]
-#         else:
-#             registers_all += self.regs_64 + \
-#                              self.regs_xmm_64 + \
-#                              self.regs_ymm_64
-# 
-#             registers_gp_all = self.regs_64
-# 
-#             self._registers_gp_base = [name for name, _ in self.regs_64_base]
+        
+        registers_all = self.regs_flags + self.regs_32 + self.regs_32_alias
+        registers_gp_all = self.regs_32 + self.regs_32_alias
+        registers_gp_base = self.regs_32
 
         for name, size in registers_all:
             self._registers_all.append(name)
@@ -159,6 +153,10 @@ class ArmArchitectureInformation(ArchitectureInformation):
 
         for name, size in registers_gp_all:
             self._registers_gp_all.append(name)
+            self._registers_size[name] = size
+
+        for name, size in registers_gp_base:
+            self._registers_gp_base.append(name)
             self._registers_size[name] = size
 
         self._registers_flags = [name for name, _ in self.regs_flags]
@@ -439,11 +437,9 @@ class ArmImmediateOperand(ArmOperand):
         return self._immediate
 
     def __str__(self):
-#         if not self._size:
-#             raise Exception("Operand size missing.")
+        if not self._size:
+            raise Exception("Operand size missing.")
 
-#         string  = self._modifier + " " if self._modifier else ""
-#         string += hex(self._immediate & 2**self._size-1)
         string = '#' + (hex(self._immediate) if self._base_hex else str(self._immediate))
 
         return string[:-1] if string[-1] == 'L' else string
