@@ -4,7 +4,7 @@ from barf.arch.translator import TranslationBuilder
 from barf.arch import ARCH_ARM_MODE_32
 from barf.arch import ARCH_ARM_MODE_64
 from barf.arch.arm.armbase import ArmArchitectureInformation
-from barf.arch.arm.armbase import ArmShifterOperand
+from barf.arch.arm.armbase import ArmShiftedRegisterOperand
 from barf.arch.arm.armbase import ArmImmediateOperand
 from barf.arch.arm.armbase import ArmMemoryOperand
 from barf.arch.arm.armbase import ArmRegisterOperand
@@ -65,9 +65,9 @@ class ArmTranslationBuilder(TranslationBuilder):
 
             reil_operand = ReilRegisterOperand(arm_operand.name, arm_operand.size)
 
-        elif isinstance(arm_operand, ArmShifterOperand):
+        elif isinstance(arm_operand, ArmShiftedRegisterOperand):
 
-            reil_operand = self._compute_shifter_operand(arm_operand)
+            reil_operand = self._compute_shifted_register(arm_operand)
 
         elif isinstance(arm_operand, ArmMemoryOperand):
 
@@ -103,7 +103,7 @@ class ArmTranslationBuilder(TranslationBuilder):
         else:
             raise NotImplementedError("Instruction Not Implemented: Unknown operand for write operation.")
 
-    def _compute_shifter_operand(self, sh_op):
+    def _compute_shifted_register(self, sh_op):
 
         base = ReilRegisterOperand(sh_op.base_reg.name, sh_op.size)
 
@@ -129,11 +129,11 @@ class ArmTranslationBuilder(TranslationBuilder):
                     self.add(self._builder.gen_jcc(self._greater_than_or_equal(sh_am_7_0, self.immediate(33, sh_am_7_0.size)),
                                                  sh_am_greater_32_label))
 
-                    # Shift < 32 => shifter_operand = base lsl sh_am
+                    # Shift < 32 => shited_register = base lsl sh_am
                     self.add(self._builder.gen_bsh(base, sh_am_7_0, ret))
                     self._jump_to(sh_am_end_label)
 
-                    # Shift >= 32 => shifter_operand = 0
+                    # Shift >= 32 => shited_register = 0
                     self.add(sh_am_greater_32_label)
                     self.add(self._builder.gen_str(self.immediate(0x0, ret.size), ret))
 
@@ -158,8 +158,8 @@ class ArmTranslationBuilder(TranslationBuilder):
                 disp = ReilRegisterOperand(mem_operand.displacement.name, mem_operand.size)
             elif isinstance(mem_operand.displacement, ArmImmediateOperand):
                 disp = ReilImmediateOperand(mem_operand.displacement.immediate, mem_operand.size)
-            elif isinstance(mem_operand.displacement, ArmShifterOperand):
-                disp = self._compute_shifter_operand(mem_operand.displacement)
+            elif isinstance(mem_operand.displacement, ArmShiftedRegisterOperand):
+                disp = self._compute_shifted_register(mem_operand.displacement)
             else:
                 raise Exception("_compute_memory_address: displacement type unknown")
 
@@ -374,38 +374,33 @@ class ArmTranslator(object):
         tb.add(self._builder.gen_and(result, imm0, tmp0))  # filter low part of result
         tb.add(self._builder.gen_bisz(tmp0, zf))
 
-    def _shifter_carry_out(self, tb, shifter_operand, oprnd0, oprnd1, result):
-        if isinstance(shifter_operand, ArmImmediateOperand):
-            # Assuming rotate_imm == 0 then shifter_carry_out = C flag => C flag unchanged
+    def _carry_out(self, tb, carry_operand, oprnd0, oprnd1, result):
+        if isinstance(carry_operand, ArmImmediateOperand):
             return
-        elif isinstance(shifter_operand, ArmRegisterOperand):
-            # shifter_carry_out = C flag => C flag unchanged
+        elif isinstance(carry_operand, ArmRegisterOperand):
             return
-        elif isinstance(shifter_operand, ArmShifterOperand):
-            base = ReilRegisterOperand(shifter_operand.base_reg.name, shifter_operand.size)
-            shift_type = shifter_operand.shift_type
-            shift_amount = shifter_operand.shift_amount
+        elif isinstance(carry_operand, ArmShiftedRegisterOperand):
+            base = ReilRegisterOperand(carry_operand.base_reg.name, carry_operand.size)
+            shift_type = carry_operand.shift_type
+            shift_amount = carry_operand.shift_amount
 
             if (shift_type == 'lsl'):
 
                 if isinstance(shift_amount, ArmImmediateOperand):
                     if shift_amount.immediate == 0:
-                        # (shifter_carry_out = C Flag)
                         return
                     else:
-                        # shifter_carry_out = Rm[32 - shift_imm]
+                        # carry_out = Rm[32 - shift_imm]
                         shift_carry_out = tb._extract_bit(base, 32 - shift_amount.immediate)
 
                 elif isinstance(shift_amount, ArmRegisterOperand):
                     # Rs: register with shift amount
                     # if Rs[7:0] == 0 then
-                    #     shifter_carry_out = C Flag
-                    # else if Rs[7:0] < 32 then
-                    #     shifter_carry_out = Rm[32 - Rs[7:0]]
-                    # else if Rs[7:0] == 32 then
-                    #     shifter_carry_out = Rm[0]
+                    #     carry_out = C Flag
+                    # else if Rs[7:0] <= 32 then
+                    #     carry_out = Rm[32 - Rs[7:0]]
                     # else /* Rs[7:0] > 32 */
-                    #     shifter_carry_out = 0
+                    #     carry_out = 0
 
                     shift_carry_out = tb.temporal(1)
                     tb.add(self._builder.gen_str(self._flags["cf"], shift_carry_out))
@@ -416,14 +411,14 @@ class ArmTranslator(object):
                     rs_greater_32_label = tb.label('rs_greater_32_label')
 
                     # if Rs[7:0] == 0 then
-                    #     shifter_carry_out = C Flag
+                    #     carry_out = C Flag
                     tb._jump_if_zero(rs_7_0, end_label) # shift_carry_out already has the C flag set, so do nothing
 
                     tb.add(self._builder.gen_jcc(tb._greater_than_or_equal(rs_7_0, tb.immediate(33, rs_7_0.size)),
                                                  rs_greater_32_label))
 
                     # Rs > 0 and Rs <= 32
-                    #     shifter_carry_out = Rm[32 - Rs[7:0]]
+                    #     carry_out = Rm[32 - Rs[7:0]]
                     extract_bit_number = tb.temporal(rs_7_0.size)
                     tb.add(self._builder.gen_sub(tb.immediate(32, rs_7_0.size), rs_7_0, extract_bit_number))
                     tb.add(self._builder.gen_str(tb._extract_bit_with_register(base, extract_bit_number),
@@ -431,7 +426,7 @@ class ArmTranslator(object):
                     tb._jump_to(end_label)
 
                     # else /* Rs[7:0] > 32 */
-                    #     shifter_carry_out = 0
+                    #     carry_out = 0
                     tb.add(rs_greater_32_label)
                     tb.add(self._builder.gen_str(tb.immediate(0, 1), shift_carry_out))
 #                     tb._jump_to(end_label)
@@ -439,14 +434,14 @@ class ArmTranslator(object):
                     tb.add(end_label)
 
                 else:
-                    raise Exception("shifter_carry_out: Unknown shift amount type.")
+                    raise Exception("carry_out: Unknown shift amount type.")
 
             else:
                 # TODO: Implement other shift types
-                raise NotImplementedError("Instruction Not Implemented: shifter_carry_out: shift type " + shifter_operand.shift_type)
+                raise NotImplementedError("Instruction Not Implemented: carry_out: shift type " + carry_operand.shift_type)
 
         else:
-            raise Exception("shifter_carry_out: Unknown operand type.")
+            raise Exception("carry_out: Unknown operand type.")
 
         tb.add(self._builder.gen_str(shift_carry_out, self._flags["cf"]))
 
@@ -464,10 +459,10 @@ class ArmTranslator(object):
         tb.add(self._builder.gen_str(tb._negate_reg(self._flags["cf"]), self._flags["cf"]))
         self._overflow_from_sub_uf(tb, oprnd0, oprnd1, result)
 
-    def _update_flags_data_proc_other(self, tb, shifter_operand, oprnd0, oprnd1, result):
+    def _update_flags_data_proc_other(self, tb, second_operand, oprnd0, oprnd1, result):
         self._update_zf(tb, oprnd0, oprnd1, result)
         self._update_nf(tb, oprnd0, oprnd1, result)
-        self._shifter_carry_out(tb, shifter_operand, oprnd0, oprnd1, result)
+        self._carry_out(tb, second_operand, oprnd0, oprnd1, result)
         # Overflow Flag (V) unaffected
 
     def _update_flags_other(self, tb, oprnd0, oprnd1, result):

@@ -29,15 +29,6 @@ class ArmArchitectureInformation(ArchitectureInformation):
         ("r15", 32),
         ("apsr", 32),
         
-        
-        # ALIAS
-        ("pc", 32),
-        ("sp", 32),
-        ("lr", 32),
-        ("fp", 32),
-        ("ip", 32),
-        ("sl", 32),
-        ("sb", 32),
     ]
 
 
@@ -558,7 +549,7 @@ class ArmRegisterListOperand(ArmOperand):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-class ArmShifterOperand(ArmOperand):
+class ArmShiftedRegisterOperand(ArmOperand):
     """Representation of ARM register operand."""
 
     __slots__ = [
@@ -569,7 +560,7 @@ class ArmShifterOperand(ArmOperand):
     ]
 
     def __init__(self, base_reg, shift_type, shift_amount, size=None):
-        super(ArmShifterOperand, self).__init__("")
+        super(ArmShiftedRegisterOperand, self).__init__("")
 
         self._base_reg = base_reg
         self._shift_type = shift_type

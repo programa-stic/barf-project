@@ -27,7 +27,7 @@ from barf.arch.arm.armbase import ArmImmediateOperand
 from barf.arch.arm.armbase import ArmInstruction
 from barf.arch.arm.armbase import ArmMemoryOperand
 from barf.arch.arm.armbase import ArmRegisterOperand
-from barf.arch.arm.armbase import ArmShifterOperand
+from barf.arch.arm.armbase import ArmShiftedRegisterOperand
 from barf.arch.arm.armbase import ARM_MEMORY_INDEX_OFFSET
 from barf.arch.arm.armbase import ARM_MEMORY_INDEX_POST
 from barf.arch.arm.armbase import ARM_MEMORY_INDEX_PRE
@@ -40,7 +40,7 @@ arch_info = None
 
 # Parsing functions
 # ============================================================================ #
-def process_shifter_operand(tokens):
+def process_shifted_register(tokens):
     
     base = process_register(tokens["base"])
     sh_type = tokens["type"]
@@ -54,7 +54,7 @@ def process_shifter_operand(tokens):
         else:
             raise Exception("Unknown amount type.")
         
-    return ArmShifterOperand(base, sh_type, amount, base.size)
+    return ArmShiftedRegisterOperand(base, sh_type, amount, base.size)
 
 def process_register(tokens):
     name = tokens["name"]
@@ -103,7 +103,7 @@ def parse_operand(string, location, tokens):
         
         if displacement:
             if "shift" in displacement:
-                displacement = process_shifter_operand(displacement["shift"])
+                displacement = process_shifted_register(displacement["shift"])
             elif "reg" in displacement:
                 displacement = process_register(displacement["reg"])
             elif "imm" in displacement:
@@ -115,8 +115,8 @@ def parse_operand(string, location, tokens):
         # TODO: Add sizes for LDR/STR variations (half word, byte, double word)
         oprnd = ArmMemoryOperand(reg_base, index_type, displacement, disp_minus, size)
         
-    if "shifter_operand" in tokens:
-        oprnd =  process_shifter_operand(tokens["shifter_operand"])
+    if "shifted_register" in tokens:
+        oprnd =  process_shifted_register(tokens["shifted_register"])
     
     if "register_list_operand" in tokens:
         parsed_reg_list = tokens["register_list_operand"]
@@ -208,9 +208,9 @@ shift_type = Or([
 
 shift_amount = Group(Or([immediate("imm"), register("reg")]))
 
-shifter_operand = Group(register("base") + Suppress(comma) + shift_type("type") + Optional(shift_amount("amount")))
+shifted_register = Group(register("base") + Suppress(comma) + shift_type("type") + Optional(shift_amount("amount")))
 
-displacement = Group(Or([immediate("imm"), register("reg"), shifter_operand("shift")]))
+displacement = Group(Or([immediate("imm"), register("reg"), shifted_register("shift")]))
 
 offset_memory_operand = Group(
     Suppress(lbracket) + 
@@ -259,7 +259,7 @@ register_list_operand = Group(
 operand = (Or([
     immediate("immediate_operand"),
     register("register_operand"),
-    shifter_operand("shifter_operand"),
+    shifted_register("shifted_register"),
     memory_operand("memory_operand"),
     register_list_operand("register_list_operand")
 ])).setParseAction(parse_operand)
