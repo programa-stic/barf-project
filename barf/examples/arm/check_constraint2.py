@@ -10,7 +10,7 @@ if __name__ == "__main__":
     # Open file
     #
     try:
-        filename = os.path.abspath("../samples/toy/constraint2")
+        filename = os.path.abspath("../../samples/toy/arm/constraint2")
         barf = BARF(filename)
     except Exception as err:
         print err
@@ -23,19 +23,23 @@ if __name__ == "__main__":
     # Check constraint
     #
 
-    # 80483ed:       55                      push   ebp
-    # 80483ee:       89 e5                   mov    ebp,esp
-    # 80483f0:       83 ec 10                sub    esp,0x10
-    # 80483f3:       8b 45 f4                mov    eax,DWORD PTR [ebp-0xc]
-    # 80483f6:       0f af 45 f8             imul   eax,DWORD PTR [ebp-0x8]
-    # 80483fa:       83 c0 05                add    eax,0x5
-    # 80483fd:       89 45 fc                mov    DWORD PTR [ebp-0x4],eax
-    # 8048400:       8b 45 fc                mov    eax,DWORD PTR [ebp-0x4]
-    # 8048403:       c9                      leave
-    # 8048404:       c3                      ret
+    # 00008390 <main>:
+    #     8390:    e52db004     push    {fp}        ; (str fp, [sp, #-4]!)
+    #     8394:    e28db000     add    fp, sp, #0
+    #     8398:    e24dd014     sub    sp, sp, #20
+    #     839c:    e51b3008     ldr    r3, [fp, #-8]
+    #     83a0:    e51b200c     ldr    r2, [fp, #-12]
+    #     83a4:    e0030392     mul    r3, r2, r3
+    #     83a8:    e2833005     add    r3, r3, #5
+    #     83ac:    e50b3010     str    r3, [fp, #-16]
+    #     83b0:    e51b3010     ldr    r3, [fp, #-16]
+    #     83b4:    e1a00003     mov    r0, r3
+    #     83b8:    e28bd000     add    sp, fp, #0
+    #     83bc:    e8bd0800     ldmfd    sp!, {fp}
+    #     83c0:    e12fff1e     bx    lr
 
-    start_addr = 0x80483ed
-    end_addr = 0x8048402
+    start_addr = 0x8390
+    end_addr = 0x83bc
 
     # Add instructions to analyze
     print("[+] Adding instructions to the analyzer...")
@@ -52,13 +56,13 @@ if __name__ == "__main__":
     print("[+] Adding pre and post conditions to the analyzer...")
 
     # Get smt expression for eax and ebp registers
-    eax = barf.code_analyzer.get_register_expr("eax", mode="post")
-    ebp = barf.code_analyzer.get_register_expr("ebp", mode="post")
+    r3 = barf.code_analyzer.get_register_expr("r3", mode="post")
+    fp = barf.code_analyzer.get_register_expr("fp", mode="post")
 
     # Get smt expressions for memory locations (each one of 4 bytes)
-    a = barf.code_analyzer.get_memory_expr(ebp-0x8, 4)
-    b = barf.code_analyzer.get_memory_expr(ebp-0xc, 4)
-    c = barf.code_analyzer.get_memory_expr(ebp-0x4, 4)
+    a = barf.code_analyzer.get_memory_expr(fp - 0x8, 4)
+    b = barf.code_analyzer.get_memory_expr(fp - 0xc, 4)
+    c = barf.code_analyzer.get_memory_expr(fp - 0x10, 4)
 
     # Set range for variable a and b
     barf.code_analyzer.set_preconditions([a >= 2, a <= 100])
@@ -74,13 +78,13 @@ if __name__ == "__main__":
         print("    SAT! :: Possible assigments : ")
 
         # Get concrete value for expressions
-        eax_val = barf.code_analyzer.get_expr_value(eax)
+        r3_val = barf.code_analyzer.get_expr_value(r3)
         a_val = barf.code_analyzer.get_expr_value(a)
         b_val = barf.code_analyzer.get_expr_value(b)
         c_val = barf.code_analyzer.get_expr_value(c)
 
         # Print values
-        print("    eax : 0x{0:08x} ({0})".format(eax_val))
+        print("     r3 : 0x{0:08x} ({0})".format(r3_val))
         print("      a : 0x{0:08x} ({0})".format(a_val))
         print("      b : 0x{0:08x} ({0})".format(b_val))
         print("      c : 0x{0:08x} ({0})".format(c_val))

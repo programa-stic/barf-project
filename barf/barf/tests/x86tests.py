@@ -10,11 +10,11 @@ from barf.arch import ARCH_X86_MODE_64
 from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86parser import X86Parser
 from barf.arch.x86.x86translator import FULL_TRANSLATION
-from barf.arch.x86.x86translator import LITE_TRANSLATION
 from barf.arch.x86.x86translator import X86Translator
 from barf.core.reil import ReilEmulator
 from barf.core.smt.smtlibv2 import Z3Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
+
 
 class X86Parser32BitsTests(unittest.TestCase):
 
@@ -808,7 +808,7 @@ class X86TranslationTests(unittest.TestCase):
         # Undefined flags...
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
 
-        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # NOTE: OF and CF can be left undefined in some cases. They are
         # not cover by this test.
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
@@ -843,7 +843,7 @@ class X86TranslationTests(unittest.TestCase):
         # Undefined flags...
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
 
-        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # NOTE: OF and CF can be left undefined in some cases. They are
         # not cover by this test.
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
@@ -878,7 +878,7 @@ class X86TranslationTests(unittest.TestCase):
         # Undefined flags...
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
 
-        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # NOTE: OF and CF can be left undefined in some cases. They are
         # not cover by this test.
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
@@ -913,7 +913,7 @@ class X86TranslationTests(unittest.TestCase):
         # Undefined flags...
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
 
-        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # NOTE: OF and CF can be left undefined in some cases. They are
         # not cover by this test.
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
@@ -1113,7 +1113,7 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
-        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # NOTE: OF and CF can be left undefined in some cases. They are
         # not cover by this test.
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
@@ -1145,7 +1145,7 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
-        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # NOTE: OF and CF can be left undefined in some cases. They are
         # not cover by this test.
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
@@ -1180,7 +1180,7 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
-        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # NOTE: OF and CF can be left undefined in some cases. They are
         # not cover by this test.
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
@@ -1215,7 +1215,7 @@ class X86TranslationTests(unittest.TestCase):
             context=ctx_init
         )
 
-        # NOTE: OF and CF can be left undefined in some cases. They are 
+        # NOTE: OF and CF can be left undefined in some cases. They are
         # not cover by this test.
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
         reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
@@ -1261,7 +1261,7 @@ class X86TranslationTests(unittest.TestCase):
     def __save_failing_context(self, context):
         f = open(self.context_filename, "wb")
         pickle.dump(context, f)
-        f.close()        
+        f.close()
 
     def __compare_contexts(self, context_init, x86_context, reil_context):
         match = True

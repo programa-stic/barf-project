@@ -303,10 +303,17 @@ class ReilEmulator(object):
 
             # update instruction pointer
             if next_addr:
+                found = False
+
                 for idx, instrs in enumerate(instructions):
                     if instrs[0].address >> 8 == next_addr >> 8:
                         main_index = idx
                         sub_index = next_addr & 0xff
+
+                        found = True
+
+                if not found:
+                    raise Exception("Invalid address: %s" % hex(next_addr))
             else:
                 sub_index += 1
 
@@ -323,6 +330,12 @@ class ReilEmulator(object):
 
             # update instruction counter
             instr_count += 1
+
+            if end_address and self._ip == end_address:
+                if verbose:
+                    print("[+] End address reached...")
+
+                break
 
         if verbose:
             print("[+] Executed instruction count : %d" % instr_count)

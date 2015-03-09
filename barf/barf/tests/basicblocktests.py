@@ -1,10 +1,10 @@
 import unittest
 
 from barf.analysis.basicblock.basicblock import BasicBlock
-from barf.analysis.basicblock.basicblock import BasicBlockGraph
 from barf.arch.x86.x86parser import X86Parser
 from barf.arch.x86.x86translator import X86Translator
 from barf.core.reil import DualInstruction
+
 
 class BinDiffTests(unittest.TestCase):
 

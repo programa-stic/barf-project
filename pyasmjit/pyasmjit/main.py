@@ -130,6 +130,45 @@ pop rbp
 ret
 """
 
+template_arm_assembly = """\
+/* Save registers */
+push {{r0 - r12, lr}}
+
+/* Save flags (user mode) */
+mrs r1, apsr
+push {{r1}}
+
+/* Save context pointer (redundant, it was saved before, but done for code clarity) */
+push {{r0}}
+
+/* Load context */
+ldr r1, [r0, #(16 * 4)]
+msr apsr_nzcvq, r1
+ldm r0, {{r0 - r12}}
+
+/* Run code */
+{code}
+
+/* TODO: lr is used as scratch register when saving the context so its value is not saved correctly */
+/* Restore context pointer */
+pop {{lr}}
+
+/* Save context */
+stm lr, {{r0 - r12}}
+mrs r1, apsr
+str r1, [lr, #(16 * 4)]
+
+/* Restore flags */
+pop {{r1}}
+msr apsr_nzcvq, r1
+
+/* Restore registers */
+pop {{r0 - r12, lr}}
+
+/* Return */
+blx lr
+"""
+
 def execute(assembly, context):
     # Initialize return values
     rc  = 0
@@ -170,3 +209,52 @@ def execute(assembly, context):
     os.remove(f_obj.name)
 
     return rc, ctx
+
+def arm_execute(assembly, context):
+    # Initialize return values
+    rc  = 0
+    ctx = {}
+
+    # Instantiate assembly template.
+    assembly = template_arm_assembly.format(code=assembly)
+
+    # Create temporary files for compilation.
+    f_asm = tempfile.NamedTemporaryFile(delete=False)
+    f_obj = tempfile.NamedTemporaryFile(delete=False)
+    f_bin = tempfile.NamedTemporaryFile(delete=False)
+
+    # Write assembly to a file.
+    f_asm.write(assembly)
+    f_asm.close()
+
+    # Run nasm.
+    cmd = "gcc -c -x assembler {asm} -o {obj}; objcopy -O binary {obj} {bin};".format( \
+                asm = f_asm.name, obj = f_obj.name, bin = f_bin.name)
+    return_code = subprocess.call(cmd, shell=True)
+    
+    # Check for assembler errors.
+    if return_code == 0:
+        # Read binary code.
+        binary = ""
+        byte = f_bin.read(1)
+        while byte:
+            binary += byte
+            byte = f_bin.read(1)
+        f_bin.close()
+
+        # Run binary code.
+        rc, ctx, mem = pyasmjit.arm_jit(binary, context)
+    else:
+        rc = return_code
+
+    # Remove temporary files.
+    os.remove(f_asm.name)
+    os.remove(f_obj.name)
+    os.remove(f_bin.name)
+
+    return rc, ctx, mem
+
+def arm_reserve():
+    return pyasmjit.arm_reserve()
+
+
