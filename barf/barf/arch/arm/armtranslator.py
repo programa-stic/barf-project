@@ -283,10 +283,14 @@ class ArmTranslator(object):
         tb = ArmTranslationBuilder(self._ir_name_generator, self._arch_mode)
 
         # Pre-processing: evaluate flags
+        nop_cc_lbl = tb.label('condition_code_not_met')
         if (instruction.condition_code is not None):
-            self._evaluate_condition_code(tb, instruction)
+            self._evaluate_condition_code(tb, instruction, nop_cc_lbl)
 
         translator_fn(tb, instruction)
+        
+        tb.add(nop_cc_lbl)
+        tb.add(self._builder.gen_nop()) # Added NOP so there is a REIL instruction to jump to
 
         return tb.instanciate(instruction.address)
 
@@ -546,7 +550,7 @@ class ArmTranslator(object):
     def _evaluate_le(self, tb):
         return tb._or_regs(self._flags["zf"], self._evaluate_lt(tb))
 
-    def _evaluate_condition_code(self, tb, instruction):
+    def _evaluate_condition_code(self, tb, instruction, nop_label):
         if (instruction.condition_code == ARM_COND_CODE_AL):
             return
 
@@ -571,10 +575,7 @@ class ArmTranslator(object):
 
         neg_cond = tb._negate_reg(eval_cc_fn[instruction.condition_code](tb))
 
-        # Jump to the next instruction.
-        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, 40)
-
-        tb.add(self._builder.gen_jcc(neg_cond, end_addr))
+        tb.add(self._builder.gen_jcc(neg_cond, nop_label))
 
         return
 
