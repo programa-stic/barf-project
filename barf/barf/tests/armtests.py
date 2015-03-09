@@ -122,16 +122,11 @@ class ArmTranslationTests(unittest.TestCase):
 
         self.arm_parser = ArmParser(self.arch_mode)
         self.arm_translator = ArmTranslator(self.arch_mode, self.trans_mode)
-        self.smt_solver = SmtSolver()
-        self.smt_translator = SmtTranslator(self.smt_solver, self.arch_info.address_size)
         self.reil_emulator = ReilEmulator(self.arch_info.address_size)
 
         self.reil_emulator.set_arch_registers(self.arch_info.registers_gp_all)
         self.reil_emulator.set_arch_registers_size(self.arch_info.registers_size)
         self.reil_emulator.set_reg_access_mapper(self.arch_info.registers_access_mapper())
-
-        self.smt_translator.set_reg_access_mapper(self.arch_info.registers_access_mapper())
-        self.smt_translator.set_arch_registers_size(self.arch_info.registers_size)
 
         self.context_filename = "failing_context.data"
 
@@ -149,8 +144,8 @@ class ArmTranslationTests(unittest.TestCase):
     def __create_random_context(self):
         context = {}
 
-        for reg in self.arch_info.registers_gp_all:
-            if reg not in ['r13', 'r14', 'r15', 'sp', 'lr', 'pc']:
+        for reg in self.arch_info.registers_gp_base:
+            if reg not in ['r13', 'r14', 'r15']:
                 min_value, max_value = 0, 2**self.arch_info.operand_size - 1
                 context[reg] = random.randint(min_value, max_value)
 
