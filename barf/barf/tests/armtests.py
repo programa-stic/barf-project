@@ -275,7 +275,8 @@ class ArmTranslationTests(unittest.TestCase):
 
         for arm_instr in arm_instrs:
             arm_instr.address = addr
-            addr += 1
+            arm_instr.size = 4
+            addr += 4
 
     def _test_asm_instruction(self, asm):
         print(asm)
@@ -301,6 +302,87 @@ class ArmTranslationTests(unittest.TestCase):
             self.__save_failing_context(ctx_init)
 
         self.assertTrue(cmp_result, self.__print_contexts(ctx_init, arm_ctx_out, reil_ctx_out))
+
+    def _execute_asm(self, asm, ini_addr = 0x8000):
+        print(asm)
+
+        arm_instrs = map(self.arm_parser.parse, asm)
+
+        self.__set_address(ini_addr, arm_instrs)
+
+        reil_instrs = map(self.arm_translator.translate, arm_instrs)
+        
+#         for rr in reil_instrs:
+#             for reil_instr in rr:
+#                 print("{0:14} : {1}".format(hex(reil_instr.address), reil_instr))
+
+        ctx_init = self.__init_context()
+        
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+        
+        return reil_ctx_out
+
+    # R11 is used as a dirty register to check if the branch was taken or not
+    def test_asm_branch_instruction(self):
+        untouched_value = 0x45454545
+        touched_value = 0x31313131
+        
+        inst_samples_touched = [ 
+            ["mov r11, #0x{:x}".format(untouched_value),
+               "b #0x800c",
+               "mov r11, #0x{:x}".format(touched_value),
+               "mov r0, r0",
+            ],
+
+            ["mov r11, #0x{:x}".format(untouched_value),
+               "bx #0x800c",
+               "mov r11, #0x{:x}".format(touched_value),
+               "mov r0, r0",
+            ],
+
+            ["mov r11, #0x{:x}".format(untouched_value),
+               "bl #0x800c",
+               "mov r11, #0x{:x}".format(touched_value),
+               "mov r0, r0",
+            ],
+
+            ["mov r11, #0x{:x}".format(untouched_value),
+               "blx #0x800c",
+               "mov r11, #0x{:x}".format(touched_value),
+               "mov r0, r0",
+            ],
+
+            ["movs r11, #0x{:x}".format(untouched_value),
+               "bne #0x800c",
+               "mov r11, #0x{:x}".format(touched_value),
+               "mov r0, r0",
+            ],
+
+            ["mov r11, #0x{:x}".format(untouched_value),
+               "mov r1, #0x8010",
+               "bx r1",
+               "mov r11, #0x{:x}".format(touched_value),
+               "mov r0, r0",
+            ],
+
+            ["mov r11, #0x{:x}".format(untouched_value),
+               "mov r1, #0x8010",
+               "blx r1",
+               "mov r11, #0x{:x}".format(touched_value),
+               "mov r0, r0",
+            ],
+
+        ]
+        
+        
+        for asm in inst_samples_touched:
+            reil_ctx_out = self._execute_asm(asm, 0x8000)
+            self.assertTrue(reil_ctx_out['r11'] == untouched_value)
+#             print reil_ctx_out
 
     # TODO: Merge with previous test function
     def _test_asm_instruction_with_mem(self, asm, reg_mem):
