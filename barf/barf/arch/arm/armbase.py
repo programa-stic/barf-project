@@ -29,7 +29,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
         ("r15", 32),
         ("apsr", 32),
     ]
-    
+
     regs_32_alias = [
         ("sp", 32),
         ("lr", 32),
@@ -53,7 +53,11 @@ class ArmArchitectureInformation(ArchitectureInformation):
 
         self._registers_size = {}
 
+        self._alias_mapper = {}
+
         self._load_registers()
+
+        self._load_alias_mapper()
 
     @property
     def architecture_mode(self):
@@ -116,9 +120,14 @@ class ArmArchitectureInformation(ArchitectureInformation):
         """
         return self._registers_size
 
-    def registers_access_mapper(self):
-#         if self._arch_mode == ARCH_ARM_MODE_32:
-        reg_mapper = {
+    @property
+    def alias_mapper(self):
+        """Return registers alias mapper.
+        """
+        return self._alias_mapper
+
+    def _load_alias_mapper(self):
+        alias_mapper = {
             "fp" : ("r11", 0),
             "sp" : ("r13", 0),
             "lr" : ("r14", 0),
@@ -126,11 +135,6 @@ class ArmArchitectureInformation(ArchitectureInformation):
         }
 
         flags_reg = "apsr"
-#         else:
-#             reg_mapper = {
-#             }
-# 
-#             flags_reg = "rflags"
 
         flags_mapper = {
             "nf": (flags_reg, 31),
@@ -139,12 +143,12 @@ class ArmArchitectureInformation(ArchitectureInformation):
             "vf": (flags_reg, 28),
         }
 
-        reg_mapper.update(flags_mapper)
+        alias_mapper.update(flags_mapper)
 
-        return reg_mapper
+        self._alias_mapper = alias_mapper
 
     def _load_registers(self):
-        
+
         registers_all = self.regs_flags + self.regs_32 + self.regs_32_alias
         registers_gp_all = self.regs_32 + self.regs_32_alias
         registers_gp_base = self.regs_32
@@ -162,6 +166,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
             self._registers_size[name] = size
 
         self._registers_flags = [name for name, _ in self.regs_flags]
+
 
 ARM_COND_CODE_EQ = 0
 ARM_COND_CODE_NE = 1
@@ -321,7 +326,7 @@ class ArmInstruction(object):
     def address(self, value):
         """Set instruction address."""
         self._address = value
-        
+
     @property
     def condition_code(self):
         return self._condition_code
@@ -414,9 +419,9 @@ class ArmImmediateOperand(ArmOperand):
 
     def __init__(self, immediate, size=None):
         super(ArmImmediateOperand, self).__init__("")
-        
+
         self._base_hex = True
-        
+
         if type(immediate) == str:
             immediate = immediate.replace("#", "")
             if '0x' in immediate:
@@ -564,7 +569,7 @@ class ArmShiftedRegisterOperand(ArmOperand):
         self._shift_type = shift_type
         self._shift_amount = shift_amount
         self._size = size
-    
+
     @property
     def base_reg(self):
         """Get base register."""
@@ -600,7 +605,7 @@ class ArmShiftedRegisterOperand(ArmOperand):
         return  self._base_reg == other._base_reg  and \
                 self._shift_type == other._shift_type  and \
                 self._shift_amount == other._shift_amount
-                
+
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -667,7 +672,7 @@ class ArmMemoryOperand(ArmOperand):
         disp_str += str(self._displacement)
 
         string = "[" + str(self._base_reg)
-        
+
         if (self._index_type == ARM_MEMORY_INDEX_OFFSET):
             if self._displacement:
                 string += ", " + disp_str
@@ -685,7 +690,7 @@ class ArmMemoryOperand(ArmOperand):
         return  self._base_reg == other._base_reg  and \
                 self._index_type == other._index_type  and \
                 self._displacement == other._displacement
-                
+
 
     def __ne__(self, other):
         return not self.__eq__(other)

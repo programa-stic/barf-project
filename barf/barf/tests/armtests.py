@@ -126,7 +126,7 @@ class ArmTranslationTests(unittest.TestCase):
 
         self.reil_emulator.set_arch_registers(self.arch_info.registers_gp_all)
         self.reil_emulator.set_arch_registers_size(self.arch_info.registers_size)
-        self.reil_emulator.set_reg_access_mapper(self.arch_info.registers_access_mapper())
+        self.reil_emulator.set_reg_access_mapper(self.arch_info.alias_mapper)
 
         self.context_filename = "failing_context.data"
 
@@ -248,7 +248,7 @@ class ArmTranslationTests(unittest.TestCase):
 
         arch_size = self.arch_info.architecture_size
 
-        _, bit = self.arch_info.registers_access_mapper()[flag]
+        _, bit = self.arch_info.alias_mapper[flag]
 
         # Clean flag.
         reil_context_out[flags_reg] &= ~(2**bit) & (2**32-1)

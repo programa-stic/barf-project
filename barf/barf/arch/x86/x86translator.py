@@ -32,7 +32,7 @@ class X86TranslationBuilder(TranslationBuilder):
 
         self._arch_info = X86ArchitectureInformation(architecture_mode)
 
-        self._regs_mapper = self._arch_info.registers_access_mapper()
+        self._regs_mapper = self._arch_info.alias_mapper
 
         self._regs_size = self._arch_info.registers_size
 

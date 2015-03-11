@@ -90,7 +90,7 @@ class ReilEmulatorTests(unittest.TestCase):
 
         self._emulator.set_arch_registers(self._arch_info.registers_gp_all)
         self._emulator.set_arch_registers_size(self._arch_info.registers_size)
-        self._emulator.set_reg_access_mapper(self._arch_info.registers_access_mapper())
+        self._emulator.set_reg_access_mapper(self._arch_info.alias_mapper)
 
         self._asm_parser = X86Parser()
         self._translator = X86Translator()

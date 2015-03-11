@@ -122,9 +122,9 @@ class BARF(object):
 
             self.ir_emulator.set_arch_registers(self.arch_info.registers_gp_all)
             self.ir_emulator.set_arch_registers_size(self.arch_info.registers_size)
-            self.ir_emulator.set_reg_access_mapper(self.arch_info.registers_access_mapper())
+            self.ir_emulator.set_reg_access_mapper(self.arch_info.alias_mapper)
 
-            self.smt_translator.set_reg_access_mapper(self.arch_info.registers_access_mapper())
+            self.smt_translator.set_reg_access_mapper(self.arch_info.alias_mapper)
             self.smt_translator.set_arch_registers_size(self.arch_info.registers_size)
 
     def _setup_analysis_modules(self):
