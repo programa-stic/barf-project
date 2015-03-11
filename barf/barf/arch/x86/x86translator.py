@@ -505,6 +505,54 @@ class X86Translator(object):
 
         tb.write(instruction.operands[0], oprnd1)
 
+    def _translate_cmovb(self, tb, instruction):
+        # Move if below (CF=1).
+        # Flags Affected
+        # None.
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        imm0 = tb.immediate(1, 1)
+
+        tmp0 = tb.temporal(oprnd1.size)
+
+        move_lbl = Label('move')
+        exit_lbl = Label('exit')
+
+        tb.add(self._builder.gen_jcc(self._flags["cf"], move_lbl))
+        tb.add(self._builder.gen_str(oprnd0, tmp0))     # keep current value
+        tb.add(self._builder.gen_jcc(imm0, exit_lbl))
+        tb.add(move_lbl)
+        tb.add(self._builder.gen_str(oprnd1, tmp0))     # set new value
+        tb.add(exit_lbl)
+
+        tb.write(instruction.operands[0], tmp0)
+
+    def _translate_cmove(self, tb, instruction):
+        # Move if equal (ZF=1).
+        # Flags Affected
+        # None.
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        imm0 = tb.immediate(1, 1)
+
+        tmp0 = tb.temporal(oprnd1.size)
+
+        move_lbl = Label('move')
+        exit_lbl = Label('exit')
+
+        tb.add(self._builder.gen_jcc(self._flags["zf"], move_lbl))
+        tb.add(self._builder.gen_str(oprnd0, tmp0))     # keep current value
+        tb.add(self._builder.gen_jcc(imm0, exit_lbl))
+        tb.add(move_lbl)
+        tb.add(self._builder.gen_str(oprnd1, tmp0))     # set new value
+        tb.add(exit_lbl)
+
+        tb.write(instruction.operands[0], tmp0)
+
     def _translate_xchg(self, tb, instruction):
         # Flags Affected
         # None.
@@ -1747,6 +1795,21 @@ class X86Translator(object):
         # Flags : AF
         self._undefine_flag(tb, self._flags["af"])
 
+    def _translate_seta(self, tb, instruction):
+        # Set byte if above (CF=0 and ZF=0)
+
+        imm0 = tb.immediate(1, 1)
+
+        tmp0 = tb.temporal(1)
+        tmp1 = tb.temporal(1)
+        tmp2 = tb.temporal(instruction.operands[0].size)
+
+        tb.add(self._builder.gen_xor(self._flags["cf"], imm0, tmp0))
+        tb.add(self._builder.gen_xor(self._flags["zf"], imm0, tmp1))
+        tb.add(self._builder.gen_and(tmp0, tmp1, tmp2))
+
+        tb.write(instruction.operands[0], tmp2)
+
     def _translate_setne(self, tb, instruction):
         # Set byte if not equal (ZF=0).
 
@@ -2267,6 +2330,298 @@ class X86Translator(object):
 
 # "String Instructions"
 # ============================================================================ #
+    def _update_strings_src(self, tb, src, size):
+        self._update_strings_dst(tb, src, size)
+
+    def _update_strings_srcs(self, tb, src1, src2, size):
+        self._update_strings_src_and_dst(tb, src1, src2, size)
+
+    def _update_strings_dst(self, tb, dst, size):
+        # Create labels.
+        forward_lbl = Label('forward')
+        backward_lbl = Label('backward')
+        continue_lbl = Label('continue')
+
+        # Define immediate registers.
+        imm_one = tb.immediate(1, 1)
+
+        # Define temporary registers.
+        df_zero = tb.temporal(1)
+        imm_tmp = tb.immediate(size/8, dst.size)
+        dst_tmp = tb.temporal(dst.size)
+
+        # Update destination pointer.
+        tb.add(self._builder.gen_bisz(self._flags["df"], df_zero))
+        tb.add(self._builder.gen_jcc(df_zero, forward_lbl))
+
+        # Update backwards.
+        tb.add(backward_lbl)
+        tb.add(self._builder.gen_sub(dst, imm_tmp, dst_tmp))
+        tb.add(self._builder.gen_str(dst_tmp, dst))
+
+        # Jump to next instruction.
+        tb.add(self._builder.gen_jcc(imm_one, continue_lbl))
+
+        # Update forwards.
+        tb.add(forward_lbl)
+        tb.add(self._builder.gen_add(dst, imm_tmp, dst_tmp))
+        tb.add(self._builder.gen_str(dst_tmp, dst))
+
+        # Continuation label.
+        tb.add(continue_lbl)
+
+    def _update_strings_src_and_dst(self, tb, src, dst, size):
+        # Create labels.
+        forward_lbl = Label('forward')
+        backward_lbl = Label('backward')
+        continue_lbl = Label('continue')
+
+        # Define immediate registers.
+        imm_one = tb.immediate(1, 1)
+
+        # Define temporary registers.
+        df_zero = tb.temporal(1)
+        imm_tmp = tb.immediate(size/8, src.size)
+        src_tmp = tb.temporal(src.size)
+        dst_tmp = tb.temporal(dst.size)
+
+        # Update destination pointer.
+        tb.add(self._builder.gen_bisz(self._flags["df"], df_zero))
+        tb.add(self._builder.gen_jcc(df_zero, forward_lbl))
+
+        # Update backwards.
+        tb.add(backward_lbl)
+        # src
+        tb.add(self._builder.gen_sub(src, imm_tmp, src_tmp))
+        tb.add(self._builder.gen_str(src_tmp, src))
+        # dst
+        tb.add(self._builder.gen_sub(dst, imm_tmp, dst_tmp))
+        tb.add(self._builder.gen_str(dst_tmp, dst))
+
+        # Jump to next instruction.
+        tb.add(self._builder.gen_jcc(imm_one, continue_lbl))
+
+        # Update forwards.
+        tb.add(forward_lbl)
+        # src
+        tb.add(self._builder.gen_add(src, imm_tmp, src_tmp))
+        tb.add(self._builder.gen_str(src_tmp, src))
+        # dst
+        tb.add(self._builder.gen_add(dst, imm_tmp, dst_tmp))
+        tb.add(self._builder.gen_str(dst_tmp, dst))
+
+        # Continuation label.
+        tb.add(continue_lbl)
+
+    def _translate_cmps(self, tb, instruction):
+        self._translate_cmpsb(self, tb, instruction)
+
+    def _translate_cmpsb(self, tb, instruction):
+        self._translate_cmps_suffix(tb, instruction, "b")
+
+    def _translate_cmpsw(self, tb, instruction):
+        self._translate_cmps_suffix(tb, instruction, "w")
+
+    def _translate_cmpsd(self, tb, instruction):
+        self._translate_cmps_suffix(tb, instruction, "d")
+
+    def _translate_cmpsq(self, tb, instruction):
+        self._translate_cmps_suffix(tb, instruction, "q")
+
+    def _translate_cmps_suffix(self, tb, instruction, suffix):
+        # Flags Affected
+        # The CF, OF, SF, ZF, AF, and PF flags are set according to the
+        # temporary result of the comparison.
+
+        # temp <- SRC1 - SRC2;
+        # SetStatusFlags(temp);
+        #
+        # IF (Byte comparison)
+        #   THEN
+        #       IF DF = 0
+        #           THEN
+        #           (R|E)SI <- (R|E)SI + sizeof(SRC);
+        #           (R|E)DI <- (R|E)DI + sizeof(SRC);
+        #       ELSE
+        #           (R|E)SI <- (R|E)SI - sizeof(SRC);
+        #           (R|E)DI <- (R|E)DI - sizeof(SRC);
+        #       FI;
+        # FI;
+
+        # Define data size.
+        if suffix == 'b':
+            data_size = 8
+        elif suffix == 'w':
+            data_size = 16
+        elif suffix == 'd':
+            data_size = 32
+        elif suffix == 'q':
+            data_size = 64
+        else:
+            raise Exception("Invalid instruction suffix: %s" % suffix)
+
+        # Define source1 register.
+        if self._arch_mode == ARCH_X86_MODE_32:
+            src1 = ReilRegisterOperand("esi", 32)
+        elif self._arch_mode == ARCH_X86_MODE_64:
+            src1 = ReilRegisterOperand("rsi", 64)
+        else:
+            raise Exception("Invalid architecture mode: %d", self._arch_mode)
+
+        # Define source2 register.
+        if self._arch_mode == ARCH_X86_MODE_32:
+            src2 = ReilRegisterOperand("edi", 32)
+        elif self._arch_mode == ARCH_X86_MODE_64:
+            src2 = ReilRegisterOperand("rdi", 64)
+        else:
+            raise Exception("Invalid architecture mode: %d", self._arch_mode)
+
+        # Define temporary registers
+        src1_data = tb.temporal(data_size)
+        src2_data = tb.temporal(data_size)
+        tmp0 = tb.temporal(data_size*2)
+
+        if instruction.prefix:
+            counter, loop_start_lbl = self._rep_prefix_begin(tb, instruction)
+
+        # Instruction
+        # -------------------------------------------------------------------- #
+        # Move data.
+        tb.add(self._builder.gen_ldm(src1, src1_data))
+        tb.add(self._builder.gen_ldm(src2, src2_data))
+
+        tb.add(self._builder.gen_sub(src1_data, src2_data, tmp0))
+
+        # Flags : CF, OF, SF, ZF, AF, PF
+        self._update_cf(tb, src1_data, src2_data, tmp0)
+        self._update_of_sub(tb, src1_data, src2_data, tmp0)
+        self._update_sf(tb, src1_data, src2_data, tmp0)
+        self._update_zf(tb, src1_data, src2_data, tmp0)
+        self._update_af(tb, src1_data, src2_data, tmp0)
+        self._update_pf(tb, src1_data, src2_data, tmp0)
+
+        # Update source pointers.
+        self._update_strings_srcs(tb, src1, src2, data_size)
+        # -------------------------------------------------------------------- #
+
+        if instruction.prefix:
+            self._rep_prefix_end(tb, instruction, counter, loop_start_lbl)
+
+    def _translate_stos(self, tb, instruction):
+        self._translate_stosb(self, tb, instruction)
+
+    def _translate_stosb(self, tb, instruction):
+        self._translate_stos_suffix(tb, instruction, "b")
+
+    def _translate_stosw(self, tb, instruction):
+        self._translate_stos_suffix(tb, instruction, "w")
+
+    def _translate_stosd(self, tb, instruction):
+        self._translate_stos_suffix(tb, instruction, "d")
+
+    def _translate_stosq(self, tb, instruction):
+        self._translate_stos_suffix(tb, instruction, "q")
+
+    def _translate_stos_suffix(self, tb, instruction, suffix):
+        # Flags Affected
+        # None.
+
+        # DEST <- SRC;
+        # IF DF = 0
+        #     THEN (E)DI <- (E)DI + sizeof(SRC);
+        #     ELSE (E)DI <- (E)DI - sizeof(SRC);
+        # FI;
+
+        # Define source register.
+        if suffix == 'b':
+            src = ReilRegisterOperand("al", 8)
+        elif suffix == 'w':
+            src = ReilRegisterOperand("ax", 16)
+        elif suffix == 'd':
+            src = ReilRegisterOperand("eax", 32)
+        elif suffix == 'q':
+            src = ReilRegisterOperand("rax", 64)
+        else:
+            raise Exception("Invalid instruction suffix: %s" % suffix)
+
+        # Define destination register.
+        if self._arch_mode == ARCH_X86_MODE_32:
+            dst = ReilRegisterOperand("edi", 32)
+        elif self._arch_mode == ARCH_X86_MODE_64:
+            dst = ReilRegisterOperand("rdi", 64)
+        else:
+            raise Exception("Invalid architecture mode: %d", self._arch_mode)
+
+        if instruction.prefix:
+            counter, loop_start_lbl = self._rep_prefix_begin(tb, instruction)
+
+        # Instruction
+        # -------------------------------------------------------------------- #
+        # Move data.
+        tb.add(self._builder.gen_stm(src, dst))
+
+        # Update destination pointer.
+        self._update_strings_dst(tb, dst, src.size)
+        # -------------------------------------------------------------------- #
+
+        if instruction.prefix:
+            self._rep_prefix_end(tb, instruction, counter, loop_start_lbl)
+
+    def _rep_prefix_begin(self, tb, instruction):
+        # Define counter register.
+        if self._arch_info.address_size == 16:
+            counter = ReilRegisterOperand("cx", 16)
+        elif self._arch_info.address_size == 32:
+            counter = ReilRegisterOperand("ecx", 32)
+        elif self._arch_info.address_size == 64:
+            counter = ReilRegisterOperand("rcx", 64)
+        else:
+            raise Exception("Invalid address size: %d", self._arch_info.address_size)
+
+        # Create labels.
+        loop_start_lbl = Label('loop_start')
+
+        # Define immediate registers.
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
+
+        # Define temporary registers.
+        counter_zero = tb.temporal(1)
+
+        tb.add(loop_start_lbl)
+
+        tb.add(self._builder.gen_bisz(counter, counter_zero))
+        tb.add(self._builder.gen_jcc(counter_zero, end_addr))
+
+        return counter, loop_start_lbl
+
+    def _rep_prefix_end(self, tb, instruction, counter, loop_start_lbl):
+        # Define immediate registers
+        imm_one = tb.immediate(1, 1)
+        counter_imm_one = tb.immediate(1, counter.size)
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
+
+        # Define temporary registers.
+        counter_tmp = tb.temporal(counter.size)
+        counter_zero = tb.temporal(1)
+        zf_zero = tb.temporal(1)
+
+        tb.add(self._builder.gen_sub(counter, counter_imm_one, counter_tmp))
+        tb.add(self._builder.gen_str(counter_tmp, counter))
+        tb.add(self._builder.gen_bisz(counter, counter_zero))
+        tb.add(self._builder.gen_jcc(counter_zero, end_addr))
+
+        prefix = instruction.prefix
+
+        if prefix in ["rep"]:
+            pass
+        elif prefix in ["repz", "repe"]:
+            tb.add(self._builder.gen_xor(self._flags["zf"], imm_one, zf_zero))
+        elif prefix in ["repnz", "repne"]:
+            tb.add(self._builder.gen_str(self._flags["zf"], zf_zero))
+        else:
+            raise Exception("Invalid prefix: %s" % prefix)
+
+        tb.add(self._builder.gen_jcc(imm_one, loop_start_lbl))
 
 # "I/O Instructions"
 # ============================================================================ #
