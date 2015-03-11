@@ -141,7 +141,7 @@ class X86TranslationBuilder(TranslationBuilder):
 def check_operands_size(instr, arch_size):
     if instr.mnemonic in [  ReilMnemonic.ADD, ReilMnemonic.SUB,
                             ReilMnemonic.MUL, ReilMnemonic.DIV,
-                            ReilMnemonic.MOD,
+                            ReilMnemonic.MOD, ReilMnemonic.BSH,
                             ReilMnemonic.AND, ReilMnemonic.OR,
                             ReilMnemonic.XOR]:
         # operand0 : Source 1 (Literal or register)
@@ -151,13 +151,6 @@ def check_operands_size(instr, arch_size):
         # Check that source operands have the same size.
         assert instr.operands[0].size == instr.operands[1].size, \
             "Invalid operands size: %s" % instr
-
-    elif instr.mnemonic in [ReilMnemonic.BSH]:
-        # operand0 : Source 1 (Literal or register)
-        # operand1 : Source 2 (Literal or register)
-        # operand2 : Destination resgister
-
-        pass
 
     elif instr.mnemonic in [ReilMnemonic.LDM]:
         # operand0 : Source address (Literal or register)
@@ -196,8 +189,8 @@ def check_operands_size(instr, arch_size):
 
         # FIX: operand2.size should be arch_size + 1 byte
 
-        # assert instr.operands[2].size == arch_size + 8, \
-        #     "Invalid operands size: %s" % instr
+        assert instr.operands[2].size == arch_size + 8, \
+            "Invalid operands size: %s" % instr
 
         pass
 
@@ -1357,12 +1350,13 @@ class X86Translator(object):
 
         count_masked = tb.temporal(oprnd0.size)
         count = tb.temporal(oprnd0.size)
-        temp_count = tb.temporal(oprnd0.size)
 
         oprnd_ext = tb.temporal(oprnd0.size * 2)
         oprnd_ext_shifted = tb.temporal(oprnd0.size * 2)
         oprnd_ext_shifted_l = tb.temporal(oprnd0.size)
         oprnd_ext_shifted_h = tb.temporal(oprnd0.size)
+
+        temp_count = tb.temporal(oprnd_ext.size)
 
         result = tb.temporal(oprnd0.size)
         result_msb = tb.temporal(1)
@@ -1424,12 +1418,13 @@ class X86Translator(object):
             count_mask = tb.immediate(0x3f, oprnd0.size)
 
         count = tb.temporal(oprnd0.size)
-        temp_count = tb.temporal(oprnd0.size)
 
         oprnd_ext = tb.temporal(oprnd0.size * 2)
         oprnd_ext_shifted = tb.temporal(oprnd0.size * 2)
         oprnd_ext_shifted_l = tb.temporal(oprnd0.size)
         oprnd_ext_shifted_h = tb.temporal(oprnd0.size)
+
+        temp_count = tb.temporal(oprnd_ext.size)
 
         result = tb.temporal(oprnd0.size)
         result_msb = tb.temporal(1)
@@ -1517,7 +1512,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x1f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
             mod_amount = tb.immediate(9, oprnd0.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
@@ -1528,7 +1523,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x1f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
             mod_amount = tb.immediate(17, oprnd0.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
@@ -1539,7 +1534,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x1f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
 
@@ -1549,7 +1544,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x3f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
 
@@ -1581,7 +1576,9 @@ class X86Translator(object):
         tb.add(self._builder.gen_jcc(tmp1_zero, undef_of_lbl))
 
         # Compute.
-        tb.add(self._builder.gen_bsh(result, imm3, result_msb))
+        imm3_1 = tb.immediate(-(oprnd0.size + 1), result.size)
+
+        tb.add(self._builder.gen_bsh(result, imm3_1, result_msb))
         tb.add(self._builder.gen_xor(result_msb, self._flags["cf"], self._flags["of"]))
 
         # Undef OF.
@@ -1643,7 +1640,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x1f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
             mod_amount = tb.immediate(9, oprnd0.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
@@ -1653,7 +1650,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x1f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
             mod_amount = tb.immediate(17, oprnd0.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
@@ -1663,7 +1660,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x1f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
             tb.add(self._builder.gen_and(count, count_mask, tmp0))
@@ -1671,7 +1668,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x3f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
             tb.add(self._builder.gen_and(count, count_mask, tmp0))
@@ -1684,16 +1681,22 @@ class X86Translator(object):
         tb.add(self._builder.gen_str(self._flags["cf"], cf_old))
 
         # Insert CF.
-        tb.add(self._builder.gen_bsh(oprnd0, one, oprnd_ext_1))
+        one_1 = tb.immediate(1, oprnd0.size)
+
+        tb.add(self._builder.gen_bsh(oprnd0, one_1, oprnd_ext_1))
         tb.add(self._builder.gen_str(self._flags["cf"], tmp_cf_ext))
         tb.add(self._builder.gen_or(tmp_cf_ext, oprnd_ext_1, oprnd_ext_2))
 
         # Rotate register.
-        tb.add(self._builder.gen_bsh(oprnd_ext_2, size, oprnd_ext))
+        size_1 = tb.immediate(oprnd0.size, oprnd_ext_2.size)
+        msize_1 = tb.immediate(-oprnd0.size, oprnd_ext_shifted.size)
+        mone_1 = tb.immediate(-1, oprnd_ext_shifted_h_1.size)
+
+        tb.add(self._builder.gen_bsh(oprnd_ext_2, size_1, oprnd_ext))
 
         tb.add(self._builder.gen_bsh(oprnd_ext, temp_count, oprnd_ext_shifted))
-        tb.add(self._builder.gen_bsh(oprnd_ext_shifted, msize, oprnd_ext_shifted_h_1))
-        tb.add(self._builder.gen_bsh(oprnd_ext_shifted_h_1, mone, oprnd_ext_shifted_h))
+        tb.add(self._builder.gen_bsh(oprnd_ext_shifted, msize_1, oprnd_ext_shifted_h_1))
+        tb.add(self._builder.gen_bsh(oprnd_ext_shifted_h_1, mone_1, oprnd_ext_shifted_h))
         tb.add(self._builder.gen_str(oprnd_ext_shifted, oprnd_ext_shifted_l))
         tb.add(self._builder.gen_or(oprnd_ext_shifted_l, oprnd_ext_shifted_h, result))
 
