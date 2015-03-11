@@ -119,7 +119,7 @@ class X86TranslationBuilder(TranslationBuilder):
             else:
                 addr = scaled_index
 
-        if mem_operand.displacement and mem_operand.displacement != 0x0:
+        if mem_operand.displacement != 0x0:
             disp = ReilImmediateOperand(mem_operand.displacement, size)
 
             if addr:
@@ -129,6 +129,11 @@ class X86TranslationBuilder(TranslationBuilder):
 
                 addr = tmp
             else:
+                addr = disp
+        else:
+            if not addr:
+                disp = ReilImmediateOperand(mem_operand.displacement, size)
+
                 addr = disp
 
         return addr
