@@ -609,7 +609,7 @@ class GadgetClassifier(object):
         mod_regs = []
 
         for r in modified_regs:
-            alias, _ =  self._arch_info.registers_access_mapper().get(r, (None, None))
+            alias, _ =  self._arch_info.alias_mapper.get(r, (None, None))
 
             if not alias:
                 mod_regs += [r]
@@ -697,7 +697,7 @@ class GadgetClassifier(object):
     def _compute_full_context(self, registers):
         regs_full = {}
 
-        reg_mapper = self._arch_info.registers_access_mapper()
+        reg_mapper = self._arch_info.alias_mapper
 
         for reg in self._arch_regs:
             base_reg_name, offset = reg_mapper.get(reg, (None, None))

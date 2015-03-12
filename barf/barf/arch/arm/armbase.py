@@ -7,161 +7,6 @@ from barf.arch import ARCH_ARM_MODE_32
 from barf.arch import ARCH_ARM_MODE_64
 from barf.arch import ArchitectureInformation
 
-class ArmArchitectureInformation(ArchitectureInformation):
-    """This class describe the ARM architecture."""
-
-    regs_32 = [
-        ("r0", 32),
-        ("r1", 32),
-        ("r2", 32),
-        ("r3", 32),
-        ("r4", 32),
-        ("r5", 32),
-        ("r6", 32),
-        ("r7", 32),
-        ("r8", 32),
-        ("r9", 32),
-        ("r10", 32),
-        ("r11", 32),
-        ("r12", 32),
-        ("r13", 32),
-        ("r14", 32),
-        ("r15", 32),
-        ("apsr", 32),
-    ]
-    
-    regs_32_alias = [
-        ("sp", 32),
-        ("lr", 32),
-        ("pc", 32),
-        ("fp", 32),
-    ]
-    regs_flags = [
-        ("nf", 1),
-        ("zf", 1),
-        ("cf", 1),
-        ("vf", 1),
-    ]
-
-    def __init__(self, architecture_mode):
-        self._arch_mode = architecture_mode
-
-        self._registers_all = []
-        self._registers_gp_all = []
-        self._registers_gp_base = []
-        self._registers_flags = []
-
-        self._registers_size = {}
-
-        self._load_registers()
-
-    @property
-    def architecture_mode(self):
-        return self._arch_mode
-
-    @property
-    def architecture_size(self):
-        arch_size_map = {
-            ARCH_ARM_MODE_32 : 32,
-            ARCH_ARM_MODE_64 : 64,
-        }
-
-        return arch_size_map[self._arch_mode]
-
-    @property
-    def operand_size(self):
-        operand_size_map = {
-            ARCH_ARM_MODE_32 : 32,
-            ARCH_ARM_MODE_64 : 64,
-        }
-
-        return operand_size_map[self._arch_mode]
-
-    @property
-    def address_size(self):
-        address_size_map = {
-            ARCH_ARM_MODE_32 : 32,
-            ARCH_ARM_MODE_64 : 64,
-        }
-
-        return address_size_map[self._arch_mode]
-
-    @property
-    def registers_all(self):
-        """Return all registers.
-        """
-        return self._registers_all
-
-    @property
-    def registers_gp_all(self):
-        """Return all general purpose registers.
-        """
-        return self._registers_gp_all
-
-    @property
-    def registers_gp_base(self):
-        """Return base general purpose registers.
-        """
-        return self._registers_gp_base
-
-    @property
-    def registers_flags(self):
-        """Return flag registers.
-        """
-        return self._registers_flags
-
-    @property
-    def registers_size(self):
-        """Return the size of all registers.
-        """
-        return self._registers_size
-
-    def registers_access_mapper(self):
-#         if self._arch_mode == ARCH_ARM_MODE_32:
-        reg_mapper = {
-            "fp" : ("r11", 0),
-            "sp" : ("r13", 0),
-            "lr" : ("r14", 0),
-            "pc" : ("r15", 0),
-        }
-
-        flags_reg = "apsr"
-#         else:
-#             reg_mapper = {
-#             }
-# 
-#             flags_reg = "rflags"
-
-        flags_mapper = {
-            "nf": (flags_reg, 31),
-            "zf": (flags_reg, 30),
-            "cf": (flags_reg, 29),
-            "vf": (flags_reg, 28),
-        }
-
-        reg_mapper.update(flags_mapper)
-
-        return reg_mapper
-
-    def _load_registers(self):
-        
-        registers_all = self.regs_flags + self.regs_32 + self.regs_32_alias
-        registers_gp_all = self.regs_32 + self.regs_32_alias
-        registers_gp_base = self.regs_32
-
-        for name, size in registers_all:
-            self._registers_all.append(name)
-            self._registers_size[name] = size
-
-        for name, size in registers_gp_all:
-            self._registers_gp_all.append(name)
-            self._registers_size[name] = size
-
-        for name, size in registers_gp_base:
-            self._registers_gp_base.append(name)
-            self._registers_size[name] = size
-
-        self._registers_flags = [name for name, _ in self.regs_flags]
 
 ARM_COND_CODE_EQ = 0
 ARM_COND_CODE_NE = 1
@@ -180,7 +25,6 @@ ARM_COND_CODE_LE = 13
 ARM_COND_CODE_AL = 14
 ARM_COND_CODE_HS = 15
 ARM_COND_CODE_LO = 16
-
 
 cc_mapper = {
     "eq" : ARM_COND_CODE_EQ,
@@ -243,6 +87,168 @@ stm_stack_am_to_non_stack_am = {
 ARM_MEMORY_INDEX_OFFSET = 0
 ARM_MEMORY_INDEX_PRE = 1
 ARM_MEMORY_INDEX_POST = 2
+
+
+class ArmArchitectureInformation(ArchitectureInformation):
+    """This class describe the ARM architecture."""
+
+    regs_32 = [
+        ("r0", 32),
+        ("r1", 32),
+        ("r2", 32),
+        ("r3", 32),
+        ("r4", 32),
+        ("r5", 32),
+        ("r6", 32),
+        ("r7", 32),
+        ("r8", 32),
+        ("r9", 32),
+        ("r10", 32),
+        ("r11", 32),
+        ("r12", 32),
+        ("r13", 32),
+        ("r14", 32),
+        ("r15", 32),
+        ("apsr", 32),
+    ]
+
+    regs_32_alias = [
+        ("sp", 32),
+        ("lr", 32),
+        ("pc", 32),
+        ("fp", 32),
+    ]
+    regs_flags = [
+        ("nf", 1),
+        ("zf", 1),
+        ("cf", 1),
+        ("vf", 1),
+    ]
+
+    def __init__(self, architecture_mode):
+        self._arch_mode = architecture_mode
+
+        self._registers_all = []
+        self._registers_gp_all = []
+        self._registers_gp_base = []
+        self._registers_flags = []
+
+        self._registers_size = {}
+
+        self._alias_mapper = {}
+
+        self._load_registers()
+
+        self._load_alias_mapper()
+
+    @property
+    def architecture_mode(self):
+        return self._arch_mode
+
+    @property
+    def architecture_size(self):
+        arch_size_map = {
+            ARCH_ARM_MODE_32 : 32,
+            ARCH_ARM_MODE_64 : 64,
+        }
+
+        return arch_size_map[self._arch_mode]
+
+    @property
+    def operand_size(self):
+        operand_size_map = {
+            ARCH_ARM_MODE_32 : 32,
+            ARCH_ARM_MODE_64 : 64,
+        }
+
+        return operand_size_map[self._arch_mode]
+
+    @property
+    def address_size(self):
+        address_size_map = {
+            ARCH_ARM_MODE_32 : 32,
+            ARCH_ARM_MODE_64 : 64,
+        }
+
+        return address_size_map[self._arch_mode]
+
+    @property
+    def registers_all(self):
+        """Return all registers.
+        """
+        return self._registers_all
+
+    @property
+    def registers_gp_all(self):
+        """Return all general purpose registers.
+        """
+        return self._registers_gp_all
+
+    @property
+    def registers_gp_base(self):
+        """Return base general purpose registers.
+        """
+        return self._registers_gp_base
+
+    @property
+    def registers_flags(self):
+        """Return flag registers.
+        """
+        return self._registers_flags
+
+    @property
+    def registers_size(self):
+        """Return the size of all registers.
+        """
+        return self._registers_size
+
+    @property
+    def alias_mapper(self):
+        """Return registers alias mapper.
+        """
+        return self._alias_mapper
+
+    def _load_alias_mapper(self):
+        alias_mapper = {
+            "fp" : ("r11", 0),
+            "sp" : ("r13", 0),
+            "lr" : ("r14", 0),
+            "pc" : ("r15", 0),
+        }
+
+        flags_reg = "apsr"
+
+        flags_mapper = {
+            "nf": (flags_reg, 31),
+            "zf": (flags_reg, 30),
+            "cf": (flags_reg, 29),
+            "vf": (flags_reg, 28),
+        }
+
+        alias_mapper.update(flags_mapper)
+
+        self._alias_mapper = alias_mapper
+
+    def _load_registers(self):
+
+        registers_all = self.regs_flags + self.regs_32 + self.regs_32_alias
+        registers_gp_all = self.regs_32 + self.regs_32_alias
+        registers_gp_base = self.regs_32
+
+        for name, size in registers_all:
+            self._registers_all.append(name)
+            self._registers_size[name] = size
+
+        for name, size in registers_gp_all:
+            self._registers_gp_all.append(name)
+            self._registers_size[name] = size
+
+        for name, size in registers_gp_base:
+            self._registers_gp_base.append(name)
+            self._registers_size[name] = size
+
+        self._registers_flags = [name for name, _ in self.regs_flags]
+
 
 class ArmInstruction(object):
     """Representation of ARM instruction."""
@@ -321,7 +327,7 @@ class ArmInstruction(object):
     def address(self, value):
         """Set instruction address."""
         self._address = value
-        
+
     @property
     def condition_code(self):
         return self._condition_code
@@ -414,9 +420,9 @@ class ArmImmediateOperand(ArmOperand):
 
     def __init__(self, immediate, size=None):
         super(ArmImmediateOperand, self).__init__("")
-        
+
         self._base_hex = True
-        
+
         if type(immediate) == str:
             immediate = immediate.replace("#", "")
             if '0x' in immediate:
@@ -486,8 +492,8 @@ class ArmRegisterOperand(ArmOperand):
         self._wb = value
 
     def __str__(self):
-#         if not self._size:
-#             raise Exception("Operand size missing.")
+        if not self._size:
+            raise Exception("Operand size missing.")
 
         string  = self._modifier + " " if self._modifier else ""
         string += self._name
@@ -501,6 +507,7 @@ class ArmRegisterOperand(ArmOperand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
 
 class ArmRegisterListOperand(ArmOperand):
     """Representation of ARM register operand."""
@@ -525,8 +532,8 @@ class ArmRegisterListOperand(ArmOperand):
         return self._reg_list
 
     def __str__(self):
-#         if not self._size:
-#             raise Exception("Operand size missing.")
+        if not self._size:
+            raise Exception("Operand size missing.")
 
         string = "{"
         for i in range(len(self._reg_list)):
@@ -547,6 +554,7 @@ class ArmRegisterListOperand(ArmOperand):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+
 class ArmShiftedRegisterOperand(ArmOperand):
     """Representation of ARM register operand."""
 
@@ -564,7 +572,7 @@ class ArmShiftedRegisterOperand(ArmOperand):
         self._shift_type = shift_type
         self._shift_amount = shift_amount
         self._size = size
-    
+
     @property
     def base_reg(self):
         """Get base register."""
@@ -600,7 +608,7 @@ class ArmShiftedRegisterOperand(ArmOperand):
         return  self._base_reg == other._base_reg  and \
                 self._shift_type == other._shift_type  and \
                 self._shift_amount == other._shift_amount
-                
+
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -667,7 +675,7 @@ class ArmMemoryOperand(ArmOperand):
         disp_str += str(self._displacement)
 
         string = "[" + str(self._base_reg)
-        
+
         if (self._index_type == ARM_MEMORY_INDEX_OFFSET):
             if self._displacement:
                 string += ", " + disp_str
@@ -685,7 +693,7 @@ class ArmMemoryOperand(ArmOperand):
         return  self._base_reg == other._base_reg  and \
                 self._index_type == other._index_type  and \
                 self._displacement == other._displacement
-                
+
 
     def __ne__(self, other):
         return not self.__eq__(other)

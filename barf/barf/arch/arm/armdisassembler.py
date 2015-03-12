@@ -54,7 +54,8 @@ class ArmDisassembler(Disassembler):
 
             asm = str(mnemonic + " " + op_str).strip()
         else:
-            # TODO: Hack to bypass immediate constants embedded in the text section that do not conform to any valid instruction.
+            # FIXME: Hack to bypass immediate constants embedded in the
+            # text section that do not conform to any valid instruction.
             asm = "mov r0, r0" # Preferred ARM no-operation code
             size = 4
 

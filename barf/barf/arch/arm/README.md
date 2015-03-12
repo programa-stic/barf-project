@@ -1,5 +1,4 @@
-ARM
-===
+# ARM
 
 This document explains the framework developed to translate ARM instructions to REIL, which is located in ``barf/barf/arch/arm``.
 
@@ -12,8 +11,7 @@ As a reference, the ARM Architecture Reference Manual was used.
 * http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.subset.architecture.reference/index.html
 
 
-Extending the instruction set
-=============================
+# Extending the instruction set
 
 This secion aims at describing the basic steps needed to add a new ARM instruction to the list (as of now only the most basic instructions are supported), without a thorough understanding of the ARM framework. Depending of the complexity of the instruction to be emulated, more knwoldege of the inner working will be needed.
 
@@ -24,24 +22,21 @@ Then the translation code is added to the translator (``armtranslator.py``). A n
 For more complex instructions (with addressing modes for example), the framework has to be studied in more depth.
 
 
-Base information
-================
+# Base information
 
 Located in ``armbase.py`` are the basic definitions of the ARM architecture. The ``ArmInstruction`` class was created, similar to the ``X86Instruction`` without the prefix, and several ARM operand classes. To the standard immediate, register and memory operand classes the ``ArmShiftedRegisterOperand`` and the ``ArmRegisterListOperand`` were added, to represent a register shifted by another register (or immediate), and the register list (e.g. ``{r0 - r4, lr}``) used for the LDM/STM instructions.
 
-As only the ARM 32 bits was implemented, the ``registers_access_mapper`` and the registers itself are considerably simpler than the x86 counterparts (where there are alias to lower register parts). 
+As only the ARM 32 bits was implemented, the ``registers_access_mapper`` and the registers itself are considerably simpler than the x86 counterparts (where there are alias to lower register parts).
 
 
-Disassembler
-===========
+# Disassembler
 
 Located in ``armdisassembler.py``. Based on the Capstone engine, is pretty much the same as the x86 disassembler with the difference in how it handles unknown instructions. In the function ``_cs_disassemble_one`` if Capstone can't disassembled the instruction (possibly because it's a 32 bit constant) it returns an 32 bit ARM NOP instruction, so the disassembly process doesn't stop.
 
 The reason behind this is that ARM 32 bits fixed instruction size doesn't allow to handle large constants, so these are normal stored in the ``.data`` section along with the ARM code (normally right below the function that references it). This means that there is data mixed with the ARM instructions. In a binary without symbols instructions and constants cannot be easily told apart.
 
 
-Parser
-======
+# Parser
 
 Located in ``armparser.py``. The basic logic is the same as in x86. Based on the ``pyparsing`` python package, with the instruction assumed to have the format ``<mnemonic> <operand_0>, <operand_1>, ..., <operand_n>``. The structure of the operands and the instruction are defined with the corresponding parsing functions ``parse_operand`` and ``parse_instruction``. There is a parsing function for every type of operand defined in the base information.
 
@@ -56,8 +51,7 @@ To alleviate the work of the translator, a little more logic was added to the pa
 Even though the ARM manual specifies that the update flags from the CPSR (``S``) extension goes after the condition code (e.g. MOV{<cond>}{S}) sometimes the Capstone engine inverts this order (e.g. ANDSEQ), so this exception was allowed in the parser in the definition of ``cc_plus_uf`` (condition codes plus update flags) where both arrangements are specified.
 
 
-Translator
-==========
+# Translator
 
 Located in ``armtranslator.py``.
 
@@ -72,8 +66,7 @@ The helper functions in the ``TranslationBuilder`` greatly simplify the code of 
 Although the translation functions follow a similar pattern (read operands, perform operation, write operands, update flags) there is a particular case worth mentioning in the update flags of the data-processing instructions. In the instructions that do not generate a carry per se (AND, OR, XOR, MOV), the carry flag (C) is updated with the result of the carry operation of the ``shifter_operand``. But as the operand is already processed outside the translation function (in the ``read`` of the``TranslationBuilder``), this information is lost when the control flow reaches the ``_update_flags_data_proc_other``. So in this particular case the original ARM operand is passed as an argument along with the REIL operands, so it can be analyzed to extract the ``shifter_carry_out`` (which is used to update the carry flag). This is not an ideal situation because at this point it would be desirable to abandon the ARM operands and only handle its REIL equivalents, but was the most practical way found so far.
 
 
-Tests
-=====
+# Tests
 
 Located outside the ARM folder, in ``barf/barf/tests/armtests.py``.
 
@@ -82,16 +75,14 @@ This file holds all the ARM tests, including parsing, translation and gadget fin
 In the case of the gadget finding tests there is a particular gadget classification not supported right now, very common in ARM, which is to form a memory address with a base register plus an offset generated form a second (possibly shifted) register, not an immediate (the only current gadget memory classification so far).
 
 
-PyAsmJIT
-========
+# PyAsmJIT
 
 Located outside the barf project, it has its own structure. No extra files were added, the ARM functions were created along the x86 ones for now, with the ``arm_`` prefix. The logic of the Python C interface was copied exactly from x86 (changing only the register names form the context). The difference resides only in the specific ARM assembly used to run the code to be tested. Due to the multiple load/store ARM instructions saving and restoring the context is done in a pretty straight forward way.
 
 For simplicity the registers R13 (SP), R14 (LR), R15 (PC) are not modified, even though they are technically part of the context, but their value is not load nor stored.
 
 
-TODO
-====
+# TODO
 
 Extend to Thumb.
 Extend to ARM64.

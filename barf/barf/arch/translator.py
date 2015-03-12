@@ -90,7 +90,7 @@ class TranslationBuilder(object):
                     idx = idx_by_labels[target.name]
                     address = (instr.address & ~0xff) | idx
 
-                    instr.operands[2] = ReilImmediateOperand(address, 40)
+                    instr.operands[2] = ReilImmediateOperand(address, self._arch_info.address_size + 8)
 
         return instrs
 
@@ -122,7 +122,7 @@ class TranslationBuilder(object):
 
     def _unequal_regs(self, reg1, reg2):
         return self._xor_regs(reg1, reg2)
-    
+
     def _shift_reg(self, reg, sh):
         ret = self.temporal(reg.size)
         self.add(self._builder.gen_bsh(reg, sh, ret))

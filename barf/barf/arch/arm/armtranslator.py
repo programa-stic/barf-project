@@ -328,14 +328,14 @@ class ArmTranslator(object):
 
         if self._arch_mode == ARCH_ARM_MODE_32:
             self._sp = ReilRegisterOperand("r13", 32) # TODO: Implement alias
-            self._pc = ReilRegisterOperand("r14", 32)
-            self._lr = ReilRegisterOperand("r15", 32)
+            self._pc = ReilRegisterOperand("r15", 32)
+            self._lr = ReilRegisterOperand("r14", 32)
 
             self._ws = ReilImmediateOperand(4, 32) # word size
         elif self._arch_mode == ARCH_ARM_MODE_64:
             self._sp = ReilRegisterOperand("r13", 64)
-            self._pc = ReilRegisterOperand("r14", 64)
-            self._lr = ReilRegisterOperand("r15", 64)
+            self._pc = ReilRegisterOperand("r15", 64)
+            self._lr = ReilRegisterOperand("r14", 64)
 
             self._ws = ReilImmediateOperand(8, 64) # word size
 
@@ -388,7 +388,7 @@ class ArmTranslator(object):
             self._evaluate_condition_code(tb, instruction, nop_cc_lbl)
 
         translator_fn(tb, instruction)
-        
+
         tb.add(nop_cc_lbl)
         tb.add(self._builder.gen_nop()) # Added NOP so there is a REIL instruction to jump to
 
@@ -910,17 +910,22 @@ class ArmTranslator(object):
         arm_operand = instruction.operands[0]
 
         if isinstance(arm_operand, ArmImmediateOperand):
-            target = ReilImmediateOperand(tb.read(arm_operand).immediate << 8, self._pc.size * 2) # (* 2) to store a shifted address
+            target = ReilImmediateOperand(arm_operand.immediate << 8, self._pc.size + 8)
         elif isinstance(arm_operand, ArmRegisterOperand):
             target = ReilRegisterOperand(arm_operand.name, arm_operand.size)
             target = tb._and_regs(target, ReilImmediateOperand(0xFFFFFFFE, target.size))
-            tmp = tb.temporal(target.size * 2) # (* 2) to store a shifted address
-            tb.add(self._builder.gen_bsh(target, ReilImmediateOperand(8, target.size), tmp))
-            target = tmp
+
+            tmp0 = tb.temporal(target.size + 8)
+            tmp1 = tb.temporal(target.size + 8)
+
+            tb.add(self._builder.gen_str(target, tmp0))
+            tb.add(self._builder.gen_bsh(tmp0, ReilImmediateOperand(8, target.size + 8), tmp1))
+
+            target = tmp1
         else:
             raise NotImplementedError("Instruction Not Implemented: Unknown operand for branch operation.")
 
         if (link):
-            tb.add(self._builder.gen_add(ReilImmediateOperand(instruction.address, self._pc.size), self._ws, self._lr))
+            tb.add(self._builder.gen_str(ReilImmediateOperand(instruction.address + instruction.size, self._pc.size), self._lr))
 
         tb._jump_to(target)

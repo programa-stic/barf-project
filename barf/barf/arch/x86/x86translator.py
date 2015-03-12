@@ -32,7 +32,7 @@ class X86TranslationBuilder(TranslationBuilder):
 
         self._arch_info = X86ArchitectureInformation(architecture_mode)
 
-        self._regs_mapper = self._arch_info.registers_access_mapper()
+        self._regs_mapper = self._arch_info.alias_mapper
 
         self._regs_size = self._arch_info.registers_size
 
@@ -119,7 +119,7 @@ class X86TranslationBuilder(TranslationBuilder):
             else:
                 addr = scaled_index
 
-        if mem_operand.displacement and mem_operand.displacement != 0x0:
+        if mem_operand.displacement != 0x0:
             disp = ReilImmediateOperand(mem_operand.displacement, size)
 
             if addr:
@@ -130,13 +130,18 @@ class X86TranslationBuilder(TranslationBuilder):
                 addr = tmp
             else:
                 addr = disp
+        else:
+            if not addr:
+                disp = ReilImmediateOperand(mem_operand.displacement, size)
+
+                addr = disp
 
         return addr
 
 def check_operands_size(instr, arch_size):
     if instr.mnemonic in [  ReilMnemonic.ADD, ReilMnemonic.SUB,
                             ReilMnemonic.MUL, ReilMnemonic.DIV,
-                            ReilMnemonic.MOD,
+                            ReilMnemonic.MOD, ReilMnemonic.BSH,
                             ReilMnemonic.AND, ReilMnemonic.OR,
                             ReilMnemonic.XOR]:
         # operand0 : Source 1 (Literal or register)
@@ -146,13 +151,6 @@ def check_operands_size(instr, arch_size):
         # Check that source operands have the same size.
         assert instr.operands[0].size == instr.operands[1].size, \
             "Invalid operands size: %s" % instr
-
-    elif instr.mnemonic in [ReilMnemonic.BSH]:
-        # operand0 : Source 1 (Literal or register)
-        # operand1 : Source 2 (Literal or register)
-        # operand2 : Destination resgister
-
-        pass
 
     elif instr.mnemonic in [ReilMnemonic.LDM]:
         # operand0 : Source address (Literal or register)
@@ -191,8 +189,8 @@ def check_operands_size(instr, arch_size):
 
         # FIX: operand2.size should be arch_size + 1 byte
 
-        # assert instr.operands[2].size == arch_size + 8, \
-        #     "Invalid operands size: %s" % instr
+        assert instr.operands[2].size == arch_size + 8, \
+            "Invalid operands size: %s" % instr
 
         pass
 
@@ -506,6 +504,54 @@ class X86Translator(object):
         oprnd1 = tb.read(instruction.operands[1])
 
         tb.write(instruction.operands[0], oprnd1)
+
+    def _translate_cmovb(self, tb, instruction):
+        # Move if below (CF=1).
+        # Flags Affected
+        # None.
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        imm0 = tb.immediate(1, 1)
+
+        tmp0 = tb.temporal(oprnd1.size)
+
+        move_lbl = Label('move')
+        exit_lbl = Label('exit')
+
+        tb.add(self._builder.gen_jcc(self._flags["cf"], move_lbl))
+        tb.add(self._builder.gen_str(oprnd0, tmp0))     # keep current value
+        tb.add(self._builder.gen_jcc(imm0, exit_lbl))
+        tb.add(move_lbl)
+        tb.add(self._builder.gen_str(oprnd1, tmp0))     # set new value
+        tb.add(exit_lbl)
+
+        tb.write(instruction.operands[0], tmp0)
+
+    def _translate_cmove(self, tb, instruction):
+        # Move if equal (ZF=1).
+        # Flags Affected
+        # None.
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        imm0 = tb.immediate(1, 1)
+
+        tmp0 = tb.temporal(oprnd1.size)
+
+        move_lbl = Label('move')
+        exit_lbl = Label('exit')
+
+        tb.add(self._builder.gen_jcc(self._flags["zf"], move_lbl))
+        tb.add(self._builder.gen_str(oprnd0, tmp0))     # keep current value
+        tb.add(self._builder.gen_jcc(imm0, exit_lbl))
+        tb.add(move_lbl)
+        tb.add(self._builder.gen_str(oprnd1, tmp0))     # set new value
+        tb.add(exit_lbl)
+
+        tb.write(instruction.operands[0], tmp0)
 
     def _translate_xchg(self, tb, instruction):
         # Flags Affected
@@ -1352,12 +1398,13 @@ class X86Translator(object):
 
         count_masked = tb.temporal(oprnd0.size)
         count = tb.temporal(oprnd0.size)
-        temp_count = tb.temporal(oprnd0.size)
 
         oprnd_ext = tb.temporal(oprnd0.size * 2)
         oprnd_ext_shifted = tb.temporal(oprnd0.size * 2)
         oprnd_ext_shifted_l = tb.temporal(oprnd0.size)
         oprnd_ext_shifted_h = tb.temporal(oprnd0.size)
+
+        temp_count = tb.temporal(oprnd_ext.size)
 
         result = tb.temporal(oprnd0.size)
         result_msb = tb.temporal(1)
@@ -1419,12 +1466,13 @@ class X86Translator(object):
             count_mask = tb.immediate(0x3f, oprnd0.size)
 
         count = tb.temporal(oprnd0.size)
-        temp_count = tb.temporal(oprnd0.size)
 
         oprnd_ext = tb.temporal(oprnd0.size * 2)
         oprnd_ext_shifted = tb.temporal(oprnd0.size * 2)
         oprnd_ext_shifted_l = tb.temporal(oprnd0.size)
         oprnd_ext_shifted_h = tb.temporal(oprnd0.size)
+
+        temp_count = tb.temporal(oprnd_ext.size)
 
         result = tb.temporal(oprnd0.size)
         result_msb = tb.temporal(1)
@@ -1512,7 +1560,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x1f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
             mod_amount = tb.immediate(9, oprnd0.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
@@ -1523,7 +1571,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x1f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
             mod_amount = tb.immediate(17, oprnd0.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
@@ -1534,7 +1582,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x1f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
 
@@ -1544,7 +1592,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x3f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
 
@@ -1576,7 +1624,9 @@ class X86Translator(object):
         tb.add(self._builder.gen_jcc(tmp1_zero, undef_of_lbl))
 
         # Compute.
-        tb.add(self._builder.gen_bsh(result, imm3, result_msb))
+        imm3_1 = tb.immediate(-(oprnd0.size + 1), result.size)
+
+        tb.add(self._builder.gen_bsh(result, imm3_1, result_msb))
         tb.add(self._builder.gen_xor(result_msb, self._flags["cf"], self._flags["of"]))
 
         # Undef OF.
@@ -1638,7 +1688,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x1f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
             mod_amount = tb.immediate(9, oprnd0.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
@@ -1648,7 +1698,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x1f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
             mod_amount = tb.immediate(17, oprnd0.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
@@ -1658,7 +1708,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x1f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
             tb.add(self._builder.gen_and(count, count_mask, tmp0))
@@ -1666,7 +1716,7 @@ class X86Translator(object):
             count_mask = tb.immediate(0x3f, oprnd0.size)
             tmp0 = tb.temporal(oprnd0.size)
             count = tb.temporal(oprnd0.size)
-            temp_count = tb.temporal(oprnd0.size)
+            temp_count = tb.temporal(oprnd_ext.size)
 
             tb.add(self._builder.gen_str(oprnd1, count))
             tb.add(self._builder.gen_and(count, count_mask, tmp0))
@@ -1679,16 +1729,22 @@ class X86Translator(object):
         tb.add(self._builder.gen_str(self._flags["cf"], cf_old))
 
         # Insert CF.
-        tb.add(self._builder.gen_bsh(oprnd0, one, oprnd_ext_1))
+        one_1 = tb.immediate(1, oprnd0.size)
+
+        tb.add(self._builder.gen_bsh(oprnd0, one_1, oprnd_ext_1))
         tb.add(self._builder.gen_str(self._flags["cf"], tmp_cf_ext))
         tb.add(self._builder.gen_or(tmp_cf_ext, oprnd_ext_1, oprnd_ext_2))
 
         # Rotate register.
-        tb.add(self._builder.gen_bsh(oprnd_ext_2, size, oprnd_ext))
+        size_1 = tb.immediate(oprnd0.size, oprnd_ext_2.size)
+        msize_1 = tb.immediate(-oprnd0.size, oprnd_ext_shifted.size)
+        mone_1 = tb.immediate(-1, oprnd_ext_shifted_h_1.size)
+
+        tb.add(self._builder.gen_bsh(oprnd_ext_2, size_1, oprnd_ext))
 
         tb.add(self._builder.gen_bsh(oprnd_ext, temp_count, oprnd_ext_shifted))
-        tb.add(self._builder.gen_bsh(oprnd_ext_shifted, msize, oprnd_ext_shifted_h_1))
-        tb.add(self._builder.gen_bsh(oprnd_ext_shifted_h_1, mone, oprnd_ext_shifted_h))
+        tb.add(self._builder.gen_bsh(oprnd_ext_shifted, msize_1, oprnd_ext_shifted_h_1))
+        tb.add(self._builder.gen_bsh(oprnd_ext_shifted_h_1, mone_1, oprnd_ext_shifted_h))
         tb.add(self._builder.gen_str(oprnd_ext_shifted, oprnd_ext_shifted_l))
         tb.add(self._builder.gen_or(oprnd_ext_shifted_l, oprnd_ext_shifted_h, result))
 
@@ -1738,6 +1794,21 @@ class X86Translator(object):
 
         # Flags : AF
         self._undefine_flag(tb, self._flags["af"])
+
+    def _translate_seta(self, tb, instruction):
+        # Set byte if above (CF=0 and ZF=0)
+
+        imm0 = tb.immediate(1, 1)
+
+        tmp0 = tb.temporal(1)
+        tmp1 = tb.temporal(1)
+        tmp2 = tb.temporal(instruction.operands[0].size)
+
+        tb.add(self._builder.gen_xor(self._flags["cf"], imm0, tmp0))
+        tb.add(self._builder.gen_xor(self._flags["zf"], imm0, tmp1))
+        tb.add(self._builder.gen_and(tmp0, tmp1, tmp2))
+
+        tb.write(instruction.operands[0], tmp2)
 
     def _translate_setne(self, tb, instruction):
         # Set byte if not equal (ZF=0).
@@ -1803,6 +1874,21 @@ class X86Translator(object):
 
 # "Control Transfer Instructions"
 # ============================================================================ #
+    def _translate_address(self, tb, oprnd):
+        addr_oprnd_size = oprnd.size + 8
+
+        if isinstance(oprnd, ReilRegisterOperand):
+            oprnd_tmp = tb.temporal(addr_oprnd_size)
+            addr_oprnd = tb.temporal(addr_oprnd_size)
+            imm = ReilImmediateOperand(8, addr_oprnd_size)
+
+            tb.add(self._builder.gen_str(oprnd, oprnd_tmp))
+            tb.add(self._builder.gen_bsh(oprnd_tmp, imm, addr_oprnd))
+        elif isinstance(oprnd, ReilImmediateOperand):
+            addr_oprnd = ReilImmediateOperand(oprnd.immediate << 8, addr_oprnd_size)
+
+        return addr_oprnd
+
     def _translate_jmp(self, tb, instruction):
         # Flags Affected
         # All flags are affected if a task switch occurs; no flags are
@@ -1810,20 +1896,18 @@ class X86Translator(object):
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         imm0 = tb.immediate(1, 1)
 
-        tb.add(self._builder.gen_jcc(imm0, oprnd0))
+        tb.add(self._builder.gen_jcc(imm0, addr_oprnd))
 
     def _translate_ja(self, tb, instruction):
         # Jump near if above (CF=0 and ZF=0).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         imm0 = tb.immediate(1, 1)
 
@@ -1834,38 +1918,35 @@ class X86Translator(object):
         tb.add(self._builder.gen_xor(self._flags["cf"], imm0, tmp0))
         tb.add(self._builder.gen_xor(self._flags["zf"], imm0, tmp1))
         tb.add(self._builder.gen_and(tmp0, tmp1, tmp2))
-        tb.add(self._builder.gen_jcc(tmp2, oprnd0))
+        tb.add(self._builder.gen_jcc(tmp2, addr_oprnd))
 
     def _translate_jo(self, tb, instruction):
         # Jump near if overflow (OF=1).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
-        tb.add(self._builder.gen_jcc(self._flags["of"], oprnd0))
+        tb.add(self._builder.gen_jcc(self._flags["of"], addr_oprnd))
 
     def _translate_jbe(self, tb, instruction):
         # Jump near if below or equal (CF=1 or ZF=1).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         tmp0 = tb.temporal(1)
 
         tb.add(self._builder.gen_or(self._flags["cf"], self._flags["zf"], tmp0))
-        tb.add(self._builder.gen_jcc(tmp0, oprnd0))
+        tb.add(self._builder.gen_jcc(tmp0, addr_oprnd))
 
     def _translate_jl(self, tb, instruction):
         # Jump near if less (SF!=OF).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         imm0 = tb.immediate(1, 1)
 
@@ -1876,35 +1957,32 @@ class X86Translator(object):
         tb.add(self._builder.gen_sub(self._flags["sf"], self._flags["of"], tmp0))
         tb.add(self._builder.gen_bisz(tmp0, tmp1))
         tb.add(self._builder.gen_xor(tmp1, imm0, tmp2))
-        tb.add(self._builder.gen_jcc(tmp2, oprnd0))
+        tb.add(self._builder.gen_jcc(tmp2, addr_oprnd))
 
     def _translate_je(self, tb, instruction):
         # Jump near if equal (ZF=1).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
-        tb.add(self._builder.gen_jcc(self._flags["zf"], oprnd0))
+        tb.add(self._builder.gen_jcc(self._flags["zf"], addr_oprnd))
 
     def _translate_js(self, tb, instruction):
         # Jump near if sign (SF=1).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
-        tb.add(self._builder.gen_jcc(self._flags["sf"], oprnd0))
+        tb.add(self._builder.gen_jcc(self._flags["sf"], addr_oprnd))
 
     def _translate_jg(self, tb, instruction):
         # Jump near if greater (ZF=0 and SF=OF).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         imm0 = tb.immediate(1, 1)
 
@@ -1917,79 +1995,73 @@ class X86Translator(object):
         tb.add(self._builder.gen_bisz(tmp0, tmp1))
         tb.add(self._builder.gen_xor(self._flags["zf"], imm0, tmp2))
         tb.add(self._builder.gen_and(tmp1, tmp2, tmp3))
-        tb.add(self._builder.gen_jcc(tmp3, oprnd0))
+        tb.add(self._builder.gen_jcc(tmp3, addr_oprnd))
 
     def _translate_jge(self, tb, instruction):
         # Jump near if greater or equal (SF=OF).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         tmp0 = tb.temporal(8)
         tmp1 = tb.temporal(1)
 
         tb.add(self._builder.gen_sub(self._flags["sf"], self._flags["of"], tmp0))
         tb.add(self._builder.gen_bisz(tmp0, tmp1))
-        tb.add(self._builder.gen_jcc(tmp1, oprnd0))
+        tb.add(self._builder.gen_jcc(tmp1, addr_oprnd))
 
     def _translate_jae(self, tb, instruction):
         # Jump near if above or equal (CF=0).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         tmp0 = tb.temporal(1)
 
         tb.add(self._builder.gen_bisz(self._flags["cf"], tmp0))
-        tb.add(self._builder.gen_jcc(tmp0, oprnd0))
+        tb.add(self._builder.gen_jcc(tmp0, addr_oprnd))
 
     def _translate_jno(self, tb, instruction):
         # Jump near if not overflow (OF=0).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         tmp0 = tb.temporal(1)
 
         tb.add(self._builder.gen_bisz(self._flags["of"], tmp0))
-        tb.add(self._builder.gen_jcc(tmp0, oprnd0))
+        tb.add(self._builder.gen_jcc(tmp0, addr_oprnd))
 
     def _translate_jns(self, tb, instruction):
         # Jump near if not sign (SF=0).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         tmp0 = tb.temporal(1)
 
         tb.add(self._builder.gen_bisz(self._flags["sf"], tmp0))
-        tb.add(self._builder.gen_jcc(tmp0, oprnd0))
+        tb.add(self._builder.gen_jcc(tmp0, addr_oprnd))
 
     def _translate_jb(self, tb, instruction):
         # Jump near if below (CF=1).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
-        tb.add(self._builder.gen_jcc(self._flags["cf"], oprnd0))
+        tb.add(self._builder.gen_jcc(self._flags["cf"], addr_oprnd))
 
     def _translate_jle(self, tb, instruction):
         # Jump near if less or equal (ZF=1 or SF!=OF).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         imm0 = tb.immediate(1, 1)
 
@@ -2002,55 +2074,51 @@ class X86Translator(object):
         tb.add(self._builder.gen_bisz(tmp0, tmp1))
         tb.add(self._builder.gen_xor(tmp1, imm0, tmp2))
         tb.add(self._builder.gen_or(tmp2, self._flags["zf"], tmp3))
-        tb.add(self._builder.gen_jcc(tmp3, oprnd0))
+        tb.add(self._builder.gen_jcc(tmp3, addr_oprnd))
 
     def _translate_jz(self, tb, instruction):
         # Jump near if 0 (ZF=1).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
-        tb.add(self._builder.gen_jcc(self._flags["zf"], oprnd0))
+        tb.add(self._builder.gen_jcc(self._flags["zf"], addr_oprnd))
 
     def _translate_jne(self, tb, instruction):
         # Jump near if not equal (ZF=0).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         imm0 = tb.immediate(1, 1)
 
         tmp0 = tb.temporal(1)
 
         tb.add(self._builder.gen_xor(self._flags["zf"], imm0, tmp0))
-        tb.add(self._builder.gen_jcc(tmp0, oprnd0))
+        tb.add(self._builder.gen_jcc(tmp0, addr_oprnd))
 
     def _translate_jnz(self, tb, instruction):
         # Jump near if not zero (ZF=0).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         imm0 = tb.immediate(1, 1)
 
         tmp0 = tb.temporal(1)
 
         tb.add(self._builder.gen_xor(self._flags["zf"], imm0, tmp0))
-        tb.add(self._builder.gen_jcc(tmp0, oprnd0))
+        tb.add(self._builder.gen_jcc(tmp0, addr_oprnd))
 
     def _translate_jnbe(self, tb, instruction):
         # Jump near if not below or equal (CF=0 and ZF=0).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         imm0 = tb.immediate(1, 1)
 
@@ -2061,47 +2129,44 @@ class X86Translator(object):
         tb.add(self._builder.gen_xor(self._flags["cf"], imm0, tmp0))
         tb.add(self._builder.gen_xor(self._flags["zf"], imm0, tmp1))
         tb.add(self._builder.gen_and(tmp0, tmp1, tmp2))
-        tb.add(self._builder.gen_jcc(tmp2, oprnd0))
+        tb.add(self._builder.gen_jcc(tmp2, addr_oprnd))
 
     def _translate_jc(self, tb, instruction):
         # Jump near if carry (CF=1).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
-        tb.add(self._builder.gen_jcc(self._flags["cf"], oprnd0))
+        tb.add(self._builder.gen_jcc(self._flags["cf"], addr_oprnd))
 
     def _translate_jnc(self, tb, instruction):
         # Jump near if not carry (CF=0).
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         imm0 = tb.immediate(1, 1)
 
         tmp0 = tb.temporal(1)
 
         tb.add(self._builder.gen_xor(self._flags["cf"], imm0, tmp0))
-        tb.add(self._builder.gen_jcc(tmp0, oprnd0))
+        tb.add(self._builder.gen_jcc(tmp0, addr_oprnd))
 
     def _translate_jecxz(self, tb, instruction):
         # Jump short if ECX register is 0.
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         tmp0 = tb.temporal(1)
 
         ecx = ReilRegisterOperand("ecx", 32)
 
         tb.add(self._builder.gen_bisz(ecx, tmp0))
-        tb.add(self._builder.gen_jcc(tmp0, oprnd0))
+        tb.add(self._builder.gen_jcc(tmp0, addr_oprnd))
 
     def _translate_call(self, tb, instruction):
         # Flags Affected
@@ -2110,8 +2175,7 @@ class X86Translator(object):
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
         imm1 = tb.immediate(1, 1)
         size = tb.immediate(instruction.size, self._sp.size)
@@ -2123,7 +2187,7 @@ class X86Translator(object):
         tb.add(self._builder.gen_str(tmp0, self._sp))
         tb.add(self._builder.gen_add(self._ip, size, tmp1))
         tb.add(self._builder.gen_stm(tmp1, self._sp))
-        tb.add(self._builder.gen_jcc(imm1, oprnd0))
+        tb.add(self._builder.gen_jcc(imm1, addr_oprnd))
 
     def _translate_ret(self, tb, instruction):
         # Flags Affected
@@ -2161,10 +2225,9 @@ class X86Translator(object):
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
-        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, 40)
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
 
         tmp0 = tb.temporal(counter.size)
         exit_cond = tb.temporal(1)
@@ -2177,7 +2240,7 @@ class X86Translator(object):
         tb.add(self._builder.gen_sub(tmp0, imm0, counter))
         tb.add(self._builder.gen_bisz(counter, exit_cond))
         tb.add(self._builder.gen_jcc(exit_cond, stop_looping_lbl))
-        tb.add(self._builder.gen_jcc(imm0, oprnd0)) # keep looping
+        tb.add(self._builder.gen_jcc(imm0, addr_oprnd)) # keep looping
         tb.add(stop_looping_lbl)
         tb.add(self._builder.gen_jcc(imm0, end_addr))
 
@@ -2192,10 +2255,9 @@ class X86Translator(object):
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
-        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, 40)
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
 
         tmp0 = tb.temporal(counter.size)
 
@@ -2218,7 +2280,7 @@ class X86Translator(object):
         tb.add(self._builder.gen_jcc(branch_cond, keep_looping_lbl))
         tb.add(self._builder.gen_jcc(imm0, end_addr)) # exit loop
         tb.add(keep_looping_lbl)
-        tb.add(self._builder.gen_jcc(imm0, oprnd0))
+        tb.add(self._builder.gen_jcc(imm0, addr_oprnd))
 
     def _translate_loopnz(self, tb, instruction):
         return self._translate_loopne(tb, instruction)
@@ -2234,10 +2296,9 @@ class X86Translator(object):
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        if isinstance(oprnd0, ReilImmediateOperand):
-            oprnd0 = ReilImmediateOperand(oprnd0.immediate << 8, oprnd0.size + 8)
+        addr_oprnd = self._translate_address(tb, oprnd0)
 
-        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, 40)
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
 
         tmp0 = tb.temporal(counter.size)
 
@@ -2262,13 +2323,305 @@ class X86Translator(object):
         tb.add(self._builder.gen_jcc(branch_cond, keep_looping_lbl))
         tb.add(self._builder.gen_jcc(imm0, end_addr)) # exit loop
         tb.add(keep_looping_lbl)
-        tb.add(self._builder.gen_jcc(imm0, oprnd0))
+        tb.add(self._builder.gen_jcc(imm0, addr_oprnd))
 
     def _translate_loopz(self, tb, instruction):
         return self._translate_loope(tb, instruction)
 
 # "String Instructions"
 # ============================================================================ #
+    def _update_strings_src(self, tb, src, size):
+        self._update_strings_dst(tb, src, size)
+
+    def _update_strings_srcs(self, tb, src1, src2, size):
+        self._update_strings_src_and_dst(tb, src1, src2, size)
+
+    def _update_strings_dst(self, tb, dst, size):
+        # Create labels.
+        forward_lbl = Label('forward')
+        backward_lbl = Label('backward')
+        continue_lbl = Label('continue')
+
+        # Define immediate registers.
+        imm_one = tb.immediate(1, 1)
+
+        # Define temporary registers.
+        df_zero = tb.temporal(1)
+        imm_tmp = tb.immediate(size/8, dst.size)
+        dst_tmp = tb.temporal(dst.size)
+
+        # Update destination pointer.
+        tb.add(self._builder.gen_bisz(self._flags["df"], df_zero))
+        tb.add(self._builder.gen_jcc(df_zero, forward_lbl))
+
+        # Update backwards.
+        tb.add(backward_lbl)
+        tb.add(self._builder.gen_sub(dst, imm_tmp, dst_tmp))
+        tb.add(self._builder.gen_str(dst_tmp, dst))
+
+        # Jump to next instruction.
+        tb.add(self._builder.gen_jcc(imm_one, continue_lbl))
+
+        # Update forwards.
+        tb.add(forward_lbl)
+        tb.add(self._builder.gen_add(dst, imm_tmp, dst_tmp))
+        tb.add(self._builder.gen_str(dst_tmp, dst))
+
+        # Continuation label.
+        tb.add(continue_lbl)
+
+    def _update_strings_src_and_dst(self, tb, src, dst, size):
+        # Create labels.
+        forward_lbl = Label('forward')
+        backward_lbl = Label('backward')
+        continue_lbl = Label('continue')
+
+        # Define immediate registers.
+        imm_one = tb.immediate(1, 1)
+
+        # Define temporary registers.
+        df_zero = tb.temporal(1)
+        imm_tmp = tb.immediate(size/8, src.size)
+        src_tmp = tb.temporal(src.size)
+        dst_tmp = tb.temporal(dst.size)
+
+        # Update destination pointer.
+        tb.add(self._builder.gen_bisz(self._flags["df"], df_zero))
+        tb.add(self._builder.gen_jcc(df_zero, forward_lbl))
+
+        # Update backwards.
+        tb.add(backward_lbl)
+        # src
+        tb.add(self._builder.gen_sub(src, imm_tmp, src_tmp))
+        tb.add(self._builder.gen_str(src_tmp, src))
+        # dst
+        tb.add(self._builder.gen_sub(dst, imm_tmp, dst_tmp))
+        tb.add(self._builder.gen_str(dst_tmp, dst))
+
+        # Jump to next instruction.
+        tb.add(self._builder.gen_jcc(imm_one, continue_lbl))
+
+        # Update forwards.
+        tb.add(forward_lbl)
+        # src
+        tb.add(self._builder.gen_add(src, imm_tmp, src_tmp))
+        tb.add(self._builder.gen_str(src_tmp, src))
+        # dst
+        tb.add(self._builder.gen_add(dst, imm_tmp, dst_tmp))
+        tb.add(self._builder.gen_str(dst_tmp, dst))
+
+        # Continuation label.
+        tb.add(continue_lbl)
+
+    def _translate_cmps(self, tb, instruction):
+        self._translate_cmpsb(self, tb, instruction)
+
+    def _translate_cmpsb(self, tb, instruction):
+        self._translate_cmps_suffix(tb, instruction, "b")
+
+    def _translate_cmpsw(self, tb, instruction):
+        self._translate_cmps_suffix(tb, instruction, "w")
+
+    def _translate_cmpsd(self, tb, instruction):
+        self._translate_cmps_suffix(tb, instruction, "d")
+
+    def _translate_cmpsq(self, tb, instruction):
+        self._translate_cmps_suffix(tb, instruction, "q")
+
+    def _translate_cmps_suffix(self, tb, instruction, suffix):
+        # Flags Affected
+        # The CF, OF, SF, ZF, AF, and PF flags are set according to the
+        # temporary result of the comparison.
+
+        # temp <- SRC1 - SRC2;
+        # SetStatusFlags(temp);
+        #
+        # IF (Byte comparison)
+        #   THEN
+        #       IF DF = 0
+        #           THEN
+        #           (R|E)SI <- (R|E)SI + sizeof(SRC);
+        #           (R|E)DI <- (R|E)DI + sizeof(SRC);
+        #       ELSE
+        #           (R|E)SI <- (R|E)SI - sizeof(SRC);
+        #           (R|E)DI <- (R|E)DI - sizeof(SRC);
+        #       FI;
+        # FI;
+
+        # Define data size.
+        if suffix == 'b':
+            data_size = 8
+        elif suffix == 'w':
+            data_size = 16
+        elif suffix == 'd':
+            data_size = 32
+        elif suffix == 'q':
+            data_size = 64
+        else:
+            raise Exception("Invalid instruction suffix: %s" % suffix)
+
+        # Define source1 register.
+        if self._arch_mode == ARCH_X86_MODE_32:
+            src1 = ReilRegisterOperand("esi", 32)
+        elif self._arch_mode == ARCH_X86_MODE_64:
+            src1 = ReilRegisterOperand("rsi", 64)
+        else:
+            raise Exception("Invalid architecture mode: %d", self._arch_mode)
+
+        # Define source2 register.
+        if self._arch_mode == ARCH_X86_MODE_32:
+            src2 = ReilRegisterOperand("edi", 32)
+        elif self._arch_mode == ARCH_X86_MODE_64:
+            src2 = ReilRegisterOperand("rdi", 64)
+        else:
+            raise Exception("Invalid architecture mode: %d", self._arch_mode)
+
+        # Define temporary registers
+        src1_data = tb.temporal(data_size)
+        src2_data = tb.temporal(data_size)
+        tmp0 = tb.temporal(data_size*2)
+
+        if instruction.prefix:
+            counter, loop_start_lbl = self._rep_prefix_begin(tb, instruction)
+
+        # Instruction
+        # -------------------------------------------------------------------- #
+        # Move data.
+        tb.add(self._builder.gen_ldm(src1, src1_data))
+        tb.add(self._builder.gen_ldm(src2, src2_data))
+
+        tb.add(self._builder.gen_sub(src1_data, src2_data, tmp0))
+
+        # Flags : CF, OF, SF, ZF, AF, PF
+        self._update_cf(tb, src1_data, src2_data, tmp0)
+        self._update_of_sub(tb, src1_data, src2_data, tmp0)
+        self._update_sf(tb, src1_data, src2_data, tmp0)
+        self._update_zf(tb, src1_data, src2_data, tmp0)
+        self._update_af(tb, src1_data, src2_data, tmp0)
+        self._update_pf(tb, src1_data, src2_data, tmp0)
+
+        # Update source pointers.
+        self._update_strings_srcs(tb, src1, src2, data_size)
+        # -------------------------------------------------------------------- #
+
+        if instruction.prefix:
+            self._rep_prefix_end(tb, instruction, counter, loop_start_lbl)
+
+    def _translate_stos(self, tb, instruction):
+        self._translate_stosb(self, tb, instruction)
+
+    def _translate_stosb(self, tb, instruction):
+        self._translate_stos_suffix(tb, instruction, "b")
+
+    def _translate_stosw(self, tb, instruction):
+        self._translate_stos_suffix(tb, instruction, "w")
+
+    def _translate_stosd(self, tb, instruction):
+        self._translate_stos_suffix(tb, instruction, "d")
+
+    def _translate_stosq(self, tb, instruction):
+        self._translate_stos_suffix(tb, instruction, "q")
+
+    def _translate_stos_suffix(self, tb, instruction, suffix):
+        # Flags Affected
+        # None.
+
+        # DEST <- SRC;
+        # IF DF = 0
+        #     THEN (E)DI <- (E)DI + sizeof(SRC);
+        #     ELSE (E)DI <- (E)DI - sizeof(SRC);
+        # FI;
+
+        # Define source register.
+        if suffix == 'b':
+            src = ReilRegisterOperand("al", 8)
+        elif suffix == 'w':
+            src = ReilRegisterOperand("ax", 16)
+        elif suffix == 'd':
+            src = ReilRegisterOperand("eax", 32)
+        elif suffix == 'q':
+            src = ReilRegisterOperand("rax", 64)
+        else:
+            raise Exception("Invalid instruction suffix: %s" % suffix)
+
+        # Define destination register.
+        if self._arch_mode == ARCH_X86_MODE_32:
+            dst = ReilRegisterOperand("edi", 32)
+        elif self._arch_mode == ARCH_X86_MODE_64:
+            dst = ReilRegisterOperand("rdi", 64)
+        else:
+            raise Exception("Invalid architecture mode: %d", self._arch_mode)
+
+        if instruction.prefix:
+            counter, loop_start_lbl = self._rep_prefix_begin(tb, instruction)
+
+        # Instruction
+        # -------------------------------------------------------------------- #
+        # Move data.
+        tb.add(self._builder.gen_stm(src, dst))
+
+        # Update destination pointer.
+        self._update_strings_dst(tb, dst, src.size)
+        # -------------------------------------------------------------------- #
+
+        if instruction.prefix:
+            self._rep_prefix_end(tb, instruction, counter, loop_start_lbl)
+
+    def _rep_prefix_begin(self, tb, instruction):
+        # Define counter register.
+        if self._arch_info.address_size == 16:
+            counter = ReilRegisterOperand("cx", 16)
+        elif self._arch_info.address_size == 32:
+            counter = ReilRegisterOperand("ecx", 32)
+        elif self._arch_info.address_size == 64:
+            counter = ReilRegisterOperand("rcx", 64)
+        else:
+            raise Exception("Invalid address size: %d", self._arch_info.address_size)
+
+        # Create labels.
+        loop_start_lbl = Label('loop_start')
+
+        # Define immediate registers.
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
+
+        # Define temporary registers.
+        counter_zero = tb.temporal(1)
+
+        tb.add(loop_start_lbl)
+
+        tb.add(self._builder.gen_bisz(counter, counter_zero))
+        tb.add(self._builder.gen_jcc(counter_zero, end_addr))
+
+        return counter, loop_start_lbl
+
+    def _rep_prefix_end(self, tb, instruction, counter, loop_start_lbl):
+        # Define immediate registers
+        imm_one = tb.immediate(1, 1)
+        counter_imm_one = tb.immediate(1, counter.size)
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
+
+        # Define temporary registers.
+        counter_tmp = tb.temporal(counter.size)
+        counter_zero = tb.temporal(1)
+        zf_zero = tb.temporal(1)
+
+        tb.add(self._builder.gen_sub(counter, counter_imm_one, counter_tmp))
+        tb.add(self._builder.gen_str(counter_tmp, counter))
+        tb.add(self._builder.gen_bisz(counter, counter_zero))
+        tb.add(self._builder.gen_jcc(counter_zero, end_addr))
+
+        prefix = instruction.prefix
+
+        if prefix in ["rep"]:
+            pass
+        elif prefix in ["repz", "repe"]:
+            tb.add(self._builder.gen_xor(self._flags["zf"], imm_one, zf_zero))
+        elif prefix in ["repnz", "repne"]:
+            tb.add(self._builder.gen_str(self._flags["zf"], zf_zero))
+        else:
+            raise Exception("Invalid prefix: %s" % prefix)
+
+        tb.add(self._builder.gen_jcc(imm_one, loop_start_lbl))
 
 # "I/O Instructions"
 # ============================================================================ #
