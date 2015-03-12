@@ -680,7 +680,7 @@ class ArmTranslator(object):
         return
 
 
-# "Data Transfer Instructions"
+# "Data-processing Instructions"
 # ============================================================================ #
     def _translate_mov(self, tb, instruction):
 
@@ -729,18 +729,6 @@ class ArmTranslator(object):
 
         if instruction.update_flags:
             self._update_flags_data_proc_other(tb, instruction.operands[2], oprnd1, oprnd2, result)
-
-    def _translate_ldr(self, tb, instruction):
-
-        oprnd1 = tb.read(instruction.operands[1])
-
-        tb.write(instruction.operands[0], oprnd1)
-
-    def _translate_str(self, tb, instruction):
-
-        oprnd0 = tb.read(instruction.operands[0])
-
-        tb.write(instruction.operands[1], oprnd0)
 
     def _translate_add(self, tb, instruction):
         oprnd1 = tb.read(instruction.operands[1])
@@ -802,6 +790,24 @@ class ArmTranslator(object):
 
         self._update_flags_data_proc_sub(tb, oprnd1, oprnd2, result) # S = 1 (implied in the instruction)
 
+
+# "Load/store word and unsigned byte Instructions"
+# ============================================================================ #
+    def _translate_ldr(self, tb, instruction):
+
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tb.write(instruction.operands[0], oprnd1)
+
+    def _translate_str(self, tb, instruction):
+
+        oprnd0 = tb.read(instruction.operands[0])
+
+        tb.write(instruction.operands[1], oprnd0)
+
+
+# "Load/store multiple Instructions"
+# ============================================================================ #
     def _translate_ldm(self, tb, instruction):
         self._translate_ldm_stm(tb, instruction, True)
 
@@ -866,7 +872,6 @@ class ArmTranslator(object):
     def _store_value(self, tb, mem_dir, value):
         tb.add(self._builder.gen_stm(value, mem_dir))
 
-
     # PUSH and POP are equivalent to STM and LDM in FD mode with the SP (and write-back)
     # Instructions are modified to adapt it to the LDM/STM interface
     def _translate_push_pop(self, tb, instruction, translate_fn):
@@ -884,6 +889,9 @@ class ArmTranslator(object):
     def _translate_pop(self, tb, instruction):
         self._translate_push_pop(tb, instruction, self._translate_ldm)
 
+
+# "Branch Instructions"
+# ============================================================================ #
     def _translate_b(self, tb, instruction):
         self._translate_branch(tb, instruction, link = False)
 
