@@ -139,19 +139,20 @@ class GadgetFinder(object):
         """Finds possible 'RET-ended' gadgets.
         """
         roots = []
-
+        gadget_tail_addr = []
+        
+        # From ROPgadget:
+        free_jump_gadgets = [
+            "[\x10-\x19\x1e]{1}\xff\x2f\xe1",  # bx   reg
+            "[\x30-\x39\x3e]{1}\xff\x2f\xe1",  # blx  reg
+            "[\x00-\xff]{1}\x80\xbd\xe8",       # pop {,pc}
+        ]
+        
         # find gadget tail
         for addr in xrange(start_address, end_address + 1):
             # TODO: Make this 'speed improvement' architecture-agnostic
             # TODO: Add thumb
             # TODO: Little-Endian
-
-            # From ROPgadget:
-            free_jump_gadgets = [
-                "[\x10-\x19\x1e]{1}\xff\x2f\xe1",  # bx   reg
-                "[\x30-\x39\x3e]{1}\xff\x2f\xe1",  # blx  reg
-                "[\x00-\xff]{1}\x80\xbd\xe8",       # pop {,pc}
-              ]
 
             # TODO: Evaluate performance
             gad_found = False
@@ -161,9 +162,13 @@ class GadgetFinder(object):
                     break
             if not gad_found:
                 continue
+            
+            gadget_tail_addr.append(addr)
+        
+        for addr in gadget_tail_addr:
 
             asm_instr = self._disasm.disassemble(
-                self._mem[addr:min(addr+32, end_address + 1)], # TODO: Add thumb (+16)
+                self._mem[addr:min(addr+4, end_address + 1)], # TODO: Add thumb (+16)
                 addr
             )
 
