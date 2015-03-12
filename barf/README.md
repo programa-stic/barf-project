@@ -5,7 +5,7 @@
 * Load binary programs in different formats (``ELF``, ``PE``, etc),
 * It supports the Intel x86 architecture for 32 and 64 bits,
 * It operates on an intermediate language ([REIL]) thus all analysis algorithm are architecture-agnostic,
-* It has integration with [Z3] SMT solver which means that you can express fragments of code as formulae and check restrictions on them.
+* It has integration with [Z3] and [CVC4] SMT solvers which means that you can express fragments of code as formulae and check restrictions on them.
 
 It is currently *under development*.
 
@@ -191,11 +191,11 @@ interface to the SMT-solver-related functionalities.
 ## Directory Structure
 
 ```
-    barf/       Framework's main directory.
-    doc/        Documentation.
-    samples/    Binaries samples for testing.
-    examples/   Example scripts that show various functionalities.
-    tools/      Tools build upon BARF.
+barf/       Framework's main directory.
+doc/        Documentation.
+samples/    Binaries samples for testing.
+examples/   Example scripts that show various functionalities.
+tools/      Tools build upon BARF.
 ```
 
 ## Tools
@@ -205,34 +205,34 @@ according to different types (data transfer, arithmetic operations, etc) and
 verifies gadgets.
 
 ```
-    usage: BARFgadgets [-h] [--version] [--bdepth BDEPTH] [--idepth IDEPTH] [-u]
-                       [-c] [-v] [-o OUTPUT] [-t] [--sort {addr,depth}] [--color]
-                       [--show-binary] [--show-classification]
-                       filename
+usage: BARFgadgets [-h] [--version] [--bdepth BDEPTH] [--idepth IDEPTH] [-u]
+                   [-c] [-v] [-o OUTPUT] [-t] [--sort {addr,depth}] [--color]
+                   [--show-binary] [--show-classification]
+                   filename
 
-    Tool for finding, classifying and verifying ROP gadgets.
+Tool for finding, classifying and verifying ROP gadgets.
 
-    positional arguments:
-      filename              Binary file name.
+positional arguments:
+  filename              Binary file name.
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      --version             Display version.
-      --bdepth BDEPTH       Gadget depth in number of bytes.
-      --idepth IDEPTH       Gadget depth in number of instructions.
-      -u, --unique          Remove duplicate gadgets (in all steps).
-      -c, --classify        Run gadgets classification.
-      -v, --verify          Run gadgets verification (includes classification).
-      -o OUTPUT, --output OUTPUT
-                            Save output to file.
-      -t, --time            Print time of each processing step.
-      --sort {addr,depth}   Sort gadgets by address or depth (number of
-                            instructions) in ascending order.
-      --color               Format gadgets with ANSI color sequences, for output
-                            in a 256-color terminal or console.
-      --show-binary         Show binary code for each gadget.
-      --show-classification
-                            Show classification for each gadget.
+optional arguments:
+  -h, --help            show this help message and exit
+  --version             Display version.
+  --bdepth BDEPTH       Gadget depth in number of bytes.
+  --idepth IDEPTH       Gadget depth in number of instructions.
+  -u, --unique          Remove duplicate gadgets (in all steps).
+  -c, --classify        Run gadgets classification.
+  -v, --verify          Run gadgets verification (includes classification).
+  -o OUTPUT, --output OUTPUT
+                        Save output to file.
+  -t, --time            Print time of each processing step.
+  --sort {addr,depth}   Sort gadgets by address or depth (number of
+                        instructions) in ascending order.
+  --color               Format gadgets with ANSI color sequences, for output
+                        in a 256-color terminal or console.
+  --show-binary         Show binary code for each gadget.
+  --show-classification
+                        Show classification for each gadget.
 ```
 
 For more information, see `tools/gadgets/README.rst`.

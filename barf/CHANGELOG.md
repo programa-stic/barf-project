@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 - Fix SMT translation for STR instruction when dst operand is bigger than src operand.
 
 ### Added
-- Add support for new x86 instructions.
+- Add support for more x86 instructions.
 - Memory consumption reduction through the use of '__slots__'.
 - BARFgadgets now supports gadgets ending in RET-imm16, JMP and CALL instructions.
 
