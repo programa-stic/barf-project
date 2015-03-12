@@ -7,6 +7,88 @@ from barf.arch import ARCH_ARM_MODE_32
 from barf.arch import ARCH_ARM_MODE_64
 from barf.arch import ArchitectureInformation
 
+
+ARM_COND_CODE_EQ = 0
+ARM_COND_CODE_NE = 1
+ARM_COND_CODE_CS = 2
+ARM_COND_CODE_CC = 3
+ARM_COND_CODE_MI = 4
+ARM_COND_CODE_PL = 5
+ARM_COND_CODE_VS = 6
+ARM_COND_CODE_VC = 7
+ARM_COND_CODE_HI = 8
+ARM_COND_CODE_LS = 9
+ARM_COND_CODE_GE = 10
+ARM_COND_CODE_LT = 11
+ARM_COND_CODE_GT = 12
+ARM_COND_CODE_LE = 13
+ARM_COND_CODE_AL = 14
+ARM_COND_CODE_HS = 15
+ARM_COND_CODE_LO = 16
+
+cc_mapper = {
+    "eq" : ARM_COND_CODE_EQ,
+    "ne" : ARM_COND_CODE_NE,
+    "cs" : ARM_COND_CODE_CS,
+    "hs" : ARM_COND_CODE_HS,
+    "cc" : ARM_COND_CODE_CC,
+    "lo" : ARM_COND_CODE_LO,
+    "mi" : ARM_COND_CODE_MI,
+    "pl" : ARM_COND_CODE_PL,
+    "vs" : ARM_COND_CODE_VS,
+    "vc" : ARM_COND_CODE_VC,
+    "hi" : ARM_COND_CODE_HI,
+    "ls" : ARM_COND_CODE_LS,
+    "ge" : ARM_COND_CODE_GE,
+    "lt" : ARM_COND_CODE_LT,
+    "gt" : ARM_COND_CODE_GT,
+    "le" : ARM_COND_CODE_LE,
+    "al" : ARM_COND_CODE_AL,
+}
+
+cc_inverse_mapper = {v: k for k, v in cc_mapper.items()}
+
+ARM_LDM_STM_IA = 0
+ARM_LDM_STM_IB = 1
+ARM_LDM_STM_DA = 2
+ARM_LDM_STM_DB = 3
+ARM_LDM_STM_FD = 4
+ARM_LDM_STM_FA = 5
+ARM_LDM_STM_ED = 6
+ARM_LDM_STM_EA = 7
+
+ldm_stm_am_mapper = {
+    "ia" : ARM_LDM_STM_IA,
+    "ib" : ARM_LDM_STM_IB,
+    "da" : ARM_LDM_STM_DA,
+    "db" : ARM_LDM_STM_DB,
+    "fd" : ARM_LDM_STM_FD,
+    "fa" : ARM_LDM_STM_FA,
+    "ed" : ARM_LDM_STM_ED,
+    "ea" : ARM_LDM_STM_EA,
+}
+
+ldm_stm_am_inverse_mapper = {v: k for k, v in ldm_stm_am_mapper.items()}
+
+ldm_stack_am_to_non_stack_am = {
+    ARM_LDM_STM_FA : ARM_LDM_STM_DA,
+    ARM_LDM_STM_FD : ARM_LDM_STM_IA,
+    ARM_LDM_STM_EA : ARM_LDM_STM_DB,
+    ARM_LDM_STM_ED : ARM_LDM_STM_IB,
+}
+
+stm_stack_am_to_non_stack_am = {
+    ARM_LDM_STM_ED : ARM_LDM_STM_DA,
+    ARM_LDM_STM_EA : ARM_LDM_STM_IA,
+    ARM_LDM_STM_FD : ARM_LDM_STM_DB,
+    ARM_LDM_STM_FA : ARM_LDM_STM_IB,
+}
+
+ARM_MEMORY_INDEX_OFFSET = 0
+ARM_MEMORY_INDEX_PRE = 1
+ARM_MEMORY_INDEX_POST = 2
+
+
 class ArmArchitectureInformation(ArchitectureInformation):
     """This class describe the ARM architecture."""
 
@@ -167,87 +249,6 @@ class ArmArchitectureInformation(ArchitectureInformation):
 
         self._registers_flags = [name for name, _ in self.regs_flags]
 
-
-ARM_COND_CODE_EQ = 0
-ARM_COND_CODE_NE = 1
-ARM_COND_CODE_CS = 2
-ARM_COND_CODE_CC = 3
-ARM_COND_CODE_MI = 4
-ARM_COND_CODE_PL = 5
-ARM_COND_CODE_VS = 6
-ARM_COND_CODE_VC = 7
-ARM_COND_CODE_HI = 8
-ARM_COND_CODE_LS = 9
-ARM_COND_CODE_GE = 10
-ARM_COND_CODE_LT = 11
-ARM_COND_CODE_GT = 12
-ARM_COND_CODE_LE = 13
-ARM_COND_CODE_AL = 14
-ARM_COND_CODE_HS = 15
-ARM_COND_CODE_LO = 16
-
-
-cc_mapper = {
-    "eq" : ARM_COND_CODE_EQ,
-    "ne" : ARM_COND_CODE_NE,
-    "cs" : ARM_COND_CODE_CS,
-    "hs" : ARM_COND_CODE_HS,
-    "cc" : ARM_COND_CODE_CC,
-    "lo" : ARM_COND_CODE_LO,
-    "mi" : ARM_COND_CODE_MI,
-    "pl" : ARM_COND_CODE_PL,
-    "vs" : ARM_COND_CODE_VS,
-    "vc" : ARM_COND_CODE_VC,
-    "hi" : ARM_COND_CODE_HI,
-    "ls" : ARM_COND_CODE_LS,
-    "ge" : ARM_COND_CODE_GE,
-    "lt" : ARM_COND_CODE_LT,
-    "gt" : ARM_COND_CODE_GT,
-    "le" : ARM_COND_CODE_LE,
-    "al" : ARM_COND_CODE_AL,
-}
-
-cc_inverse_mapper = {v: k for k, v in cc_mapper.items()}
-
-ARM_LDM_STM_IA = 0
-ARM_LDM_STM_IB = 1
-ARM_LDM_STM_DA = 2
-ARM_LDM_STM_DB = 3
-ARM_LDM_STM_FD = 4
-ARM_LDM_STM_FA = 5
-ARM_LDM_STM_ED = 6
-ARM_LDM_STM_EA = 7
-
-ldm_stm_am_mapper = {
-    "ia" : ARM_LDM_STM_IA,
-    "ib" : ARM_LDM_STM_IB,
-    "da" : ARM_LDM_STM_DA,
-    "db" : ARM_LDM_STM_DB,
-    "fd" : ARM_LDM_STM_FD,
-    "fa" : ARM_LDM_STM_FA,
-    "ed" : ARM_LDM_STM_ED,
-    "ea" : ARM_LDM_STM_EA,
-}
-
-ldm_stm_am_inverse_mapper = {v: k for k, v in ldm_stm_am_mapper.items()}
-
-ldm_stack_am_to_non_stack_am = {
-    ARM_LDM_STM_FA : ARM_LDM_STM_DA,
-    ARM_LDM_STM_FD : ARM_LDM_STM_IA,
-    ARM_LDM_STM_EA : ARM_LDM_STM_DB,
-    ARM_LDM_STM_ED : ARM_LDM_STM_IB,
-}
-
-stm_stack_am_to_non_stack_am = {
-    ARM_LDM_STM_ED : ARM_LDM_STM_DA,
-    ARM_LDM_STM_EA : ARM_LDM_STM_IA,
-    ARM_LDM_STM_FD : ARM_LDM_STM_DB,
-    ARM_LDM_STM_FA : ARM_LDM_STM_IB,
-}
-
-ARM_MEMORY_INDEX_OFFSET = 0
-ARM_MEMORY_INDEX_PRE = 1
-ARM_MEMORY_INDEX_POST = 2
 
 class ArmInstruction(object):
     """Representation of ARM instruction."""
@@ -491,8 +492,8 @@ class ArmRegisterOperand(ArmOperand):
         self._wb = value
 
     def __str__(self):
-#         if not self._size:
-#             raise Exception("Operand size missing.")
+        if not self._size:
+            raise Exception("Operand size missing.")
 
         string  = self._modifier + " " if self._modifier else ""
         string += self._name
@@ -506,6 +507,7 @@ class ArmRegisterOperand(ArmOperand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
 
 class ArmRegisterListOperand(ArmOperand):
     """Representation of ARM register operand."""
@@ -530,8 +532,8 @@ class ArmRegisterListOperand(ArmOperand):
         return self._reg_list
 
     def __str__(self):
-#         if not self._size:
-#             raise Exception("Operand size missing.")
+        if not self._size:
+            raise Exception("Operand size missing.")
 
         string = "{"
         for i in range(len(self._reg_list)):
@@ -551,6 +553,7 @@ class ArmRegisterListOperand(ArmOperand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
 
 class ArmShiftedRegisterOperand(ArmOperand):
     """Representation of ARM register operand."""
