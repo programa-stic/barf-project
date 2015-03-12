@@ -4,7 +4,7 @@ import tempfile
 
 import pyasmjit
 
-template_assembly = """\
+x86_template_assembly = """\
 ;; Make sure to compile in 64 bits
 BITS 64
 
@@ -130,7 +130,7 @@ pop rbp
 ret
 """
 
-template_arm_assembly = """\
+arm_template_assembly = """\
 /* Save registers */
 push {{r0 - r12, lr}}
 
@@ -169,13 +169,13 @@ pop {{r0 - r12, lr}}
 blx lr
 """
 
-def execute(assembly, context):
+def x86_execute(assembly, context):
     # Initialize return values
     rc  = 0
     ctx = {}
 
     # Instantiate assembly template.
-    assembly = template_assembly.format(code=assembly)
+    assembly = x86_template_assembly.format(code=assembly)
 
     # Create temporary files for compilation.
     f_asm = tempfile.NamedTemporaryFile(delete=False)
@@ -186,7 +186,8 @@ def execute(assembly, context):
     f_asm.close()
 
     # Run nasm.
-    cmd = "nasm -f bin -o {0} {1}".format(f_obj.name, f_asm.name)
+    cmd_fmt = "nasm -f bin -o {0} {1}"
+    cmd = cmd_fmt.format(f_obj.name, f_asm.name)
     return_code = subprocess.call(cmd, shell=True)
 
     # Check for assembler errors.
@@ -200,7 +201,7 @@ def execute(assembly, context):
         f_obj.close()
 
         # Run binary code.
-        rc, ctx = pyasmjit.jit(binary, context)
+        rc, ctx = pyasmjit.x86_jit(binary, context)
     else:
         rc = return_code
 
@@ -216,7 +217,7 @@ def arm_execute(assembly, context):
     ctx = {}
 
     # Instantiate assembly template.
-    assembly = template_arm_assembly.format(code=assembly)
+    assembly = arm_template_assembly.format(code=assembly)
 
     # Create temporary files for compilation.
     f_asm = tempfile.NamedTemporaryFile(delete=False)
@@ -228,10 +229,10 @@ def arm_execute(assembly, context):
     f_asm.close()
 
     # Run nasm.
-    cmd = "gcc -c -x assembler {asm} -o {obj}; objcopy -O binary {obj} {bin};".format( \
-                asm = f_asm.name, obj = f_obj.name, bin = f_bin.name)
+    cmd_fmt = "gcc -c -x assembler {asm} -o {obj}; objcopy -O binary {obj} {bin};"
+    cmd = cmd_fmt.format(asm=f_asm.name, obj=f_obj.name, bin=f_bin.name)
     return_code = subprocess.call(cmd, shell=True)
-    
+
     # Check for assembler errors.
     if return_code == 0:
         # Read binary code.
@@ -256,5 +257,3 @@ def arm_execute(assembly, context):
 
 def arm_reserve():
     return pyasmjit.arm_reserve()
-
-
