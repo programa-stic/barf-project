@@ -2507,6 +2507,220 @@ class X86Translator(object):
         if instruction.prefix:
             self._rep_prefix_end(tb, instruction, counter, loop_start_lbl)
 
+    def _translate_lods(self, tb, instruction):
+        self._translate_lodsb(self, tb, instruction)
+
+    def _translate_lodsb(self, tb, instruction):
+        self._translate_lods_suffix(tb, instruction, "b")
+
+    def _translate_lodsw(self, tb, instruction):
+        self._translate_lods_suffix(tb, instruction, "w")
+
+    def _translate_lodsd(self, tb, instruction):
+        self._translate_lods_suffix(tb, instruction, "d")
+
+    def _translate_lodsq(self, tb, instruction):
+        self._translate_lods_suffix(tb, instruction, "q")
+
+    def _translate_lods_suffix(self, tb, instruction, suffix):
+        # Flags Affected
+        # None.
+
+        # DEST <- SRC;
+        # IF DF = 0
+        #     THEN (E)DI <- (E)DI + sizeof(SRC);
+        #     ELSE (E)DI <- (E)DI - sizeof(SRC);
+        # FI;
+
+        # Define source register.
+        if self._arch_mode == ARCH_X86_MODE_32:
+            src = ReilRegisterOperand("esi", 32)
+        elif self._arch_mode == ARCH_X86_MODE_64:
+            src = ReilRegisterOperand("rsi", 64)
+        else:
+            raise Exception("Invalid architecture mode: %d", self._arch_mode)
+
+        # Define destination register.
+        if suffix == 'b':
+            dst = ReilRegisterOperand("al", 8)
+        elif suffix == 'w':
+            dst = ReilRegisterOperand("ax", 16)
+        elif suffix == 'd':
+            dst = ReilRegisterOperand("eax", 32)
+        elif suffix == 'q':
+            dst = ReilRegisterOperand("rax", 64)
+        else:
+            raise Exception("Invalid instruction suffix: %s" % suffix)
+
+        if instruction.prefix:
+            counter, loop_start_lbl = self._rep_prefix_begin(tb, instruction)
+
+        # Instruction
+        # -------------------------------------------------------------------- #
+        # Move data.
+        tb.add(self._builder.gen_ldm(src, dst))
+
+        # Update destination pointer.
+        self._update_strings_src(tb, src, dst.size)
+        # -------------------------------------------------------------------- #
+
+        if instruction.prefix:
+            self._rep_prefix_end(tb, instruction, counter, loop_start_lbl)
+
+    def _translate_movs(self, tb, instruction):
+        self._translate_movsb(self, tb, instruction)
+
+    def _translate_movsb(self, tb, instruction):
+        self._translate_movs_suffix(tb, instruction, "b")
+
+    def _translate_movsw(self, tb, instruction):
+        self._translate_movs_suffix(tb, instruction, "w")
+
+    def _translate_movsd(self, tb, instruction):
+        self._translate_movs_suffix(tb, instruction, "d")
+
+    def _translate_movsq(self, tb, instruction):
+        self._translate_movs_suffix(tb, instruction, "q")
+
+    def _translate_movs_suffix(self, tb, instruction, suffix):
+        # Flags Affected
+        # None.
+
+        # DEST <- SRC;
+        # IF DF = 0
+        #     THEN (E)DI <- (E)DI + sizeof(SRC);
+        #     ELSE (E)DI <- (E)DI - sizeof(SRC);
+        # FI;
+
+        # Define source and destination registers.
+        if self._arch_mode == ARCH_X86_MODE_32:
+            src = ReilRegisterOperand("esi", 32)
+            dst = ReilRegisterOperand("edi", 32)
+        elif self._arch_mode == ARCH_X86_MODE_64:
+            src = ReilRegisterOperand("rsi", 64)
+            dst = ReilRegisterOperand("rdi", 64)
+        else:
+            raise Exception("Invalid architecture mode: %d", self._arch_mode)
+
+        # Define destination register.
+        if suffix == 'b':
+            data_size = 8
+        elif suffix == 'w':
+            data_size = 16
+        elif suffix == 'd':
+            data_size = 32
+        elif suffix == 'q':
+            data_size = 64
+        else:
+            raise Exception("Invalid instruction suffix: %s" % suffix)
+
+        if instruction.prefix:
+            counter, loop_start_lbl = self._rep_prefix_begin(tb, instruction)
+
+        # Define temporal registers.
+        tmp0 = tb.temporal(data_size)
+
+        # Instruction
+        # -------------------------------------------------------------------- #
+        # Move data.
+        tb.add(self._builder.gen_ldm(src, tmp0))
+        tb.add(self._builder.gen_stm(dst, tmp0))
+
+        # Update destination pointer.
+        self._update_strings_src_and_dst(tb, src, dst, data_size)
+        # -------------------------------------------------------------------- #
+
+        if instruction.prefix:
+            self._rep_prefix_end(tb, instruction, counter, loop_start_lbl)
+
+    def _translate_scas(self, tb, instruction):
+        self._translate_scasb(self, tb, instruction)
+
+    def _translate_scasb(self, tb, instruction):
+        self._translate_scas_suffix(tb, instruction, "b")
+
+    def _translate_scasw(self, tb, instruction):
+        self._translate_scas_suffix(tb, instruction, "w")
+
+    def _translate_scasd(self, tb, instruction):
+        self._translate_scas_suffix(tb, instruction, "d")
+
+    def _translate_scasq(self, tb, instruction):
+        self._translate_scas_suffix(tb, instruction, "q")
+
+    def _translate_scas_suffix(self, tb, instruction, suffix):
+        # Flags Affected
+        # The OF, SF, ZF, AF, PF, and CF flags are set according to the
+        # temporary result of the comparison.
+
+        # temp <- SRC1 - SRC2;
+        # SetStatusFlags(temp);
+        #
+        # IF (Byte comparison)
+        #   THEN
+        #       IF DF = 0
+        #           THEN
+        #           (R|E)SI <- (R|E)SI + sizeof(SRC);
+        #           (R|E)DI <- (R|E)DI + sizeof(SRC);
+        #       ELSE
+        #           (R|E)SI <- (R|E)SI - sizeof(SRC);
+        #           (R|E)DI <- (R|E)DI - sizeof(SRC);
+        #       FI;
+        # FI;
+
+        # Define source1 register.
+        if suffix == 'b':
+            src1_data = ReilRegisterOperand("al", 8)
+            data_size = 8
+        elif suffix == 'w':
+            src1_data = ReilRegisterOperand("ax", 16)
+            data_size = 16
+        elif suffix == 'd':
+            src1_data = ReilRegisterOperand("eax", 32)
+            data_size = 32
+        elif suffix == 'q':
+            src1_data = ReilRegisterOperand("rax", 64)
+            data_size = 64
+        else:
+            raise Exception("Invalid instruction suffix: %s" % suffix)
+
+        # Define source2 register.
+        if self._arch_mode == ARCH_X86_MODE_32:
+            src2 = ReilRegisterOperand("edi", 32)
+        elif self._arch_mode == ARCH_X86_MODE_64:
+            src2 = ReilRegisterOperand("rdi", 64)
+        else:
+            raise Exception("Invalid architecture mode: %d", self._arch_mode)
+
+        # Define temporary registers
+        src2_data = tb.temporal(data_size)
+        tmp0 = tb.temporal(data_size*2)
+
+        if instruction.prefix:
+            counter, loop_start_lbl = self._rep_prefix_begin(tb, instruction)
+
+        # Instruction
+        # -------------------------------------------------------------------- #
+        # Move data.
+        tb.add(self._builder.gen_ldm(src2, src2_data))
+
+        tb.add(self._builder.gen_sub(src1_data, src2_data, tmp0))
+
+        # Flags : CF, OF, SF, ZF, AF, PF
+        self._update_cf(tb, src1_data, src2_data, tmp0)
+        self._update_of_sub(tb, src1_data, src2_data, tmp0)
+        self._update_sf(tb, src1_data, src2_data, tmp0)
+        self._update_zf(tb, src1_data, src2_data, tmp0)
+        self._update_af(tb, src1_data, src2_data, tmp0)
+        self._update_pf(tb, src1_data, src2_data, tmp0)
+
+        # Update source pointers.
+        self._update_strings_srcs(tb, src1, src2, data_size)
+        # -------------------------------------------------------------------- #
+
+        if instruction.prefix:
+            self._rep_prefix_end(tb, instruction, counter, loop_start_lbl)
+
     def _translate_stos(self, tb, instruction):
         self._translate_stosb(self, tb, instruction)
 
