@@ -31,6 +31,6 @@ context_in = {
 print code
 print context_in
 
-rv, context_out = pyasmjit.arm_execute(code, context_in)
+rv, context_out, mem = pyasmjit.arm_execute(code, context_in)
 
 print context_out

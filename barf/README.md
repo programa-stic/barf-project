@@ -48,7 +48,7 @@ each instruction with its translation to the intermediate language (*REIL*).
 from barf import BARF
 
 # Open binary file.
-barf = BARF("samples/toy/branch1")
+barf = BARF("samples/toy/x86/branch1")
 
 # Print assembly instruction.
 for addr, asm_instr, reil_instrs in barf.translate():
@@ -96,7 +96,7 @@ First, we add the instructions to the analyzer component.
 from barf import BARF
 
 # Open ELF file
-barf = BARF("samples/toy/constraint1")
+barf = BARF("samples/toy/x86/constraint1")
 
 # Add instructions to analyze.
 for addr, asm_instr, reil_instrs in barf.translate(0x80483ed, 0x8048401):
