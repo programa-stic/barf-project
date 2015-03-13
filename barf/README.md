@@ -235,12 +235,16 @@ optional arguments:
                         Show classification for each gadget.
 ```
 
-For more information, see `tools/gadgets/README.rst`.
+For more information, see [README](./barf/tools/gadgets/README.md).
 
 ## Notes
 
 SMT solver interfacing is provided by the file ``core/smt/smtlibv2.py`` taken
 from [PySymEmu].
+
+# License
+
+The BSD 2-Clause License. For more information, see [LICENSE](./LICENSE).
 
 [Capstone]: http://www.capstone-engine.org
 [Z3]: http://z3.codeplex.com

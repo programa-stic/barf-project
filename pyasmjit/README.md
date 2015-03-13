@@ -66,4 +66,8 @@ Currently:
 * It does not handle memory operations.
 * It only works with 64-bits code.
 
+# License
+
+The BSD 2-Clause License. For more information, see [LICENSE](./LICENSE).
+
 [NASM]: http://nasm.us/
