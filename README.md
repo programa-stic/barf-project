@@ -18,6 +18,7 @@ All packages were tested on Ubuntu 12.04 and 14.04 (x86_64).
 
 * Load binary programs in different formats (``ELF``, ``PE``, etc),
 * It supports the Intel x86 architecture for 32 and 64 bits,
+* It supports the ARM architecture for 32 bits,
 * It operates on an intermediate language ([REIL]) thus all analysis algorithm are architecture-agnostic,
 * It has integration with [Z3] and [CVC4] SMT solvers which means that you can express fragments of code as formulae and check restrictions on them.
 

@@ -4,6 +4,7 @@
 
 * Load binary programs in different formats (``ELF``, ``PE``, etc),
 * It supports the Intel x86 architecture for 32 and 64 bits,
+* It supports the ARM architecture for 32 bits,
 * It operates on an intermediate language ([REIL]) thus all analysis algorithm are architecture-agnostic,
 * It has integration with [Z3] and [CVC4] SMT solvers which means that you can express fragments of code as formulae and check restrictions on them.
 
@@ -71,18 +72,18 @@ cfg.save("branch1_cfg")
 We can check restrictions on code using a SMT solver. For instance, suppose you
 have the following code:
 
-```bash
-80483ed:       55                      push   ebp
-80483ee:       89 e5                   mov    ebp,esp
-80483f0:       83 ec 10                sub    esp,0x10
-80483f3:       8b 45 f8                mov    eax,DWORD PTR [ebp-0x8]
-80483f6:       8b 55 f4                mov    edx,DWORD PTR [ebp-0xc]
-80483f9:       01 d0                   add    eax,edx
-80483fb:       83 c0 05                add    eax,0x5
-80483fe:       89 45 fc                mov    DWORD PTR [ebp-0x4],eax
-8048401:       8b 45 fc                mov    eax,DWORD PTR [ebp-0x4]
-8048404:       c9                      leave
-8048405:       c3                      ret
+```objdump
+ 80483ed:       55                      push   ebp
+ 80483ee:       89 e5                   mov    ebp,esp
+ 80483f0:       83 ec 10                sub    esp,0x10
+ 80483f3:       8b 45 f8                mov    eax,DWORD PTR [ebp-0x8]
+ 80483f6:       8b 55 f4                mov    edx,DWORD PTR [ebp-0xc]
+ 80483f9:       01 d0                   add    eax,edx
+ 80483fb:       83 c0 05                add    eax,0x5
+ 80483fe:       89 45 fc                mov    DWORD PTR [ebp-0x4],eax
+ 8048401:       8b 45 fc                mov    eax,DWORD PTR [ebp-0x4]
+ 8048404:       c9                      leave
+ 8048405:       c3                      ret
 ```
 
 And you want to know what values you have to assign to memory locations
@@ -173,8 +174,6 @@ Each supported architecture is provided as a subcomponent which contains the
 following modules.
 
 * ``Architecture`` : Describes the architecture, i.e., registers, memory address size.
-
-* ``Instruction`` : Describes each instruction.
 
 * ``Translator`` : Provides translators to REIL for each supported instruction.
 
