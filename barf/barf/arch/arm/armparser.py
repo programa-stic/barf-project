@@ -1,3 +1,27 @@
+# Copyright (c) 2014, Fundación Dr. Manuel Sadosky
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 """
 ARM Instruction Parser.
 """
@@ -41,11 +65,11 @@ arch_info = None
 # Parsing functions
 # ============================================================================ #
 def process_shifted_register(tokens):
-    
+
     base = process_register(tokens["base"])
     sh_type = tokens["type"]
     amount = tokens.get("amount", None)
-    
+
     if amount:
         if "imm" in amount:
             amount = ArmImmediateOperand("".join(amount["imm"]), arch_info.operand_size)
@@ -53,7 +77,7 @@ def process_shifted_register(tokens):
             amount = process_register(amount["reg"])
         else:
             raise Exception("Unknown amount type.")
-        
+
     return ArmShiftedRegisterOperand(base, sh_type, amount, base.size)
 
 def process_register(tokens):
@@ -63,7 +87,7 @@ def process_register(tokens):
     else:
         size = arch_info.architecture_size
     oprnd = ArmRegisterOperand(name, size)
-    
+
     return oprnd
 
 def parse_operand(string, location, tokens):
@@ -76,11 +100,11 @@ def parse_operand(string, location, tokens):
 
     if "register_operand" in tokens:
         oprnd =  process_register(tokens["register_operand"])
-        
+
         # TODO: Figure out where to really store this flag, instead of in the register class
         if "wb" in tokens["register_operand"]:
             oprnd.wb = True
-        
+
 
     if "memory_operand" in tokens:
         mem_oprnd = tokens["memory_operand"]
@@ -96,11 +120,11 @@ def parse_operand(string, location, tokens):
             mem_oprnd = mem_oprnd["post"]
         else:
             raise Exception("Unknown index type.")
-            
+
         reg_base = process_register(mem_oprnd["base"])
         displacement = mem_oprnd.get("disp", None)
         disp_minus = True if mem_oprnd.get("minus") else False
-        
+
         if displacement:
             if "shift" in displacement:
                 displacement = process_shifted_register(displacement["shift"])
@@ -114,10 +138,10 @@ def parse_operand(string, location, tokens):
         size = arch_info.operand_size
         # TODO: Add sizes for LDR/STR variations (half word, byte, double word)
         oprnd = ArmMemoryOperand(reg_base, index_type, displacement, disp_minus, size)
-        
+
     if "shifted_register" in tokens:
         oprnd =  process_shifted_register(tokens["shifted_register"])
-    
+
     if "register_list_operand" in tokens:
         parsed_reg_list = tokens["register_list_operand"]
         reg_list = []
@@ -128,7 +152,7 @@ def parse_operand(string, location, tokens):
                 reg_list.append([start_reg, end_reg])
             else:
                 reg_list.append([start_reg])
-            
+
         oprnd = ArmRegisterListOperand(reg_list, reg_list[0][0].size)
 
     return oprnd
@@ -138,17 +162,17 @@ def parse_instruction(string, location, tokens):
     """
     mnemonic = tokens.get("mnemonic")
     operands = [op for op in tokens.get("operands", [])]
-    
+
     instr = ArmInstruction(
-        string,                   
+        string,
         mnemonic["ins"],
         operands,
         arch_info.architecture_mode
     )
-    
+
     if "cc" in mnemonic:
         instr.condition_code = cc_mapper[mnemonic["cc"]]
-    
+
     if "uf" in mnemonic:
         instr.update_flags = True
 
@@ -213,7 +237,7 @@ shifted_register = Group(register("base") + Suppress(comma) + shift_type("type")
 displacement = Group(Or([immediate("imm"), register("reg"), shifted_register("shift")]))
 
 offset_memory_operand = Group(
-    Suppress(lbracket) + 
+    Suppress(lbracket) +
     register("base") +
     Optional(
         Suppress(comma) +
@@ -224,17 +248,17 @@ offset_memory_operand = Group(
 )
 
 pre_indexed_memory_operand = Group(
-    Suppress(lbracket) + 
+    Suppress(lbracket) +
     register("base") +
     Suppress(comma) +
     sign +
     displacement("disp") +
-    Suppress(rbracket) + 
+    Suppress(rbracket) +
     Suppress(exclamation)
 )
 
 post_indexed_memory_operand = Group(
-    Suppress(lbracket) + 
+    Suppress(lbracket) +
     register("base") +
     Suppress(rbracket) +
     Suppress(comma) +
@@ -269,25 +293,25 @@ operand = (Or([
 condition_code = Optional(Or([
     Literal("eq"),
     Literal("ne"),
-    
+
     Literal("cs"), Literal("hs"),
     Literal("cc"), Literal("lo"),
-    
+
     Literal("mi"),
     Literal("pl"),
-    
+
     Literal("vs"),
     Literal("vc"),
-    
+
     Literal("hi"),
     Literal("ls"),
 
     Literal("ge"),
     Literal("lt"),
-    
+
     Literal("gt"),
     Literal("le"),
-    
+
     Literal("al"),
 ]))("cc")
 
@@ -296,7 +320,7 @@ ldm_stm_addr_mode = Optional(Or([
     Literal("ib"),
     Literal("da"),
     Literal("db"),
-    
+
     Literal("fd"),
     Literal("fa"),
     Literal("ed"),
@@ -315,18 +339,18 @@ mnemonic = Group(Or([
     Combine(Literal("and")("ins") + cc_plus_uf),
     Combine(Literal("eor")("ins") + cc_plus_uf),
     Combine(Literal("orr")("ins") + cc_plus_uf),
-    
+
     Combine(Literal("ldr")("ins") + condition_code),
     Combine(Literal("str")("ins") + condition_code),
-    
+
     Combine(Literal("ldm")("ins") + condition_code + ldm_stm_addr_mode),
     Combine(Literal("stm")("ins") + condition_code + ldm_stm_addr_mode),
-    
+
     Combine(Literal("add")("ins") + cc_plus_uf),
     Combine(Literal("sub")("ins") + cc_plus_uf),
     Combine(Literal("cmp")("ins") + condition_code),
     Combine(Literal("cmn")("ins") + condition_code),
-    
+
     Combine(Literal("mul")("ins") + cc_plus_uf),
 
     Combine(Literal("b")("ins") + condition_code),
@@ -359,12 +383,12 @@ class ArmParser(object):
         # Commented to get the exception trace of a parser error.
         try:
             instr_lower = instr.lower()
-    
+
             if not instr_lower in self._cache:
                 instr_asm = instruction.parseString(instr_lower)[0]
-    
+
                 self._cache[instr_lower] = instr_asm
-    
+
             instr_asm = copy.deepcopy(self._cache[instr_lower])
 
             # self._check_instruction(instr_asm)

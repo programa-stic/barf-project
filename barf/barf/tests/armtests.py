@@ -1,3 +1,27 @@
+# Copyright (c) 2014, Fundación Dr. Manuel Sadosky
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import pickle
 import random
 import unittest
@@ -306,27 +330,27 @@ class ArmTranslationTests(unittest.TestCase):
         self.__set_address(ini_addr, arm_instrs)
 
         reil_instrs = map(self.arm_translator.translate, arm_instrs)
-        
+
 #         for rr in reil_instrs:
 #             for reil_instr in rr:
 #                 print("{0:14} : {1}".format(hex(reil_instr.address), reil_instr))
 
         ctx_init = self.__init_context()
-        
+
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
             reil_instrs,
             0xdeadbeef << 8,
             context=ctx_init
         )
-        
+
         return reil_ctx_out
 
     # R11 is used as a dirty register to check if the branch was taken or not
     def test_asm_branch_instruction(self):
         untouched_value = 0x45454545
         touched_value = 0x31313131
-        
-        inst_samples_touched = [ 
+
+        inst_samples_touched = [
             ["mov r11, #0x{:x}".format(untouched_value),
                "b #0x800c",
                "mov r11, #0x{:x}".format(touched_value),
@@ -372,8 +396,8 @@ class ArmTranslationTests(unittest.TestCase):
             ],
 
         ]
-        
-        
+
+
         for asm in inst_samples_touched:
             reil_ctx_out = self._execute_asm(asm, 0x8000)
             self.assertTrue(reil_ctx_out['r11'] == untouched_value)
@@ -434,7 +458,7 @@ class ArmTranslationTests(unittest.TestCase):
             self.__save_failing_context(ctx_init)
 
         self.assertTrue(cmp_result, self.__print_contexts(ctx_init, arm_ctx_out, reil_ctx_out))
-        
+
         pyasmjit.arm_free() # There is only one memory pool, so there is no need (for now) to specify the address
 
 

@@ -1,3 +1,27 @@
+# Copyright (c) 2014, Fundación Dr. Manuel Sadosky
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 """
 This module implements a gadget finder based on the paper "The Geometry of
 Innocent Flesh on the Bone: Return-into-libc without Function Calls
@@ -140,14 +164,14 @@ class GadgetFinder(object):
         """
         roots = []
         gadget_tail_addr = []
-        
+
         # From ROPgadget:
         free_jump_gadgets = [
             "[\x10-\x19\x1e]{1}\xff\x2f\xe1",  # bx   reg
             "[\x30-\x39\x3e]{1}\xff\x2f\xe1",  # blx  reg
             "[\x00-\xff]{1}\x80\xbd\xe8",       # pop {,pc}
         ]
-        
+
         # find gadget tail
         for addr in xrange(start_address, end_address + 1):
             # TODO: Make this 'speed improvement' architecture-agnostic
@@ -162,9 +186,9 @@ class GadgetFinder(object):
                     break
             if not gad_found:
                 continue
-            
+
             gadget_tail_addr.append(addr)
-        
+
         for addr in gadget_tail_addr:
 
             asm_instr = self._disasm.disassemble(
