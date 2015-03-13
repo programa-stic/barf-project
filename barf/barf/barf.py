@@ -1,3 +1,27 @@
+# Copyright (c) 2014, Fundacion Dr. Manuel Sadosky
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 """
 BARF : Binary Analysis Framework.
 
@@ -14,34 +38,51 @@ from analysis.codeanalyzer import CodeAnalyzer
 from analysis.gadget import GadgetClassifier
 from analysis.gadget import GadgetFinder
 from analysis.gadget import GadgetVerifier
+from arch.arm.armbase import ARCH_ARM_MODE_32
+from arch.arm.armbase import ArmArchitectureInformation
+from arch.arm.armdisassembler import ArmDisassembler
+from arch.arm.armtranslator import ArmTranslator
 from arch.x86.x86base import X86ArchitectureInformation
 from arch.x86.x86disassembler import X86Disassembler
 from arch.x86.x86translator import X86Translator
 from core.bi import BinaryFile
 from core.reil import ReilEmulator
-from core.smt.smtlibv2 import Z3Solver
 from core.smt.smtlibv2 import CVC4Solver
-
+from core.smt.smtlibv2 import Z3Solver
 from core.smt.smttranslator import SmtTranslator
 
 logging.basicConfig(
-    filename = os.path.dirname(os.path.realpath(__file__)) + os.sep + "log/barf." + str(int(time.time())) + ".log",
-    format = "%(asctime)s: %(name)s:%(levelname)s: %(message)s",
-    level = logging.DEBUG
+    filename=os.path.dirname(os.path.realpath(__file__)) + os.sep + "log/barf." + str(int(time.time())) + ".log",
+    format="%(asctime)s: %(name)s:%(levelname)s: %(message)s",
+    level=logging.DEBUG
 )
 
-verbose = False
+VERBOSE = False
 
 # Choose between SMT Solvers...
-SMT_SOLVER  = "Z3"
-# SMT_SOLVER  = "CVC4"
+SMT_SOLVER = "Z3"
+# SMT_SOLVER = "CVC4"
 
 class BARF(object):
     """Binary Analysis Framework."""
 
     def __init__(self, filename):
-        if verbose:
+        if VERBOSE:
             print("[+] BARF: Initializing...")
+
+        self.code_analyzer = None
+        self.ir_translator = None
+        self.binary = None
+        self.smt_solver = None
+        self.gadget_classifier = None
+        self.gadget_verifier = None
+        self.arch_info = None
+        self.gadget_finder = None
+        self.text_section = None
+        self.disassembler = None
+        self.smt_translator = None
+        self.ir_emulator = None
+        self.bb_builder = None
 
         self.open(filename)
 
@@ -63,26 +104,36 @@ class BARF(object):
 
         if self.binary.architecture == arch.ARCH_X86:
             self._setup_x86_arch()
+        else:
+            # TODO: add arch in the binary file class
+            self._setup_arm_arch()
+
+    def _setup_arm_arch(self):
+        """Set up ARM architecture.
+        """
+        self.arch_info = ArmArchitectureInformation(ARCH_ARM_MODE_32)
+        self.disassembler = ArmDisassembler(architecture_mode=ARCH_ARM_MODE_32)
+        self.ir_translator = ArmTranslator(architecture_mode=ARCH_ARM_MODE_32)
 
     def _setup_x86_arch(self):
         """Set up x86 architecture.
         """
-        # set up architecture information
-        self.arch_info = X86ArchitectureInformation(self.binary.architecture_mode)
+        arch_mode = self.binary.architecture_mode
+
+        # Set up architecture information
+        self.arch_info = X86ArchitectureInformation(arch_mode)
+        self.disassembler = X86Disassembler(architecture_mode=arch_mode)
+        self.ir_translator = X86Translator(architecture_mode=arch_mode)
 
     def _setup_core_modules(self):
         """Set up core modules.
         """
-        self.disassembler = None
         self.ir_emulator = None
-        self.ir_translator = None
         self.smt_solver = None
         self.smt_translator = None
 
         if self.arch_info:
-            self.disassembler = X86Disassembler(architecture_mode=self.arch_info.architecture_mode)
             self.ir_emulator = ReilEmulator(self.arch_info.address_size)
-            self.ir_translator = X86Translator(architecture_mode=self.arch_info.architecture_mode)
 
             if SMT_SOLVER == "Z3":
                 self.smt_solver = Z3Solver()
@@ -93,12 +144,12 @@ class BARF(object):
 
             self.smt_translator = SmtTranslator(self.smt_solver, self.arch_info.address_size)
 
-            self.ir_emulator.set_arch_registers(self.arch_info.registers_gp)
-            self.ir_emulator.set_arch_registers_size(self.arch_info.register_size)
-            self.ir_emulator.set_reg_access_mapper(self.arch_info.register_access_mapper())
+            self.ir_emulator.set_arch_registers(self.arch_info.registers_gp_all)
+            self.ir_emulator.set_arch_registers_size(self.arch_info.registers_size)
+            self.ir_emulator.set_reg_access_mapper(self.arch_info.alias_mapper)
 
-            self.smt_translator.set_reg_access_mapper(self.arch_info.register_access_mapper())
-            self.smt_translator.set_arch_registers_size(self.arch_info.register_size)
+            self.smt_translator.set_reg_access_mapper(self.arch_info.alias_mapper)
+            self.smt_translator.set_arch_registers_size(self.arch_info.registers_size)
 
     def _setup_analysis_modules(self):
         """Set up analysis modules.
@@ -109,8 +160,8 @@ class BARF(object):
         ## code analyzer
         self.code_analyzer = CodeAnalyzer(self.smt_solver, self.smt_translator)
 
-        # TODO: This should not be part of the framework, but something that
-        # it is build upon.
+        # TODO: This should not be part of the framework, but something
+        # that it is build upon it.
         ## gadget
         self.gadget_classifier = GadgetClassifier(self.ir_emulator, self.arch_info)
         self.gadget_finder = GadgetFinder(self.disassembler, self.text_section, self.ir_translator)
@@ -148,7 +199,7 @@ class BARF(object):
 
         self.ir_translator.reset()
 
-        for addr, asm, size in self.disassemble(start_addr, end_addr):
+        for addr, asm, _ in self.disassemble(start_addr, end_addr):
             yield addr, asm, self.ir_translator.translate(asm)
 
     def disassemble(self, ea_start=None, ea_end=None):
@@ -170,17 +221,17 @@ class BARF(object):
             # disassemble instruction
             start, end = curr_addr, min(curr_addr + 16, self.binary.ea_end + 1)
 
-            asm, size = self.disassembler.disassemble(self.text_section[start:end], curr_addr)
+            asm = self.disassembler.disassemble(self.text_section[start:end], curr_addr)
 
             if not asm:
                 return
 
-            yield curr_addr, asm, size
+            yield curr_addr, asm, asm.size
 
             # update instruction pointer
-            curr_addr += size
+            curr_addr += asm.size
 
-    def recover_cfg(self, ea_start=None, ea_end=None, mode=None):
+    def recover_cfg(self, ea_start=None, ea_end=None):
         """Recover CFG
 
         :param ea_start: start address
@@ -200,7 +251,7 @@ class BARF(object):
 
         return bb_graph
 
-    def recover_bbs(self, ea_start=None, ea_end=None, mode=None):
+    def recover_bbs(self, ea_start=None, ea_end=None):
         """Recover basic blocks.
 
         :param ea_start: start address
@@ -240,11 +291,11 @@ class BARF(object):
         # load memory
         if 'memory' in context:
             for addr, val in context['memory'].items():
-                self.ir_emulator.get_memory().write(addr, 32, val)
+                self.ir_emulator.memory.write(addr, 32, val)
 
-        instrs = [reil for addr, asm, reil in self.translate(ea_start, ea_end)]
+        instrs = [reil for _, _, reil in self.translate(ea_start, ea_end)]
 
-        self.ir_emulator.execute(instrs, ea_start << 8, end_address=ea_end << 8)
+        self.ir_emulator.execute(instrs, start_addr << 8, end_address=end_addr << 8)
 
         context_out = {}
 

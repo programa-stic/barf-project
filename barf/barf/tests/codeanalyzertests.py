@@ -1,7 +1,29 @@
-import unittest
-import networkx
+# Copyright (c) 2014, Fundacion Dr. Manuel Sadosky
+# All rights reserved.
 
-from barf.analysis.basicblock.basicblock import BasicBlock
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+import unittest
+
 from barf.analysis.basicblock.basicblock import BasicBlockBuilder
 from barf.analysis.basicblock.basicblock import BasicBlockGraph
 from barf.analysis.codeanalyzer.codeanalyzer import CodeAnalyzer
@@ -16,7 +38,8 @@ from barf.core.bi import Memory
 from barf.core.smt.smtlibv2 import Z3Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
-verbose = False
+VERBOSE = False
+
 
 class MemoryMock(Memory):
 
@@ -48,14 +71,14 @@ class CodeAnalyzerTests(unittest.TestCase):
         self._memory = MemoryMock()
         self._smt_solver = SmtSolver()
         self._smt_translator = SmtTranslator(self._smt_solver, self._operand_size)
-        self._smt_translator.set_reg_access_mapper(self._arch_info.register_access_mapper())
-        self._smt_translator.set_arch_registers_size(self._arch_info.register_size)
+        self._smt_translator.set_reg_access_mapper(self._arch_info.alias_mapper)
+        self._smt_translator.set_arch_registers_size(self._arch_info.registers_size)
         self._disasm = X86Disassembler()
         self._ir_translator = X86Translator()
         self._bb_builder = BasicBlockBuilder(self._disasm, self._memory, self._ir_translator)
 
     def test_check_path_satisfiability(self):
-        if verbose:
+        if VERBOSE:
             print "[+] Test: test_check_path_satisfiability"
 
         # binary : stack1
@@ -124,7 +147,7 @@ class CodeAnalyzerTests(unittest.TestCase):
         codeAnalyzer.set_context(GenericContext(registers, flags, memory))
 
         for bb_path in bb_graph.all_simple_bb_paths(start, end):
-            if verbose:
+            if VERBOSE:
                 print "[+] Checking path satisfiability :"
                 print "      From : %s" % hex(start)
                 print "      To : %s" % hex(end)
@@ -132,15 +155,15 @@ class CodeAnalyzerTests(unittest.TestCase):
 
             is_sat = codeAnalyzer.check_path_satisfiability(bb_path, start, verbose=False)
 
-            if verbose:
+            if VERBOSE:
                 print "[+] Satisfiability : %s" % str(is_sat)
 
             self.assertTrue(is_sat)
 
-            if is_sat and verbose:
+            if is_sat and VERBOSE:
                 print codeAnalyzer.get_context()
 
-            if verbose:
+            if VERBOSE:
                 print ":" * 80
                 print ""
 

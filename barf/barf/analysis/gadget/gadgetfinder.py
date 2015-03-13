@@ -1,3 +1,27 @@
+# Copyright (c) 2014, Fundacion Dr. Manuel Sadosky
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 """
 This module implements a gadget finder based on the paper "The Geometry of
 Innocent Flesh on the Bone: Return-into-libc without Function Calls
@@ -7,15 +31,18 @@ Some more work is needed to make this algorithm truly architecture
 agnostic.
 
 """
-
-import sys
+import logging
+import re
 
 from barf.analysis.gadget import GadgetType
 from barf.analysis.gadget import RawGadget
-from barf.arch.x86.x86instructiontranslator import FULL_TRANSLATION
-from barf.arch.x86.x86instructiontranslator import LITE_TRANSLATION
+from barf.arch.x86.x86translator import FULL_TRANSLATION
+from barf.arch.x86.x86translator import LITE_TRANSLATION
 from barf.core.reil import DualInstruction
 from barf.core.reil import ReilMnemonic
+from barf.core.reil import ReilRegisterOperand
+
+logger = logging.getLogger(__name__)
 
 class GadgetFinder(object):
 
@@ -65,10 +92,22 @@ class GadgetFinder(object):
         # find gadget tail
         for addr in xrange(start_address, end_address + 1):
             # TODO: Make this 'speed improvement' architecture-agnostic
-            if self._mem[addr] != "\xc3":
+            op_codes = [
+                "\xc3",     # RET
+                "\xc2",     # RET imm16
+                "\xeb",     # JMP rel8
+                "\xe8",     # CALL rel{16,32}
+                "\xe9",     # JMP rel{16,32}
+                "\xff",     # JMP/CALL r/m{16,32,64}
+            ]
+
+            if self._mem[addr] not in op_codes:
                 continue
 
-            asm_instr, asm_size = self._disasm.disassemble(self._mem[addr], addr)
+            asm_instr = self._disasm.disassemble(
+                self._mem[addr:min(addr+16, end_address + 1)],
+                addr
+            )
 
             if not asm_instr:
                 continue
@@ -76,15 +115,107 @@ class GadgetFinder(object):
             # restarts ir register numbering
             self._ir_trans.reset()
 
-            ins_ir = self._ir_trans.translate(asm_instr)
+            try:
+                ins_ir = self._ir_trans.translate(asm_instr)
+            except:
+                continue
 
             # build gadget
-            if ins_ir[0] and ins_ir[0].mnemonic == ReilMnemonic.RET:
+            if ins_ir[-1] and (ins_ir[-1].mnemonic == ReilMnemonic.RET \
+                or (ins_ir[-1].mnemonic == ReilMnemonic.JCC and isinstance(ins_ir[-1].operands[2], ReilRegisterOperand))):
+
                 root = GadgetTreeNode(DualInstruction(addr, asm_instr, ins_ir))
 
                 roots.append(root)
 
                 self._build_from(addr, root, start_address, self._instrs_depth)
+
+        # filter roots with no children
+        roots = [r for r in roots if len(r.get_children()) > 0]
+
+        # build gadgets
+        root_gadgets = [self._build_gadgets(r) for r in roots]
+
+        # flatten root gadget list
+        candidates = [item for l in root_gadgets for item in l]
+
+        return candidates
+
+    def find_arm(self, start_address, end_address, byte_depth=20, instrs_depth=2):
+        """Find gadgets.
+        """
+        self._max_bytes = byte_depth
+        self._instrs_depth = instrs_depth
+
+        trans_mode_old = self._ir_trans.translation_mode
+
+        self._ir_trans.translation_mode = LITE_TRANSLATION
+
+        candidates = self._find_arm_candidates(start_address, end_address)
+
+        self._ir_trans.translation_mode = trans_mode_old
+
+        return candidates
+
+    # Auxiliary functions
+    # ======================================================================== #
+    def _find_arm_candidates(self, start_address, end_address):
+        """Finds possible 'RET-ended' gadgets.
+        """
+        roots = []
+        gadget_tail_addr = []
+
+        # From ROPgadget:
+        free_jump_gadgets = [
+            "[\x10-\x19\x1e]{1}\xff\x2f\xe1",  # bx   reg
+            "[\x30-\x39\x3e]{1}\xff\x2f\xe1",  # blx  reg
+            "[\x00-\xff]{1}\x80\xbd\xe8",       # pop {,pc}
+        ]
+
+        # find gadget tail
+        for addr in xrange(start_address, end_address + 1):
+            # TODO: Make this 'speed improvement' architecture-agnostic
+            # TODO: Add thumb
+            # TODO: Little-Endian
+
+            # TODO: Evaluate performance
+            gad_found = False
+            for gad in free_jump_gadgets:
+                if len(re.findall(gad, "".join(self._mem[addr:min(addr+4, end_address + 1)]))) > 0: # TODO: Add thumb (+2)
+                    gad_found = True
+                    break
+            if not gad_found:
+                continue
+
+            gadget_tail_addr.append(addr)
+
+        for addr in gadget_tail_addr:
+
+            asm_instr = self._disasm.disassemble(
+                self._mem[addr:min(addr+4, end_address + 1)], # TODO: Add thumb (+16)
+                addr
+            )
+
+            if not asm_instr:
+                continue
+
+            # restarts ir register numbering
+            self._ir_trans.reset()
+
+            try:
+                ins_ir = self._ir_trans.translate(asm_instr)
+            except:
+                continue
+
+            # build gadget
+#             if ins_ir[-1] and (ins_ir[-1].mnemonic == ReilMnemonic.RET \
+#                 or (ins_ir[-1].mnemonic == ReilMnemonic.JCC and isinstance(ins_ir[-1].operands[2], ReilRegisterOperand))):
+
+            root = GadgetTreeNode(DualInstruction(addr, asm_instr, ins_ir))
+
+            roots.append(root)
+
+            self._build_from(addr, root, start_address, self._instrs_depth)
 
         # filter roots with no children
         roots = [r for r in roots if len(r.get_children()) > 0]
@@ -113,12 +244,15 @@ class GadgetFinder(object):
 
             raw_bytes = self._mem[start_addr:end_addr]
 
-            asm_instr, asm_size = self._disasm.disassemble(raw_bytes, start_addr)
+            asm_instr = self._disasm.disassemble(raw_bytes, start_addr)
 
-            if not asm_instr or asm_size != step:
+            if not asm_instr or asm_instr.size != step:
                 continue
 
-            ir_instrs = self._ir_trans.translate(asm_instr)
+            try:
+                ir_instrs = self._ir_trans.translate(asm_instr)
+            except:
+                continue
 
             if self._is_valid_ins(ir_instrs, asm_instr):
                 child = GadgetTreeNode(DualInstruction(start_addr, asm_instr, \
@@ -159,13 +293,14 @@ class GadgetFinder(object):
     def _is_valid_ins(self, ins_ir, ins_asm):
         """Check for instruction validity as a gadget.
         """
-        invalid_inss = [
-            ReilMnemonic.RET,
-            ReilMnemonic.UNKN,
+        invalid_instrs = [
             ReilMnemonic.JCC,
+            ReilMnemonic.RET,
+            ReilMnemonic.UNDEF,
+            ReilMnemonic.UNKN,
         ]
 
-        return not any([i.mnemonic in invalid_inss for i in ins_ir])
+        return not any([i.mnemonic in invalid_instrs for i in ins_ir])
 
 
 class GadgetTreeNode(object):

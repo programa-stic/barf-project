@@ -1,3 +1,27 @@
+# Copyright (c) 2014, Fundacion Dr. Manuel Sadosky
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 """
 This module contains all the necesary classes to emulate REIL
 instructions. So far, it only handles concrete values.
@@ -99,6 +123,9 @@ class ReilMemory(object):
         for i in xrange(0, size / 8):
             value = self.read_byte(address + i) << (i * 8) | value
 
+        # Debug...
+        # print "Memory Read: ", hex(address), size, hex(value)
+
         return value
 
     def try_read(self, address, size):
@@ -143,6 +170,9 @@ class ReilMemory(object):
     def write(self, address, size, value):
         """Write arbitrary size content to memory.
         """
+        # Debug...
+        # print "Memory Write: ", hex(address), size, hex(value)
+
         for i in xrange(0, size / 8):
             self.write_byte(address + i, (value >> (i * 8)) & 0xff)
 
@@ -211,6 +241,13 @@ class ReilEmulator(object):
         # Instruction Pointer.
         self._ip = None
 
+        # Set of read and write registers during execution.
+        self._regs_written = set()
+        self._regs_read = set()
+
+        self._arch_regs = []
+        self._arch_regs_size = {}
+
         # Instruction implementation.
         self._executors = {
             # Arithmetic Instructions
@@ -244,17 +281,14 @@ class ReilEmulator(object):
             ReilMnemonic.RET : self._execute_ret,
         }
 
-        self._regs_written = set()
-        self._regs_read = set()
-
     def execute_lite(self, instructions, context=None):
         """Execute a list of instructions. It does not support loops.
         """
-        if context:
-            self._regs = context.copy()
-
         if verbose:
             print "[+] Executing instructions..."
+
+        if context:
+            self._regs = context.copy()
 
         for index, instr in enumerate(instructions):
             if verbose:
@@ -293,10 +327,17 @@ class ReilEmulator(object):
 
             # update instruction pointer
             if next_addr:
+                found = False
+
                 for idx, instrs in enumerate(instructions):
                     if instrs[0].address >> 8 == next_addr >> 8:
                         main_index = idx
                         sub_index = next_addr & 0xff
+
+                        found = True
+
+                if not found:
+                    raise Exception("Invalid address: %s" % hex(next_addr))
             else:
                 sub_index += 1
 
@@ -314,6 +355,12 @@ class ReilEmulator(object):
             # update instruction counter
             instr_count += 1
 
+            if end_address and self._ip == end_address:
+                if verbose:
+                    print("[+] End address reached...")
+
+                break
+
         if verbose:
             print("[+] Executed instruction count : %d" % instr_count)
 
@@ -322,46 +369,52 @@ class ReilEmulator(object):
     def reset(self):
         """Reset emulator. All registers and memory are reset.
         """
-        self._mem = ReilMemory(self._address_size)
-        self._ip = None
         self._regs = {}
+
+        self._mem = ReilMemory(self._address_size)
+
+        self._ip = None
 
         self._regs_written = set()
         self._regs_read = set()
 
     @property
     def registers(self):
-        # return self._regs.copy()
+        """Return registers.
+        """
         return self._regs
 
     @property
     def memory(self):
-        # return self._mem.copy()
+        """Return memory.
+        """
         return self._mem
 
     @property
     def read_registers(self):
-        # return self._regs_read.copy()
+        """Return read (native) registers.
+        """
         return self._regs_read
 
     @property
     def written_registers(self):
-        # return self._regs_written.copy()
+        """Return write (native) registers.
+        """
         return self._regs_written
 
     # ====================================================================== #
     def set_arch_registers(self, registers):
-        """Set registers.
+        """Set native registers.
         """
         self._arch_regs = registers
 
     def set_arch_registers_size(self, registers_size):
-        """Set registers.
+        """Set native registers size.
         """
         self._arch_regs_size = registers_size
 
     def set_reg_access_mapper(self, reg_access_mapper):
-        """Set register access mapper.
+        """Set native register access mapper.
 
         This is necessary as some architecture has register alias. For
         example, in Intel x86 (32 bits), *ax* refers to the lower half
@@ -393,7 +446,7 @@ class ReilEmulator(object):
         """
         assert register.size
 
-        base_reg_name, value_filter, shift = self._reg_access_mapper.get(register.name, (register.name, 2**register.size - 1, 0))
+        base_reg_name, offset = self._reg_access_mapper.get(register.name, (register.name, 0))
 
         if base_reg_name not in self._regs:
             self._regs[base_reg_name] = random.randint(0, 2**self._arch_regs_size[base_reg_name] - 1)
@@ -403,21 +456,40 @@ class ReilEmulator(object):
         if keep_track and register.name in self._arch_regs:
             self._regs_read.add(register.name)
 
-        return (reg_value & value_filter) >> shift
+        value = self._extract_value(reg_value, offset, register.size)
+
+        # Debug
+        if verbose:
+            print "          r{ %s = %s (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name]))
+
+        return value
 
     def _set_reg_value(self, register, value, keep_track=False):
         """Set register value.
         """
         assert register.size
 
-        base_reg_name, value_filter, shift = self._reg_access_mapper.get(register.name, (register.name, 2**register.size - 1, 0))
+        base_reg_name, offset = self._reg_access_mapper.get(register.name, (register.name, 0))
 
-        reg_value  = self._regs.get(base_reg_name, random.randint(0, 2**register.size - 1))
+        reg_value = self._regs.get(base_reg_name, random.randint(0, 2**register.size - 1))
 
-        self._regs[base_reg_name] = (reg_value & ~value_filter) | ((value << shift) & value_filter)
+        self._regs[base_reg_name] = self._insert_value(reg_value, value, offset, register.size)
 
         if keep_track and register.name in self._arch_regs:
             self._regs_written.add(register.name)
+
+        # Debug
+        if verbose:
+            print "          w{ %s = %s (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name]))
+
+    def _extract_value(self, main_value, offset, size):
+        return (main_value >> offset) & 2**size-1
+
+    def _insert_value(self, main_value, value_to_insert, offset, size):
+        main_value &= ~((2**size-1) << offset)
+        main_value |= (value_to_insert & 2**size-1) << offset
+
+        return main_value
 
     # Arithmetic instructions
     # ======================================================================== #

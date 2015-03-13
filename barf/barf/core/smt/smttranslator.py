@@ -1,3 +1,27 @@
+# Copyright (c) 2014, Fundacion Dr. Manuel Sadosky
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 """
 This module contains all the classes needed to translate form REIL to
 SMTLIB language.
@@ -22,6 +46,7 @@ solver:
 (assert (= t2_0 (bvadd t1_0 t2_0)))
 
 """
+import logging
 import traceback
 
 import barf.core.smt.smtlibv2 as smtlibv2
@@ -30,6 +55,8 @@ from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
 from barf.core.reil.reil import ReilRegisterOperand
 from barf.utils.utils import VariableNamer
+
+logger = logging.getLogger(__name__)
 
 class SmtTranslator(object):
 
@@ -55,6 +82,9 @@ class SmtTranslator(object):
         # A variable name mapper maps variable names to its current
         # 'version' of the variable, e.i., 'eax' -> 'eax_3'
         self._var_name_mappers = {}
+
+        self._arch_regs_size = {}
+        self._reg_access_mapper = {}
 
         # Intructions translators (from REIL to SMT expressions)
         self._instr_translators = {
@@ -89,9 +119,6 @@ class SmtTranslator(object):
             ReilMnemonic.RET : self._translate_ret,
         }
 
-        self._arch_regs_size = {}
-        self._reg_access_mapper = {}
-
     def translate(self, instr):
         """Return the SMT representation of a REIL instruction.
         """
@@ -99,11 +126,12 @@ class SmtTranslator(object):
             translator = self._instr_translators[instr.mnemonic]
 
             return translator(*instr.operands)
-        except Exception as reason:
-            print "[E] SMT Translator error : '%s' (%s)" % (instr, reason)
-            print ""
-            print traceback.format_exc()
-            raise Exception(reason)
+        except:
+            error_msg = "Failed to translate instruction: %s"
+
+            logger.error(error_msg, instr, exc_info=True)
+
+            raise
 
     def get_init_name(self, name):
         """Get initial name of symbol.
@@ -149,11 +177,6 @@ class SmtTranslator(object):
         """
         if name not in self._var_name_mappers:
             self._var_name_mappers[name] = VariableNamer(name)
-
-    def _not_implemented(self, oprnd1, oprnd2, oprnd3):
-        """Raise exception for not implemented translator.
-        """
-        raise NotImplementedError("Not Implemented")
 
     def _get_var_name(self, name, fresh=False):
         """Get variable name.
@@ -204,13 +227,13 @@ class SmtTranslator(object):
         reg_info = self._reg_access_mapper.get(operand.name, None)
 
         if reg_info:
-            var_base_name, _, var_shift = reg_info
+            var_base_name, offset = reg_info
 
             var_name = self._get_var_name(var_base_name)
             var_size = self._arch_regs_size[var_base_name]
 
             ret_val = self._solver.mkBitVec(var_size, var_name)
-            ret_val = smtlibv2.EXTRACT(ret_val, var_shift, operand.size)
+            ret_val = smtlibv2.EXTRACT(ret_val, offset, operand.size)
         else:
             var_name = self._get_var_name(operand.name)
             ret_val = self._solver.mkBitVec(operand.size, var_name)
@@ -223,7 +246,7 @@ class SmtTranslator(object):
         reg_info = self._reg_access_mapper.get(operand.name, None)
 
         if reg_info:
-            var_base_name, _, var_shift = reg_info
+            var_base_name, offset = reg_info
 
             old_var_name = self._get_var_name(var_base_name, fresh=False)
 
@@ -234,14 +257,14 @@ class SmtTranslator(object):
 
             ret_val_cpy = ret_val
 
-            ret_val = smtlibv2.EXTRACT(ret_val, var_shift, operand.size)
+            ret_val = smtlibv2.EXTRACT(ret_val, offset, operand.size)
 
             old_ret_val = self._solver.mkBitVec(var_size, old_var_name)
 
             constrs = []
 
             for i in reversed(xrange(0, var_size, 8)):
-                if i >= var_shift and i < var_shift + operand.size:
+                if i >= offset and i < offset + operand.size:
                     continue
 
                 bytes_exprs_1 = smtlibv2.EXTRACT(ret_val_cpy, i, 8)
@@ -565,14 +588,27 @@ class SmtTranslator(object):
 
         dst_size = op3_var.size
 
+        constrs = []
+
         if oprnd1.size == oprnd3.size:
             expr = (op1_var == op3_var)
         elif oprnd1.size < oprnd3.size:
             expr = (op1_var == smtlibv2.EXTRACT(op3_var, 0, op1_var.size))
+
+			# Make sure that the values that can take dst operand
+			# do not exceed the range of the source operand.
+			# TODO: Find a better way to enforce this.
+            fmt = "#b%0{0}d".format(op3_var.size - op1_var.size)
+            imm = smtlibv2.BitVec(op3_var.size - op1_var.size, fmt % 0)
+
+            constrs = [(imm == smtlibv2.EXTRACT(op3_var, op1_var.size, op3_var.size - op1_var.size))]
         else:
             expr = (smtlibv2.EXTRACT(op1_var, 0, op3_var.size) == op3_var)
 
         rv = [expr]
+
+        if constrs:
+            rv += constrs
 
         if parent_reg_constrs:
             rv += parent_reg_constrs

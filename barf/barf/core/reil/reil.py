@@ -1,3 +1,27 @@
+# Copyright (c) 2014, Fundacion Dr. Manuel Sadosky
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 """
 This module contains all the classes that handle the intermediate
 representation language. It is basically the REIL language with minor
@@ -178,6 +202,13 @@ class ReilInstruction(object):
     """Representation of a REIL instruction.
     """
 
+    __slots__ = [
+        '_mnemonic',
+        '_operands',
+        '_comment',
+        '_address',
+    ]
+
     def __init__(self):
 
         # A REIL mnemonic
@@ -252,6 +283,7 @@ class ReilInstruction(object):
             size_str = str(oprnd.size) if oprnd.size else ""
 
             sizes = {
+                256 : "DDQWORD",
                 128 : "DQWORD",
                 72  : "POINTER",
                 64  : "QWORD",
@@ -259,7 +291,7 @@ class ReilInstruction(object):
                 32  : "DWORD",
                 16  : "WORD",
                 8   : "BYTE",
-                1   : "BYTE", # FIX
+                1   : "BIT",
                 ""  : "UNK",
             }
 
@@ -283,25 +315,14 @@ class ReilOperand(object):
     """Representation of an IR instruction's operand.
     """
 
+    __slots__ = [
+        '_size',
+    ]
+
     def __init__(self, size):
 
         # Size of the operand, in bits.
         self._size = size
-
-        # The tag attribute is used for instruction translation. It is
-        # set by ReilParser and used at the moment of a translation
-        # instantiation. For more detail, see arch/x86/x86translator.py
-        self._tag = None
-
-    def __eq__(self, other):
-        """Return self == other.
-        """
-        return type(other) is type(self) and self._size == other._size
-
-    def __ne__(self, other):
-        """Return self != other.
-        """
-        return not self.__eq__(other)
 
     @property
     def size(self):
@@ -315,17 +336,12 @@ class ReilOperand(object):
         """
         self._size = value
 
-    @property
-    def tag(self):
-        """Get operand tag.
-        """
-        return self._tag
+    def __eq__(self, other):
+        return  type(other) is type(self) and \
+                self._size == other._size
 
-    @tag.setter
-    def tag(self, value):
-        """Set operand tag.
-        """
-        self._tag = value
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class ReilImmediateOperand(ReilOperand):
@@ -333,46 +349,48 @@ class ReilImmediateOperand(ReilOperand):
     """Representation of a REIL instruction immediate operand.
     """
 
+    __slots__ = [
+        '_immediate',
+    ]
+
     def __init__(self, immediate, size=None):
         super(ReilImmediateOperand, self).__init__(size)
 
-        if type(immediate) != int and type(immediate) != long:
-            raise Exception("Invalid type : %s" % type(immediate))
+        assert type(immediate) in [int, long], "Invalid immediate value type."
 
-        # Immediate value in two's complement representation.
-        if self._size:
-            self._immediate = (immediate if immediate >= 0 else 2**self._size -(-immediate))
-        else:
-            self._immediate = (immediate if immediate >= 0 else 2**32 -(-immediate))
+        self._immediate = immediate
 
     @property
     def immediate(self):
         """Get immediate.
         """
-        return self._immediate
+        if not self._size:
+            raise Exception("Operand size missing.")
+
+        return self._immediate & 2**self._size-1
 
     def __str__(self):
-        """Return string representation of the operand.
-        """
-        if self._size:
-            rv = hex(self._immediate & (2**self._size-1))
-        else:
-            rv = hex(self._immediate & (2**32-1))
+        if not self._size:
+            raise Exception("Operand size missing.")
 
-        return rv if rv[-1] != 'L' else rv[:-1]
+        string = hex(self._immediate & 2**self._size-1)
+
+        return string[:-1] if string[-1] == 'L' else string
 
     def __eq__(self, other):
-        """Return self == other.
-        """
-        return type(other) is type(self) and \
-            self._size == other._size and \
-            self._immediate == other._immediate
+        return  type(other) is type(self) and \
+                self._size == other._size and \
+                self._immediate == other._immediate
 
 
 class ReilRegisterOperand(ReilOperand):
 
     """Representation of a REIL instruction register operand.
     """
+
+    __slots__ = [
+        '_name',
+    ]
 
     def __init__(self, name, size=None):
         super(ReilRegisterOperand, self).__init__(size)
@@ -386,23 +404,13 @@ class ReilRegisterOperand(ReilOperand):
         """
         return self._name
 
-    @name.setter
-    def name(self, value):
-        """Set IR register operand name.
-        """
-        self._name = value
-
     def __str__(self):
-        """Return string representation of the operand.
-        """
         return self._name
 
     def __eq__(self, other):
-        """Return self == other.
-        """
-        return type(other) is type(self) and \
-            self._size == other._size and \
-            self._name == other._name
+        return  type(other) is type(self) and \
+                self._size == other._size and \
+                self._name == other._name
 
 
 class ReilEmptyOperand(ReilRegisterOperand):
@@ -549,6 +557,12 @@ class DualInstruction(object):
 
     """
 
+    __slots__ = [
+        '_address',
+        '_asm_instr',
+        '_ir_instrs',
+    ]
+
     def __init__(self, address, asm_instr, ir_instrs):
 
         # Address of the assembler instruction.
@@ -581,10 +595,8 @@ class DualInstruction(object):
         return self._ir_instrs
 
     def __eq__(self, other):
-        return self.address == other.address and \
-            self.asm_instr == other.asm_instr
+        return  self.address == other.address and \
+                self.asm_instr == other.asm_instr
 
     def __ne__(self, other):
-        """Return self != other.
-        """
         return not self.__eq__(other)

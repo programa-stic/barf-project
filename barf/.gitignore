@@ -6,3 +6,6 @@
 
 # Build folder from Docs.
 doc/_build/*
+
+# Dependencies folder.
+dependencies

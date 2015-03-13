@@ -125,7 +125,7 @@ class BitVec(Symbol):
     ''' A symbolic bitvector '''
     def __init__(self, size, value, *children, **kwargs):
         super(BitVec,self).__init__(value, *children, **kwargs)
-        assert size in [1,8,16,32,64,128,256]
+        # assert size in [1,8,16,32,64,128,256]
         self.size=size
 
     def __getstate__(self):
@@ -844,7 +844,7 @@ class Z3Solver(object):
         # print size
         # print name
 
-        assert size in [1,8,16,32,64,128,256]
+        assert size in [1,8,16,32,40,64,72,128,256]
         if name in self._declarations:
             # name = '%s_%d'%(name, self._get_sid())
             return self._declarations[name]
@@ -1187,7 +1187,10 @@ class CVC4Solver(object):
 
         # print "ret 1: ", ret
 
-        var_name, ret = ret[2:-2].split(' ', 1)
+        ret = ret[2:-2]
+        var_name, ret = ret[:ret.rfind('(')], ret[ret.rfind('('):]
+
+        # var_name, ret = ret[2:-2].split(' ', 1)
 
         # print "ret 2: ", ret
 
@@ -1256,7 +1259,7 @@ class CVC4Solver(object):
         # print size
         # print name
 
-        assert size in [1,8,16,32,64,128,256]
+        assert size in [1,8,16,32,40,64,72,128,256]
         if name in self._declarations:
             # name = '%s_%d'%(name, self._get_sid())
             return self._declarations[name]

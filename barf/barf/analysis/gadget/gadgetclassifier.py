@@ -1,3 +1,27 @@
+# Copyright (c) 2014, Fundacion Dr. Manuel Sadosky
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 """
 This is the gadget classifier. It classify gadgets in 10 different
 types: No Operation, Jump, Move Register, Load Constant, Arithmetic,
@@ -65,9 +89,9 @@ class GadgetClassifier(object):
         # Architecture information.
         self._arch_info = architecture_info
 
-        self._arch_regs = self._arch_info.registers_gp
-        self._arch_regs_parent = self._arch_info.registers_gp_parent
-        self._arch_regs_size = self._arch_info.register_size
+        self._arch_regs = self._arch_info.registers_gp_all
+        self._arch_regs_parent = self._arch_info.registers_gp_base
+        self._arch_regs_size = self._arch_info.registers_size
         self._address_size = self._arch_info.address_size
 
         # Number of simulation iterations.
@@ -609,7 +633,7 @@ class GadgetClassifier(object):
         mod_regs = []
 
         for r in modified_regs:
-            alias, _, _ =  self._arch_info.register_access_mapper().get(r, (None, None, None))
+            alias, _ =  self._arch_info.alias_mapper.get(r, (None, None))
 
             if not alias:
                 mod_regs += [r]
@@ -697,19 +721,26 @@ class GadgetClassifier(object):
     def _compute_full_context(self, registers):
         regs_full = {}
 
-        reg_mapper = self._arch_info.register_access_mapper()
-
-        all_regs = self._arch_regs + self._arch_info.flags
+        reg_mapper = self._arch_info.alias_mapper
 
         for reg in self._arch_regs:
-            base_reg_name, value_filter, shift = reg_mapper.get(reg, (None, None, None))
+            base_reg_name, offset = reg_mapper.get(reg, (None, None))
 
             if base_reg_name:
                 reg_value = registers[base_reg_name]
-                reg_value = (reg_value & value_filter) >> shift
+                reg_value = self._extract_value(reg_value, offset, self._arch_info.registers_size[reg])
             else:
                 reg_value = registers[reg]
 
             regs_full[reg] = reg_value
 
         return regs_full
+
+    def _extract_value(self, main_value, offset, size):
+        return (main_value >> offset) & 2**size-1
+
+    def _insert_value(self, main_value, value_to_insert, offset, size):
+        main_value &= ~((2**size-1) << offset)
+        main_value |= (value_to_insert & 2**size-1) << offset
+
+        return main_value

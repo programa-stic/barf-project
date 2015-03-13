@@ -1,82 +1,242 @@
+# Copyright (c) 2014, Fundacion Dr. Manuel Sadosky
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 """
 This module contains all lthe classes that handle the x86 instruction
 representation.
 
 """
-
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
 from barf.arch import ArchitectureInformation
 
-# TODO: This class need a *heavy* refactor.
 class X86ArchitectureInformation(ArchitectureInformation):
+    """This class describe the Intel x86 architecture."""
 
-    """This class describe the Intel x86 architecture.
-    """
-
-    registers_seg = [
-        "cs", "ds", "ss", "es", "fs", "gs",
+    regs_seg = [
+        ("cs", 16),
+        ("ds", 16),
+        ("ss", 16),
+        ("es", 16),
+        ("fs", 16),
+        ("gs", 16),
     ]
 
-    registers_gp_8b_mode_32 = [
-        "al", "ah", "bl", "bh", "cl", "ch", "dl", "dh",
+    regs_32 = [
+        ("eax", 32), ("ax", 16), ("al", 8), ("ah", 8),
+        ("ebx", 32), ("bx", 16), ("bl", 8), ("bh", 8),
+        ("ecx", 32), ("cx", 16), ("cl", 8), ("ch", 8),
+        ("edx", 32), ("dx", 16), ("dl", 8), ("dh", 8),
+        ("esi", 32), ("si", 16),
+        ("edi", 32), ("di", 16),
+        ("esp", 32), ("sp", 16),
+        ("ebp", 32), ("bp", 16),
+        ("eip", 32),
+        ("eflags", 32),
     ]
 
-    registers_gp_8b_mode_64 = [
-        "dil", "sil", "bpl", "spl",
-        "r8b", "r9b", "r10b", "r11b", "r12b", "r13b", "r14b", "r15b",
+    regs_32_base = [
+        ("eax", 32),
+        ("ebx", 32),
+        ("ecx", 32),
+        ("edx", 32),
+        ("esi", 32),
+        ("edi", 32),
+        ("esp", 32),
+        ("ebp", 32),
+        ("eip", 32),
+        ("eflags", 32),
     ]
 
-    registers_gp_16b_mode_32 = [
-        "ax", "bx", "cx", "dx", "bp", "si", "di", "sp",
+    regs_64 = [
+        ("rax", 64), ("eax",  32), ("ax",   16), ("al",   8), ("ah", 8),
+        ("rbx", 64), ("ebx",  32), ("bx",   16), ("bl",   8), ("bh", 8),
+        ("rcx", 64), ("ecx",  32), ("cx",   16), ("cl",   8), ("ch", 8),
+        ("rdx", 64), ("edx",  32), ("dx",   16), ("dl",   8), ("dh", 8),
+        ("rsi", 64), ("esi",  32), ("si",   16), ("sil",  8),
+        ("rdi", 64), ("edi",  32), ("di",   16), ("dil",  8),
+        ("rsp", 64), ("esp",  32), ("sp",   16), ("spl",  8),
+        ("rbp", 64), ("ebp",  32), ("bp",   16), ("bpl",  8),
+        ("r8",  64), ("r8d",  32), ("r8w",  16), ("r8b",  8),
+        ("r9",  64), ("r9d",  32), ("r9w",  16), ("r9b",  8),
+        ("r10", 64), ("r10d", 32), ("r10w", 16), ("r10b", 8),
+        ("r11", 64), ("r11d", 32), ("r11w", 16), ("r11b", 8),
+        ("r12", 64), ("r12d", 32), ("r12w", 16), ("r12b", 8),
+        ("r13", 64), ("r13d", 32), ("r13w", 16), ("r13b", 8),
+        ("r14", 64), ("r14d", 32), ("r14w", 16), ("r14b", 8),
+        ("r15", 64), ("r15d", 32), ("r15w", 16), ("r15b", 8),
+        ("rip", 64),
+        ("rflags", 64)
     ]
 
-    registers_gp_16b_mode_64 = [
-        "r8w", "r9w", "r10w", "r11w", "r12w", "r13w", "r14w", "r15w",
+    regs_64_base = [
+        ("rax", 64),
+        ("rbx", 64),
+        ("rcx", 64),
+        ("rdx", 64),
+        ("rsi", 64),
+        ("rdi", 64),
+        ("rsp", 64),
+        ("rbp", 64),
+        ("r8",  64),
+        ("r9",  64),
+        ("r10", 64),
+        ("r11", 64),
+        ("r12", 64),
+        ("r13", 64),
+        ("r14", 64),
+        ("r15", 64),
+        ("rip", 64),
+        ("rflags", 64)
     ]
 
-    registers_gp_32b_mode_32 = [
-        "eax", "ebx", "ecx", "edx", "ebp", "esi", "edi", "esp", "eip",
+    regs_fpu = [
+        ("st0", 80),
+        ("st1", 80),
+        ("st2", 80),
+        ("st3", 80),
+        ("st4", 80),
+        ("st5", 80),
+        ("st6", 80),
+        ("st7", 80),
     ]
 
-    registers_gp_32b_mode_64 = [
-        "r8d", "r9d", "r10d", "r11d", "r12d", "r13d", "r14d", "r15d",
+    regs_mmx = [
+        ("mm0", 64),
+        ("mm1", 64),
+        ("mm2", 64),
+        ("mm3", 64),
+        ("mm4", 64),
+        ("mm5", 64),
+        ("mm6", 64),
+        ("mm7", 64),
     ]
 
-    registers_gp_64b = [
-        "rax", "rbx", "rcx", "rdx", "rdi", "rsi", "rbp", "rsp", "rip",
-        "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
+    regs_xmm_32 = [
+        ("xmm0", 128),
+        ("xmm1", 128),
+        ("xmm2", 128),
+        ("xmm3", 128),
+        ("xmm4", 128),
+        ("xmm5", 128),
+        ("xmm6", 128),
+        ("xmm7", 128),
     ]
 
-    registers_fpu = [
-        "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7",
-        "st(0)", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)",
+    regs_xmm_64 = [
+        ("xmm0",  128),
+        ("xmm1",  128),
+        ("xmm2",  128),
+        ("xmm3",  128),
+        ("xmm4",  128),
+        ("xmm5",  128),
+        ("xmm6",  128),
+        ("xmm7",  128),
+        ("xmm8",  128),
+        ("xmm9",  128),
+        ("xmm10", 128),
+        ("xmm11", 128),
+        ("xmm12", 128),
+        ("xmm13", 128),
+        ("xmm14", 128),
+        ("xmm15", 128),
     ]
 
-    registers_mmx = [
-        "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7",
+    regs_ymm_32 = [
+        ("ymm0", 256),
+        ("ymm1", 256),
+        ("ymm2", 256),
+        ("ymm3", 256),
+        ("ymm4", 256),
+        ("ymm5", 256),
+        ("ymm6", 256),
+        ("ymm7", 256),
     ]
 
-    registers_sse_mode_32 = [
-        "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7",
+    regs_ymm_64 = [
+        ("ymm0",  256),
+        ("ymm1",  256),
+        ("ymm2",  256),
+        ("ymm3",  256),
+        ("ymm4",  256),
+        ("ymm5",  256),
+        ("ymm6",  256),
+        ("ymm7",  256),
+        ("ymm8",  256),
+        ("ymm9",  256),
+        ("ymm10", 256),
+        ("ymm11", 256),
+        ("ymm12", 256),
+        ("ymm13", 256),
+        ("ymm14", 256),
+        ("ymm15", 256),
     ]
 
-    registers_sse_mode_64 = [
-        "xmm8", "xmm9", "xmm10", "xmm11", "xmm12", "xmm13", "xmm14", "xmm15",
+    regs_flags = [
+        ("af", 1),
+        ("cf", 1),
+        ("of", 1),
+        ("pf", 1),
+        ("sf", 1),
+        ("zf", 1),
+        ("df", 1),
     ]
 
-    flags = [
-        "af", "cf", "of", "pf", "sf", "zf",
-        "df",
+    regs_debug = [
+        ("dr0", 32),
+        ("dr1", 32),
+        ("dr2", 32),
+        ("dr3", 32),
+        ("dr4", 32),
+        ("dr5", 32),
+        ("dr6", 32),
+        ("dr7", 32),
+    ]
+
+    regs_control = [
+        ("cr0", 32),
+        ("cr1", 32),
+        ("cr2", 32),
+        ("cr3", 32),
+        ("cr4", 32),
     ]
 
     def __init__(self, architecture_mode):
         self._arch_mode = architecture_mode
-        self._registers = []
+
+        self._registers_all = []
+        self._registers_gp_all = []
+        self._registers_gp_base = []
+        self._registers_flags = []
+
         self._registers_size = {}
 
+        self._alias_mapper = {}
+
         self._load_registers()
-        self._load_registers_size()
+
+        self._load_alias_mapper()
 
     @property
     def architecture_mode(self):
@@ -110,220 +270,155 @@ class X86ArchitectureInformation(ArchitectureInformation):
         return address_size_map[self._arch_mode]
 
     @property
-    def registers(self):
-        """Return general purpose registers.
+    def registers_all(self):
+        """Return all registers.
         """
-        return self._registers
+        return self._registers_all
 
     @property
-    def registers_gp(self):
-        """Return general purpose registers.
+    def registers_gp_all(self):
+        """Return all general purpose registers.
         """
-        return self._registers_gp
+        return self._registers_gp_all
 
     @property
-    def registers_gp_parent(self):
-        """Return general purpose registers.
+    def registers_gp_base(self):
+        """Return base general purpose registers.
         """
-        return [reg for reg in self._registers_gp if not reg in self.register_access_mapper()]
-
-    @property
-    def registers_base(self):
-        if self._arch_mode == ARCH_X86_MODE_32:
-            return self.registers_gp_32b_mode_32
-        else:
-            return self.registers_gp_64b
+        return self._registers_gp_base
 
     @property
     def registers_flags(self):
-        return self.flags
+        """Return flag registers.
+        """
+        return self._registers_flags
 
     @property
-    def register_size(self):
-        """Return general purpose registers size.
+    def registers_size(self):
+        """Return the size of all registers.
         """
         return self._registers_size
 
+    @property
+    def alias_mapper(self):
+        """Return registers alias mapper.
+        """
+        return self._alias_mapper
+
+    def _load_alias_mapper(self):
+        if self._arch_mode == ARCH_X86_MODE_32:
+            alias_mapper = {
+                "al" : ("eax", 0), "ah" : ("eax", 8), "ax" : ("eax", 0),
+                "bl" : ("ebx", 0), "bh" : ("ebx", 8), "bx" : ("ebx", 0),
+                "cl" : ("ecx", 0), "ch" : ("ecx", 8), "cx" : ("ecx", 0),
+                "dl" : ("edx", 0), "dh" : ("edx", 8), "dx" : ("edx", 0),
+                "si" : ("esi", 0),
+                "di" : ("edi", 0),
+                "bp" : ("ebp", 0),
+                "sp" : ("esp", 0),
+            }
+
+            flags_reg = "eflags"
+        else:
+            alias_mapper = {
+                "al"   : ("rax", 0), "ah"   : ("rax", 8), "ax"   : ("rax", 0),
+                "bl"   : ("rbx", 0), "bh"   : ("rbx", 8), "bx"   : ("rbx", 0),
+                "cl"   : ("rcx", 0), "ch"   : ("rcx", 8), "cx"   : ("rcx", 0),
+                "dl"   : ("rdx", 0), "dh"   : ("rdx", 8), "dx"   : ("rdx", 0),
+                "di"   : ("rdi", 0), "dil"  : ("rdi", 0),
+                "si"   : ("rsi", 0), "sil"  : ("rsi", 0),
+                "sp"   : ("rsp", 0), "bpl"  : ("rbp", 0),
+                "bp"   : ("rbp", 0), "spl"  : ("rsp", 0),
+                "eax"  : ("rax", 0),
+                "ebx"  : ("rbx", 0),
+                "ecx"  : ("rcx", 0),
+                "edx"  : ("rdx", 0),
+                "edi"  : ("rdi", 0),
+                "esi"  : ("rsi", 0),
+                "ebp"  : ("rbp", 0),
+                "esp"  : ("rsp", 0),
+                "eip"  : ("rip", 0),
+                "r8b"  : ( "r8", 0), "r8w"  : ( "r8", 0), "r8d"  : ( "r8", 0),
+                "r9b"  : ( "r9", 0), "r9w"  : ( "r9", 0), "r9d"  : ( "r9", 0),
+                "r10b" : ("r10", 0), "r10w" : ("r10", 0), "r10d" : ("r10", 0),
+                "r11b" : ("r11", 0), "r11w" : ("r11", 0), "r11d" : ("r11", 0),
+                "r12b" : ("r12", 0), "r12w" : ("r12", 0), "r12d" : ("r12", 0),
+                "r13b" : ("r13", 0), "r13w" : ("r13", 0), "r13d" : ("r13", 0),
+                "r14b" : ("r14", 0), "r14w" : ("r14", 0), "r14d" : ("r14", 0),
+                "r15b" : ("r15", 0), "r15w" : ("r15", 0), "r15d" : ("r15", 0),
+            }
+
+            flags_reg = "rflags"
+
+        flags_mapper = {
+            "cf": (flags_reg, 0),
+            "pf": (flags_reg, 2),
+            "af": (flags_reg, 4),
+            "zf": (flags_reg, 6),
+            "sf": (flags_reg, 7),
+            "df": (flags_reg, 10),
+            "of": (flags_reg, 11),
+        }
+
+        alias_mapper.update(flags_mapper)
+
+        self._alias_mapper = alias_mapper
+
     def _load_registers(self):
+        registers_all = self.regs_seg + \
+                        self.regs_fpu + \
+                        self.regs_mmx + \
+                        self.regs_flags + \
+                        self.regs_debug + \
+                        self.regs_control
+
         if self._arch_mode == ARCH_X86_MODE_32:
-            self._registers = \
-                self.registers_gp_8b_mode_32  + \
-                self.registers_gp_16b_mode_32 + \
-                self.registers_gp_32b_mode_32 + \
-                self.registers_sse_mode_32
+            registers_all += self.regs_32 + \
+                             self.regs_xmm_32 + \
+                             self.regs_ymm_32
 
-            self._registers_gp = \
-                self.registers_gp_8b_mode_32  + \
-                self.registers_gp_16b_mode_32 + \
-                self.registers_gp_32b_mode_32
+            registers_gp_all = self.regs_32
+
+            self._registers_gp_base = [name for name, _ in self.regs_32_base]
         else:
-            self._registers = \
-                self.registers_gp_8b_mode_32  + \
-                self.registers_gp_8b_mode_64  + \
-                self.registers_gp_16b_mode_32 + \
-                self.registers_gp_16b_mode_64 + \
-                self.registers_gp_32b_mode_32 + \
-                self.registers_gp_32b_mode_64 + \
-                self.registers_gp_64b + \
-                self.registers_sse_mode_32 + \
-                self.registers_sse_mode_64
+            registers_all += self.regs_64 + \
+                             self.regs_xmm_64 + \
+                             self.regs_ymm_64
 
-            self._registers_gp = \
-                self.registers_gp_8b_mode_32  + \
-                self.registers_gp_8b_mode_64  + \
-                self.registers_gp_16b_mode_32 + \
-                self.registers_gp_16b_mode_64 + \
-                self.registers_gp_32b_mode_32 + \
-                self.registers_gp_32b_mode_64 + \
-                self.registers_gp_64b
+            registers_gp_all = self.regs_64
 
-        self._registers += \
-            self.registers_fpu + \
-            self.registers_mmx + \
-            self.flags + \
-            self.registers_seg
+            self._registers_gp_base = [name for name, _ in self.regs_64_base]
 
-    def _load_registers_size(self):
-        for reg in self._registers:
-            if reg in self.registers_seg:
-                self._registers_size[reg] = 16
-            elif reg in self.registers_gp_8b_mode_32:
-                self._registers_size[reg] = 8
-            elif reg in self.registers_gp_8b_mode_64:
-                self._registers_size[reg] = 8
-            elif reg in self.registers_gp_16b_mode_32:
-                self._registers_size[reg] = 16
-            elif reg in self.registers_gp_16b_mode_64:
-                self._registers_size[reg] = 16
-            elif reg in self.registers_gp_32b_mode_32:
-                self._registers_size[reg] = 32
-            elif reg in self.registers_gp_32b_mode_64:
-                self._registers_size[reg] = 32
-            elif reg in self.registers_gp_64b:
-                self._registers_size[reg] = 64
-            elif reg in self.registers_fpu:
-                self._registers_size[reg] = 80
-            elif reg in self.registers_mmx:
-                self._registers_size[reg] = 64
-            elif reg in self.registers_sse_mode_32:
-                self._registers_size[reg] = 128
-            elif reg in self.registers_sse_mode_64:
-                self._registers_size[reg] = 128
-            elif reg in self.flags:
-                # self._registers_size[reg] = 1
-                self._registers_size[reg] = 8
-            else:
-                raise Exception()
+        for name, size in registers_all:
+            self._registers_all.append(name)
+            self._registers_size[name] = size
 
-    def register_access_mapper(self):
-        if self._arch_mode == ARCH_X86_MODE_32:
-            mapper = {
-                "al" : ("eax", 0x000000ff, 0),
-                "ah" : ("eax", 0x0000ff00, 8),
-                "ax" : ("eax", 0x0000ffff, 0),
-                "bl" : ("ebx", 0x000000ff, 0),
-                "bh" : ("ebx", 0x0000ff00, 8),
-                "bx" : ("ebx", 0x0000ffff, 0),
-                "cl" : ("ecx", 0x000000ff, 0),
-                "ch" : ("ecx", 0x0000ff00, 8),
-                "cx" : ("ecx", 0x0000ffff, 0),
-                "dl" : ("edx", 0x000000ff, 0),
-                "dh" : ("edx", 0x0000ff00, 8),
-                "dx" : ("edx", 0x0000ffff, 0),
-            }
-        else:
-            mapper = {
-                "al"   : ("rax", 0x00000000000000ff, 0),
-                "ah"   : ("rax", 0x000000000000ff00, 8),
-                "ax"   : ("rax", 0x000000000000ffff, 0),
-                "bl"   : ("rbx", 0x00000000000000ff, 0),
-                "bh"   : ("rbx", 0x000000000000ff00, 8),
-                "bx"   : ("rbx", 0x000000000000ffff, 0),
-                "cl"   : ("rcx", 0x00000000000000ff, 0),
-                "ch"   : ("rcx", 0x000000000000ff00, 8),
-                "cx"   : ("rcx", 0x000000000000ffff, 0),
-                "dl"   : ("rdx", 0x00000000000000ff, 0),
-                "dh"   : ("rdx", 0x000000000000ff00, 8),
-                "dx"   : ("rdx", 0x000000000000ffff, 0),
-                "di"   : ("rdi", 0x000000000000ffff, 0),
-                "si"   : ("rsi", 0x000000000000ffff, 0),
-                "sp"   : ("rsp", 0x000000000000ffff, 0),
-                "bp"   : ("rbp", 0x000000000000ffff, 0),
-                "dil"  : ("rdi", 0x00000000000000ff, 0),
-                "sil"  : ("rsi", 0x00000000000000ff, 0),
-                "bpl"  : ("rbp", 0x00000000000000ff, 0),
-                "spl"  : ("rsp", 0x00000000000000ff, 0),
-                "eax"  : ("rax", 0x00000000ffffffff, 0),
-                "ebx"  : ("rbx", 0x00000000ffffffff, 0),
-                "ecx"  : ("rcx", 0x00000000ffffffff, 0),
-                "edx"  : ("rdx", 0x00000000ffffffff, 0),
-                "edi"  : ("rdi", 0x00000000ffffffff, 0),
-                "esi"  : ("rsi", 0x00000000ffffffff, 0),
-                "ebp"  : ("rbp", 0x00000000ffffffff, 0),
-                "esp"  : ("rsp", 0x00000000ffffffff, 0),
-                "eip"  : ("rip", 0x00000000ffffffff, 0),
-                "r8b"  : ( "r8", 0x00000000000000ff, 0),
-                "r9b"  : ( "r9", 0x00000000000000ff, 0),
-                "r10b" : ("r10", 0x00000000000000ff, 0),
-                "r11b" : ("r11", 0x00000000000000ff, 0),
-                "r12b" : ("r12", 0x00000000000000ff, 0),
-                "r13b" : ("r13", 0x00000000000000ff, 0),
-                "r14b" : ("r14", 0x00000000000000ff, 0),
-                "r15b" : ("r15", 0x000000000000ffff, 0),
-                "r8w"  : ( "r8", 0x000000000000ffff, 0),
-                "r9w"  : ( "r9", 0x000000000000ffff, 0),
-                "r10w" : ("r10", 0x000000000000ffff, 0),
-                "r11w" : ("r11", 0x000000000000ffff, 0),
-                "r12w" : ("r12", 0x000000000000ffff, 0),
-                "r13w" : ("r13", 0x000000000000ffff, 0),
-                "r14w" : ("r14", 0x000000000000ffff, 0),
-                "r15w" : ("r15", 0x000000000000ffff, 0),
-                "r8d"  : ( "r8", 0x00000000ffffffff, 0),
-                "r9d"  : ( "r9", 0x00000000ffffffff, 0),
-                "r10d" : ("r10", 0x00000000ffffffff, 0),
-                "r11d" : ("r11", 0x00000000ffffffff, 0),
-                "r12d" : ("r12", 0x00000000ffffffff, 0),
-                "r13d" : ("r13", 0x00000000ffffffff, 0),
-                "r14d" : ("r14", 0x00000000ffffffff, 0),
-                "r15d" : ("r15", 0x00000000ffffffff, 0),
-            }
+        for name, size in registers_gp_all:
+            self._registers_gp_all.append(name)
+            self._registers_size[name] = size
 
-        return mapper
-
-    def read_register(self, register, registers):
-        register_size = self._arch_regs_size[register]
-
-        base_reg_name, value_filter, shift = self.register_access_mapper().get(register, (register, 2**register_size - 1, 0))
-
-        if base_reg_name not in registers:
-            registers[base_reg_name] = random.randint(0, 2**self._arch_regs_size[base_reg_name] - 1)
-
-        reg_value = registers[base_reg_name]
-
-        return (reg_value & value_filter) >> shift
-
-    def write_register(self, register, registers, value):
-        register_size = self._arch_regs_size[register]
-
-        base_reg_name, value_filter, shift = self.register_access_mapper().get(register.name, (register, 2**register_size - 1, 0))
-
-        reg_value = registers.get(base_reg_name, random.randint(0, 2**register_size - 1))
-
-        registers[base_reg_name] = (reg_value & ~value_filter) | ((value << shift) & value_filter)
-
-        return registers[base_reg_name]
+        self._registers_flags = [name for name, _ in self.regs_flags]
 
 
-class X86InstructionBase(object):
+class X86Instruction(object):
     """Representation of x86 instruction."""
+
+    __slots__ = [
+        '_prefix',
+        '_mnemonic',
+        '_operands',
+        '_bytes',
+        '_size',
+        '_address',
+        '_arch_mode',
+    ]
 
     def __init__(self, prefix, mnemonic, operands, arch_mode):
         self._prefix = prefix
         self._mnemonic = mnemonic
         self._operands = operands
-        self._bytes = None
+        self._bytes = ""
         self._size = None
-        self._flags_affected = []
         self._address = None
         self._arch_mode = arch_mode
 
@@ -363,26 +458,6 @@ class X86InstructionBase(object):
         self._size = value
 
     @property
-    def source_operands(self):
-        """Get instruction sources."""
-        raise NotImplementedError()
-
-    @property
-    def destination_operands(self):
-        """Get instruction destinations."""
-        raise NotImplementedError()
-
-    @property
-    def flags_affected(self):
-        """Get flags affected by the instruction."""
-        return self._flags_affected
-
-    @flags_affected.setter
-    def flags_affected(self, value):
-        """Set flags affected by the instruction."""
-        self._flags_affected = value
-
-    @property
     def address(self):
         """Get instruction address."""
         return self._address
@@ -394,7 +469,6 @@ class X86InstructionBase(object):
 
     def __str__(self):
         operands_str = ", ".join([str(oprnd) for oprnd in self._operands])
-        # operands_str = ", ".join(["%s (%s)" % (str(oprnd), oprnd.size) for oprnd in self._operands])
 
         string  = self._prefix + " " if self._prefix else ""
         string += self._mnemonic
@@ -403,13 +477,12 @@ class X86InstructionBase(object):
         return string
 
     def __eq__(self, other):
-        return self.prefix == other.prefix and \
-            self.mnemonic == other.mnemonic and \
-            self.operands == other.operands and \
-            self.bytes == other.bytes and \
-            self.size == other.size and \
-            self.flags_affected == other.flags_affected and \
-            self.address == other.address
+        return  self.prefix == other.prefix and \
+                self.mnemonic == other.mnemonic and \
+                self.operands == other.operands and \
+                self.bytes == other.bytes and \
+                self.size == other.size and \
+                self.address == other.address
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -417,6 +490,11 @@ class X86InstructionBase(object):
 
 class X86Operand(object):
     """Representation of x86 operand."""
+
+    __slots__ = [
+        '_modifier',
+        '_size',
+    ]
 
     def __init__(self, modifier):
         self._modifier = modifier
@@ -446,33 +524,40 @@ class X86Operand(object):
 class X86ImmediateOperand(X86Operand):
     """Representation of x86 immediate operand."""
 
-    def __init__(self, immediate):
+    __slots__ = [
+        '_immediate',
+        '_size'
+    ]
+
+    def __init__(self, immediate, size=None):
         super(X86ImmediateOperand, self).__init__("")
 
-        if type(immediate) == str:
-            self._immediate = int(immediate, 16)
-        else:
-            self._immediate = immediate
+        assert type(immediate) in [int, long], "Invalid immediate value type."
+
+        self._immediate = immediate
+        self._size = size
 
     @property
     def immediate(self):
         """Get immediate."""
+        if not self._size:
+            raise Exception("Operand size missing.")
+
         return self._immediate
 
     def __str__(self):
-        # TODO: Take into account if it's a 32-bits o 64-bits architecture.
+        if not self._size:
+            raise Exception("Operand size missing.")
+
         string  = self._modifier + " " if self._modifier else ""
+        string += hex(self._immediate & 2**self._size-1)
 
-        if self._size:
-            string += hex(self._immediate & 2**self._size-1)
-        else:
-            string += hex(self._immediate & 0xffffffff)
-
-        return string if string[-1] != 'L' else string[:-1]
+        return string[:-1] if string[-1] == 'L' else string
 
     def __eq__(self, other):
-        return self.modifier == other.modifier and self.size == other.size and \
-            self.immediate == other.immediate
+        return  self.modifier == other.modifier and \
+                self.size == other.size and \
+                self.immediate == other.immediate
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -480,6 +565,11 @@ class X86ImmediateOperand(X86Operand):
 
 class X86RegisterOperand(X86Operand):
     """Representation of x86 register operand."""
+
+    __slots__ = [
+        '_name',
+        '_size',
+    ]
 
     def __init__(self, name, size=None):
         super(X86RegisterOperand, self).__init__("")
@@ -490,17 +580,24 @@ class X86RegisterOperand(X86Operand):
     @property
     def name(self):
         """Get register name."""
+        if not self._size:
+            raise Exception("Operand size missing.")
+
         return self._name
 
     def __str__(self):
+        if not self._size:
+            raise Exception("Operand size missing.")
+
         string  = self._modifier + " " if self._modifier else ""
         string += self._name
 
         return string
 
     def __eq__(self, other):
-        return self.modifier == other.modifier and self.size == other.size and \
-            self.name == other.name
+        return  self.modifier == other.modifier and \
+                self.size == other.size and \
+                self.name == other.name
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -508,6 +605,15 @@ class X86RegisterOperand(X86Operand):
 
 class X86MemoryOperand(X86Operand):
     """Representation of x86 memory operand."""
+
+    __slots__ = [
+        '_segment',
+        '_base',
+        '_index',
+        '_index',
+        '_scale',
+        '_displacement',
+    ]
 
     def __init__(self, segment, base, index, scale, displacement):
         super(X86MemoryOperand, self).__init__("")
@@ -562,25 +668,30 @@ class X86MemoryOperand(X86Operand):
         if self._index:
             if self._base:
                 string += sep + "+" + sep
+
             string += self._index
             string += sep + "*" + sep + str(self._scale)
 
-        # TODO: Take into account if it's a 32-bits o 64-bits architecture.
         if self._displacement != 0:
             if self._base or self._index:
                 string += sep + "+" + sep
-            imm_hex = hex(self._displacement & 0xffffffff)
-            string += imm_hex if imm_hex[-1] != 'L' else imm_hex[:-1]
+
+            imm_hex = hex(self._displacement & 2**32-1)
+
+            string += imm_hex[:-1] if imm_hex[-1] == 'L' else imm_hex
 
         string += "]"
 
         return string
 
     def __eq__(self, other):
-        return self.modifier == other.modifier and self.size == other.size and \
-            self.segment == other.segment and self.base == other.base and \
-            self.index == other.index and self.scale == self.scale and \
-            self.displacement == other.displacement
+        return  self.modifier == other.modifier and \
+                self.size == other.size and \
+                self.segment == other.segment and \
+                self.base == other.base and \
+                self.index == other.index and \
+                self.scale == self.scale and \
+                self.displacement == other.displacement
 
     def __ne__(self, other):
         return not self.__eq__(other)
