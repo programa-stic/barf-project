@@ -2,7 +2,7 @@
 
 | **Latest Release:** | v0.1                                                            |
 |--------------------:|:----------------------------------------------------------------|
-|             *URL:** | https://github.com/programa-stic/barf-project/releases/tag/v0.1 |
+|            **URL:** | https://github.com/programa-stic/barf-project/releases/tag/v0.1 |
 
 So far the *BARF Project* is composed of the following packages:
 
@@ -48,3 +48,7 @@ For more information, see [README](./pyasmjit/README.md).
 # License
 
 The BSD 2-Clause License. For more information, see [LICENSE](./LICENSE).
+
+[Z3]: http://z3.codeplex.com
+[CVC4]: http://cvc4.cs.nyu.edu/web/
+[REIL]: http://www.usenix.org/legacy/event/woot10/tech/full_papers/Dullien.pdf
