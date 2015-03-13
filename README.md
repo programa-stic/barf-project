@@ -1,8 +1,8 @@
 # BARF Project
 
-| **Latest Realease:** | v0.1                                                            |
-|---------------------:|:----------------------------------------------------------------|
-|             **URL:** | https://github.com/programa-stic/barf-project/releases/tag/v0.1 |
+| **Latest Release:** | v0.1                                                            |
+|--------------------:|:----------------------------------------------------------------|
+|             *URL:** | https://github.com/programa-stic/barf-project/releases/tag/v0.1 |
 
 So far the *BARF Project* is composed of the following packages:
 
