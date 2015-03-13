@@ -341,11 +341,12 @@ py_arm_jit(PyObject * self, PyObject * args)
  * Function to be called from Python
  */
 PyObject *
-py_arm_reserve(PyObject * self, PyObject * args)
+py_arm_alloc(PyObject * self, PyObject * args)
 {
     unsigned int     size;
 
-    size = 4096; /* TODO: Pass size as parameter */
+    /* Parse input arguments */
+    PyArg_ParseTuple(args, "I", &size);
 
     arm_mem_pool_size = size;
 
@@ -368,12 +369,28 @@ py_arm_reserve(PyObject * self, PyObject * args)
 }
 
 /*
+ * Function to be called from Python
+ */
+PyObject *
+py_arm_free(PyObject * self, PyObject * args)
+{
+    /* TODO: Allow multiple memory pools. */
+    if (arm_mem_pool) {
+        munmap(arm_mem_pool, arm_mem_pool_size);
+        arm_mem_pool = 0;
+    }
+
+    return Py_BuildValue("I", 0);
+}
+
+/*
  * Bind Python function names to our C functions
  */
 static PyMethodDef pyasmjit_methods[] = {
     {"x86_jit", py_x86_jit, METH_VARARGS},
     {"arm_jit", py_arm_jit, METH_VARARGS},
-    {"arm_reserve", py_arm_reserve, METH_VARARGS},
+    {"arm_alloc", py_arm_alloc, METH_VARARGS},
+    {"arm_free", py_arm_free, METH_VARARGS},
     {NULL, NULL}
 };
 

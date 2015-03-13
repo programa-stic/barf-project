@@ -383,7 +383,7 @@ class ArmTranslationTests(unittest.TestCase):
     def _test_asm_instruction_with_mem(self, asm, reg_mem):
         print(asm)
 
-        mem_dir = pyasmjit.arm_reserve()
+        mem_dir = pyasmjit.arm_alloc(4096)
 
         # print("DIR (in Python): " + hex(mem_dir))
 
@@ -434,6 +434,8 @@ class ArmTranslationTests(unittest.TestCase):
             self.__save_failing_context(ctx_init)
 
         self.assertTrue(cmp_result, self.__print_contexts(ctx_init, arm_ctx_out, reil_ctx_out))
+        
+        pyasmjit.arm_free() # There is only one memory pool, so there is no need (for now) to specify the address
 
 
     # TODO: R13 (SP), R14 (LR), R15 (PC) are outside testing scope for now

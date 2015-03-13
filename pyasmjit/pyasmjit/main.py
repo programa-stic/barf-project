@@ -255,5 +255,8 @@ def arm_execute(assembly, context):
 
     return rc, ctx, mem
 
-def arm_reserve():
-    return pyasmjit.arm_reserve()
+def arm_alloc(size):
+    return pyasmjit.arm_alloc(size)
+
+def arm_free():
+    return pyasmjit.arm_free()
