@@ -299,18 +299,21 @@ class ReilEmulator(object):
         # Taint information.
         self._taints = {}
 
+        self._process = None
+
     def execute_lite(self, instructions, context=None):
         """Execute a list of instructions. It does not support loops.
         """
-        if verbose:
-            print "[+] Executing instructions..."
+        # if verbose:
+        #     print "[+] Executing instructions..."
 
         if context:
             self._regs = context.copy()
 
         for index, instr in enumerate(instructions):
             if verbose:
-                print "    %03d : %s" % (index, instr)
+                print("0x%08x:%02x : %s" % (instr.address >> 8, instr.address & 0xff, instr))
+                # print "    %03d : %s" % (index, instr)
 
             self._executors[instr.mnemonic](instr)
 
@@ -482,7 +485,7 @@ class ReilEmulator(object):
     # Taint auxiliary functions
     # ======================================================================== #
     def _get_register_taint(self, register):
-        if register.name in self._alias_mapper:
+        if register.name in self._alias_mapper and register.name not in self._flags:
             base_name, _ = self._alias_mapper[register.name]
         else:
             base_name = register.name
@@ -490,12 +493,22 @@ class ReilEmulator(object):
         return self._taints.get(base_name, False)
 
     def _set_register_taint(self, register, taint):
-        if register.name in self._alias_mapper:
+        if register.name in self._alias_mapper and register.name not in self._flags:
             base_name, _ = self._alias_mapper[register.name]
         else:
             base_name = register.name
 
         self._taints[base_name] = taint
+
+        if verbose:
+            reg = register.name
+            base_reg = base_name
+
+            fmt = "{indent}t{{ {reg:s} ({base_reg:s})}}"
+
+            msg = fmt.format(indent=" "*10, reg=reg, base_reg=base_reg)
+
+            print(msg)
 
     # Read/Write functions
     # ======================================================================== #
@@ -799,6 +812,19 @@ class ReilEmulator(object):
         assert instr.operands[2].size in [8, 16, 32, 64]
 
         op0_val = self.read_operand(instr.operands[0])                  # Memory address.
+
+		# FIXME: Ugly, ugly hack!! Remove!
+        size = instr.operands[2].size
+
+        for i in xrange(0, size / 8):
+            if not self._mem._memory.has_key(op0_val + i):
+                try:
+                    chunk = self._process.readBytes(op0_val + i, 1)
+
+                    self.write_memory(op0_val + i, 8, ord(chunk))
+                except:
+                    pass
+
         op2_val = self.read_memory(op0_val, instr.operands[2].size)     # Data.
 
         # Get taint information.
