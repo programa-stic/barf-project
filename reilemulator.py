@@ -1,3 +1,27 @@
+# Copyright (c) 2014, Fundacion Dr. Manuel Sadosky
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 """
 This module contains all the necesary classes to emulate REIL
 instructions. So far, it only handles concrete values.
@@ -348,10 +372,17 @@ class ReilEmulator(object):
 
             # update instruction pointer
             if next_addr:
+                found = False
+
                 for idx, instrs in enumerate(instructions):
                     if instrs[0].address >> 8 == next_addr >> 8:
                         main_index = idx
                         sub_index = next_addr & 0xff
+
+                        found = True
+
+                if not found:
+                    raise Exception("Invalid address: %s" % hex(next_addr))
             else:
                 sub_index += 1
 
@@ -369,7 +400,7 @@ class ReilEmulator(object):
             # update instruction counter
             instr_count += 1
 
-            if self._ip == end_address:
+            if end_address and self._ip == end_address:
                 if verbose:
                     print("[+] End address reached...")
 
