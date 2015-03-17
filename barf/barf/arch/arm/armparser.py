@@ -396,8 +396,8 @@ class ArmParser(object):
             instr_asm = None
             error_msg = "Failed to parse instruction: %s"
             logger.error(error_msg, instr, exc_info=True)
-            print("Failed to parse instruction: " + instr)
-            print("Exception: " + str(e))
+#             print("Failed to parse instruction: " + instr)
+#             print("Exception: " + str(e))
 
         return instr_asm
 
