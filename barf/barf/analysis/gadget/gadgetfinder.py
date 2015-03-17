@@ -34,6 +34,7 @@ agnostic.
 import logging
 import re
 
+from barf.arch import ARCH_X86
 from barf.analysis.gadget import GadgetType
 from barf.analysis.gadget import RawGadget
 from barf.arch.x86.x86translator import FULL_TRANSLATION
@@ -49,7 +50,7 @@ class GadgetFinder(object):
     """Gadget Finder.
     """
 
-    def __init__(self, disasm, mem, ir_trans):
+    def __init__(self, disasm, mem, ir_trans, arch = ARCH_X86):
 
         # A disassembler instance.
         self._disasm = disasm
@@ -65,6 +66,9 @@ class GadgetFinder(object):
 
         # Maximum disassembled instructions.
         self._instrs_depth = 2
+        
+        # Binary architecture
+        self._arch = arch
 
     def find(self, start_address, end_address, byte_depth=20, instrs_depth=2):
         """Find gadgets.
@@ -76,7 +80,10 @@ class GadgetFinder(object):
 
         self._ir_trans.translation_mode = LITE_TRANSLATION
 
-        candidates = self._find_candidates(start_address, end_address)
+        if (self._arch == ARCH_X86):
+            candidates = self._find_candidates(start_address, end_address)
+        else:
+            candidates = self._find_arm_candidates(start_address, end_address)
 
         self._ir_trans.translation_mode = trans_mode_old
 
@@ -190,12 +197,12 @@ class GadgetFinder(object):
             gadget_tail_addr.append(addr)
 
         for addr in gadget_tail_addr:
-
+            
             asm_instr = self._disasm.disassemble(
                 self._mem[addr:min(addr+4, end_address + 1)], # TODO: Add thumb (+16)
                 addr
             )
-
+            
             if not asm_instr:
                 continue
 
