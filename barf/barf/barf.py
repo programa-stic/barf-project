@@ -160,11 +160,9 @@ class BARF(object):
         ## code analyzer
         self.code_analyzer = CodeAnalyzer(self.smt_solver, self.smt_translator)
 
-        # TODO: This should not be part of the framework, but something
-        # that it is build upon it.
         ## gadget
         self.gadget_classifier = GadgetClassifier(self.ir_emulator, self.arch_info)
-        self.gadget_finder = GadgetFinder(self.disassembler, self.text_section, self.ir_translator, self.binary.architecture)
+        self.gadget_finder = GadgetFinder(self.disassembler, self.text_section, self.ir_translator, self.binary.architecture, self.binary.architecture_mode)
         self.gadget_verifier = GadgetVerifier(self.code_analyzer, self.arch_info)
 
     # ======================================================================== #

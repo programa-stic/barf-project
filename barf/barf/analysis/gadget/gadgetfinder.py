@@ -34,23 +34,24 @@ agnostic.
 import logging
 import re
 
-from barf.arch import ARCH_X86
 from barf.analysis.gadget import GadgetType
 from barf.analysis.gadget import RawGadget
+from barf.arch import ARCH_ARM
+from barf.arch import ARCH_ARM_MODE_32
+from barf.arch import ARCH_X86
 from barf.arch.x86.x86translator import FULL_TRANSLATION
 from barf.arch.x86.x86translator import LITE_TRANSLATION
 from barf.core.reil import DualInstruction
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
 
-logger = logging.getLogger(__name__)
 
 class GadgetFinder(object):
 
     """Gadget Finder.
     """
 
-    def __init__(self, disasm, mem, ir_trans, arch = ARCH_X86):
+    def __init__(self, disasm, mem, ir_trans, architecture, architecture_mode):
 
         # A disassembler instance.
         self._disasm = disasm
@@ -66,9 +67,10 @@ class GadgetFinder(object):
 
         # Maximum disassembled instructions.
         self._instrs_depth = 2
-        
+
         # Binary architecture
-        self._arch = arch
+        self._architecture = architecture
+        self._architecture_mode = architecture_mode
 
     def find(self, start_address, end_address, byte_depth=20, instrs_depth=2):
         """Find gadgets.
@@ -80,10 +82,12 @@ class GadgetFinder(object):
 
         self._ir_trans.translation_mode = LITE_TRANSLATION
 
-        if (self._arch == ARCH_X86):
-            candidates = self._find_candidates(start_address, end_address)
-        else:
+        if self._architecture == ARCH_X86:
+            candidates = self._find_x86_candidates(start_address, end_address)
+        elif self._architecture == ARCH_ARM and self._architecture_mode == ARCH_ARM_MODE_32:
             candidates = self._find_arm_candidates(start_address, end_address)
+        else:
+            raise Exception("Architecture not supported.")
 
         self._ir_trans.translation_mode = trans_mode_old
 
@@ -91,7 +95,7 @@ class GadgetFinder(object):
 
     # Auxiliary functions
     # ======================================================================== #
-    def _find_candidates(self, start_address, end_address):
+    def _find_x86_candidates(self, start_address, end_address):
         """Finds possible 'RET-ended' gadgets.
         """
         roots = []
@@ -148,22 +152,6 @@ class GadgetFinder(object):
 
         return candidates
 
-    def find_arm(self, start_address, end_address, byte_depth=20, instrs_depth=2):
-        """Find gadgets.
-        """
-        self._max_bytes = byte_depth
-        self._instrs_depth = instrs_depth
-
-        trans_mode_old = self._ir_trans.translation_mode
-
-        self._ir_trans.translation_mode = LITE_TRANSLATION
-
-        candidates = self._find_arm_candidates(start_address, end_address)
-
-        self._ir_trans.translation_mode = trans_mode_old
-
-        return candidates
-
     # Auxiliary functions
     # ======================================================================== #
     def _find_arm_candidates(self, start_address, end_address):
@@ -197,12 +185,11 @@ class GadgetFinder(object):
             gadget_tail_addr.append(addr)
 
         for addr in gadget_tail_addr:
-            
             asm_instr = self._disasm.disassemble(
                 self._mem[addr:min(addr+4, end_address + 1)], # TODO: Add thumb (+16)
                 addr
             )
-            
+
             if not asm_instr:
                 continue
 
@@ -213,10 +200,6 @@ class GadgetFinder(object):
                 ins_ir = self._ir_trans.translate(asm_instr)
             except:
                 continue
-
-            # build gadget
-#             if ins_ir[-1] and (ins_ir[-1].mnemonic == ReilMnemonic.RET \
-#                 or (ins_ir[-1].mnemonic == ReilMnemonic.JCC and isinstance(ins_ir[-1].operands[2], ReilRegisterOperand))):
 
             root = GadgetTreeNode(DualInstruction(addr, asm_instr, ins_ir))
 
