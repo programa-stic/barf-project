@@ -29,6 +29,7 @@ from barf.analysis.gadget.gadget import GadgetType
 from barf.analysis.gadget.gadgetclassifier import GadgetClassifier
 from barf.analysis.gadget.gadgetfinder import GadgetFinder
 from barf.analysis.gadget.gadgetverifier import GadgetVerifier
+from barf.arch import ARCH_ARM
 from barf.arch import ARCH_ARM_MODE_32
 from barf.arch.arm.armbase import ArmArchitectureInformation
 from barf.arch.arm.armdisassembler import ArmDisassembler
@@ -63,9 +64,9 @@ class ArmGadgetClassifierTests(unittest.TestCase):
         self._g_verifier = GadgetVerifier(self._code_analyzer, self._arch_info)
 
     def _find_and_classify_gadgets(self, binary):
-        g_finder = GadgetFinder(ArmDisassembler(), binary, ArmTranslator(translation_mode=LITE_TRANSLATION))
+        g_finder = GadgetFinder(ArmDisassembler(), binary, ArmTranslator(translation_mode=LITE_TRANSLATION), ARCH_ARM, ARCH_ARM_MODE_32)
 
-        g_candidates = g_finder.find_arm(0x00000000, len(binary), instrs_depth=4)
+        g_candidates = g_finder.find(0x00000000, len(binary), instrs_depth=4)
         g_classified = self._g_classifier.classify(g_candidates[0])
 
 #         self._print_candidates(g_candidates)
