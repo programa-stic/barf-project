@@ -61,7 +61,7 @@ class ArmParser32BitsTests(unittest.TestCase):
             "mov r12, r4, ror r3",
             "rsb r9, r5, r8, rrx",
 
-            # Same with conditino codes
+            # Same with condition codes
             "addeq r0, r0, r1, lsl #4",
             "movne r0, #0",
             "addcs r3, r3, #1",
@@ -157,10 +157,6 @@ class ArmTranslationTests(unittest.TestCase):
     def __init_context(self):
         """Initialize register with random values.
         """
-        #if os.path.isfile(self.context_filename):
-        #    context = self.__load_failing_context()
-        #else:
-        #    context = self.__create_random_context()
         context = self.__create_random_context()
 
         return context
@@ -331,10 +327,6 @@ class ArmTranslationTests(unittest.TestCase):
 
         reil_instrs = map(self.arm_translator.translate, arm_instrs)
 
-#         for rr in reil_instrs:
-#             for reil_instr in rr:
-#                 print("{0:14} : {1}".format(hex(reil_instr.address), reil_instr))
-
         ctx_init = self.__init_context()
 
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
@@ -409,8 +401,6 @@ class ArmTranslationTests(unittest.TestCase):
 
         mem_dir = pyasmjit.arm_alloc(4096)
 
-        # print("DIR (in Python): " + hex(mem_dir))
-
         arm_instrs = map(self.arm_parser.parse, asm)
 
         self.__set_address(0xdeadbeef, arm_instrs)
@@ -425,11 +415,6 @@ class ArmTranslationTests(unittest.TestCase):
 
         self.reil_emulator._mem._memory = {} # TODO: Check how to clean emulator memory.
 
-        #for reil_instr in reil_instrs:
-        #    for r in reil_instr:
-        #        print("{0:14}{1}".format("", r))
-
-
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
             reil_instrs,
             0xdeadbeef << 8,
@@ -438,17 +423,10 @@ class ArmTranslationTests(unittest.TestCase):
 
         base_dir = mem_dir
 
-        #print("reil_mem_out._memory: " + str(reil_mem_out._memory))
-       # for k, v in reil_mem_out._memory.iteritems():
-        #     print(hex(k) + ": " + hex(v))
         for idx, b in enumerate(struct.unpack("B" * len(arm_mem_out), arm_mem_out)):
             if (base_dir + idx) in reil_mem_out._memory: # TODO: Don't access variable directly.
-                #print("idx: " + hex(idx))
-               # print("B: " + hex(b))
-               # print("reil_mem_out._memory[base_dir + idx]: " + hex(reil_mem_out._memory[base_dir + idx]))
                 self.assertTrue(b == reil_mem_out._memory[base_dir + idx])
             else:
-                #print("B: " + hex(b))
                 self.assertTrue(b == 0x0) # Memory in pyasmjit is initialized to 0
 
 
