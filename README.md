@@ -50,7 +50,7 @@ gadget classification and verification. ::
 
 Below you can see the output of the command for **x86**:
 
-```bash
+```
 Raw Gadgets
 ===========
 
@@ -157,7 +157,7 @@ Non-verified Gadgets
 
 And for **ARM**:
 
-```bash
+```
 Raw Gadgets
 ===========
 

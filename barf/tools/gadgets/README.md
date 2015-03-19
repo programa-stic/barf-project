@@ -57,7 +57,7 @@ gadget classification and verification. ::
 
 Below you can see the output of the command for x86:
 
-```bash
+```
 Raw Gadgets
 ===========
 
@@ -164,7 +164,7 @@ Non-verified Gadgets
 
 And for ARM:
 
-```bash
+```
 Raw Gadgets
 ===========
 
@@ -183,66 +183,66 @@ Verified Gadgets
 
 # Move Register (25 gadgets)
 ---------------------------------------------------------------------------------------------------------------------
-  Address   | Operation | Clobbered Registers |                       Instructions                        
+  Address   | Operation | Clobbered Registers |                       Instructions
 ---------------------------------------------------------------------------------------------------------------------
- 0x0000c4b0 | r0 <- r2  | {r15; r13; r3}      | mov r0, r2 ; popia r13, {r3, pc} 
- 0x0000d960 | r0 <- r3  | {}                  | mov r0, r3 ; bx lr 
- 0x00012114 | r0 <- r5  | {r4; r5; r13}       | mov r0, r5 ; popia r13, {r4, r5} ; bx lr 
- 0x0001248c | r0 <- r3  | {r15; r13; r3}      | mov r0, r3 ; popia r13, {r3, pc} 
- 0x000124bc | r0 <- r1  | {r15; r13; r3}      | mov r0, r1 ; popia r13, {r3, pc} 
+ 0x0000c4b0 | r0 <- r2  | {r15; r13; r3}      | mov r0, r2 ; popia r13, {r3, pc}
+ 0x0000d960 | r0 <- r3  | {}                  | mov r0, r3 ; bx lr
+ 0x00012114 | r0 <- r5  | {r4; r5; r13}       | mov r0, r5 ; popia r13, {r4, r5} ; bx lr
+ 0x0001248c | r0 <- r3  | {r15; r13; r3}      | mov r0, r3 ; popia r13, {r3, pc}
+ 0x000124bc | r0 <- r1  | {r15; r13; r3}      | mov r0, r1 ; popia r13, {r3, pc}
 
 ... continues ...
 
 # Load Constant (22 gadgets)
 ---------------------------------------------------------------------------------------------------------------------
-  Address   |   Operation    | Clobbered Registers |                              Instructions                               
+  Address   |   Operation    | Clobbered Registers |                              Instructions
 ---------------------------------------------------------------------------------------------------------------------
- 0x00017dec |  r0 <- 0x0     | {r4; r15; r13}      | mov r0, #0 ; popia r13, {r4, pc} 
- 0x00011834 |  r0 <- 0x1     | {r4; r15; r13}      | mov r0, #1 ; add sp, sp, #8 ; popia r13, {r4, pc} 
- 0x000126f0 | r14 <- 0x126fc | {r0; r3}            | ldr r3, [r5, #0x1c] ; mov r0, r4 ; blx r3 
- 0x00012748 | r14 <- 0x12754 | {r0; r2}            | mov r0, r4 ; ldr r2, [r5, #0x1c] ; blx r2 
- 0x00012b54 | r14 <- 0x12b60 | {r0; r3}            | ldr r3, [r6, #0x1c] ; mov r0, r5 ; blx r3 
+ 0x00017dec |  r0 <- 0x0     | {r4; r15; r13}      | mov r0, #0 ; popia r13, {r4, pc}
+ 0x00011834 |  r0 <- 0x1     | {r4; r15; r13}      | mov r0, #1 ; add sp, sp, #8 ; popia r13, {r4, pc}
+ 0x000126f0 | r14 <- 0x126fc | {r0; r3}            | ldr r3, [r5, #0x1c] ; mov r0, r4 ; blx r3
+ 0x00012748 | r14 <- 0x12754 | {r0; r2}            | mov r0, r4 ; ldr r2, [r5, #0x1c] ; blx r2
+ 0x00012b54 | r14 <- 0x12b60 | {r0; r3}            | ldr r3, [r6, #0x1c] ; mov r0, r5 ; blx r3
 
 ... continues ...
 
 # Arithmetic (2 gadgets)
 ---------------------------------------------------------------------------------------------
-  Address   |   Operation   | Clobbered Registers |               Instructions               
+  Address   |   Operation   | Clobbered Registers |               Instructions
 ---------------------------------------------------------------------------------------------
- 0x00019f30 | r1 <- r1 | r5 | {r4; r5; r15; r13}  | orr r1, r1, r5 ; popia r13, {r4, r5, pc} 
- 0x0001a274 | r0 <- r0 | r3 | {}                  | orr r0, r0, r3 ; bx lr 
+ 0x00019f30 | r1 <- r1 | r5 | {r4; r5; r15; r13}  | orr r1, r1, r5 ; popia r13, {r4, r5, pc}
+ 0x0001a274 | r0 <- r0 | r3 | {}                  | orr r0, r0, r3 ; bx lr
 
 ... continues ...
 
 # Load Memory (195 gadgets)
 ----------------------------------------------------------------------------------------------------------------------------------
-  Address   |         Operation          | Clobbered Registers |                     Instructions                    
+  Address   |         Operation          | Clobbered Registers |                     Instructions
 ----------------------------------------------------------------------------------------------------------------------------------
- 0x0000c4b0 | r3 <- mem[r13]             | {r15; r0; r13}      | mov r0, r2 ; popia r13, {r3, pc} 
- 0x0000c4b0 | pc <- mem[r13 + 0x4]       | {r15; r0; r13; r3}  | mov r0, r2 ; popia r13, {r3, pc} 
- 0x0000c4d4 | r4 <- mem[r13]             | {r5; r13}           | popia r13, {r4, r5} ; bx lr 
- 0x0000c4d4 | r5 <- mem[r13 + 0x4]       | {r4; r13}           | popia r13, {r4, r5} ; bx lr 
- 0x0000ca84 | r4 <- mem[r13]             | {r15; r13}          | str r0, [r3, #4] ; str r2, [r0, #4] ; popia r13, {r4, pc} 
+ 0x0000c4b0 | r3 <- mem[r13]             | {r15; r0; r13}      | mov r0, r2 ; popia r13, {r3, pc}
+ 0x0000c4b0 | pc <- mem[r13 + 0x4]       | {r15; r0; r13; r3}  | mov r0, r2 ; popia r13, {r3, pc}
+ 0x0000c4d4 | r4 <- mem[r13]             | {r5; r13}           | popia r13, {r4, r5} ; bx lr
+ 0x0000c4d4 | r5 <- mem[r13 + 0x4]       | {r4; r13}           | popia r13, {r4, r5} ; bx lr
+ 0x0000ca84 | r4 <- mem[r13]             | {r15; r13}          | str r0, [r3, #4] ; str r2, [r0, #4] ; popia r13, {r4, pc}
 
 ... continues ...
 
 # Store Memory (17 gadgets)
 ------------------------------------------------------------------------------------------------------------------------------------------------------
-  Address   |      Operation       | Clobbered Registers |                                  Instructions                                   
+  Address   |      Operation       | Clobbered Registers |                                  Instructions
 ------------------------------------------------------------------------------------------------------------------------------------------------------
- 0x00015bfc |  mem[r3 + 0x4] <- r1 | {r0}                | ldr r0, [r3, #4] ; str r1, [r3, #4] ; bx lr 
- 0x0000ca84 |  mem[r3 + 0x4] <- r0 | {r4; r15; r13}      | str r0, [r3, #4] ; str r2, [r0, #4] ; popia r13, {r4, pc} 
- 0x0000ca84 |  mem[r0 + 0x4] <- r2 | {r4; r15; r13}      | str r0, [r3, #4] ; str r2, [r0, #4] ; popia r13, {r4, pc} 
- 0x00012450 |        mem[r4] <- r2 | {r4; r15; r13}      | stmia r4, {r2, r3} ; add sp, sp, #8 ; popia r13, {r4, pc} 
- 0x00012450 |  mem[r4 + 0x4] <- r3 | {r4; r15; r13}      | stmia r4, {r2, r3} ; add sp, sp, #8 ; popia r13, {r4, pc} 
+ 0x00015bfc |  mem[r3 + 0x4] <- r1 | {r0}                | ldr r0, [r3, #4] ; str r1, [r3, #4] ; bx lr
+ 0x0000ca84 |  mem[r3 + 0x4] <- r0 | {r4; r15; r13}      | str r0, [r3, #4] ; str r2, [r0, #4] ; popia r13, {r4, pc}
+ 0x0000ca84 |  mem[r0 + 0x4] <- r2 | {r4; r15; r13}      | str r0, [r3, #4] ; str r2, [r0, #4] ; popia r13, {r4, pc}
+ 0x00012450 |        mem[r4] <- r2 | {r4; r15; r13}      | stmia r4, {r2, r3} ; add sp, sp, #8 ; popia r13, {r4, pc}
+ 0x00012450 |  mem[r4 + 0x4] <- r3 | {r4; r15; r13}      | stmia r4, {r2, r3} ; add sp, sp, #8 ; popia r13, {r4, pc}
 
 ... continues ...
 
 [+] Verified Gadgets : 261
-                          
+
 Non-verified Gadgets
 ====================
-                    
+
 0x00011c78: ldr r3, [pc, #4] ; str r0, [r3] ; bx lr
 0x00012930: ldr r0, [r0, #0xc] ; bx lr
 0x00012938: ldr r0, [r0, #0x10] ; bx lr
