@@ -315,6 +315,9 @@ class ReilInstruction(object):
 
         return "%-5s [%s]" % (mnemonic_str, operands_str)
 
+    def __hash__(self):
+        return hash(str(self))
+
 
 class ReilOperand(object):
 
