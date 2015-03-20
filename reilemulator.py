@@ -51,8 +51,8 @@ from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
 from barf.core.reil.reil import ReilRegisterOperand
 
-# verbose = False
-verbose = True
+verbose = False
+#verbose = True
 
 REIL_MEMORY_ENDIANNESS_LE = 0x0     # Little Endian
 REIL_MEMORY_ENDIANNESS_BE = 0x1     # Big Endian
