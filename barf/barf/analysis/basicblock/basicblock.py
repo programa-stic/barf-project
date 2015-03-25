@@ -545,7 +545,13 @@ class BasicBlockBuilder(object):
         while addr < end_address:
             start, end = addr, min(addr + self._lookahead_max, end_address)
 
-            asm = self._disasm.disassemble(self._mem[start:end], addr)
+            try:
+                data_chunk = self._mem[start:end]
+            except:
+                # TODO: Log error.
+                break
+
+            asm = self._disasm.disassemble(data_chunk, addr)
 
             if not asm:
                 break
