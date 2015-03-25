@@ -69,6 +69,7 @@ class ArmGadgetClassifierTests(unittest.TestCase):
         g_candidates = g_finder.find(0x00000000, len(binary), instrs_depth=4)
         g_classified = self._g_classifier.classify(g_candidates[0])
 
+#         Debug:
 #         self._print_candidates(g_candidates)
 #         self._print_classified(g_classified)
 
@@ -97,7 +98,6 @@ class ArmGadgetClassifierTests(unittest.TestCase):
         # testing : dst_reg <- src_reg
         binary  = "\x00\x00\x84\xe2"                     # 0x00 : (4)  add    r0, r4, #0
         binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
-#         binary += "\x00\x80\xbd\xe8"                     # 0x04 : (4)  pop     {pc} # TODO: Not supported yet because it's not an excplicit jump
 
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
