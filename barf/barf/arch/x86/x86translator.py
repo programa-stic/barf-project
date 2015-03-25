@@ -2648,7 +2648,7 @@ class X86Translator(object):
         # -------------------------------------------------------------------- #
         # Move data.
         tb.add(self._builder.gen_ldm(src, tmp0))
-        tb.add(self._builder.gen_stm(dst, tmp0))
+        tb.add(self._builder.gen_stm(tmp0, dst))
 
         # Update destination pointer.
         self._update_strings_src_and_dst(tb, src, dst, data_size)
@@ -2739,7 +2739,7 @@ class X86Translator(object):
         self._update_pf(tb, src1_data, src2_data, tmp0)
 
         # Update source pointers.
-        self._update_strings_srcs(tb, src1, src2, data_size)
+        self._update_strings_dst(tb, src2, data_size)
         # -------------------------------------------------------------------- #
 
         if instruction.prefix:
