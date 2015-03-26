@@ -369,7 +369,9 @@ class ArmTranslator(object):
         try:
             trans_instrs = self._translate(instruction)
         except NotImplementedError as e:
-            trans_instrs = [self._builder.gen_unkn()]
+            unkn_instr = self._builder.gen_unkn()
+            unkn_instr.address = instruction.address << 8 | (0x0 & 0xff)
+            trans_instrs = [unkn_instr]
 
             self._log_not_supported_instruction(instruction)
         except Exception as e:
