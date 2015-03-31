@@ -617,6 +617,60 @@ class X86Translator(object):
         tb.add(self._builder.gen_add(self._sp, self._ws, tmp0))
         tb.add(self._builder.gen_str(tmp0, self._sp))
 
+    def _translate_cmpxchg(self, tb, instruction):
+        # Flags Affected
+        # The ZF flag is set if the values in the destination operand
+        # and register AL, AX, or EAX are equal; otherwise it is
+        # cleared. The CF, PF, AF, SF, and OF flags are set according
+        # to the results of the comparison operation.
+
+        # Accumulator = AL, AX, EAX, or RAX depending on whether a byte,
+        # word, doubleword, or quadword comparison is being performed
+        # IF accumulator = DEST
+        # THEN
+        #   ZF <- 1;
+        #   DEST <- SRC;
+        # ELSE
+        #   ZF <- 0;
+        #   accumulator <- DEST;
+        # FI;
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        # Define immediate registers
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
+
+        # Define accum register.
+        if oprnd0.size == 8:
+            accum = ReilRegisterOperand("al", 8)
+        elif oprnd0.size == 16:
+            accum = ReilRegisterOperand("ax", 16)
+        elif oprnd0.size == 32:
+            accum = ReilRegisterOperand("eax", 32)
+        elif oprnd0.size == 64:
+            accum = ReilRegisterOperand("rax", 64)
+        else:
+            raise Exception("Invalid operand size: %s" % oprnd0)
+
+        tmp0 = tb.temporal(oprnd0.size*2)
+
+        # Compare.
+        tb.add(self._builder.gen_sub(oprnd0, accum, tmp0))
+
+        # Exchange
+        tb.add(self._builder.gen_jcc(tmp0, end_addr))   # jmp to end if not zero
+
+        tb.write(instruction.operands[0], oprnd1)
+
+        # Flags : CF, OF, SF, ZF, AF, PF
+        self._update_cf(tb, oprnd0, oprnd1, tmp0)
+        self._update_of_sub(tb, oprnd0, oprnd1, tmp0)
+        self._update_sf(tb, oprnd0, oprnd1, tmp0)
+        self._update_zf(tb, oprnd0, oprnd1, tmp0)
+        self._update_af(tb, oprnd0, oprnd1, tmp0)
+        self._update_pf(tb, oprnd0, oprnd1, tmp0)
+
 # "Binary Arithmetic Instructions"
 # ============================================================================ #
     def _translate_add(self, tb, instruction):
