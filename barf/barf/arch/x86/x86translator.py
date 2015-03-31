@@ -1796,6 +1796,40 @@ class X86Translator(object):
 
 # "Bit and Byte Instructions"
 # ============================================================================ #
+    def _translate_bt(self, tb, instruction):
+        # Flags Affected
+        # The CF flag contains the value of the selected bit. The ZF
+        # flag is unaffected. The OF, SF, AF, and PF flags are
+        # undefined.
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tmp0 = tb.temporal(oprnd0.size)
+        zero = tb.immediate(0, oprnd0.size)
+        one = tb.immediate(1, oprnd0.size)
+        bit_base_size = tb.immediate(oprnd0.size, oprnd1.size)
+        bit_offset_tmp = tb.temporal(oprnd0.size)
+        bit_offset = tb.temporal(oprnd0.size)
+
+        # Compute bit offset.
+        tb.add(self._builder.gen_mod(oprnd1, bit_base_size, bit_offset_tmp))
+        tb.add(self._builder.gen_sub(zero, bit_offset_tmp, bit_offset)) # negate
+
+        # Extract bit.
+        tb.add(self._builder.gen_bsh(oprnd0, bit_offset, tmp0))
+
+        # Set CF.
+        tb.add(self._builder.gen_and(tmp0, one, self._flags["cf"]))
+
+        # Set flags.
+        if self._translation_mode == FULL_TRANSLATION:
+            # Flags : OF, SF, AF, PF
+            self._undefine_flag(tb, self._flags["of"])
+            self._undefine_flag(tb, self._flags["sf"])
+            self._undefine_flag(tb, self._flags["af"])
+            self._undefine_flag(tb, self._flags["pf"])
+
     def _translate_test(self, tb, instruction):
         # Flags Affected
         # The OF and CF flags are set to 0. The SF, ZF, and PF flags are
