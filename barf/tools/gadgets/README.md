@@ -2,15 +2,26 @@
 
 ``BARFgadgets`` is a Python script built upon BARF that lets you *search*,
 *classifiy* and *verify* ROP gadgets inside a binary program. The *search*
-stage finds all ``ret``-ended gadgets inside the binary. The *classification*
-stage classifies previously found gadgets according to the following types:
-No-Operation, Move Register, Load Constant, Arithmetic/Logical Operation, Load
-Memory, Store Memory, Arithmetic/Logical Load, Arithmetic/Logical Store and
-Undefined. This is done through instruction emulation. Finally, the
-*verification* stage consists of using a SMT solver to verify the semantic
-assigned to each gadget in the second stage.
+stage finds all ``ret``-, ``jmp``- and ``call``-ended gadgets inside the
+binary. The *classification* stage classifies previously found gadgets
+according to the following types:
 
-These tool is based on [Q] and currently supports Intel x86 (32 and 64 bits) and ARM (32 bits).
+* No-Operation,
+* Move Register,
+* Load Constant,
+* Arithmetic/Logical Operation,
+* Load Memory,
+* Store Memory,
+* Arithmetic/Logical Load,
+* Arithmetic/Logical Store and
+* Undefined.
+
+This is done through instruction emulation. Finally, the *verification* stage
+consists of using a SMT solver to verify the semantic assigned to each gadget
+in the second stage.
+
+This tool is based on [Q] and currently supports Intel x86 (32 and 64 bits)
+and ARM (32 bits).
 
 # Usage
 
@@ -48,14 +59,14 @@ optional arguments:
 # Example
 
 The following command look for gadgets in the ``ls`` unix command. The ``-u``
-option returns unique gadgets (filters duplicates) and the ``-v`` flag turn on
-gadget classification and verification. ::
+option returns unique gadgets (i.e. filters duplicates) and the ``-v`` flag
+turns on gadget classification and verification.
 
 ```bash
 ./BARFgadgets -u -v $(which ls)
 ```
 
-Below you can see the output of the command for x86:
+Below you can see the output of the command for **x86**:
 
 ```
 Raw Gadgets
@@ -162,7 +173,7 @@ Non-verified Gadgets
 [+] Non-verified Gadgets : 93
 ```
 
-And for ARM:
+And for **ARM**:
 
 ```
 Raw Gadgets
@@ -262,7 +273,7 @@ Non-verified Gadgets
 There are some limitations:
 
 * Currently, BARF supports only a subset of the x86 and ARM instruction sets. If a gadget contains an instruction that is not supported, it is **discarded**.
-* Not all binary operations are supported right now in the classification and verification stages. Supported one includes: +, -, ^, |, &.
+* Not all binary operations are supported right now in the classification and verification stages. Supported one includes: ``+``, ``-``, ``^``, ``|``, ``&``.
 * *Jump* gadgets are not supported yet.
 
 [Q]: http://users.ece.cmu.edu/~ejschwar/papers/usenix11.pdf

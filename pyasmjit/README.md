@@ -3,13 +3,11 @@
 *PyAsmJIT* is a Python package for x86_64/ARM assembly code generation and
 execution.
 
-# History
-
 This package was developed in order to test BARF instruction translation from
-x86_64/ARM to REIL. The main idea is to be able to run fragments of code natively.
-Then, the same fragment is translated to REIL and executed in a REIL VM. Finally,
-both final contexts (the one obtained through native execution and the one from
-emulation) are compare for differences.
+x86_64/ARM to REIL. The main idea is to be able to run fragments of code
+natively. Then, the same fragment is translated to REIL and executed in a REIL
+VM. Finally, both final contexts (the one obtained through native execution
+and the one from emulation) are compare for differences.
 
 # Installation
 
@@ -26,7 +24,7 @@ $ sudo python setup.py install
 # Quickstart
 
 The following extract shows how to execute on-the-fly a fragment of
-assembly code.
+x86 assembly code.
 
 ```python
 import pyasmjit
@@ -48,6 +46,45 @@ print code
 print context_in
 
 rv, context_out = pyasmjit.x86_execute(code, context_in)
+
+print context_out
+```
+
+And for ARM:
+
+```python
+import pyasmjit
+
+code = """\
+
+movs r8, r2, lsl #31
+mov r7, #0x7FFFFFFF
+mov r8, #0x7FFFFFFF
+adds r7, r7, r8
+#subs r10, r10, #0xFFFFFFFF
+"""
+
+context_in = {
+    'r0' : 0x0,
+    'r1' : 0x1,
+    'r2' : 0x2,
+    'r3' : 0x3,
+    'r4' : 0x4,
+    'r5' : 0x5,
+    'r6' : 0x6,
+    'r7' : 0x7,
+    'r8' : 0x8,
+    'r9' : 0x9,
+    'r10' : 0xa,
+    'r11' : 0xb,
+    'r12' : 0xc,
+    'apsr' : 0x0,
+}
+
+print code
+print context_in
+
+rv, context_out, mem = pyasmjit.arm_execute(code, context_in)
 
 print context_out
 ```
