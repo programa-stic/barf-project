@@ -512,6 +512,127 @@ class X86Translator(object):
         imm = tb.immediate(1, flag.size)
 
         tb.add(self._builder.gen_str(imm, flag))
+        
+    # above (CF=0 and ZF=0).
+    def _evaluate_a(self, tb):
+        return tb._and_regs(tb._negate_reg(self._flags["cf"]), tb._negate_reg(self._flags["zf"]))
+
+    # above or equal (CF=0)
+    def _evaluate_ae(self, tb):
+        return tb._negate_reg(self._flags["cf"])
+
+    # below (CF=1)
+    def _evaluate_b(self, tb):
+        return self._flags["cf"]
+
+    # below or equal (CF=1 or ZF=1)
+    def _evaluate_be(self, tb):
+        return tb._or_regs(self._flags["cf"], self._flags["zf"])
+
+    # carry (CF=1)
+    def _evaluate_c(self, tb):
+        return self._flags["cf"]
+
+    # equal (ZF=1)
+    def _evaluate_e(self, tb):
+        return self._flags["zf"]
+
+    # greater (ZF=0 and SF=OF)
+    def _evaluate_g(self, tb):
+        return tb._and_regs(tb._negate_reg(self._flags["zf"]), tb._equal_regs(self._flags["sf"], self._flags["of"]))
+
+    # greater or equal (SF=OF)
+    def _evaluate_ge(self, tb):
+        return tb._equal_regs(self._flags["sf"], self._flags["of"])
+
+    # less (SF != OF)
+    def _evaluate_l(self, tb):
+        return tb._unequal_regs(self._flags["sf"], self._flags["of"])
+
+    # less or equal (ZF=1 or SF != OF)
+    def _evaluate_le(self, tb):
+        return tb._or_regs(self._flags["zf"], tb._unequal_regs(self._flags["sf"], self._flags["of"]))
+
+    # not above (CF=1 or ZF=1).
+    def _evaluate_na(self, tb):
+        return tb._or_regs(self._flags["cf"], self._flags["zf"])
+
+    # not above or equal (CF=1)
+    def _evaluate_nae(self, tb):
+        return self._flags["cf"]
+
+    # not below (CF=0)
+    def _evaluate_nb(self, tb):
+        return tb._negate_reg(self._flags["cf"])
+
+    # not below or equal (CF=0 and ZF=0)
+    def _evaluate_nbe(self, tb):
+        return tb._and_regs(tb._negate_reg(self._flags["cf"]), tb._negate_reg(self._flags["zf"]))
+
+    # not carry (CF=0)
+    def _evaluate_nc(self, tb):
+        return tb._negate_reg(self._flags["cf"])
+
+    # not equal (ZF=0)
+    def _evaluate_ne(self, tb):
+        return tb._negate_reg(self._flags["zf"])
+
+    # not greater (ZF=1 or SF != OF)
+    def _evaluate_ng(self, tb):
+        return tb._or_regs(self._flags["zf"], tb._unequal_regs(self._flags["sf"], self._flags["of"]))
+
+    # not greater or equal (SF != OF)
+    def _evaluate_nge(self, tb):
+        return tb._unequal_regs(self._flags["sf"], self._flags["of"])
+
+    # not less (SF=OF)
+    def _evaluate_nl(self, tb):
+        return tb._equal_regs(self._flags["sf"], self._flags["of"])
+
+    # not less or equal (ZF=0 and SF=OF)
+    def _evaluate_nle(self, tb):
+        return tb._and_regs(tb._negate_reg(self._flags["zf"]), tb._equal_regs(self._flags["sf"], self._flags["of"]))
+
+    # not overflow (OF=0)
+    def _evaluate_no(self, tb):
+        return tb._negate_reg(self._flags["of"])
+
+    # not parity (PF=0)
+    def _evaluate_np(self, tb):
+        return tb._negate_reg(self._flags["pf"])
+
+    # not sign (SF=0)
+    def _evaluate_ns(self, tb):
+        return tb._negate_reg(self._flags["sf"])
+
+    # not zero (ZF=0)
+    def _evaluate_nz(self, tb):
+        return tb._negate_reg(self._flags["zf"])
+
+    # overflow (OF=1)
+    def _evaluate_o(self, tb):
+        return self._flags["of"]
+
+    # parity (PF=1)
+    def _evaluate_p(self, tb):
+        return self._flags["pf"]
+
+    # parity even (PF=1)
+    def _evaluate_pe(self, tb):
+        return self._flags["pf"]
+
+    # parity odd (PF=0)
+    def _evaluate_po(self, tb):
+        return tb._negate_reg(self._flags["pf"])
+
+    # sign (SF=1)
+    def _evaluate_s(self, tb):
+        return self._flags["sf"]
+
+    # zero (ZF=1)
+    def _evaluate_z(self, tb):
+        return self._flags["zf"]
+
 
 # "Data Transfer Instructions"
 # ============================================================================ #
@@ -531,53 +652,129 @@ class X86Translator(object):
 
         tb.write(instruction.operands[0], oprnd1)
 
+    def _translate_cmov(self, tb, instruction, cmov_cond):
+        # Move if condition (cmov_cond) is met.
+        # Flags Affected
+        # None.
+
+        eval_cond_fn = {
+            'a' : self._evaluate_a,
+            'ae' : self._evaluate_ae,
+            'b' : self._evaluate_b,
+            'be' : self._evaluate_be,
+            'c' : self._evaluate_c,
+            'e' : self._evaluate_e,
+            'g' : self._evaluate_g,
+            'ge' : self._evaluate_ge,
+            'l' : self._evaluate_l,
+            'le' : self._evaluate_le,
+            'na' : self._evaluate_na,
+            'nae' : self._evaluate_nae,
+            'nb' : self._evaluate_nb,
+            'nbe' : self._evaluate_nbe,
+            'nc' : self._evaluate_nc,
+            'ne' : self._evaluate_ne,
+            'ng' : self._evaluate_ng,
+            'nge' : self._evaluate_nge,
+            'nl' : self._evaluate_nl,
+            'nle' : self._evaluate_nle,
+            'no' : self._evaluate_no,
+            'np' : self._evaluate_np,
+            'ns' : self._evaluate_ns,
+            'nz' : self._evaluate_nz,
+            'o' : self._evaluate_o,
+            'p' : self._evaluate_p,
+            'pe' : self._evaluate_pe,
+            'po' : self._evaluate_po,
+            's' : self._evaluate_s,
+            'z' : self._evaluate_z,
+        }
+        
+        # NOTE: CMOV pseudocode (not its description) specifies that in 32 bit registers, even
+        # if the condition is not met, the high 32 bits of the destiny are set to zero (DEST[63:32] <- 0).
+        # So op0 (dest) is assigned to itself, in 32 bits that doesn't change anything, in 64 it sets high bits
+        # to zero. Then if the condition is met the mov is performed and the previous assignment has no effect.
+        # op0 <- op0:
+        oprnd0 = tb.read(instruction.operands[0])
+        tmp = tb.temporal(oprnd0.size)
+        tb.add(self._builder.gen_str(oprnd0, tmp))
+        tb.write(instruction.operands[0], tmp)
+
+#         end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
+        cond_not_met = Label('cond_not_met')
+ 
+        neg_cond = tb._negate_reg(eval_cond_fn[cmov_cond](tb))
+  
+#         tb.add(self._builder.gen_jcc(neg_cond, end_addr))
+        tb.add(self._builder.gen_jcc(neg_cond, cond_not_met))
+ 
+        oprnd1 = tb.read(instruction.operands[1])
+ 
+        tb.write(instruction.operands[0], oprnd1)
+         
+        tb.add(cond_not_met)
+        tb.add(self._builder.gen_nop())
+
+    def _translate_cmova(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'a')
+    def _translate_cmovae(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'ae')
     def _translate_cmovb(self, tb, instruction):
-        # Move if below (CF=1).
-        # Flags Affected
-        # None.
-
-        oprnd0 = tb.read(instruction.operands[0])
-        oprnd1 = tb.read(instruction.operands[1])
-
-        imm0 = tb.immediate(1, 1)
-
-        tmp0 = tb.temporal(oprnd1.size)
-
-        move_lbl = Label('move')
-        exit_lbl = Label('exit')
-
-        tb.add(self._builder.gen_jcc(self._flags["cf"], move_lbl))
-        tb.add(self._builder.gen_str(oprnd0, tmp0))     # keep current value
-        tb.add(self._builder.gen_jcc(imm0, exit_lbl))
-        tb.add(move_lbl)
-        tb.add(self._builder.gen_str(oprnd1, tmp0))     # set new value
-        tb.add(exit_lbl)
-
-        tb.write(instruction.operands[0], tmp0)
-
+        self._translate_cmov(tb, instruction, 'b')
+    def _translate_cmovbe(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'be')
+    def _translate_cmovc(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'c')
     def _translate_cmove(self, tb, instruction):
-        # Move if equal (ZF=1).
-        # Flags Affected
-        # None.
-
-        oprnd0 = tb.read(instruction.operands[0])
-        oprnd1 = tb.read(instruction.operands[1])
-
-        imm0 = tb.immediate(1, 1)
-
-        tmp0 = tb.temporal(oprnd1.size)
-
-        move_lbl = Label('move')
-        exit_lbl = Label('exit')
-
-        tb.add(self._builder.gen_jcc(self._flags["zf"], move_lbl))
-        tb.add(self._builder.gen_str(oprnd0, tmp0))     # keep current value
-        tb.add(self._builder.gen_jcc(imm0, exit_lbl))
-        tb.add(move_lbl)
-        tb.add(self._builder.gen_str(oprnd1, tmp0))     # set new value
-        tb.add(exit_lbl)
-
-        tb.write(instruction.operands[0], tmp0)
+        self._translate_cmov(tb, instruction, 'e')
+    def _translate_cmovg(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'g')
+    def _translate_cmovge(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'ge')
+    def _translate_cmovl(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'l')
+    def _translate_cmovle(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'le')
+    def _translate_cmovna(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'na')
+    def _translate_cmovnae(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'nae')
+    def _translate_cmovnb(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'nb')
+    def _translate_cmovnbe(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'nbe')
+    def _translate_cmovnc(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'nc')
+    def _translate_cmovne(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'ne')
+    def _translate_cmovng(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'ng')
+    def _translate_cmovnge(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'nge')
+    def _translate_cmovnl(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'nl')
+    def _translate_cmovnle(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'nle')
+    def _translate_cmovno(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'no')
+    def _translate_cmovnp(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'np')
+    def _translate_cmovns(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'ns')
+    def _translate_cmovnz(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'nz')
+    def _translate_cmovo(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'o')
+    def _translate_cmovp(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'p')
+    def _translate_cmovpe(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'pe')
+    def _translate_cmovpo(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'po')
+    def _translate_cmovs(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 's')
+    def _translate_cmovz(self, tb, instruction):
+        self._translate_cmov(tb, instruction, 'z')
 
     def _translate_xchg(self, tb, instruction):
         # Flags Affected
