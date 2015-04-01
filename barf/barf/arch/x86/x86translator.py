@@ -644,32 +644,45 @@ class X86Translator(object):
         # Define accum register.
         if oprnd0.size == 8:
             accum = ReilRegisterOperand("al", 8)
+            accum_x86 = X86RegisterOperand("al", 8)
         elif oprnd0.size == 16:
             accum = ReilRegisterOperand("ax", 16)
+            accum_x86 = X86RegisterOperand("ax", 16)
         elif oprnd0.size == 32:
             accum = ReilRegisterOperand("eax", 32)
+            accum_x86 = X86RegisterOperand("eax", 32)
         elif oprnd0.size == 64:
             accum = ReilRegisterOperand("rax", 64)
+            accum_x86 = X86RegisterOperand("rax", 64)
         else:
             raise Exception("Invalid operand size: %s" % oprnd0)
 
         tmp0 = tb.temporal(oprnd0.size*2)
 
+        one = tb.immediate(1, 1)
+
+        change_dst_lbl = Label('change_dst')
+        change_accum_lbl = Label('change_accum')
+
         # Compare.
-        tb.add(self._builder.gen_sub(oprnd0, accum, tmp0))
+        tb.add(self._builder.gen_sub(accum, oprnd0, tmp0))
+
+        # Update flags : CF, OF, SF, ZF, AF, PF
+        self._update_cf(tb, accum, oprnd0, tmp0)
+        self._update_of_sub(tb, accum, oprnd0, tmp0)
+        self._update_sf(tb, accum, oprnd0, tmp0)
+        self._update_zf(tb, accum, oprnd0, tmp0)
+        self._update_af(tb, accum, oprnd0, tmp0)
+        self._update_pf(tb, accum, oprnd0, tmp0)
 
         # Exchange
-        tb.add(self._builder.gen_jcc(tmp0, end_addr))   # jmp to end if not zero
-
+        tb.add(self._builder.gen_jcc(tmp0, change_accum_lbl))
+        tb.add(change_dst_lbl)
         tb.write(instruction.operands[0], oprnd1)
-
-        # Flags : CF, OF, SF, ZF, AF, PF
-        self._update_cf(tb, oprnd0, oprnd1, tmp0)
-        self._update_of_sub(tb, oprnd0, oprnd1, tmp0)
-        self._update_sf(tb, oprnd0, oprnd1, tmp0)
-        self._update_zf(tb, oprnd0, oprnd1, tmp0)
-        self._update_af(tb, oprnd0, oprnd1, tmp0)
-        self._update_pf(tb, oprnd0, oprnd1, tmp0)
+        tb.add(self._builder.gen_jcc(one, end_addr))
+        tb.add(change_accum_lbl)
+        # tb.add(self._builder.gen_str(oprnd0, accum))
+        tb.write(accum_x86, oprnd0)
 
 # "Binary Arithmetic Instructions"
 # ============================================================================ #
