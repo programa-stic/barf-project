@@ -512,7 +512,7 @@ class X86Translator(object):
         imm = tb.immediate(1, flag.size)
 
         tb.add(self._builder.gen_str(imm, flag))
-        
+
     # above (CF=0 and ZF=0).
     def _evaluate_a(self, tb):
         return tb._and_regs(tb._negate_reg(self._flags["cf"]), tb._negate_reg(self._flags["zf"]))
@@ -689,7 +689,7 @@ class X86Translator(object):
             's' : self._evaluate_s,
             'z' : self._evaluate_z,
         }
-        
+
         # NOTE: CMOV pseudocode (not its description) specifies that in 32 bit registers, even
         # if the condition is not met, the high 32 bits of the destiny are set to zero (DEST[63:32] <- 0).
         # So op0 (dest) is assigned to itself, in 32 bits that doesn't change anything, in 64 it sets high bits
@@ -700,18 +700,16 @@ class X86Translator(object):
         tb.add(self._builder.gen_str(oprnd0, tmp))
         tb.write(instruction.operands[0], tmp)
 
-#         end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
         cond_not_met = Label('cond_not_met')
- 
+
         neg_cond = tb._negate_reg(eval_cond_fn[cmov_cond](tb))
-  
-#         tb.add(self._builder.gen_jcc(neg_cond, end_addr))
+
         tb.add(self._builder.gen_jcc(neg_cond, cond_not_met))
- 
+
         oprnd1 = tb.read(instruction.operands[1])
- 
+
         tb.write(instruction.operands[0], oprnd1)
-         
+
         tb.add(cond_not_met)
         tb.add(self._builder.gen_nop())
 
@@ -966,21 +964,23 @@ class X86Translator(object):
         tmp0 = tb.temporal(oprnd0.size*2)
         tmp1 = tb.temporal(oprnd0.size*2)
         tmp2 = tb.temporal(oprnd0.size*2)
+        tmp3 = tb.temporal(oprnd0.size)
+        tmp4 = tb.temporal(oprnd0.size)
 
-        # FIX: This translation generates a wrong result for the OF flag
-        # for some inputs.
         tb.add(self._builder.gen_sub(oprnd0, oprnd1, tmp0))
         tb.add(self._builder.gen_str(self._flags["cf"], tmp1))
-        tb.add(self._builder.gen_sub(oprnd0, oprnd1, tmp2))
+        tb.add(self._builder.gen_sub(tmp0, tmp1, tmp2))
+        tb.add(self._builder.gen_str(tmp0, tmp3))
+        tb.add(self._builder.gen_str(tmp1, tmp4))
 
         if self._translation_mode == FULL_TRANSLATION:
             # Flags : OF, SF, ZF, AF, PF, CF
-            self._update_of_sub(tb, oprnd0, oprnd1, tmp2)
-            self._update_sf(tb, oprnd0, oprnd1, tmp2)
-            self._update_zf(tb, oprnd0, oprnd1, tmp2)
-            self._update_af(tb, oprnd0, oprnd1, tmp2)
-            self._update_pf(tb, oprnd0, oprnd1, tmp2)
-            self._update_cf(tb, oprnd0, oprnd1, tmp2)
+            self._update_of_sub(tb, tmp3, tmp4, tmp2)
+            self._update_sf(tb, tmp3, tmp4, tmp2)
+            self._update_zf(tb, tmp3, tmp4, tmp2)
+            self._update_af(tb, tmp3, tmp4, tmp2)
+            self._update_pf(tb, tmp3, tmp4, tmp2)
+            self._update_cf(tb, tmp3, tmp4, tmp2)
 
         tb.write(instruction.operands[0], tmp2)
 

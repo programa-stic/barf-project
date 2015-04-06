@@ -619,36 +619,35 @@ class X86TranslationTests(unittest.TestCase):
 
         self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
-    # TODO: Uncomment once sbb translation gets fixed.
-    # def test_sbb(self):
-    #     asm = ["sbb eax, ebx"]
+    def test_sbb(self):
+        asm = ["sbb eax, ebx"]
 
-    #     x86_instrs = map(self.x86_parser.parse, asm)
+        x86_instrs = map(self.x86_parser.parse, asm)
 
-    #     self.__set_address(0xdeadbeef, x86_instrs)
+        self.__set_address(0xdeadbeef, x86_instrs)
 
-    #     reil_instrs = map(self.x86_translator.translate, x86_instrs)
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
 
-    #     ctx_init = self.__init_context()
+        ctx_init = self.__init_context()
 
-    #     x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
-    #     reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-    #         reil_instrs,
-    #         0xdeadbeef << 8,
-    #         context=ctx_init
-    #     )
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
 
-    #     # FIX: Remove this once the sbb translation gets fixed.
-    #     reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+        # FIX: Remove this once the sbb translation gets fixed.
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
 
-    #     reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
 
-    #     cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
 
-    #     if not cmp_result:
-    #         self.__save_failing_context(ctx_init)
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
 
-    #     self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_sub(self):
         asm = ["sub eax, ebx"]
@@ -2222,15 +2221,18 @@ class X86TranslationTests(unittest.TestCase):
 
         # Pretty print flags.
         reg = "rflags"
-        fmt = "{0:s} ({1:>4s}) : {2:016x} ({3:s})"
+        fmt = "{0:s} ({1:>7s}) : {2:016x} ({3:s})"
 
+        init_value = context_init[reg] & mask
         x86_value = x86_context[reg] & mask
         reil_value = reil_context[reg] & mask
 
+        init_flags_str = self.__print_flags(context_init[reg])
         x86_flags_str = self.__print_flags(x86_context[reg])
         reil_flags_str = self.__print_flags(reil_context[reg])
 
         out += "\n"
+        out += fmt.format(reg, "initial", init_value, init_flags_str) + "\n"
         out += fmt.format(reg, "x86", x86_value, x86_flags_str) + "\n"
         out += fmt.format(reg, "reil", reil_value, reil_flags_str)
 
