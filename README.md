@@ -19,7 +19,7 @@ fully automated.
 For more information, see:
 
 * *BARF: A multiplatform open source Binary Analysis and Reverse engineering Framework* (Whitepaper) [[en](./documentation/papers/barf.pdf)]
-* *BARFing Gadgets* (ekoparty2014 presentation) [[en](./documentation/presentations/barfing-gadgets.ekoparty2014.en.pdf)] | [[es](./documentation/presentations/barfing-gadgets.ekoparty2014.es.pdf)]
+* *BARFing Gadgets* (ekoparty2014 presentation) [[[es](./documentation/presentations/barfing-gadgets.ekoparty2014.es.pdf)]
 
 ### Status
 
@@ -50,7 +50,7 @@ So far the *BARF Project* is composed of the following packages:
 
 For more information, see [README](./barf/README.md).
 
-## BARFgadgets
+### BARFgadgets
 
 ``BARFgadgets`` is a Python script built upon BARF that lets you *search*,
 *classifiy* and *verify* ROP gadgets inside a binary program. The *search*
