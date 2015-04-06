@@ -22,6 +22,12 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import logging.config
+import os
+
+logging_config_file = os.path.dirname(os.path.realpath(__file__)) + os.sep + "logging.conf"
+logging.config.fileConfig(logging_config_file)
+
 from barf import BARF
 
 import analysis

@@ -19,7 +19,7 @@ fully automated.
 For more information, see:
 
 * *BARF: A multiplatform open source Binary Analysis and Reverse engineering Framework* (Whitepaper) [[en](./documentation/papers/barf.pdf)]
-* *BARFing Gadgets* (ekoparty2014 presentation) [[[es](./documentation/presentations/barfing-gadgets.ekoparty2014.es.pdf)]
+* *BARFing Gadgets* (ekoparty2014 presentation) [[es](./documentation/presentations/barfing-gadgets.ekoparty2014.es.pdf)]
 
 ### Status
 
