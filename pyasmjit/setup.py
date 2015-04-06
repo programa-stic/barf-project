@@ -18,5 +18,6 @@ setup(
     ],
     license      = 'BSD 2-Clause',
     name         = 'pyasmjit',
-    version      = '0.1',
+    url          = 'http://github.com/programa-stic/barf-project',
+    version      = '0.2',
 )

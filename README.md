@@ -16,25 +16,24 @@ external tools such as debuggers, SMT solvers and instrumentation tools. The
 framework is designed primarily for human-assisted analysis but it can be
 fully automated.
 
-For more information, see:
-
-* *BARF: A multiplatform open source Binary Analysis and Reverse engineering Framework* (Whitepaper) [[en](./documentation/papers/barf.pdf)]
-* *BARFing Gadgets* (ekoparty2014 presentation) [[es](./documentation/presentations/barfing-gadgets.ekoparty2014.es.pdf)]
-
-### Status
-
-| **Latest Release** | v0.1                                                            |
-|-------------------:|:----------------------------------------------------------------|
-|            **URL** | https://github.com/programa-stic/barf-project/releases/tag/v0.1 |
-
-## Components
-
-So far the *BARF Project* is composed of the following packages:
+The *BARF project* includes *BARF* and related tools and packages. So far the
+is composed of the following items:
 
 * **BARF** : A multiplatform open source Binary Analysis and Reverse engineering Framework
 * **PyAsmJIT** : A JIT for the Intel x86_64 and ARM architecture.
 * Tools:
     * **BARFgadgets** : A tool built upon BARF that lets you *search*, *classifiy* and *verify* ROP gadgets inside a binary program.
+
+For more information, see:
+
+* *BARF: A multiplatform open source Binary Analysis and Reverse engineering Framework* (Whitepaper) [[en](./documentation/papers/barf.pdf)]
+* *BARFing Gadgets* (ekoparty2014 presentation) [[es](./documentation/presentations/barfing-gadgets.ekoparty2014.es.pdf)]
+
+Current status:
+
+| **Latest Release** | v0.1                                                            |
+|-------------------:|:----------------------------------------------------------------|
+|            **URL** | https://github.com/programa-stic/barf-project/releases/tag/v0.1 |
 
 > All packages were tested on Ubuntu 12.04 and 14.04 (x86_64).
 
@@ -86,6 +85,25 @@ VM. Finally, both final contexts (the one obtained through native execution
 and the one from emulation) are compare for differences.
 
 For more information, see [README](./pyasmjit/README.md).
+
+## Change Log
+
+Latest changes include:
+
+### Added
+- BARF: BARFgadgets now find gadgets in ARM binaries.
+- BARF: Add support for the ARM architecture (32 btis).
+- BARF: Add support for more x86 instructions.
+
+### Changed
+- BARF: Overall improvements to x86 arch package (major changes that ended up in performance increase of translation up to 3x!).
+- BARF: Overall improvements to reil package (minor changes).
+- BARF: New reil translation scheme for x86 instructions.
+
+### Fixed
+- BARF: Fixes in x86 instruction translations (mostly flags update issues.)
+
+For more information, see [README](./pyasmjit/CHANGELOG.md).
 
 ## License
 

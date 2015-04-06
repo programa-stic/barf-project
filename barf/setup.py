@@ -19,10 +19,10 @@ setup(
     license          = 'BSD 2-Clause',
     name             = 'barf',
     packages         = find_packages(),
-    url              = 'http://bitbucket.org/cnheitman/barf-project',
+    url              = 'http://github.com/programa-stic/barf-project',
     scripts          = [
         'tools/gadgets/BARFgadgets'
     ],
-    version          = '0.1',
+    version          = '0.2',
     zip_safe         = False
 )
