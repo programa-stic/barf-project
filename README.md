@@ -31,9 +31,11 @@ For more information, see:
 
 Current status:
 
-| **Latest Release** | v0.1                                                            |
-|-------------------:|:----------------------------------------------------------------|
-|            **URL** | https://github.com/programa-stic/barf-project/releases/tag/v0.1 |
+| **Latest Release** | v0.2                                                                 |
+|-------------------:|:---------------------------------------------------------------------|
+|            **URL** | https://github.com/programa-stic/barf-project/releases/tag/v0.2      |
+|-------------------:|:---------------------------------------------------------------------|
+|     **Change Log** | https://github.com/programa-stic/barf-project/blob/v0.2/CHANGELOG.md |
 
 > All packages were tested on Ubuntu 12.04 and 14.04 (x86_64).
 
