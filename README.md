@@ -9,7 +9,7 @@ several technical and commercial restrictions that limit access and use by a
 large portion of the academic and practitioner communities. *BARF* is an open
 source binary analysis framework that aims to support a wide range of binary
 code analysis tasks that are common in the information security discipline.
-*BARF* is a scriptable platform that supports instruction lifting from
+It is a scriptable platform that supports instruction lifting from
 multiple architectures, binary translation to an intermediate representation,
 an extensible framework for code analysis plugins and interoperation with
 external tools such as debuggers, SMT solvers and instrumentation tools. The
@@ -92,7 +92,7 @@ Latest changes include:
 
 ### Added
 - BARF: BARFgadgets now find gadgets in ARM binaries.
-- BARF: Add support for the ARM architecture (32 btis).
+- BARF: Add support for the ARM architecture (32 bits).
 - BARF: Add support for more x86 instructions.
 
 ### Changed

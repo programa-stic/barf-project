@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 - BARF: BARFgadgets now find gadgets in ARM binaries.
 - PyAsmJIT: Memory allocation mechanism (alloc/free style).
 - PyAsmJIT: Add support for the ARM architecture (32 bits).
-- BARF: Add support for the ARM architecture (32 btis).
+- BARF: Add support for the ARM architecture (32 bits).
 - BARF: Add support for more x86 instructions.
 - BARF: Memory consumption reduction through the use of '__slots__'.
 - BARF: BARFgadgets now supports gadgets ending in RET-imm16, JMP and CALL instructions.
