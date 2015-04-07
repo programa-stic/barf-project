@@ -239,6 +239,14 @@ def check_operands_size(instr, arch_size):
 
         pass
 
+    elif instr.mnemonic in [ReilMnemonic.SEXT]:
+        # operand0 : Value to store (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        assert instr.operands[0].size <= instr.operands[2].size, \
+            "Invalid operands size: %s" % instr
+
 class X86Translator(object):
 
     """x86 to IR Translator."""
@@ -644,6 +652,18 @@ class X86Translator(object):
 
         tb.write(instruction.operands[0], oprnd1)
 
+    def _translate_movsx(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tmp0 = tb.temporal(instruction.operands[0].size)
+
+        tb.add(self._builder.gen_sext(oprnd1, tmp0))
+
+        tb.write(instruction.operands[0], tmp0)
+
     def _translate_movzx(self, tb, instruction):
         # Flags Affected
         # None.
@@ -748,18 +768,18 @@ class X86Translator(object):
         # Set if condition (set_cond) is met.
         # Flags Affected
         # None.
-        
+
         eval_cond_fn_name = "_evaluate_" + set_cond
         eval_cond_fn = getattr(self, eval_cond_fn_name, self._not_implemented)
 
         tb.write(instruction.operands[0], tb.immediate(0, 1))
 
         set_cond_not_met = Label('set_cond_not_met')
-        
+
         neg_cond = tb._negate_reg(eval_cond_fn(tb))
-        
+
         tb.add(self._builder.gen_jcc(neg_cond, set_cond_not_met))
-        
+
         tb.write(instruction.operands[0], tb.immediate(1, 1))
 
         tb.add(set_cond_not_met)
@@ -2208,7 +2228,7 @@ class X86Translator(object):
 
         eval_cond_fn_name = "_evaluate_" + jcc_cond
         eval_cond_fn = getattr(self, eval_cond_fn_name, self._not_implemented)
-        
+
         oprnd0 = tb.read(instruction.operands[0])
 
         addr_oprnd = self._translate_address(tb, oprnd0)

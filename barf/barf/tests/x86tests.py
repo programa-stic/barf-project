@@ -2934,6 +2934,35 @@ class X86TranslationTests(unittest.TestCase):
 
         self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
+    def test_movsx(self):
+        asm = ["movsx eax, bx"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        # print self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
     def __init_context(self):
         """Initialize register with random values.
         """
