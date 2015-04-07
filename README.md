@@ -31,10 +31,10 @@ For more information, see:
 
 Current status:
 
-| **Latest Release** | v0.2                                                                 |
-|-------------------:|:---------------------------------------------------------------------|
-|            **URL** | https://github.com/programa-stic/barf-project/releases/tag/v0.2      |
-|     **Change Log** | https://github.com/programa-stic/barf-project/blob/v0.2/CHANGELOG.md |
+| **Latest Release** | v0.2.1                                                                 |
+|-------------------:|:-----------------------------------------------------------------------|
+|            **URL** | https://github.com/programa-stic/barf-project/releases/tag/v0.2.1      |
+|     **Change Log** | https://github.com/programa-stic/barf-project/blob/v0.2.1/CHANGELOG.md |
 
 > All packages were tested on Ubuntu 12.04 and 14.04 (x86_64).
 
@@ -102,6 +102,7 @@ Latest changes include:
 - BARF: New reil translation scheme for x86 instructions.
 
 ### Fixed
+- BARF: Fix Python logging module setup issue.
 - BARF: Fixes in x86 instruction translations (mostly flags update issues.)
 
 For more information, see [README](./pyasmjit/CHANGELOG.md).

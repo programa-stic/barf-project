@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased][unreleased]
 
+## [0.2.1] - 2015-04-07
+### Fixed
+- Fix Python logging module setup issue.
+
 ## [0.2] - 2015-04-06
 ### Added
 - BARFgadgets now find gadgets in ARM binaries.
@@ -28,5 +32,6 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - x86instruction and x86intructiontranslator modules were removed.
 
-[unreleased]: https://github.com/programa-stic/barf-project/compare/v0.2...develop
+[unreleased]: https://github.com/programa-stic/barf-project/compare/v0.2.1...develop
+[0.2.1]: https://github.com/programa-stic/barf-project/compare/v0.2...v0.2.1
 [0.2]: https://github.com/programa-stic/barf-project/compare/v0.1...v0.2
