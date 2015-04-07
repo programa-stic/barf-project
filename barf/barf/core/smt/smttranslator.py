@@ -117,6 +117,9 @@ class SmtTranslator(object):
 
             # Ad hoc Instructions
             ReilMnemonic.RET : self._translate_ret,
+
+            # Extensions
+            ReilMnemonic.SEXT : self._translate_sext,
         }
 
     def translate(self, instr):
@@ -665,3 +668,42 @@ class SmtTranslator(object):
         # raise Exception("Unsupported instruction : RET")
 
         return []
+
+    # Extension
+    # ======================================================================== #
+    def _translate_sext(self, oprnd1, oprnd2, oprnd3):
+        """Return a formula representation of a SEXT instruction.
+        """
+        assert oprnd1.size and oprnd3.size
+
+        op1_var = self._translate_src_oprnd(oprnd1)
+        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
+
+        dst_size = op3_var.size
+
+        constrs = []
+
+        if oprnd1.size == oprnd3.size:
+            expr = (op1_var == op3_var)
+        elif oprnd1.size < oprnd3.size:
+            expr = (op1_var == smtlibv2.SEXTEND(op1_var, op3_var))
+
+            # Make sure that the values that can take dst operand
+            # do not exceed the range of the source operand.
+            # TODO: Find a better way to enforce this.
+
+            # TODO: This should not be needed any more.
+            # fmt = "#b%0{0}d".format(op3_var.size - op1_var.size)
+            # imm = smtlibv2.BitVec(op3_var.size - op1_var.size, fmt % 0)
+
+            # constrs = [(imm == smtlibv2.EXTRACT(op3_var, op1_var.size, op3_var.size - op1_var.size))]
+        else:
+            raise Exception("Invalid operand size: %d" % str(oprnd3))
+
+        rv = [expr]
+
+        if constrs:
+            rv += constrs
+
+        if parent_reg_constrs:
+            rv += parent_reg_constrs
