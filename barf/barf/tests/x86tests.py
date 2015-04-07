@@ -1621,6 +1621,816 @@ class X86TranslationTests(unittest.TestCase):
 
         self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
+    def test_seta(self):
+        asm = ["seta al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setae(self):
+        asm = ["setae al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setb(self):
+        asm = ["setb al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setbe(self):
+        asm = ["setbe al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setc(self):
+        asm = ["setc al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_sete(self):
+        asm = ["sete al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setg(self):
+        asm = ["setg al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setge(self):
+        asm = ["setge al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setl(self):
+        asm = ["setl al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setle(self):
+        asm = ["setle al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setna(self):
+        asm = ["setna al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setnae(self):
+        asm = ["setnae al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setnb(self):
+        asm = ["setnb al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setnbe(self):
+        asm = ["setnbe al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setnc(self):
+        asm = ["setnc al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setne(self):
+        asm = ["setne al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setng(self):
+        asm = ["setng al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setnge(self):
+        asm = ["setnge al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setnl(self):
+        asm = ["setnl al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setnle(self):
+        asm = ["setnle al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setno(self):
+        asm = ["setno al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setnp(self):
+        asm = ["setnp al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setns(self):
+        asm = ["setns al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setnz(self):
+        asm = ["setnz al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_seto(self):
+        asm = ["seto al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setp(self):
+        asm = ["setp al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setpe(self):
+        asm = ["setpe al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setpo(self):
+        asm = ["setpo al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_sets(self):
+        asm = ["sets al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_setz(self):
+        asm = ["setz al"]
+
+        x86_instrs = map(self.x86_parser.parse, asm)
+
+        self.__set_address(0xdeadbeef, x86_instrs)
+
+        reil_instrs = map(self.x86_translator.translate, x86_instrs)
+
+        ctx_init = self.__init_context()
+
+        x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
+            reil_instrs,
+            0xdeadbeef << 8,
+            context=ctx_init
+        )
+
+        reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
     def test_shr(self):
         asm = ["shr eax, 3"]
 
