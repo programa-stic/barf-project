@@ -45,17 +45,21 @@ Byte addressable memory based on a dictionary.
 
 """
 
+import logging
 import random
 
 from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
 from barf.core.reil.reil import ReilRegisterOperand
 
+logger = logging.getLogger("reilemulator")
+
 verbose = False
 #verbose = True
 
 REIL_MEMORY_ENDIANNESS_LE = 0x0     # Little Endian
 REIL_MEMORY_ENDIANNESS_BE = 0x1     # Big Endian
+
 
 class ReilMemory(object):
 
@@ -364,14 +368,21 @@ class ReilEmulator(object):
             instr = instructions[main_index][sub_index]
 
             if verbose:
-                print("    0x%08x:%02x : %s" % (self._ip >> 8, self._ip & 0xff, instr))
-                # print "    %03d : %s" % (main_index, instr)
+                # print("    0x%08x:%02x : %s" % (self._ip >> 8, self._ip & 0xff, instr))
+                print "    %03d : %s" % (main_index, instr)
+                # logger.debug("    0x%08x:%02x : %s" % (self._ip >> 8, self._ip & 0xff, instr))
 
             # execute instruction
             next_addr = self._executors[instr.mnemonic](instr)
 
             # update instruction pointer
             if next_addr:
+                if end_address and next_addr == end_address:
+                    if verbose:
+                        print("[+] End address reached...")
+
+                    break
+
                 found = False
 
                 for idx, instrs in enumerate(instructions):
@@ -928,7 +939,7 @@ class ReilEmulator(object):
         op0_val = self.read_operand(instr.operands[0])  # Branch condition.
         op2_val = self.read_operand(instr.operands[2])  # Target address.
 
-        return op2_val if op0_val == 1 else None
+        return op2_val if op0_val != 0 else None
 
     # Other instructions
     # ======================================================================== #
