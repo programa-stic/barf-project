@@ -980,16 +980,22 @@ class ReilEmulator(object):
     def _execute_sext(self, instr):
         """Execute SEXT instruction.
         """
-        op1_size = instr.operands[0].size
-        op3_size = instr.operands[2].size
+        op0_size = instr.operands[0].size
+        op2_size = instr.operands[2].size
 
-        op1_val = self._get_operand_value(instr.operands[0])
-        op1_msb = op1_val >> (op1_size-1)
+        op0_val = self.read_operand(instr.operands[0])
+        op0_msb = op0_val >> (op0_size-1)
 
-        op3_mask = (2**op3_size-1) & ~(2**op1_size-1) if op1_msb == 1 else 0x0
+        op2_mask = (2**op2_size-1) & ~(2**op0_size-1) if op0_msb == 1 else 0x0
 
-        op3_val = op1_val | op3_mask
+        op2_val = op0_val | op2_mask
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint)
+
+        self.write_operand(instr.operands[2], op2_val)
 
         return None
