@@ -88,6 +88,9 @@ class ReilMnemonic(object):
     # Added Instructions
     RET   = 18
 
+    # Extensions
+    SEXT  = 19
+
     @staticmethod
     def to_string(mnemonic):
         """Return the string representation of the given mnemonic.
@@ -122,6 +125,9 @@ class ReilMnemonic(object):
 
             # Added Instructions
             ReilMnemonic.RET : "ret",
+
+            # Extensions
+            ReilMnemonic.SEXT : "sext",
         }
 
         return strings[mnemonic]
@@ -160,6 +166,9 @@ class ReilMnemonic(object):
 
             # Added Instructions
             "ret" : ReilMnemonic.RET,
+
+            # Added Instructions
+            "sext" : ReilMnemonic.SEXT,
         }
 
         return mnemonics[string]
@@ -195,6 +204,9 @@ REIL_MNEMONICS = (
 
     # Added Instructions
     ReilMnemonic.RET,
+
+    # Extensions
+    ReilMnemonic.SEXT,
 )
 
 class ReilInstruction(object):
@@ -536,6 +548,15 @@ class ReilInstructionBuilder(object):
         empty_reg = ReilEmptyOperand()
 
         return self.build(ReilMnemonic.RET, empty_reg, empty_reg, empty_reg)
+
+    # Extensions
+    # ======================================================================== #
+    def gen_sext(self, src, dst):
+        """Return a SEXT instruction.
+        """
+        empty_reg = ReilEmptyOperand()
+
+        return self.build(ReilMnemonic.SEXT, src, empty_reg, dst)
 
     # Auxiliary functions
     # ======================================================================== #
