@@ -322,6 +322,9 @@ class ReilEmulator(object):
 
             # Ad hoc Instructions
             ReilMnemonic.RET : self._execute_ret,
+
+            # Extensions
+            ReilMnemonic.SEXT : self._execute_sext,
         }
 
         # Taint information.
@@ -971,3 +974,22 @@ class ReilEmulator(object):
         """Execute RET instruction.
         """
         pass
+
+    # Extension
+    # ======================================================================== #
+    def _execute_sext(self, instr):
+        """Execute SEXT instruction.
+        """
+        op1_size = instr.operands[0].size
+        op3_size = instr.operands[2].size
+
+        op1_val = self._get_operand_value(instr.operands[0])
+        op1_msb = op1_val >> (op1_size-1)
+
+        op3_mask = (2**op3_size-1) & ~(2**op1_size-1) if op1_msb == 1 else 0x0
+
+        op3_val = op1_val | op3_mask
+
+        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+
+        return None
