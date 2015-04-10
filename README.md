@@ -17,7 +17,7 @@ framework is designed primarily for human-assisted analysis but it can be
 fully automated.
 
 The *BARF project* includes *BARF* and related tools and packages. So far the
-is composed of the following items:
+project is composed of the following items:
 
 * **BARF** : A multiplatform open source Binary Analysis and Reverse engineering Framework
 * **PyAsmJIT** : A JIT for the Intel x86_64 and ARM architecture.
