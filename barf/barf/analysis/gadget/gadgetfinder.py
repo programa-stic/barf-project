@@ -135,6 +135,26 @@ class GadgetFinder(object):
             if ins_ir[-1] and (ins_ir[-1].mnemonic == ReilMnemonic.RET \
                 or (ins_ir[-1].mnemonic == ReilMnemonic.JCC and isinstance(ins_ir[-1].operands[2], ReilRegisterOperand))):
 
+                # add for REX.W + FF /3 call instruction
+                if ins_ir[-1].mnemonic == ReilMnemonic.JCC:
+                    #try addr - 1
+                    asm_instr_1 = self._disasm.disassemble(
+                        self._mem[addr-1:min(addr+15, end_address + 1)],
+                        addr
+                    )
+
+                    if asm_instr:
+                        self._ir_trans.reset()
+
+                        try:
+                            ins_ir_1 = self._ir_trans.translate(asm_instr_1)
+                            if ins_ir_1[-1].mnemonic == ReilMnemonic.JCC:
+                                addr = addr - 1
+                                asm_instr = asm_instr_1
+                                ins_ir = ins_ir_1
+                        except:
+                            pass
+
                 root = GadgetTreeNode(DualInstruction(addr, asm_instr, ins_ir))
 
                 roots.append(root)
@@ -256,8 +276,14 @@ class GadgetFinder(object):
         """Return a gadget list.
         """
         node_list = self._build_gadgets_rec(gadget_tree_root)
+        
+        gadgets = []
 
-        return [RawGadget(n) for n in node_list]
+        for node in node_list:
+            for i in xrange(len(node)):
+                gadgets.append(RawGadget(node[i:]))
+        
+        return gadgets
 
     def _build_gadgets_rec(self, gadget_tree_root):
         """Build a gadget from a gadget tree.
