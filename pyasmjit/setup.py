@@ -20,4 +20,5 @@ setup(
     name         = 'pyasmjit',
     url          = 'http://github.com/programa-stic/barf-project',
     version      = '0.2',
+    test_suite   = 'tests',
 )
