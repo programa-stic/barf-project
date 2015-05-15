@@ -28,7 +28,7 @@ import unittest
 import pyasmjit
 
 
-@unittest.skipUnless('arm' in platform.processor().lower(),
+@unittest.skipUnless('arm' in platform.machine().lower(),
                      'Not running on an ARM system')
 class Test_arm_jit(unittest.TestCase):
     def test_adds(self):

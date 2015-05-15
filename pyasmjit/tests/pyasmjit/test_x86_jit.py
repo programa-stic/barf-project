@@ -28,7 +28,7 @@ import unittest
 import pyasmjit
 
 
-@unittest.skipUnless(platform.processor().lower() == 'x86_64',
+@unittest.skipUnless(platform.machine().lower() == 'x86_64',
                      'Not running on an x86_64 system')
 class Test_x86_jit(unittest.TestCase):
     def test_add(self):
