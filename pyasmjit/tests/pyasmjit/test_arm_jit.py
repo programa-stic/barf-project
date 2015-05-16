@@ -28,32 +28,17 @@ import unittest
 import pyasmjit
 
 
-@unittest.skipUnless('arm' in platform.machine().lower(),
-                     'Not running on an ARM system')
+@unittest.skipUnless(platform.machine().lower() == 'armv7l',
+                     'Not running on an ARMv7 system')
 class Test_arm_jit(unittest.TestCase):
-    def test_adds(self):
+    def test_add(self):
         code = """
-            movs r8, r2, lsl #31
-            mov r7, #0x7FFFFFFF
-            mov r8, #0x7FFFFFFF
-            adds r7, r7, r8
+            add r7, r7, r8
         """
         ctx_in = {
-            'r0': 0x0,
-            'r1': 0x1,
-            'r2': 0x2,
-            'r3': 0x3,
-            'r4': 0x4,
-            'r5': 0x5,
-            'r6': 0x6,
-            'r7': 0x7,
-            'r8': 0x8,
-            'r9': 0x9,
-            'r10': 0xa,
-            'r11': 0xb,
-            'r12': 0xc,
-            'apsr': 0x0,
+            'r7': 0x1,
+            'r8': 0x2,
         }
 
-        rv, ctx_out = pyasmjit.arm_execute(code, ctx_in)
-        self.assertEqual(0xFFFFFFFE, ctx_out['r7'])
+        rv, ctx_out, _ = pyasmjit.arm_execute(code, ctx_in)
+        self.assertEqual(0x3, ctx_out['r7'])
