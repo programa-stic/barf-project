@@ -301,7 +301,7 @@ class CodeAnalyzer(object):
                         if isinstance(instr.operands[2], ReilRegisterOperand):
                             smt_mem_addr = self._solver.mkBitVec(32, self._translator.get_curr_name(instr.operands[2].name))
                         else:
-                            smt_mem_addr = smtlibv2.BitVec(32, "#x%08x" % instr.operands[2].name)
+                            smt_mem_addr = smtlibv2.BitVec(32, "#x%08x" % instr.operands[2].immediate)
 
                         _memory_access.append(smt_mem_addr)
 
@@ -310,7 +310,7 @@ class CodeAnalyzer(object):
                         if isinstance(instr.operands[0], ReilRegisterOperand):
                             smt_mem_addr = self._solver.mkBitVec(32, self._translator.get_curr_name(instr.operands[0].name))
                         else:
-                            smt_mem_addr = smtlibv2.BitVec(32, "#x%08x" % instr.operands[0].name)
+                            smt_mem_addr = smtlibv2.BitVec(32, "#x%08x" % instr.operands[0].immediate)
 
                         _memory_access.append(smt_mem_addr)
 
