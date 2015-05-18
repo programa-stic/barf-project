@@ -25,6 +25,6 @@ context_in = {
 print code
 print context_in
 
-rv, context_out = pyasmjit.execute(code, context_in)
+rv, context_out = pyasmjit.x86_execute(code, context_in)
 
 print context_out
