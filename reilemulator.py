@@ -48,6 +48,8 @@ Byte addressable memory based on a dictionary.
 import logging
 import random
 
+from collections import defaultdict
+
 from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
 from barf.core.reil.reil import ReilRegisterOperand
@@ -228,6 +230,9 @@ class ReilMemory(object):
 
         return "\n".join(lines)
 
+    def written(self, address):
+        return self._memory.has_key(address)
+
     # Taint functions
     # ======================================================================== #
     def set_taint(self, address, size, taint):
@@ -288,6 +293,7 @@ class ReilEmulator(object):
         self._mem_read = set()
 
         self._arch_regs = []
+        self._arch_flags = []
         self._arch_regs_size = {}
         self._alias_mapper = {}
 
@@ -330,23 +336,43 @@ class ReilEmulator(object):
         # Taint information.
         self._taints = {}
 
-        self._process = None
+        # Instructions pre and post handlers.
+        empty_instr_handler_fn = lambda emu, instr, param: None
+        empty_instr_handler_param = None
+
+        self._instr_pre_handler = defaultdict(lambda: (empty_instr_handler_fn, empty_instr_handler_param))
+        self._instr_post_handler = defaultdict(lambda: (empty_instr_handler_fn, empty_instr_handler_param))
+
+    def set_instruction_pre_handler(self, mnemonic, function, parameter):
+        self._instr_pre_handler[mnemonic] = (function, parameter)
+
+    def set_instruction_post_handler(self, mnemonic, function, parameter):
+        self._instr_post_handler[mnemonic] = (function, parameter)
+
+    def _execute_one(self, instr):
+        if verbose:
+            print("0x%08x:%02x : %s" % (instr.address >> 8, instr.address & 0xff, instr))
+
+        pre_handler_fn, pre_handler_param = self._instr_pre_handler[instr.mnemonic]
+        post_handler_fn, post_handler_param = self._instr_post_handler[instr.mnemonic]
+
+        pre_handler_fn(self, instr, pre_handler_param)
+        next_addr = self._executors[instr.mnemonic](instr)
+        post_handler_fn(self, instr, post_handler_param)
+
+        return next_addr
 
     def execute_lite(self, instructions, context=None):
         """Execute a list of instructions. It does not support loops.
         """
-        # if verbose:
-        #     print "[+] Executing instructions..."
+        if verbose:
+            print("[+] Executing instructions...")
 
         if context:
             self._regs = context.copy()
 
         for index, instr in enumerate(instructions):
-            if verbose:
-                print("0x%08x:%02x : %s" % (instr.address >> 8, instr.address & 0xff, instr))
-                # print "    %03d : %s" % (index, instr)
-
-            self._executors[instr.mnemonic](instr)
+            self._execute_one(instr)
 
         return self._regs.copy(), self._mem
 
@@ -370,13 +396,8 @@ class ReilEmulator(object):
             # fetch instruction
             instr = instructions[main_index][sub_index]
 
-            if verbose:
-                # print("    0x%08x:%02x : %s" % (self._ip >> 8, self._ip & 0xff, instr))
-                print "    %03d : %s" % (main_index, instr)
-                # logger.debug("    0x%08x:%02x : %s" % (self._ip >> 8, self._ip & 0xff, instr))
-
             # execute instruction
-            next_addr = self._executors[instr.mnemonic](instr)
+            next_addr = self._execute_one(instr)
 
             # update instruction pointer
             if next_addr:
@@ -481,10 +502,16 @@ class ReilEmulator(object):
         self._arch_regs = registers
 
     # TODO: Remove function. Use ArchitectureInformation instead.
+    def set_arch_flags(self, flags):
+        """Set native flags.
+        """
+        self._arch_flags = flags
+
+    # TODO: Remove function. Use ArchitectureInformation instead.
     def set_arch_registers_size(self, registers_size):
         """Set native registers size.
         """
-        self._registers_size = registers_size
+        self._arch_regs_size = registers_size
 
     # TODO: Remove function. Use ArchitectureInformation instead.
     def set_reg_access_mapper(self, reg_access_mapper):
@@ -530,7 +557,7 @@ class ReilEmulator(object):
     # Taint auxiliary functions
     # ======================================================================== #
     def _get_register_taint(self, register):
-        if register.name in self._alias_mapper and register.name not in self._flags:
+        if register.name in self._alias_mapper and register.name not in self._arch_flags:
             base_name, _ = self._alias_mapper[register.name]
         else:
             base_name = register.name
@@ -538,7 +565,7 @@ class ReilEmulator(object):
         return self._taints.get(base_name, False)
 
     def _set_register_taint(self, register, taint):
-        if register.name in self._alias_mapper and register.name not in self._flags:
+        if register.name in self._alias_mapper and register.name not in self._arch_flags:
             base_name, _ = self._alias_mapper[register.name]
         else:
             base_name = register.name
@@ -584,7 +611,7 @@ class ReilEmulator(object):
     def _read_register(self, register):
         if register.name in self._alias_mapper:
             base_reg_name, offset = self._alias_mapper[register.name]
-            base_reg_size = self._registers_size[base_reg_name]
+            base_reg_size = self._arch_regs_size[base_reg_name]
         else:
             base_reg_name, offset = register.name, 0
             base_reg_size = register.size
@@ -611,7 +638,7 @@ class ReilEmulator(object):
     def _write_register(self, register, value):
         if register.name in self._alias_mapper:
             base_reg_name, offset = self._alias_mapper[register.name]
-            base_reg_size = self._registers_size[base_reg_name]
+            base_reg_size = self._arch_regs_size[base_reg_name]
         else:
             base_reg_name, offset = register.name, 0
             base_reg_size = register.size
@@ -857,19 +884,6 @@ class ReilEmulator(object):
         assert instr.operands[2].size in [8, 16, 32, 64]
 
         op0_val = self.read_operand(instr.operands[0])                  # Memory address.
-
-		# FIXME: Ugly, ugly hack!! Remove!
-        size = instr.operands[2].size
-
-        for i in xrange(0, size / 8):
-            if not self._mem._memory.has_key(op0_val + i):
-                try:
-                    chunk = self._process.readBytes(op0_val + i, 1)
-
-                    self.write_memory(op0_val + i, 8, ord(chunk))
-                except:
-                    pass
-
         op2_val = self.read_memory(op0_val, instr.operands[2].size)     # Data.
 
         # Get taint information.
