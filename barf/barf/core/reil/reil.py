@@ -241,6 +241,12 @@ class ReilInstruction(object):
         """
         return self._mnemonic
 
+    @property
+    def mnemonic_str(self):
+        """Get instruction mnemonic as string.
+        """
+        return ReilMnemonic.to_string(self._mnemonic)
+
     @mnemonic.setter
     def mnemonic(self, value):
         """Set instruction mnemonic.
@@ -320,6 +326,9 @@ class ReilInstruction(object):
             operands_str = ", ".join(map(str, self._operands))
 
         return "%-5s [%s]" % (mnemonic_str, operands_str)
+
+    def __hash__(self):
+        return hash(str(self))
 
 
 class ReilOperand(object):
