@@ -263,6 +263,18 @@ class ReilMemory(object):
 
         print(msg)
 
+    def reset(self):
+        self._memory = {}
+
+        self._taints = {}
+
+        # Previous state of memory. Requiere for some *special*
+        # functions.
+        self._memory_prev = {}
+
+        # Write operations counter.
+        self._write_count = 0
+
 
 class ReilEmulator(object):
 
@@ -343,25 +355,16 @@ class ReilEmulator(object):
         self._instr_pre_handler = defaultdict(lambda: (empty_instr_handler_fn, empty_instr_handler_param))
         self._instr_post_handler = defaultdict(lambda: (empty_instr_handler_fn, empty_instr_handler_param))
 
+    # Instruction's handler functions
+    # ======================================================================== #
     def set_instruction_pre_handler(self, mnemonic, function, parameter):
         self._instr_pre_handler[mnemonic] = (function, parameter)
 
     def set_instruction_post_handler(self, mnemonic, function, parameter):
         self._instr_post_handler[mnemonic] = (function, parameter)
 
-    def _execute_one(self, instr):
-        if verbose:
-            print("0x%08x:%02x : %s" % (instr.address >> 8, instr.address & 0xff, instr))
-
-        pre_handler_fn, pre_handler_param = self._instr_pre_handler[instr.mnemonic]
-        post_handler_fn, post_handler_param = self._instr_post_handler[instr.mnemonic]
-
-        pre_handler_fn(self, instr, pre_handler_param)
-        next_addr = self._executors[instr.mnemonic](instr)
-        post_handler_fn(self, instr, post_handler_param)
-
-        return next_addr
-
+    # Execution functions
+    # ======================================================================== #
     def execute_lite(self, instructions, context=None):
         """Execute a list of instructions. It does not support loops.
         """
@@ -446,6 +449,19 @@ class ReilEmulator(object):
 
         return self._regs.copy(), self._mem
 
+    def _execute_one(self, instr):
+        if verbose:
+            print("0x%08x:%02x : %s" % (instr.address >> 8, instr.address & 0xff, instr))
+
+        pre_handler_fn, pre_handler_param = self._instr_pre_handler[instr.mnemonic]
+        post_handler_fn, post_handler_param = self._instr_post_handler[instr.mnemonic]
+
+        pre_handler_fn(self, instr, pre_handler_param)
+        next_addr = self._executors[instr.mnemonic](instr)
+        post_handler_fn(self, instr, post_handler_param)
+
+        return next_addr
+
     def reset(self):
         """Reset emulator. All registers and memory are reset.
         """
@@ -458,6 +474,8 @@ class ReilEmulator(object):
         self._regs_written = set()
         self._regs_read = set()
 
+    # Properties
+    # ======================================================================== #
     @property
     def registers(self):
         """Return registers.
@@ -605,6 +623,9 @@ class ReilEmulator(object):
 
     def write_memory(self, address, size, value):
         self._mem.write(address, size, value)
+
+    def reset_memory(self):
+        self._mem.reset()
 
     # Read/Write auxiliary functions
     # ======================================================================== #
