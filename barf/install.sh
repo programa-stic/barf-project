@@ -12,16 +12,6 @@ rm -rf $temp_dir
 mkdir $temp_dir
 cd $temp_dir
 
-# Install Capstone Core
-git clone https://github.com/aquynh/capstone
-cd capstone/
-sudo ./make.sh install
-
-# Install Capstone Python Bindings
-cd bindings/python/
-sudo make install
-cd ../../..
-
 # Install z3
 git clone https://git.codeplex.com/z3
 cd z3/
