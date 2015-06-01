@@ -24,6 +24,7 @@
 
 import os
 import pickle
+import platform
 import random
 import unittest
 
@@ -125,6 +126,9 @@ class X86Parser64BitsTests(unittest.TestCase):
 
         self.assertEqual(str(asm), "add byte ptr [rax+0xffffff89], cl")
 
+
+@unittest.skipUnless(platform.machine().lower() == 'x86_64',
+                     'Not running on an x86_64 system')
 class X86TranslationTests(unittest.TestCase):
 
     def setUp(self):
@@ -2435,9 +2439,9 @@ class X86TranslationTests(unittest.TestCase):
         conds = ['a','ae','b','be','c','e','g','ge','l','le','na','nae','nb','nbe','nc','ne','ng','nge','nl','nle','no','np','ns','nz','o','p','pe','po','s','z']
         for c in conds:
             self._test_jcc(c)
-            
+
     def _test_jcc(self, jmp_cond):
-        
+
         untouched_value = 0x45454545
         touched_value = 0x31313131
 
@@ -2446,13 +2450,13 @@ class X86TranslationTests(unittest.TestCase):
                "mov rax, 0x{:x}".format(touched_value),
                "xchg rax, rax",
         ]
-        
+
         asm_reil = list(asm)
         asm_reil[1] = asm_reil[1].format(str(0xdeadbeef + 0x3))
-        
+
         asm_pyasmjit = list(asm)
         asm_pyasmjit[1] = asm_pyasmjit[1].format("$+0x07")
-        
+
         x86_instrs = map(self.x86_parser.parse, asm_reil)
 
         self.__set_address(0xdeadbeef, x86_instrs)
