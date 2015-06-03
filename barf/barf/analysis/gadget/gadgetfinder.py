@@ -276,14 +276,18 @@ class GadgetFinder(object):
         """Return a gadget list.
         """
         node_list = self._build_gadgets_rec(gadget_tree_root)
-        
-        gadgets = []
 
-        for node in node_list:
-            for i in xrange(len(node)):
-                gadgets.append(RawGadget(node[i:]))
-        
-        return gadgets
+        return [RawGadget(n) for n in node_list]
+
+        # TODO: Update x86 gadgets tests before uncommenting the following.
+        # (this change breaks x86 gadgets tests.)
+        # gadgets = []
+
+        # for node in node_list:
+        #     for i in xrange(len(node)):
+        #         gadgets.append(RawGadget(node[i:]))
+
+        # return gadgets
 
     def _build_gadgets_rec(self, gadget_tree_root):
         """Build a gadget from a gadget tree.

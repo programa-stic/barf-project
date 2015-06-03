@@ -23,6 +23,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import pickle
+import platform
 import random
 import unittest
 import struct
@@ -135,6 +136,8 @@ class ArmParser32BitsTests(unittest.TestCase):
             self.assertEqual(str(asm), i)
 
 
+@unittest.skipUnless(platform.machine().lower() == 'armv7l',
+                     'Not running on an ARMv7 system')
 class ArmTranslationTests(unittest.TestCase):
 
     def setUp(self):
