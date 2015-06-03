@@ -355,6 +355,9 @@ class ReilEmulator(object):
         self._instr_pre_handler = defaultdict(lambda: (empty_instr_handler_fn, empty_instr_handler_param))
         self._instr_post_handler = defaultdict(lambda: (empty_instr_handler_fn, empty_instr_handler_param))
 
+        self._instr_pre_handler2 = (empty_instr_handler_fn, empty_instr_handler_param)
+        self._instr_post_handler2 = (empty_instr_handler_fn, empty_instr_handler_param)
+
     # Instruction's handler functions
     # ======================================================================== #
     def set_instruction_pre_handler(self, mnemonic, function, parameter):
@@ -362,6 +365,12 @@ class ReilEmulator(object):
 
     def set_instruction_post_handler(self, mnemonic, function, parameter):
         self._instr_post_handler[mnemonic] = (function, parameter)
+
+    def set_instruction_pre_handler2(self, function, parameter):
+        self._instr_pre_handler2 = (function, parameter)
+
+    def set_instruction_post_handler2(self, function, parameter):
+        self._instr_post_handler2 = (function, parameter)
 
     # Execution functions
     # ======================================================================== #
@@ -456,9 +465,18 @@ class ReilEmulator(object):
         pre_handler_fn, pre_handler_param = self._instr_pre_handler[instr.mnemonic]
         post_handler_fn, post_handler_param = self._instr_post_handler[instr.mnemonic]
 
+        pre_handler_fn2, pre_handler_param2 = self._instr_pre_handler2
+        post_handler_fn2, post_handler_param2 = self._instr_post_handler2
+
+        # print("inst pre")
         pre_handler_fn(self, instr, pre_handler_param)
+        # print("inst pre2")
+        pre_handler_fn2(self, instr, pre_handler_param2)
         next_addr = self._executors[instr.mnemonic](instr)
+        # print("inst post")
         post_handler_fn(self, instr, post_handler_param)
+        # print("inst post2")
+        post_handler_fn2(self, instr, post_handler_param2)
 
         return next_addr
 
