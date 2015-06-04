@@ -71,7 +71,7 @@ class CodeAnalyzerTests(unittest.TestCase):
         self._memory = MemoryMock()
         self._smt_solver = SmtSolver()
         self._smt_translator = SmtTranslator(self._smt_solver, self._operand_size)
-        self._smt_translator.set_reg_access_mapper(self._arch_info.alias_mapper)
+        self._smt_translator.set_arch_alias_mapper(self._arch_info.alias_mapper)
         self._smt_translator.set_arch_registers_size(self._arch_info.registers_size)
         self._disasm = X86Disassembler()
         self._ir_translator = X86Translator()

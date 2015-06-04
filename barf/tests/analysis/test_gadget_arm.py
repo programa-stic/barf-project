@@ -53,9 +53,9 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         self._ir_emulator.set_arch_registers(self._arch_info.registers_gp_all)
         self._ir_emulator.set_arch_registers_size(self._arch_info.registers_size)
-        self._ir_emulator.set_reg_access_mapper(self._arch_info.alias_mapper)
+        self._ir_emulator.set_arch_alias_mapper(self._arch_info.alias_mapper)
 
-        self._smt_translator.set_reg_access_mapper(self._arch_info.alias_mapper)
+        self._smt_translator.set_arch_alias_mapper(self._arch_info.alias_mapper)
         self._smt_translator.set_arch_registers_size(self._arch_info.registers_size)
 
         self._code_analyzer = CodeAnalyzer(self._smt_solver, self._smt_translator)

@@ -84,7 +84,7 @@ class SmtTranslator(object):
         self._var_name_mappers = {}
 
         self._arch_regs_size = {}
-        self._reg_access_mapper = {}
+        self._arch_alias_mapper = {}
 
         # Intructions translators (from REIL to SMT expressions)
         self._instr_translators = {
@@ -227,7 +227,7 @@ class SmtTranslator(object):
     def _translate_src_register_oprnd(self, operand):
         """Translate source resgister operand to SMT expr.
         """
-        reg_info = self._reg_access_mapper.get(operand.name, None)
+        reg_info = self._arch_alias_mapper.get(operand.name, None)
 
         if reg_info:
             var_base_name, offset = reg_info
@@ -246,7 +246,7 @@ class SmtTranslator(object):
     def _translate_dst_register_oprnd(self, operand):
         """Translate destination resgister operand to SMT expr.
         """
-        reg_info = self._reg_access_mapper.get(operand.name, None)
+        reg_info = self._arch_alias_mapper.get(operand.name, None)
 
         if reg_info:
             var_base_name, offset = reg_info
@@ -321,21 +321,21 @@ class SmtTranslator(object):
 
         return bitvec
 
-    def set_reg_access_mapper(self, reg_access_mapper):
-        """Set register access mapper.
+    def set_arch_alias_mapper(self, alias_mapper):
+        """Set native register alias mapper.
 
         This is necessary as some architecture has register alias. For
         example, in Intel x86 (32 bits), *ax* refers to the lower half
         of the *eax* register, so when *ax* is modified so it is *eax*.
-        Then, this reg_access_mapper is a dictionary where its keys are
+        Then, this alias_mapper is a dictionary where its keys are
         registers (names, only) and each associated value is a tuple
-        of the form (base register name, bit mask (a.k.a filter), shift).
+        of the form (base register name, offset).
         This information is used to modified the correct register at
         the correct location (within the register) when a register alias
         value is changed.
 
         """
-        self._reg_access_mapper = reg_access_mapper
+        self._alias_mapper = alias_mapper
 
     def set_arch_registers_size(self, registers_size):
         """Set registers.

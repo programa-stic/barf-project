@@ -307,7 +307,7 @@ class ReilEmulator(object):
         self._arch_regs = []
         self._arch_flags = []
         self._arch_regs_size = {}
-        self._alias_mapper = {}
+        self._arch_alias_mapper = {}
 
         # Instruction implementation.
         self._executors = {
@@ -349,14 +349,13 @@ class ReilEmulator(object):
         self._taints = {}
 
         # Instructions pre and post handlers.
-        empty_instr_handler_fn = lambda emu, instr, param: None
-        empty_instr_handler_param = None
+        self._instr_pre_handler = {}
+        self._instr_post_handler = {}
 
-        self._instr_pre_handler = defaultdict(lambda: (empty_instr_handler_fn, empty_instr_handler_param))
-        self._instr_post_handler = defaultdict(lambda: (empty_instr_handler_fn, empty_instr_handler_param))
+        self._instr_pre_handler_global = {}
+        self._instr_post_handler_global = {}
 
-        self._instr_pre_handler2 = (empty_instr_handler_fn, empty_instr_handler_param)
-        self._instr_post_handler2 = (empty_instr_handler_fn, empty_instr_handler_param)
+        self._set_default_instruction_handlers()
 
     # Instruction's handler functions
     # ======================================================================== #
@@ -366,11 +365,11 @@ class ReilEmulator(object):
     def set_instruction_post_handler(self, mnemonic, function, parameter):
         self._instr_post_handler[mnemonic] = (function, parameter)
 
-    def set_instruction_pre_handler2(self, function, parameter):
-        self._instr_pre_handler2 = (function, parameter)
+    def set_instruction_pre_handler_global(self, function, parameter):
+        self._instr_pre_handler_global = (function, parameter)
 
-    def set_instruction_post_handler2(self, function, parameter):
-        self._instr_post_handler2 = (function, parameter)
+    def set_instruction_post_handler_global(self, function, parameter):
+        self._instr_post_handler_global = (function, parameter)
 
     # Execution functions
     # ======================================================================== #
@@ -458,6 +457,8 @@ class ReilEmulator(object):
 
         return self._regs.copy(), self._mem
 
+    # Auxiliary execution functions
+    # ======================================================================== #
     def _execute_one(self, instr):
         if verbose:
             print("0x%08x:%02x : %s" % (instr.address >> 8, instr.address & 0xff, instr))
@@ -465,21 +466,24 @@ class ReilEmulator(object):
         pre_handler_fn, pre_handler_param = self._instr_pre_handler[instr.mnemonic]
         post_handler_fn, post_handler_param = self._instr_post_handler[instr.mnemonic]
 
-        pre_handler_fn2, pre_handler_param2 = self._instr_pre_handler2
-        post_handler_fn2, post_handler_param2 = self._instr_post_handler2
+        pre_handler_fn_global, pre_handler_param_global = self._instr_pre_handler_global
+        post_handler_fn_global, post_handler_param_global = self._instr_post_handler_global
 
-        # print("inst pre")
+        # Execute pre instruction handlers
         pre_handler_fn(self, instr, pre_handler_param)
-        # print("inst pre2")
-        pre_handler_fn2(self, instr, pre_handler_param2)
+        pre_handler_fn_global(self, instr, pre_handler_param_global)
+
+        # Execute instruction
         next_addr = self._executors[instr.mnemonic](instr)
-        # print("inst post")
+
+        # Execute post instruction handlers
         post_handler_fn(self, instr, post_handler_param)
-        # print("inst post2")
-        post_handler_fn2(self, instr, post_handler_param2)
+        post_handler_fn_global(self, instr, post_handler_param_global)
 
         return next_addr
 
+    # Misc functions
+    # ======================================================================== #
     def reset(self):
         """Reset emulator. All registers and memory are reset.
         """
@@ -501,18 +505,6 @@ class ReilEmulator(object):
         return self._regs
 
     @property
-    def context(self):
-        """Set context.
-        """
-        return self._regs
-
-    @context.setter
-    def context(self, value):
-        """Get context.
-        """
-        self._regs = dict(value)
-
-    @property
     def memory(self):
         """Return memory.
         """
@@ -526,11 +518,24 @@ class ReilEmulator(object):
 
     @property
     def written_registers(self):
-        """Return write (native) registers.
+        """Return written (native) registers.
         """
         return self._regs_written
 
-    # ====================================================================== #
+    # Auxiliary functions
+    # ======================================================================== #
+    def _set_default_instruction_handlers(self):
+        empty_fn = lambda emu, instr, param: None
+        empty_param = None
+
+        self._instr_pre_handler = defaultdict(lambda: (empty_fn, empty_param))
+        self._instr_post_handler = defaultdict(lambda: (empty_fn, empty_param))
+
+        self._instr_pre_handler_global = (empty_fn, empty_param)
+        self._instr_post_handler_global = (empty_fn, empty_param)
+
+    # Architecture information functions
+    # ======================================================================== #
     # TODO: Remove function. Use ArchitectureInformation instead.
     def set_arch_registers(self, registers):
         """Set native registers.
@@ -550,21 +555,21 @@ class ReilEmulator(object):
         self._arch_regs_size = registers_size
 
     # TODO: Remove function. Use ArchitectureInformation instead.
-    def set_reg_access_mapper(self, reg_access_mapper):
-        """Set native register access mapper.
+    def set_arch_alias_mapper(self, alias_mapper):
+        """Set native register alias mapper.
 
         This is necessary as some architecture has register alias. For
         example, in Intel x86 (32 bits), *ax* refers to the lower half
         of the *eax* register, so when *ax* is modified so it is *eax*.
-        Then, this reg_access_mapper is a dictionary where its keys are
+        Then, this alias_mapper is a dictionary where its keys are
         registers (names, only) and each associated value is a tuple
-        of the form (base register name, bit mask (a.k.a filter), shift).
+        of the form (base register name, offset).
         This information is used to modified the correct register at
         the correct location (within the register) when a register alias
         value is changed.
 
         """
-        self._alias_mapper = reg_access_mapper
+        self._arch_alias_mapper = alias_mapper
 
     # Taint functions
     # ======================================================================== #
@@ -593,16 +598,16 @@ class ReilEmulator(object):
     # Taint auxiliary functions
     # ======================================================================== #
     def _get_register_taint(self, register):
-        if register.name in self._alias_mapper and register.name not in self._arch_flags:
-            base_name, _ = self._alias_mapper[register.name]
+        if register.name in self._arch_alias_mapper and register.name not in self._arch_flags:
+            base_name, _ = self._arch_alias_mapper[register.name]
         else:
             base_name = register.name
 
         return self._taints.get(base_name, False)
 
     def _set_register_taint(self, register, taint):
-        if register.name in self._alias_mapper and register.name not in self._arch_flags:
-            base_name, _ = self._alias_mapper[register.name]
+        if register.name in self._arch_alias_mapper and register.name not in self._arch_flags:
+            base_name, _ = self._arch_alias_mapper[register.name]
         else:
             base_name = register.name
 
@@ -648,8 +653,8 @@ class ReilEmulator(object):
     # Read/Write auxiliary functions
     # ======================================================================== #
     def _read_register(self, register):
-        if register.name in self._alias_mapper:
-            base_reg_name, offset = self._alias_mapper[register.name]
+        if register.name in self._arch_alias_mapper:
+            base_reg_name, offset = self._arch_alias_mapper[register.name]
             base_reg_size = self._arch_regs_size[base_reg_name]
         else:
             base_reg_name, offset = register.name, 0
@@ -675,8 +680,8 @@ class ReilEmulator(object):
         return reg_val
 
     def _write_register(self, register, value):
-        if register.name in self._alias_mapper:
-            base_reg_name, offset = self._alias_mapper[register.name]
+        if register.name in self._arch_alias_mapper:
+            base_reg_name, offset = self._arch_alias_mapper[register.name]
             base_reg_size = self._arch_regs_size[base_reg_name]
         else:
             base_reg_name, offset = register.name, 0
