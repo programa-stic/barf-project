@@ -52,7 +52,7 @@ from core.smt.smtlibv2 import Z3Solver
 from core.smt.smttranslator import SmtTranslator
 
 logging.basicConfig(
-    filename=os.path.dirname(os.path.realpath(__file__)) + os.sep + "log/barf." + str(int(time.time())) + ".log",
+    filename="barf.log",
     format="%(asctime)s: %(name)s:%(levelname)s: %(message)s",
     level=logging.DEBUG
 )
