@@ -48,6 +48,8 @@ Byte addressable memory based on a dictionary.
 import logging
 import random
 
+from collections import defaultdict
+
 from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
 from barf.core.reil.reil import ReilRegisterOperand
@@ -80,6 +82,8 @@ class ReilMemory(object):
 
         # Dictionary that implements the memory itself.
         self._memory = {}
+
+        self._taints = {}
 
         # Previous state of memory. Requiere for some *special*
         # functions.
@@ -127,8 +131,9 @@ class ReilMemory(object):
         for i in xrange(0, size / 8):
             value = self.read_byte(address + i) << (i * 8) | value
 
-        # Debug...
-        # print "Memory Read: ", hex(address), size, hex(value)
+        if verbose:
+            taint = self.get_taint(address, size)
+            self._debug_read_memory(address, value, taint)
 
         return value
 
@@ -174,13 +179,14 @@ class ReilMemory(object):
     def write(self, address, size, value):
         """Write arbitrary size content to memory.
         """
-        # Debug...
-        # print "Memory Write: ", hex(address), size, hex(value)
-
         for i in xrange(0, size / 8):
             self.write_byte(address + i, (value >> (i * 8)) & 0xff)
 
         self._write_count += 1
+
+        if verbose:
+            taint = self.get_taint(address, size)
+            self._debug_write_memory(address, value, taint)
 
     def read_inverse(self, value, size):
         """Return a list of memory addresses that contain the specified value.
@@ -224,6 +230,51 @@ class ReilMemory(object):
 
         return "\n".join(lines)
 
+    def written(self, address):
+        return self._memory.has_key(address)
+
+    # Taint functions
+    # ======================================================================== #
+    def set_taint(self, address, size, taint):
+        for i in xrange(0, size / 8):
+            self._taints[address + i] = taint
+
+    def get_taint(self, address, size):
+        tainted = False
+
+        for i in xrange(0, size / 8):
+            tainted = tainted or self._taints.get(address + i, False)
+
+        return tainted
+
+    # Auxiliary functions
+    # ======================================================================== #
+    def _debug_read_memory(self, addr, val, tainted):
+        fmt = "{indent}r{{ m[{addr:08x}] = {val:08x} [{taint:s}]}}"
+        taint = "T" if tainted else "-"
+        msg = fmt.format(indent=" "*10, addr=addr , val=val, taint=taint)
+
+        print(msg)
+
+    def _debug_write_memory(self, addr, val, tainted):
+        fmt = "{indent}w{{ m[{addr:08x}] = {val:08x} [{taint:s}]}}"
+        taint = "T" if tainted else "-"
+        msg = fmt.format(indent=" "*10, addr=addr , val=val, taint=taint)
+
+        print(msg)
+
+    def reset(self):
+        self._memory = {}
+
+        self._taints = {}
+
+        # Previous state of memory. Requiere for some *special*
+        # functions.
+        self._memory_prev = {}
+
+        # Write operations counter.
+        self._write_count = 0
+
 
 class ReilEmulator(object):
 
@@ -249,8 +300,14 @@ class ReilEmulator(object):
         self._regs_written = set()
         self._regs_read = set()
 
+        # Set of read and write memory addresses during execution.
+        self._mem_written = set()
+        self._mem_read = set()
+
         self._arch_regs = []
+        self._arch_flags = []
         self._arch_regs_size = {}
+        self._arch_alias_mapper = {}
 
         # Instruction implementation.
         self._executors = {
@@ -288,20 +345,45 @@ class ReilEmulator(object):
             ReilMnemonic.SEXT : self._execute_sext,
         }
 
+        # Taint information.
+        self._taints = {}
+
+        # Instructions pre and post handlers.
+        self._instr_pre_handler = {}
+        self._instr_post_handler = {}
+
+        self._instr_pre_handler_global = {}
+        self._instr_post_handler_global = {}
+
+        self._set_default_instruction_handlers()
+
+    # Instruction's handler functions
+    # ======================================================================== #
+    def set_instruction_pre_handler(self, mnemonic, function, parameter):
+        self._instr_pre_handler[mnemonic] = (function, parameter)
+
+    def set_instruction_post_handler(self, mnemonic, function, parameter):
+        self._instr_post_handler[mnemonic] = (function, parameter)
+
+    def set_instruction_pre_handler_global(self, function, parameter):
+        self._instr_pre_handler_global = (function, parameter)
+
+    def set_instruction_post_handler_global(self, function, parameter):
+        self._instr_post_handler_global = (function, parameter)
+
+    # Execution functions
+    # ======================================================================== #
     def execute_lite(self, instructions, context=None):
         """Execute a list of instructions. It does not support loops.
         """
         if verbose:
-            print "[+] Executing instructions..."
+            print("[+] Executing instructions...")
 
         if context:
             self._regs = context.copy()
 
         for index, instr in enumerate(instructions):
-            if verbose:
-                print "    %03d : %s" % (index, instr)
-
-            self._executors[instr.mnemonic](instr)
+            self._execute_one(instr)
 
         return self._regs.copy(), self._mem
 
@@ -325,13 +407,8 @@ class ReilEmulator(object):
             # fetch instruction
             instr = instructions[main_index][sub_index]
 
-            if verbose:
-                # print("    0x%08x:%02x : %s" % (self._ip >> 8, self._ip & 0xff, instr))
-                print "    %03d : %s" % (main_index, instr)
-                # logger.debug("    0x%08x:%02x : %s" % (self._ip >> 8, self._ip & 0xff, instr))
-
             # execute instruction
-            next_addr = self._executors[instr.mnemonic](instr)
+            next_addr = self._execute_one(instr)
 
             # update instruction pointer
             if next_addr:
@@ -380,6 +457,33 @@ class ReilEmulator(object):
 
         return self._regs.copy(), self._mem
 
+    # Auxiliary execution functions
+    # ======================================================================== #
+    def _execute_one(self, instr):
+        if verbose:
+            print("0x%08x:%02x : %s" % (instr.address >> 8, instr.address & 0xff, instr))
+
+        pre_handler_fn, pre_handler_param = self._instr_pre_handler[instr.mnemonic]
+        post_handler_fn, post_handler_param = self._instr_post_handler[instr.mnemonic]
+
+        pre_handler_fn_global, pre_handler_param_global = self._instr_pre_handler_global
+        post_handler_fn_global, post_handler_param_global = self._instr_post_handler_global
+
+        # Execute pre instruction handlers
+        pre_handler_fn(self, instr, pre_handler_param)
+        pre_handler_fn_global(self, instr, pre_handler_param_global)
+
+        # Execute instruction
+        next_addr = self._executors[instr.mnemonic](instr)
+
+        # Execute post instruction handlers
+        post_handler_fn(self, instr, post_handler_param)
+        post_handler_fn_global(self, instr, post_handler_param_global)
+
+        return next_addr
+
+    # Misc functions
+    # ======================================================================== #
     def reset(self):
         """Reset emulator. All registers and memory are reset.
         """
@@ -392,6 +496,8 @@ class ReilEmulator(object):
         self._regs_written = set()
         self._regs_read = set()
 
+    # Properties
+    # ======================================================================== #
     @property
     def registers(self):
         """Return registers.
@@ -412,91 +518,191 @@ class ReilEmulator(object):
 
     @property
     def written_registers(self):
-        """Return write (native) registers.
+        """Return written (native) registers.
         """
         return self._regs_written
 
-    # ====================================================================== #
+    # Auxiliary functions
+    # ======================================================================== #
+    def _set_default_instruction_handlers(self):
+        empty_fn = lambda emu, instr, param: None
+        empty_param = None
+
+        self._instr_pre_handler = defaultdict(lambda: (empty_fn, empty_param))
+        self._instr_post_handler = defaultdict(lambda: (empty_fn, empty_param))
+
+        self._instr_pre_handler_global = (empty_fn, empty_param)
+        self._instr_post_handler_global = (empty_fn, empty_param)
+
+    # Architecture information functions
+    # ======================================================================== #
+    # TODO: Remove function. Use ArchitectureInformation instead.
     def set_arch_registers(self, registers):
         """Set native registers.
         """
         self._arch_regs = registers
 
+    # TODO: Remove function. Use ArchitectureInformation instead.
+    def set_arch_flags(self, flags):
+        """Set native flags.
+        """
+        self._arch_flags = flags
+
+    # TODO: Remove function. Use ArchitectureInformation instead.
     def set_arch_registers_size(self, registers_size):
         """Set native registers size.
         """
         self._arch_regs_size = registers_size
 
-    def set_reg_access_mapper(self, reg_access_mapper):
-        """Set native register access mapper.
+    # TODO: Remove function. Use ArchitectureInformation instead.
+    def set_arch_alias_mapper(self, alias_mapper):
+        """Set native register alias mapper.
 
         This is necessary as some architecture has register alias. For
         example, in Intel x86 (32 bits), *ax* refers to the lower half
         of the *eax* register, so when *ax* is modified so it is *eax*.
-        Then, this reg_access_mapper is a dictionary where its keys are
+        Then, this alias_mapper is a dictionary where its keys are
         registers (names, only) and each associated value is a tuple
-        of the form (base register name, bit mask (a.k.a filter), shift).
+        of the form (base register name, offset).
         This information is used to modified the correct register at
         the correct location (within the register) when a register alias
         value is changed.
 
         """
-        self._reg_access_mapper = reg_access_mapper
+        self._arch_alias_mapper = alias_mapper
 
-    # Auxiliary functions
+    # Taint functions
     # ======================================================================== #
-    def _get_operand_value(self, operand):
-        """Get value from operand.
-        """
-        if type(operand) == ReilRegisterOperand:
-            return self._get_reg_value(operand, keep_track=True)
-        elif type(operand) == ReilImmediateOperand:
-            return operand.immediate
+    def get_operand_taint(self, operand):
+        if isinstance(operand, ReilRegisterOperand):
+            taint = self._get_register_taint(operand)
+        elif isinstance(operand, ReilImmediateOperand):
+            taint = False
         else:
-            raise Exception("Unknown operand type : %s" % str(operand))
+            raise Exception("Invalid operand: %s" % str(operand))
 
-    def _get_reg_value(self, register, keep_track=False):
-        """Get register value.
-        """
-        assert register.size
+        return taint
 
-        base_reg_name, offset = self._reg_access_mapper.get(register.name, (register.name, 0))
+    def set_operand_taint(self, operand, taint):
+        if isinstance(operand, ReilRegisterOperand):
+            self._set_register_taint(operand, taint)
+        else:
+            raise Exception("Invalid operand: %s" % str(operand))
 
-        if base_reg_name not in self._regs:
-            self._regs[base_reg_name] = random.randint(0, 2**self._arch_regs_size[base_reg_name] - 1)
+    def get_memory_taint(self, address, size):
+        return self._mem.get_taint(address, size)
 
-        reg_value = self._regs[base_reg_name]
+    def set_memory_taint(self, address, size, taint):
+        self._mem.set_taint(address, size, taint)
 
-        if keep_track and register.name in self._arch_regs:
-            self._regs_read.add(register.name)
+    # Taint auxiliary functions
+    # ======================================================================== #
+    def _get_register_taint(self, register):
+        if register.name in self._arch_alias_mapper and register.name not in self._arch_flags:
+            base_name, _ = self._arch_alias_mapper[register.name]
+        else:
+            base_name = register.name
 
-        value = self._extract_value(reg_value, offset, register.size)
+        return self._taints.get(base_name, False)
 
-        # Debug
+    def _set_register_taint(self, register, taint):
+        if register.name in self._arch_alias_mapper and register.name not in self._arch_flags:
+            base_name, _ = self._arch_alias_mapper[register.name]
+        else:
+            base_name = register.name
+
+        self._taints[base_name] = taint
+
         if verbose:
-            print "          r{ %s = %s (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name]))
-            # logger.debug("          r{ %s = %s (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name])))
+            reg = register.name
+            base_reg = base_name
+
+            fmt = "{indent}t{{ {reg:s} ({base_reg:s})}}"
+
+            msg = fmt.format(indent=" "*10, reg=reg, base_reg=base_reg)
+
+            print(msg)
+
+    # Read/Write functions
+    # ======================================================================== #
+    def read_operand(self, operand):
+        if isinstance(operand, ReilRegisterOperand):
+            value = self._read_register(operand)
+        elif isinstance(operand, ReilImmediateOperand):
+            value = operand.immediate
+        else:
+            raise Exception("Invalid operand type : %s" % str(operand))
 
         return value
 
-    def _set_reg_value(self, register, value, keep_track=False):
-        """Set register value.
-        """
-        assert register.size
+    def write_operand(self, operand, value):
+        if isinstance(operand, ReilRegisterOperand):
+            self._write_register(operand, value)
+        else:
+            raise Exception("Invalid operand type : %s" % str(operand))
 
-        base_reg_name, offset = self._reg_access_mapper.get(register.name, (register.name, 0))
+    def read_memory(self, address, size):
+        return self._mem.read(address, size)
 
-        reg_value = self._regs.get(base_reg_name, random.randint(0, 2**register.size - 1))
+    def write_memory(self, address, size, value):
+        self._mem.write(address, size, value)
 
-        self._regs[base_reg_name] = self._insert_value(reg_value, value, offset, register.size)
+    def reset_memory(self):
+        self._mem.reset()
 
-        if keep_track and register.name in self._arch_regs:
+    # Read/Write auxiliary functions
+    # ======================================================================== #
+    def _read_register(self, register):
+        if register.name in self._arch_alias_mapper:
+            base_reg_name, offset = self._arch_alias_mapper[register.name]
+            base_reg_size = self._arch_regs_size[base_reg_name]
+        else:
+            base_reg_name, offset = register.name, 0
+            base_reg_size = register.size
+
+        # TODO: Rename _regs to _context.
+        if base_reg_name in self._regs:
+            base_val = self._regs[base_reg_name]
+        else:
+            base_val = random.randint(0, 2**base_reg_size - 1)
+
+        reg_val = self._extract_value(base_val, offset, register.size)
+
+        # Keep track of native register reads.
+        if register.name in self._arch_regs:
+            self._regs_read.add(register.name)
+
+        # Debug
+        if verbose:
+            taint = self._get_register_taint(register)
+            self._debug_read_operand(register, reg_val, base_reg_name, base_val, taint)
+
+        return reg_val
+
+    def _write_register(self, register, value):
+        if register.name in self._arch_alias_mapper:
+            base_reg_name, offset = self._arch_alias_mapper[register.name]
+            base_reg_size = self._arch_regs_size[base_reg_name]
+        else:
+            base_reg_name, offset = register.name, 0
+            base_reg_size = register.size
+
+        # TODO: Rename _regs to _context.
+        if base_reg_name in self._regs:
+            base_val = self._regs[base_reg_name]
+        else:
+            base_val = random.randint(0, 2**base_reg_size - 1)
+
+        self._regs[base_reg_name] = self._insert_value(base_val, value, offset, register.size)
+
+        # Keep track of native register writes.
+        if register.name in self._arch_regs:
             self._regs_written.add(register.name)
 
         # Debug
         if verbose:
-            print "          w{ %s = %s (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name]))
-            # logger.debug("          w{ %s = %s (%s = %s) }" % (register, hex(value), base_reg_name, hex(self._regs[base_reg_name])))
+            taint = self._get_register_taint(register)
+            self._debug_write_operand(register, value, base_reg_name, self._regs[base_reg_name], taint)
 
     def _extract_value(self, main_value, offset, size):
         return (main_value >> offset) & 2**size-1
@@ -507,44 +713,87 @@ class ReilEmulator(object):
 
         return main_value
 
+    def _debug_read_operand(self, reg, val, base_reg, base_val, tainted):
+        fmt = "{indent}r{{ {reg:s} = {val:08x} [{taint:s}] ({base_reg:s} = {base_val:08x})}}"
+
+        taint = "T" if tainted == True else "-"
+
+        msg = fmt.format(
+            indent=" "*10, reg=reg , val=val, base_reg=base_reg,
+            base_val=base_val, taint=taint
+        )
+
+        print(msg)
+
+    def _debug_write_operand(self, reg, val, base_reg, base_val, tainted):
+        fmt = "{indent}w{{ {reg:s} = {val:08x} [{taint:s}] ({base_reg:s} = {base_val:08x})}}"
+
+        taint = "T" if tainted else "-"
+
+        msg = fmt.format(
+            indent=" "*10, reg=reg , val=val, base_reg=base_reg,
+            base_val=base_val, taint=taint
+        )
+
+        print(msg)
+
+    # ======================================================================== #
+    # REIL instructions implementation
+    # ======================================================================== #
+
     # Arithmetic instructions
     # ======================================================================== #
     def _execute_add(self, instr):
         """Execute ADD instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
-        op3_val = op1_val + op2_val
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+        op2_val = op0_val + op1_val
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
+
+        self.write_operand(instr.operands[2], op2_val)
 
         return None
 
     def _execute_sub(self, instr):
         """Execute SUB instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
-        op3_val = op1_val - op2_val
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+        op2_val = op0_val - op1_val
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
 
-        # print "op1_val: ", op1_val
-        # print "op2_val: ", op2_val
-        # print "op3_val: ", op3_val
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
 
-        # print "sub {0}, {1}, {2}".format(op1_val, op2_val, op3_val)
+        self.write_operand(instr.operands[2], op2_val)
 
         return None
 
     def _execute_mul(self, instr):
         """Execute MUL instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
-        op3_val = op1_val * op2_val
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+        op2_val = op0_val * op1_val
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
+
+        self.write_operand(instr.operands[2], op2_val)
 
         return None
 
@@ -552,12 +801,18 @@ class ReilEmulator(object):
         """Execute DIV instruction.
         """
         # TODO: See how to manage exceptions (instr.operands[1] == 0)
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+        op2_val = op0_val / op1_val
 
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
-        op3_val = op1_val / op2_val
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
+
+        self.write_operand(instr.operands[2], op2_val)
 
         return None
 
@@ -565,37 +820,46 @@ class ReilEmulator(object):
         """Execute MOD instruction.
         """
         # TODO: See how to manage exceptions (instr.operands[1] == 0)
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+        op2_val = op0_val % op1_val
 
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
-        op3_val = op1_val % op2_val
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
+
+        self.write_operand(instr.operands[2], op2_val)
 
         return None
 
     def _execute_bsh(self, instr):
         """Execute BSH instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+
+        op1_size = instr.operands[1].size
 
         # Check sign bit.
-        if op2_val & (2**(instr.operands[1].size-1)) == 0:
-            op3_val = op1_val << op2_val
+        if op1_val & (2**(op1_size-1)) == 0:
+            op2_val = op0_val << op1_val
         else:
             # Compute two's complement.
-            op2_val = 2**instr.operands[1].size - op2_val
+            op1_val = 2**op1_size - op1_val
 
-            op3_val = op1_val >> op2_val
+            op2_val = op0_val >> op1_val
 
-        # print "op1_val: ", op1_val
-        # print "op2_val: ", op2_val
-        # print "op3_val: ", op3_val
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
 
-        # print "bsh {0}, {1}, {2}".format(op1_val, op2_val, op3_val)
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        self.write_operand(instr.operands[2], op2_val)
 
         return None
 
@@ -604,45 +868,54 @@ class ReilEmulator(object):
     def _execute_and(self, instr):
         """Execute AND instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
-        op3_val = op1_val & op2_val
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+        op2_val = op0_val & op1_val
 
-        # print "op1_val: ", op1_val
-        # print "op2_val: ", op2_val
-        # print "op3_val: ", op3_val
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
 
-        # print "and {0}, {1}, {2}".format(op1_val, op2_val, op3_val)
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        self.write_operand(instr.operands[2], op2_val)
 
         return None
 
     def _execute_or(self, instr):
         """Execute OR instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
-        op3_val = op1_val | op2_val
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+        op2_val = op0_val | op1_val
 
-        # print "op1_val: ", op1_val
-        # print "op2_val: ", op2_val
-        # print "op3_val: ", op3_val
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
 
-        # print "or {0}, {1}, {2}".format(op1_val, op2_val, op3_val)
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        self.write_operand(instr.operands[2], op2_val)
 
         return None
 
     def _execute_xor(self, instr):
         """Execute XOR instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op2_val = self._get_operand_value(instr.operands[1])
-        op3_val = op1_val ^ op2_val
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+        op2_val = op0_val ^ op1_val
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
+
+        self.write_operand(instr.operands[2], op2_val)
 
         return None
 
@@ -654,10 +927,16 @@ class ReilEmulator(object):
         assert instr.operands[0].size == self._address_size
         assert instr.operands[2].size in [8, 16, 32, 64]
 
-        mem_addr = self._get_operand_value(instr.operands[0])
-        value = self._mem.read(mem_addr, instr.operands[2].size)
+        op0_val = self.read_operand(instr.operands[0])                  # Memory address.
+        op2_val = self.read_memory(op0_val, instr.operands[2].size)     # Data.
 
-        self._set_reg_value(instr.operands[2], value, keep_track=True)
+        # Get taint information.
+        op0_taint = self.get_memory_taint(op0_val, instr.operands[2].size)
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint)
+
+        self.write_operand(instr.operands[2], op2_val)
 
         return None
 
@@ -667,25 +946,33 @@ class ReilEmulator(object):
         assert instr.operands[0].size in [8, 16, 32, 64]
         assert instr.operands[2].size == self._address_size
 
-        value    = self._get_operand_value(instr.operands[0])
-        mem_addr = self._get_operand_value(instr.operands[2])
+        op0_val = self.read_operand(instr.operands[0])  # Data.
+        op2_val = self.read_operand(instr.operands[2])  # Memory address.
 
-        self._mem.write(mem_addr, instr.operands[0].size, value)
+        op0_size = instr.operands[0].size
+
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+
+        # Propagate taint.
+        self.set_memory_taint(op2_val, op0_size, op0_taint)
+
+        self.write_memory(op2_val, op0_size, op0_val)
 
         return None
 
     def _execute_str(self, instr):
         """Execute STR instruction.
         """
+        op0_val = self.read_operand(instr.operands[0])
 
-        value = self._get_operand_value(instr.operands[0])
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
 
-        # print "op1_val: ", value
-        # print "op3_val: ", value
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint)
 
-        # print "str {0}, EMPTY, {1}".format(value, value)
-
-        self._set_reg_value(instr.operands[2], value, keep_track=True)
+        self.write_operand(instr.operands[2], op0_val)
 
         return None
 
@@ -694,32 +981,38 @@ class ReilEmulator(object):
     def _execute_bisz(self, instr):
         """Execute BISZ instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op3_val = 1 if op1_val == 0 else 0
+        op0_val = self.read_operand(instr.operands[0])
+        op2_val = 1 if op0_val == 0 else 0
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint)
+
+        self.write_operand(instr.operands[2], op2_val)
 
         return None
 
     def _execute_jcc(self, instr):
         """Execute JCC instruction.
         """
-        op1_val = self._get_operand_value(instr.operands[0])
-        op3_val = self._get_operand_value(instr.operands[2])
+        op0_val = self.read_operand(instr.operands[0])  # Branch condition.
+        op2_val = self.read_operand(instr.operands[2])  # Target address.
 
-        if op1_val != 0:
-            return op3_val
-        else:
-            return None
+        return op2_val if op0_val != 0 else None
 
     # Other instructions
     # ======================================================================== #
     def _execute_undef(self, instr):
         """Execute UNDEF instruction.
         """
-        op3_val = random.randint(0, instr.operands[2].size)
+        op2_val = random.randint(0, instr.operands[2].size)
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        self.write_operand(instr.operands[2], op2_val)
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], False)
 
         return None
 
@@ -745,16 +1038,22 @@ class ReilEmulator(object):
     def _execute_sext(self, instr):
         """Execute SEXT instruction.
         """
-        op1_size = instr.operands[0].size
-        op3_size = instr.operands[2].size
+        op0_size = instr.operands[0].size
+        op2_size = instr.operands[2].size
 
-        op1_val = self._get_operand_value(instr.operands[0])
-        op1_msb = op1_val >> (op1_size-1)
+        op0_val = self.read_operand(instr.operands[0])
+        op0_msb = op0_val >> (op0_size-1)
 
-        op3_mask = (2**op3_size-1) & ~(2**op1_size-1) if op1_msb == 1 else 0x0
+        op2_mask = (2**op2_size-1) & ~(2**op0_size-1) if op0_msb == 1 else 0x0
 
-        op3_val = op1_val | op3_mask
+        op2_val = op0_val | op2_mask
 
-        self._set_reg_value(instr.operands[2], op3_val, keep_track=True)
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint)
+
+        self.write_operand(instr.operands[2], op2_val)
 
         return None
