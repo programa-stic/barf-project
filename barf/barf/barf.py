@@ -145,6 +145,7 @@ class BARF(object):
             self.smt_translator = SmtTranslator(self.smt_solver, self.arch_info.address_size)
 
             self.ir_emulator.set_arch_registers(self.arch_info.registers_gp_all)
+            self.ir_emulator.set_arch_flags(self.arch_info.registers_flags)
             self.ir_emulator.set_arch_registers_size(self.arch_info.registers_size)
             self.ir_emulator.set_arch_alias_mapper(self.arch_info.alias_mapper)
 
