@@ -9,3 +9,6 @@ doc/_build/*
 
 # Dependencies folder.
 dependencies
+
+# Log files
+*.log
