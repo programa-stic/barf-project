@@ -413,7 +413,7 @@ class CodeAnalyzer(object):
     def get_register_expr(self, register_name, mode="post"):
         """Return a smt bit vector that represents a register.
         """
-        reg_info = self._translator._reg_access_mapper.get(register_name, None)
+        reg_info = self._translator._arch_alias_mapper.get(register_name, None)
 
         if reg_info:
             var_base_name, offset = reg_info
