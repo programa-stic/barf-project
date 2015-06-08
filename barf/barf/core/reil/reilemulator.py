@@ -498,11 +498,30 @@ class ReilEmulator(object):
 
     # Properties
     # ======================================================================== #
+    # TODO: Remove one of these pair of properties.
     @property
     def registers(self):
         """Return registers.
         """
         return self._regs
+
+    @registers.setter
+    def registers(self, value):
+        """Return registers.
+        """
+        self._regs = dict(value)
+
+    @property
+    def context(self):
+        """Set context.
+        """
+        return self._regs
+
+    @context.setter
+    def context(self, value):
+        """Get context.
+        """
+        self._regs = dict(value)
 
     @property
     def memory(self):

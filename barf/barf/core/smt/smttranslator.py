@@ -335,7 +335,7 @@ class SmtTranslator(object):
         value is changed.
 
         """
-        self._alias_mapper = alias_mapper
+        self._arch_alias_mapper = alias_mapper
 
     def set_arch_registers_size(self, registers_size):
         """Set registers.
