@@ -30,101 +30,12 @@ import unittest
 
 import pyasmjit
 
-from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
 from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86parser import X86Parser
 from barf.arch.x86.x86translator import FULL_TRANSLATION
 from barf.arch.x86.x86translator import X86Translator
 from barf.core.reil import ReilEmulator
-from barf.core.smt.smtlibv2 import Z3Solver as SmtSolver
-from barf.core.smt.smttranslator import SmtTranslator
-
-
-class X86Parser32BitsTests(unittest.TestCase):
-
-    def setUp(self):
-        self._parser = X86Parser(ARCH_X86_MODE_32)
-
-    def test_two_oprnd_reg_reg(self):
-        asm = self._parser.parse("add eax, ebx")
-
-        self.assertEqual(str(asm), "add eax, ebx")
-
-    def test_two_oprnd_reg_imm(self):
-        asm = self._parser.parse("add eax, 0x12345678")
-
-        self.assertEqual(str(asm), "add eax, 0x12345678")
-
-    def test_two_oprnd_reg_mem(self):
-        asm = self._parser.parse("add eax, [ebx + edx * 4 + 0x10]")
-
-        self.assertEqual(str(asm), "add eax, [ebx+edx*4+0x10]")
-
-    def test_two_oprnd_mem_reg(self):
-        asm = self._parser.parse("add [ebx + edx * 4 + 0x10], eax")
-
-        self.assertEqual(str(asm), "add [ebx+edx*4+0x10], eax")
-
-    def test_one_oprnd_reg(self):
-        asm = self._parser.parse("inc eax")
-
-        self.assertEqual(str(asm), "inc eax")
-
-    def test_one_oprnd_imm(self):
-        asm = self._parser.parse("jmp 0x12345678")
-
-        self.assertEqual(str(asm), "jmp 0x12345678")
-
-    def test_one_oprnd_mem(self):
-        asm = self._parser.parse("inc dword ptr [ebx+edx*4+0x10]")
-
-        self.assertEqual(str(asm), "inc dword ptr [ebx+edx*4+0x10]")
-
-    def test_zero_oprnd(self):
-        asm = self._parser.parse("nop")
-
-        self.assertEqual(str(asm), "nop")
-
-    # Misc
-    # ======================================================================== #
-    def test_misc_1(self):
-        asm = self._parser.parse("mov dword ptr [-0x21524111], ecx")
-
-        self.assertEqual(str(asm), "mov dword ptr [0xdeadbeef], ecx")
-
-    def test_misc_2(self):
-        asm = self._parser.parse("fucompi st(1)")
-
-        self.assertEqual(str(asm), "fucompi st1")
-
-
-class X86Parser64BitsTests(unittest.TestCase):
-
-    def setUp(self):
-        self._parser = X86Parser(ARCH_X86_MODE_64)
-
-    def test_64_two_oprnd_reg_reg(self):
-        asm = self._parser.parse("add rax, rbx")
-
-        self.assertEqual(str(asm), "add rax, rbx")
-
-    def test_64_two_oprnd_reg_reg_2(self):
-        asm = self._parser.parse("add rax, r8")
-
-        self.assertEqual(str(asm), "add rax, r8")
-
-    def test_64_two_oprnd_reg_mem(self):
-        asm = self._parser.parse("add rax, [rbx + r15 * 4 + 0x10]")
-
-        self.assertEqual(str(asm), "add rax, [rbx+r15*4+0x10]")
-
-    # Misc
-    # ======================================================================== #
-    def test_misc_offset_1(self):
-        asm = self._parser.parse("add byte ptr [rax+0xffffff89], cl")
-
-        self.assertEqual(str(asm), "add byte ptr [rax+0xffffff89], cl")
 
 
 @unittest.skipUnless(platform.machine().lower() == 'x86_64',
@@ -133,23 +44,17 @@ class X86TranslationTests(unittest.TestCase):
 
     def setUp(self):
         self.trans_mode = FULL_TRANSLATION
-
         self.arch_mode = ARCH_X86_MODE_64
 
         self.arch_info = X86ArchitectureInformation(self.arch_mode)
 
         self.x86_parser = X86Parser(self.arch_mode)
         self.x86_translator = X86Translator(self.arch_mode, self.trans_mode)
-        self.smt_solver = SmtSolver()
-        self.smt_translator = SmtTranslator(self.smt_solver, self.arch_info.address_size)
         self.reil_emulator = ReilEmulator(self.arch_info.address_size)
 
         self.reil_emulator.set_arch_registers(self.arch_info.registers_gp_all)
         self.reil_emulator.set_arch_registers_size(self.arch_info.registers_size)
         self.reil_emulator.set_arch_alias_mapper(self.arch_info.alias_mapper)
-
-        self.smt_translator.set_arch_alias_mapper(self.arch_info.alias_mapper)
-        self.smt_translator.set_arch_registers_size(self.arch_info.registers_size)
 
         self.context_filename = "failing_context.data"
 
@@ -3197,6 +3102,7 @@ class X86TranslationTests(unittest.TestCase):
             x86_instr.address = addr
             x86_instr.size = 1
             addr += 1
+
 
 def main():
     unittest.main()
