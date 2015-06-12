@@ -22,8 +22,17 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import logging
+
 from barf import BARF
 
 import analysis
 import core
 import arch
+
+# Setup logging module.
+logging.basicConfig(
+    filename="barf.log",
+    format="%(asctime)s: %(name)s:%(levelname)s: %(message)s",
+    level=logging.DEBUG
+)
