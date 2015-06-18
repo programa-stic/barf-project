@@ -310,14 +310,14 @@ class ReilEmulator(object):
         # Memory address size.
         self._address_size = address_size
 
-        # Registers.
-        self._regs = {}
-
         # An instance of a ReilMemory.
         self._mem = ReilMemory(address_size)
 
         # Instruction Pointer.
         self._ip = None
+
+        # Registers.
+        self._regs = {}
 
         # Set of read and write registers during execution.
         self._regs_written = set()
@@ -524,11 +524,11 @@ class ReilEmulator(object):
     def reset(self):
         """Reset emulator. All registers and memory are reset.
         """
-        self._regs = {}
-
         self._mem = ReilMemory(self._address_size)
 
         self._ip = None
+
+        self._regs = {}
 
         self._regs_written = set()
         self._regs_read = set()
@@ -548,18 +548,6 @@ class ReilEmulator(object):
     @registers.setter
     def registers(self, value):
         """Return registers.
-        """
-        self._regs = dict(value)
-
-    @property
-    def context(self):
-        """Set context.
-        """
-        return self._regs
-
-    @context.setter
-    def context(self, value):
-        """Get context.
         """
         self._regs = dict(value)
 
