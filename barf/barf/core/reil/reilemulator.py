@@ -53,6 +53,9 @@ from collections import defaultdict
 from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
 from barf.core.reil.reil import ReilRegisterOperand
+from barf.utils.utils import extract_value
+from barf.utils.utils import insert_value
+from barf.utils.utils import twos_complement
 
 logger = logging.getLogger("reilemulator")
 
@@ -71,7 +74,7 @@ class ReilMemory(object):
     def __init__(self, address_size):
 
         # TODO: Set endianness through a parameter.
-        # TODO: All addresses should be of size address_size.
+        # TODO: Check that all addresses have size address_size.
         # TODO: Use _endianness parameter.
 
         # Memory's address size.
@@ -83,6 +86,7 @@ class ReilMemory(object):
         # Dictionary that implements the memory itself.
         self._memory = {}
 
+        # Taint information.
         self._taints = {}
 
         # Previous state of memory. Requiere for some *special*
@@ -92,50 +96,45 @@ class ReilMemory(object):
         # Write operations counter.
         self._write_count = 0
 
-    def read_byte(self, address):
-        """Read a byte from memory.
-        """
-        # Initialize memory location with a random value.
-        if not address in self._memory:
-            self._memory[address] = random.randint(0x00, 0xff)
-
-        return self._memory[address]
-
-    def try_read_byte_prev(self, address):
-        """Read previous value for memory location.
-
-        Return a tuple (True, Byte) in case of successful read,
-        (False, None) otherwise.
-
-        """
-        # Initialize memory location with a random value
-        if not address in self._memory_prev:
-            return False, None
-
-        return True, self._memory_prev[address]
-
-    def write_byte(self, address, value):
-        """Write byte in memory.
-        """
-        # Save previous address content.
-        if address in self._memory:
-            self._memory_prev[address] = self._memory[address]
-
-        self._memory[address] = value & 0xff
-
+    # Read methods
+    # ======================================================================== #
     def read(self, address, size):
         """Read arbitrary size content from memory.
         """
         value = 0x0
 
         for i in xrange(0, size / 8):
-            value = self.read_byte(address + i) << (i * 8) | value
+            value = self._read_byte(address + i) << (i * 8) | value
 
         if verbose:
             taint = self.get_taint(address, size)
             self._debug_read_memory(address, value, taint)
 
         return value
+
+    def read_inverse(self, value, size):
+        """Return a list of memory addresses that contain the specified value.
+        """
+        addr_candidates = [addr for addr, val in self._memory.items() if val == (value & 0xff)]
+        addr_matchings = []
+
+        for addr in addr_candidates:
+            match = True
+
+            for i in xrange(0, size / 8):
+                byte_curr = (value >> (i * 8)) & 0xff
+                try:
+                    match = self._memory[addr + i] == byte_curr
+                except KeyError:
+                    match = False
+
+                if not match:
+                    break
+
+            if match:
+                addr_matchings += [addr]
+
+        return addr_matchings
 
     def try_read(self, address, size):
         """Try to read memory content at specified address.
@@ -150,7 +149,7 @@ class ReilMemory(object):
             addr = address + i
 
             if addr in self._memory:
-                value = self.read_byte(addr) << (i * 8) | value
+                value = self._read_byte(addr) << (i * 8) | value
             else:
                 return False, None
 
@@ -169,18 +168,44 @@ class ReilMemory(object):
             addr = address + i
 
             if addr in self._memory_prev:
-                success, val_byte = self.try_read_byte_prev(addr)
+                _, val_byte = self._try_read_byte_prev(addr)
                 value = val_byte << (i * 8) | value
             else:
                 return False, None
 
         return True, value
 
+    # Auxiliary read methods
+    # ======================================================================== #
+    def _read_byte(self, address):
+        """Read a byte from memory.
+        """
+        # Initialize memory location with a random value.
+        if not address in self._memory:
+            self._memory[address] = random.randint(0x00, 0xff)
+
+        return self._memory[address]
+
+    def _try_read_byte_prev(self, address):
+        """Read previous value for memory location.
+
+        Return a tuple (True, Byte) in case of successful read,
+        (False, None) otherwise.
+
+        """
+        # Initialize memory location with a random value
+        if not address in self._memory_prev:
+            return False, None
+
+        return True, self._memory_prev[address]
+
+    # Write methods
+    # ======================================================================== #
     def write(self, address, size, value):
         """Write arbitrary size content to memory.
         """
         for i in xrange(0, size / 8):
-            self.write_byte(address + i, (value >> (i * 8)) & 0xff)
+            self._write_byte(address + i, (value >> (i * 8)) & 0xff)
 
         self._write_count += 1
 
@@ -188,30 +213,19 @@ class ReilMemory(object):
             taint = self.get_taint(address, size)
             self._debug_write_memory(address, value, taint)
 
-    def read_inverse(self, value, size):
-        """Return a list of memory addresses that contain the specified value.
+    # Auxiliary write methods
+    # ======================================================================== #
+    def _write_byte(self, address, value):
+        """Write byte in memory.
         """
-        addr_candidates = [addr for addr, val in self._memory.items() if val == (value & 0xff)]
-        addr_matchings = []
+        # Save previous address content.
+        if address in self._memory:
+            self._memory_prev[address] = self._memory[address]
 
-        for addr in addr_candidates:
-            match = True
+        self._memory[address] = value & 0xff
 
-            for i in xrange(0, size / 8):
-                byte_curr = (value >> (i * 8)) & 0xff
-                try:
-                    match = self._memory[addr + i] == byte_curr
-                except:
-                    match = False
-
-                if not match:
-                    break
-
-            if match:
-                addr_matchings += [addr]
-
-        return addr_matchings
-
+    # Misc methods
+    # ======================================================================== #
     def get_addresses(self):
         """Get accessed addresses.
         """
@@ -222,18 +236,21 @@ class ReilMemory(object):
         """
         return self._write_count
 
-    def __str__(self):
-        lines = []
+    def reset(self):
+        # Dictionary that implements the memory itself.
+        self._memory = {}
 
-        for addr in sorted(self._memory.keys()):
-            lines += ["0x%08x : 0x%08x" % (addr, self._memory[addr])]
+        # Taint information.
+        self._taints = {}
 
-        return "\n".join(lines)
+        # Previous state of memory. Requiere for some *special*
+        # functions.
+        self._memory_prev = {}
 
-    def written(self, address):
-        return self._memory.has_key(address)
+        # Write operations counter.
+        self._write_count = 0
 
-    # Taint functions
+    # Taint methods
     # ======================================================================== #
     def set_taint(self, address, size, taint):
         for i in xrange(0, size / 8):
@@ -247,33 +264,39 @@ class ReilMemory(object):
 
         return tainted
 
-    # Auxiliary functions
+    # Debug methods
     # ======================================================================== #
     def _debug_read_memory(self, addr, val, tainted):
         fmt = "{indent}r{{ m[{addr:08x}] = {val:08x} [{taint:s}]}}"
         taint = "T" if tainted else "-"
-        msg = fmt.format(indent=" "*10, addr=addr , val=val, taint=taint)
+        msg = fmt.format(indent=" "*10, addr=addr, val=val, taint=taint)
 
         print(msg)
 
     def _debug_write_memory(self, addr, val, tainted):
         fmt = "{indent}w{{ m[{addr:08x}] = {val:08x} [{taint:s}]}}"
         taint = "T" if tainted else "-"
-        msg = fmt.format(indent=" "*10, addr=addr , val=val, taint=taint)
+        msg = fmt.format(indent=" "*10, addr=addr, val=val, taint=taint)
 
         print(msg)
 
-    def reset(self):
-        self._memory = {}
+    # Magic methods
+    # ======================================================================== #
+    def __str__(self):
+        lines = []
 
-        self._taints = {}
+        for addr in sorted(self._memory.keys()):
+            lines += ["0x%08x : 0x%08x" % (addr, self._memory[addr])]
 
-        # Previous state of memory. Requiere for some *special*
-        # functions.
-        self._memory_prev = {}
+        return "\n".join(lines)
 
-        # Write operations counter.
-        self._write_count = 0
+
+class ReilEmulatorZeroDivisionError(Exception):
+    pass
+
+
+class ReilEmulatorInvalidAddressError(Exception):
+    pass
 
 
 class ReilEmulator(object):
@@ -282,7 +305,7 @@ class ReilEmulator(object):
 
     def __init__(self, address_size):
 
-        # TODO: pass memory as a parameter
+        # TODO: Pass ReilMemory as a parameter.
 
         # Memory address size.
         self._address_size = address_size
@@ -300,10 +323,7 @@ class ReilEmulator(object):
         self._regs_written = set()
         self._regs_read = set()
 
-        # Set of read and write memory addresses during execution.
-        self._mem_written = set()
-        self._mem_read = set()
-
+        # Architecture information.
         self._arch_regs = []
         self._arch_flags = []
         self._arch_regs_size = {}
@@ -357,7 +377,7 @@ class ReilEmulator(object):
 
         self._set_default_instruction_handlers()
 
-    # Instruction's handler functions
+    # Instruction's handler methods
     # ======================================================================== #
     def set_instruction_pre_handler(self, mnemonic, function, parameter):
         self._instr_pre_handler[mnemonic] = (function, parameter)
@@ -371,7 +391,7 @@ class ReilEmulator(object):
     def set_instruction_post_handler_global(self, function, parameter):
         self._instr_post_handler_global = (function, parameter)
 
-    # Execution functions
+    # Execution methods
     # ======================================================================== #
     def execute_lite(self, instructions, context=None):
         """Execute a list of instructions. It does not support loops.
@@ -382,7 +402,7 @@ class ReilEmulator(object):
         if context:
             self._regs = context.copy()
 
-        for index, instr in enumerate(instructions):
+        for instr in instructions:
             self._execute_one(instr)
 
         return self._regs.copy(), self._mem
@@ -399,7 +419,24 @@ class ReilEmulator(object):
         main_index = 0
         sub_index = 0
 
-        self._ip = instructions[main_index][sub_index].address
+        if start_address == None:
+            self._ip = instructions[main_index][sub_index].address
+        else:
+            next_addr = start_address
+
+            found = False
+
+            for idx, instrs in enumerate(instructions):
+                if instrs[0].address >> 8 == next_addr >> 8:
+                    main_index = idx
+                    sub_index = next_addr & 0xff
+
+                    found = True
+
+            if not found:
+                raise ReilEmulatorInvalidAddressError("Invalid address: %s" % hex(next_addr))
+
+            self._ip = instructions[main_index][sub_index].address
 
         instr_count = 0
 
@@ -428,7 +465,7 @@ class ReilEmulator(object):
                         found = True
 
                 if not found:
-                    raise Exception("Invalid address: %s" % hex(next_addr))
+                    raise ReilEmulatorInvalidAddressError("Invalid address: %s" % hex(next_addr))
             else:
                 sub_index += 1
 
@@ -457,7 +494,7 @@ class ReilEmulator(object):
 
         return self._regs.copy(), self._mem
 
-    # Auxiliary execution functions
+    # Auxiliary execution methods
     # ======================================================================== #
     def _execute_one(self, instr):
         if verbose:
@@ -482,7 +519,7 @@ class ReilEmulator(object):
 
         return next_addr
 
-    # Misc functions
+    # Misc methods
     # ======================================================================== #
     def reset(self):
         """Reset emulator. All registers and memory are reset.
@@ -495,6 +532,9 @@ class ReilEmulator(object):
 
         self._regs_written = set()
         self._regs_read = set()
+
+    def reset_memory(self):
+        self._mem.reset()
 
     # Properties
     # ======================================================================== #
@@ -541,7 +581,7 @@ class ReilEmulator(object):
         """
         return self._regs_written
 
-    # Auxiliary functions
+    # Auxiliary methods
     # ======================================================================== #
     def _set_default_instruction_handlers(self):
         empty_fn = lambda emu, instr, param: None
@@ -553,7 +593,7 @@ class ReilEmulator(object):
         self._instr_pre_handler_global = (empty_fn, empty_param)
         self._instr_post_handler_global = (empty_fn, empty_param)
 
-    # Architecture information functions
+    # Architecture information methods
     # ======================================================================== #
     # TODO: Remove function. Use ArchitectureInformation instead.
     def set_arch_registers(self, registers):
@@ -590,7 +630,7 @@ class ReilEmulator(object):
         """
         self._arch_alias_mapper = alias_mapper
 
-    # Taint functions
+    # Taint methods
     # ======================================================================== #
     def get_operand_taint(self, operand):
         if isinstance(operand, ReilRegisterOperand):
@@ -614,7 +654,7 @@ class ReilEmulator(object):
     def set_memory_taint(self, address, size, taint):
         self._mem.set_taint(address, size, taint)
 
-    # Taint auxiliary functions
+    # Taint auxiliary methods
     # ======================================================================== #
     def _get_register_taint(self, register):
         if register.name in self._arch_alias_mapper and register.name not in self._arch_flags:
@@ -642,7 +682,7 @@ class ReilEmulator(object):
 
             print(msg)
 
-    # Read/Write functions
+    # Read/Write methods
     # ======================================================================== #
     def read_operand(self, operand):
         if isinstance(operand, ReilRegisterOperand):
@@ -666,12 +706,9 @@ class ReilEmulator(object):
     def write_memory(self, address, size, value):
         self._mem.write(address, size, value)
 
-    def reset_memory(self):
-        self._mem.reset()
-
-    # Read/Write auxiliary functions
+    # Read/Write auxiliary methods
     # ======================================================================== #
-    def _read_register(self, register):
+    def _get_register_value(self, register):
         if register.name in self._arch_alias_mapper:
             base_reg_name, offset = self._arch_alias_mapper[register.name]
             base_reg_size = self._arch_regs_size[base_reg_name]
@@ -679,13 +716,17 @@ class ReilEmulator(object):
             base_reg_name, offset = register.name, 0
             base_reg_size = register.size
 
-        # TODO: Rename _regs to _context.
         if base_reg_name in self._regs:
             base_val = self._regs[base_reg_name]
         else:
             base_val = random.randint(0, 2**base_reg_size - 1)
 
-        reg_val = self._extract_value(base_val, offset, register.size)
+        return base_reg_name, base_val, offset
+
+    def _read_register(self, register):
+        base_reg_name, base_val, offset = self._get_register_value(register)
+
+        reg_val = extract_value(base_val, offset, register.size)
 
         # Keep track of native register reads.
         if register.name in self._arch_regs:
@@ -699,20 +740,9 @@ class ReilEmulator(object):
         return reg_val
 
     def _write_register(self, register, value):
-        if register.name in self._arch_alias_mapper:
-            base_reg_name, offset = self._arch_alias_mapper[register.name]
-            base_reg_size = self._arch_regs_size[base_reg_name]
-        else:
-            base_reg_name, offset = register.name, 0
-            base_reg_size = register.size
+        base_reg_name, base_val, offset = self._get_register_value(register)
 
-        # TODO: Rename _regs to _context.
-        if base_reg_name in self._regs:
-            base_val = self._regs[base_reg_name]
-        else:
-            base_val = random.randint(0, 2**base_reg_size - 1)
-
-        self._regs[base_reg_name] = self._insert_value(base_val, value, offset, register.size)
+        self._regs[base_reg_name] = insert_value(base_val, value, offset, register.size)
 
         # Keep track of native register writes.
         if register.name in self._arch_regs:
@@ -723,22 +753,15 @@ class ReilEmulator(object):
             taint = self._get_register_taint(register)
             self._debug_write_operand(register, value, base_reg_name, self._regs[base_reg_name], taint)
 
-    def _extract_value(self, main_value, offset, size):
-        return (main_value >> offset) & 2**size-1
-
-    def _insert_value(self, main_value, value_to_insert, offset, size):
-        main_value &= ~((2**size-1) << offset)
-        main_value |= (value_to_insert & 2**size-1) << offset
-
-        return main_value
-
+    # Debug methods
+    # ======================================================================== #
     def _debug_read_operand(self, reg, val, base_reg, base_val, tainted):
         fmt = "{indent}r{{ {reg:s} = {val:08x} [{taint:s}] ({base_reg:s} = {base_val:08x})}}"
 
         taint = "T" if tainted == True else "-"
 
         msg = fmt.format(
-            indent=" "*10, reg=reg , val=val, base_reg=base_reg,
+            indent=" "*10, reg=reg, val=val, base_reg=base_reg,
             base_val=base_val, taint=taint
         )
 
@@ -750,7 +773,7 @@ class ReilEmulator(object):
         taint = "T" if tainted else "-"
 
         msg = fmt.format(
-            indent=" "*10, reg=reg , val=val, base_reg=base_reg,
+            indent=" "*10, reg=reg, val=val, base_reg=base_reg,
             base_val=base_val, taint=taint
         )
 
@@ -819,9 +842,12 @@ class ReilEmulator(object):
     def _execute_div(self, instr):
         """Execute DIV instruction.
         """
-        # TODO: See how to manage exceptions (instr.operands[1] == 0)
         op0_val = self.read_operand(instr.operands[0])
         op1_val = self.read_operand(instr.operands[1])
+
+        if op1_val == 0:
+            raise ReilEmulatorZeroDivisionError()
+
         op2_val = op0_val / op1_val
 
         # Get taint information.
@@ -838,9 +864,12 @@ class ReilEmulator(object):
     def _execute_mod(self, instr):
         """Execute MOD instruction.
         """
-        # TODO: See how to manage exceptions (instr.operands[1] == 0)
         op0_val = self.read_operand(instr.operands[0])
         op1_val = self.read_operand(instr.operands[1])
+
+        if op1_val == 0:
+            raise ReilEmulatorZeroDivisionError()
+
         op2_val = op0_val % op1_val
 
         # Get taint information.
@@ -866,10 +895,7 @@ class ReilEmulator(object):
         if op1_val & (2**(op1_size-1)) == 0:
             op2_val = op0_val << op1_val
         else:
-            # Compute two's complement.
-            op1_val = 2**op1_size - op1_val
-
-            op2_val = op0_val >> op1_val
+            op2_val = op0_val >> twos_complement(op1_val, op1_size)
 
         # Get taint information.
         op0_taint = self.get_operand_taint(instr.operands[0])

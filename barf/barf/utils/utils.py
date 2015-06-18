@@ -23,6 +23,18 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+def twos_complement(value, size):
+    return 2**size - value
+
+def extract_value(main_value, offset, size):
+    return (main_value >> offset) & 2**size-1
+
+def insert_value(main_value, value_to_insert, offset, size):
+    main_value &= ~((2**size-1) << offset)
+    main_value |= (value_to_insert & 2**size-1) << offset
+
+    return main_value
+
 class VariableNamer(object):
     """Variable Name Generator."""
 
