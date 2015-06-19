@@ -311,7 +311,7 @@ class ReilEmulator(object):
         self._address_size = address_size
 
         # An instance of a ReilMemory.
-        self._mem = ReilMemory(address_size)
+        self._mem = ReilMemory(self._address_size)
 
         # Instruction Pointer.
         self._ip = None
@@ -366,7 +366,7 @@ class ReilEmulator(object):
         }
 
         # Taint information.
-        self._taints = {}
+        self._taints_regs = {}
 
         # Instructions pre and post handlers.
         self._instr_pre_handler = {}
@@ -390,6 +390,18 @@ class ReilEmulator(object):
 
     def set_instruction_post_handler_global(self, function, parameter):
         self._instr_post_handler_global = (function, parameter)
+
+    # Instruction's handler auxiliary methods
+    # ======================================================================== #
+    def _set_default_instruction_handlers(self):
+        empty_fn = lambda emu, instr, param: None
+        empty_param = None
+
+        self._instr_pre_handler = defaultdict(lambda: (empty_fn, empty_param))
+        self._instr_post_handler = defaultdict(lambda: (empty_fn, empty_param))
+
+        self._instr_pre_handler_global = (empty_fn, empty_param)
+        self._instr_post_handler_global = (empty_fn, empty_param)
 
     # Execution methods
     # ======================================================================== #
@@ -524,21 +536,36 @@ class ReilEmulator(object):
     def reset(self):
         """Reset emulator. All registers and memory are reset.
         """
+        # An instance of a ReilMemory.
         self._mem = ReilMemory(self._address_size)
 
+        # Instruction Pointer.
         self._ip = None
 
+        # Registers.
         self._regs = {}
 
+        # Set of read and write registers during execution.
         self._regs_written = set()
         self._regs_read = set()
+
+        # Taint information.
+        self._taints_regs = {}
+
+        # Instructions pre and post handlers.
+        self._instr_pre_handler = {}
+        self._instr_post_handler = {}
+
+        self._instr_pre_handler_global = {}
+        self._instr_post_handler_global = {}
+
+        self._set_default_instruction_handlers()
 
     def reset_memory(self):
         self._mem.reset()
 
     # Properties
     # ======================================================================== #
-    # TODO: Remove one of these pair of properties.
     @property
     def registers(self):
         """Return registers.
@@ -568,18 +595,6 @@ class ReilEmulator(object):
         """Return written (native) registers.
         """
         return self._regs_written
-
-    # Auxiliary methods
-    # ======================================================================== #
-    def _set_default_instruction_handlers(self):
-        empty_fn = lambda emu, instr, param: None
-        empty_param = None
-
-        self._instr_pre_handler = defaultdict(lambda: (empty_fn, empty_param))
-        self._instr_post_handler = defaultdict(lambda: (empty_fn, empty_param))
-
-        self._instr_pre_handler_global = (empty_fn, empty_param)
-        self._instr_post_handler_global = (empty_fn, empty_param)
 
     # Architecture information methods
     # ======================================================================== #
@@ -650,7 +665,7 @@ class ReilEmulator(object):
         else:
             base_name = register.name
 
-        return self._taints.get(base_name, False)
+        return self._taints_regs.get(base_name, False)
 
     def _set_register_taint(self, register, taint):
         if register.name in self._arch_alias_mapper and register.name not in self._arch_flags:
@@ -658,7 +673,7 @@ class ReilEmulator(object):
         else:
             base_name = register.name
 
-        self._taints[base_name] = taint
+        self._taints_regs[base_name] = taint
 
         if verbose:
             reg = register.name
