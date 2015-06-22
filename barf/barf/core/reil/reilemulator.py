@@ -86,9 +86,6 @@ class ReilMemory(object):
         # Dictionary that implements the memory itself.
         self._memory = {}
 
-        # Taint information.
-        self._taints = {}
-
         # Previous state of memory. Requiere for some *special*
         # functions.
         self._memory_prev = {}
@@ -107,7 +104,7 @@ class ReilMemory(object):
             value = self._read_byte(address + i) << (i * 8) | value
 
         if verbose:
-            taint = self.get_taint(address, size)
+            taint = None
             self._debug_read_memory(address, value, taint)
 
         return value
@@ -210,7 +207,7 @@ class ReilMemory(object):
         self._write_count += 1
 
         if verbose:
-            taint = self.get_taint(address, size)
+            taint = None
             self._debug_write_memory(address, value, taint)
 
     # Auxiliary write methods
@@ -240,29 +237,12 @@ class ReilMemory(object):
         # Dictionary that implements the memory itself.
         self._memory = {}
 
-        # Taint information.
-        self._taints = {}
-
         # Previous state of memory. Requiere for some *special*
         # functions.
         self._memory_prev = {}
 
         # Write operations counter.
         self._write_count = 0
-
-    # Taint methods
-    # ======================================================================== #
-    def set_taint(self, address, size, taint):
-        for i in xrange(0, size / 8):
-            self._taints[address + i] = taint
-
-    def get_taint(self, address, size):
-        tainted = False
-
-        for i in xrange(0, size / 8):
-            tainted = tainted or self._taints.get(address + i, False)
-
-        return tainted
 
     # Debug methods
     # ======================================================================== #
@@ -297,6 +277,292 @@ class ReilEmulatorZeroDivisionError(Exception):
 
 class ReilEmulatorInvalidAddressError(Exception):
     pass
+
+class ReilEmulatorTainter(object):
+
+    def __init__(self, emulator):
+        self._emulator = emulator
+
+        # Taint information.
+        self._taints_regs = {}
+        self._taints_memory = {}
+
+        self._tainter = {
+            # Arithmetic Instructions
+            ReilMnemonic.ADD : self._taint_add,
+            ReilMnemonic.SUB : self._taint_sub,
+            ReilMnemonic.MUL : self._taint_mul,
+            ReilMnemonic.DIV : self._taint_div,
+            ReilMnemonic.MOD : self._taint_mod,
+            ReilMnemonic.BSH : self._taint_bsh,
+
+            # Bitwise Instructions
+            ReilMnemonic.AND : self._taint_and,
+            ReilMnemonic.OR  : self._taint_or,
+            ReilMnemonic.XOR : self._taint_xor,
+
+            # Data Transfer Instructions
+            ReilMnemonic.LDM : self._taint_ldm,
+            ReilMnemonic.STM : self._taint_stm,
+            ReilMnemonic.STR : self._taint_str,
+
+            # Conditional Instructions
+            ReilMnemonic.BISZ : self._taint_bisz,
+            ReilMnemonic.JCC  : self._taint_jcc,
+
+            # Other Instructions
+            ReilMnemonic.UNDEF : self._taint_undef,
+            ReilMnemonic.UNKN  : self._taint_unkn,
+            ReilMnemonic.NOP   : self._taint_nop,
+
+            # Ad hoc Instructions
+            ReilMnemonic.RET : self._taint_ret,
+
+            # Extensions
+            ReilMnemonic.SEXT : self._taint_sext,
+        }
+
+    def taint(self, instruction):
+        self._tainter[instruction.mnemonic](instruction)
+
+    # Taint methods
+    # ======================================================================== #
+    def get_operand_taint(self, operand):
+        if isinstance(operand, ReilRegisterOperand):
+            taint = self._get_register_taint(operand)
+        elif isinstance(operand, ReilImmediateOperand):
+            taint = False
+        else:
+            raise Exception("Invalid operand: %s" % str(operand))
+
+        return taint
+
+    def set_operand_taint(self, operand, taint):
+        if isinstance(operand, ReilRegisterOperand):
+            self._set_register_taint(operand, taint)
+        else:
+            raise Exception("Invalid operand: %s" % str(operand))
+
+    def get_memory_taint(self, address, size):
+        tainted = False
+
+        for i in xrange(0, size / 8):
+            tainted = tainted or self._taints_memory.get(address + i, False)
+
+        return tainted
+
+    def set_memory_taint(self, address, size, taint):
+        for i in xrange(0, size / 8):
+            self._taints_memory[address + i] = taint
+
+    # Taint auxiliary methods
+    # ======================================================================== #
+    def _get_register_taint(self, register):
+        if register.name in self._emulator._arch_alias_mapper and register.name not in self._emulator._arch_flags:
+            base_name, _ = self._emulator._arch_alias_mapper[register.name]
+        else:
+            base_name = register.name
+
+        return self._taints_regs.get(base_name, False)
+
+    def _set_register_taint(self, register, taint):
+        if register.name in self._emulator._arch_alias_mapper and register.name not in self._emulator._arch_flags:
+            base_name, _ = self._emulator._arch_alias_mapper[register.name]
+        else:
+            base_name = register.name
+
+        self._taints_regs[base_name] = taint
+
+        if verbose:
+            reg = register.name
+            base_reg = base_name
+
+            fmt = "{indent}t{{ {reg:s} ({base_reg:s})}}"
+
+            msg = fmt.format(indent=" "*10, reg=reg, base_reg=base_reg)
+
+            print(msg)
+
+    # ======================================================================== #
+    # REIL instructions TAINT implementation
+    # ======================================================================== #
+    def _taint_add(self, instr):
+        """Taint ADD instruction.
+        """
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
+
+    def _taint_sub(self, instr):
+        """Taint SUB instruction.
+        """
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
+
+    def _taint_mul(self, instr):
+        """Taint MUL instruction.
+        """
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
+
+    def _taint_div(self, instr):
+        """Taint DIV instruction.
+        """
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
+
+    def _taint_mod(self, instr):
+        """Taint MOD instruction.
+        """
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
+
+    def _taint_bsh(self, instr):
+        """Taint BSH instruction.
+        """
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
+
+    # Bitwise instructions
+    # ======================================================================== #
+    def _taint_and(self, instr):
+        """Taint AND instruction.
+        """
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
+
+    def _taint_or(self, instr):
+        """Taint OR instruction.
+        """
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
+
+    def _taint_xor(self, instr):
+        """Taint XOR instruction.
+        """
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+        op1_taint = self.get_operand_taint(instr.operands[1])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
+
+    # Data transfer instructions
+    # ======================================================================== #
+    def _taint_ldm(self, instr):
+        """Taint LDM instruction.
+        """
+        op0_val = self._emulator.read_operand(instr.operands[0])                  # Memory address.
+
+        # Get taint information.
+        op0_taint = self.get_memory_taint(op0_val, instr.operands[2].size)
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint)
+
+    def _taint_stm(self, instr):
+        """Taint STM instruction.
+        """
+        op2_val = self._emulator.read_operand(instr.operands[2])  # Memory address.
+
+        # Get taint information.
+        op0_size = instr.operands[0].size
+        op0_taint = self.get_operand_taint(instr.operands[0])
+
+        # Propagate taint.
+        self.set_memory_taint(op2_val, op0_size, op0_taint)
+
+    def _taint_str(self, instr):
+        """Taint STR instruction.
+        """
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint)
+
+    # Conditional instructions
+    # ======================================================================== #
+    def _taint_bisz(self, instr):
+        """Taint BISZ instruction.
+        """
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint)
+
+    def _taint_jcc(self, instr):
+        """Taint JCC instruction.
+        """
+        pass
+
+    # Other instructions
+    # ======================================================================== #
+    def _taint_undef(self, instr):
+        """Taint UNDEF instruction.
+        """
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], False)
+
+    def _taint_unkn(self, instr):
+        """Taint UNKN instruction.
+        """
+        pass
+
+    def _taint_nop(self, instr):
+        """Taint NOP instruction.
+        """
+        pass
+
+    # Ad hoc Instructions
+    # ======================================================================== #
+    def _taint_ret(self, instr):
+        """Taint RET instruction.
+        """
+        pass
+
+    # Extension
+    # ======================================================================== #
+    def _taint_sext(self, instr):
+        """Taint SEXT instruction.
+        """
+        # Get taint information.
+        op0_taint = self.get_operand_taint(instr.operands[0])
+
+        # Propagate taint.
+        self.set_operand_taint(instr.operands[2], op0_taint)
 
 
 class ReilEmulator(object):
@@ -365,9 +631,6 @@ class ReilEmulator(object):
             ReilMnemonic.SEXT : self._execute_sext,
         }
 
-        # Taint information.
-        self._taints_regs = {}
-
         # Instructions pre and post handlers.
         self._instr_pre_handler = {}
         self._instr_post_handler = {}
@@ -376,6 +639,8 @@ class ReilEmulator(object):
         self._instr_post_handler_global = {}
 
         self._set_default_instruction_handlers()
+
+        self._tainter = ReilEmulatorTainter(self)
 
     # Instruction's handler methods
     # ======================================================================== #
@@ -525,6 +790,9 @@ class ReilEmulator(object):
         # Execute instruction
         next_addr = self._executors[instr.mnemonic](instr)
 
+        # Taint instruction
+        self._tainter.taint(instr)
+
         # Execute post instruction handlers
         post_handler_fn(self, instr, post_handler_param)
         post_handler_fn_global(self, instr, post_handler_param_global)
@@ -548,9 +816,6 @@ class ReilEmulator(object):
         # Set of read and write registers during execution.
         self._regs_written = set()
         self._regs_read = set()
-
-        # Taint information.
-        self._taints_regs = {}
 
         # Instructions pre and post handlers.
         self._instr_pre_handler = {}
@@ -632,58 +897,6 @@ class ReilEmulator(object):
 
         """
         self._arch_alias_mapper = alias_mapper
-
-    # Taint methods
-    # ======================================================================== #
-    def get_operand_taint(self, operand):
-        if isinstance(operand, ReilRegisterOperand):
-            taint = self._get_register_taint(operand)
-        elif isinstance(operand, ReilImmediateOperand):
-            taint = False
-        else:
-            raise Exception("Invalid operand: %s" % str(operand))
-
-        return taint
-
-    def set_operand_taint(self, operand, taint):
-        if isinstance(operand, ReilRegisterOperand):
-            self._set_register_taint(operand, taint)
-        else:
-            raise Exception("Invalid operand: %s" % str(operand))
-
-    def get_memory_taint(self, address, size):
-        return self._mem.get_taint(address, size)
-
-    def set_memory_taint(self, address, size, taint):
-        self._mem.set_taint(address, size, taint)
-
-    # Taint auxiliary methods
-    # ======================================================================== #
-    def _get_register_taint(self, register):
-        if register.name in self._arch_alias_mapper and register.name not in self._arch_flags:
-            base_name, _ = self._arch_alias_mapper[register.name]
-        else:
-            base_name = register.name
-
-        return self._taints_regs.get(base_name, False)
-
-    def _set_register_taint(self, register, taint):
-        if register.name in self._arch_alias_mapper and register.name not in self._arch_flags:
-            base_name, _ = self._arch_alias_mapper[register.name]
-        else:
-            base_name = register.name
-
-        self._taints_regs[base_name] = taint
-
-        if verbose:
-            reg = register.name
-            base_reg = base_name
-
-            fmt = "{indent}t{{ {reg:s} ({base_reg:s})}}"
-
-            msg = fmt.format(indent=" "*10, reg=reg, base_reg=base_reg)
-
-            print(msg)
 
     # Read/Write methods
     # ======================================================================== #
@@ -793,16 +1006,12 @@ class ReilEmulator(object):
         """
         op0_val = self.read_operand(instr.operands[0])
         op1_val = self.read_operand(instr.operands[1])
+
         op2_val = op0_val + op1_val
 
-        # Get taint information.
-        op0_taint = self.get_operand_taint(instr.operands[0])
-        op1_taint = self.get_operand_taint(instr.operands[1])
-
-        # Propagate taint.
-        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
-
         self.write_operand(instr.operands[2], op2_val)
+
+        # self._tainter._taint_add(instr)
 
         return None
 
@@ -811,16 +1020,12 @@ class ReilEmulator(object):
         """
         op0_val = self.read_operand(instr.operands[0])
         op1_val = self.read_operand(instr.operands[1])
+
         op2_val = op0_val - op1_val
 
-        # Get taint information.
-        op0_taint = self.get_operand_taint(instr.operands[0])
-        op1_taint = self.get_operand_taint(instr.operands[1])
-
-        # Propagate taint.
-        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
-
         self.write_operand(instr.operands[2], op2_val)
+
+        # self._tainter._taint_sub(instr)
 
         return None
 
@@ -829,16 +1034,12 @@ class ReilEmulator(object):
         """
         op0_val = self.read_operand(instr.operands[0])
         op1_val = self.read_operand(instr.operands[1])
+
         op2_val = op0_val * op1_val
 
-        # Get taint information.
-        op0_taint = self.get_operand_taint(instr.operands[0])
-        op1_taint = self.get_operand_taint(instr.operands[1])
-
-        # Propagate taint.
-        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
-
         self.write_operand(instr.operands[2], op2_val)
+
+        # self._tainter._taint_mul(instr)
 
         return None
 
@@ -853,14 +1054,9 @@ class ReilEmulator(object):
 
         op2_val = op0_val / op1_val
 
-        # Get taint information.
-        op0_taint = self.get_operand_taint(instr.operands[0])
-        op1_taint = self.get_operand_taint(instr.operands[1])
-
-        # Propagate taint.
-        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
-
         self.write_operand(instr.operands[2], op2_val)
+
+        # self._tainter._taint_div(instr)
 
         return None
 
@@ -875,14 +1071,9 @@ class ReilEmulator(object):
 
         op2_val = op0_val % op1_val
 
-        # Get taint information.
-        op0_taint = self.get_operand_taint(instr.operands[0])
-        op1_taint = self.get_operand_taint(instr.operands[1])
-
-        # Propagate taint.
-        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
-
         self.write_operand(instr.operands[2], op2_val)
+
+        # self._tainter._taint_mod(instr)
 
         return None
 
@@ -900,14 +1091,9 @@ class ReilEmulator(object):
         else:
             op2_val = op0_val >> twos_complement(op1_val, op1_size)
 
-        # Get taint information.
-        op0_taint = self.get_operand_taint(instr.operands[0])
-        op1_taint = self.get_operand_taint(instr.operands[1])
-
-        # Propagate taint.
-        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
-
         self.write_operand(instr.operands[2], op2_val)
+
+        # self._tainter._taint_bsh(instr)
 
         return None
 
@@ -918,16 +1104,12 @@ class ReilEmulator(object):
         """
         op0_val = self.read_operand(instr.operands[0])
         op1_val = self.read_operand(instr.operands[1])
+
         op2_val = op0_val & op1_val
 
-        # Get taint information.
-        op0_taint = self.get_operand_taint(instr.operands[0])
-        op1_taint = self.get_operand_taint(instr.operands[1])
-
-        # Propagate taint.
-        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
-
         self.write_operand(instr.operands[2], op2_val)
+
+        # self._tainter._taint_and(instr)
 
         return None
 
@@ -936,16 +1118,12 @@ class ReilEmulator(object):
         """
         op0_val = self.read_operand(instr.operands[0])
         op1_val = self.read_operand(instr.operands[1])
+
         op2_val = op0_val | op1_val
 
-        # Get taint information.
-        op0_taint = self.get_operand_taint(instr.operands[0])
-        op1_taint = self.get_operand_taint(instr.operands[1])
-
-        # Propagate taint.
-        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
-
         self.write_operand(instr.operands[2], op2_val)
+
+        # self._tainter._taint_or(instr)
 
         return None
 
@@ -954,16 +1132,12 @@ class ReilEmulator(object):
         """
         op0_val = self.read_operand(instr.operands[0])
         op1_val = self.read_operand(instr.operands[1])
+
         op2_val = op0_val ^ op1_val
 
-        # Get taint information.
-        op0_taint = self.get_operand_taint(instr.operands[0])
-        op1_taint = self.get_operand_taint(instr.operands[1])
-
-        # Propagate taint.
-        self.set_operand_taint(instr.operands[2], op0_taint or op1_taint)
-
         self.write_operand(instr.operands[2], op2_val)
+
+        # self._tainter._taint_xor(instr)
 
         return None
 
@@ -978,13 +1152,9 @@ class ReilEmulator(object):
         op0_val = self.read_operand(instr.operands[0])                  # Memory address.
         op2_val = self.read_memory(op0_val, instr.operands[2].size)     # Data.
 
-        # Get taint information.
-        op0_taint = self.get_memory_taint(op0_val, instr.operands[2].size)
-
-        # Propagate taint.
-        self.set_operand_taint(instr.operands[2], op0_taint)
-
         self.write_operand(instr.operands[2], op2_val)
+
+        # self._tainter._taint_ldm(instr)
 
         return None
 
@@ -999,13 +1169,9 @@ class ReilEmulator(object):
 
         op0_size = instr.operands[0].size
 
-        # Get taint information.
-        op0_taint = self.get_operand_taint(instr.operands[0])
-
-        # Propagate taint.
-        self.set_memory_taint(op2_val, op0_size, op0_taint)
-
         self.write_memory(op2_val, op0_size, op0_val)
+
+        # self._tainter._taint_stm(instr)
 
         return None
 
@@ -1014,13 +1180,9 @@ class ReilEmulator(object):
         """
         op0_val = self.read_operand(instr.operands[0])
 
-        # Get taint information.
-        op0_taint = self.get_operand_taint(instr.operands[0])
-
-        # Propagate taint.
-        self.set_operand_taint(instr.operands[2], op0_taint)
-
         self.write_operand(instr.operands[2], op0_val)
+
+        # self._tainter._taint_str(instr)
 
         return None
 
@@ -1030,15 +1192,12 @@ class ReilEmulator(object):
         """Execute BISZ instruction.
         """
         op0_val = self.read_operand(instr.operands[0])
+
         op2_val = 1 if op0_val == 0 else 0
 
-        # Get taint information.
-        op0_taint = self.get_operand_taint(instr.operands[0])
-
-        # Propagate taint.
-        self.set_operand_taint(instr.operands[2], op0_taint)
-
         self.write_operand(instr.operands[2], op2_val)
+
+        # self._tainter._taint_bisz(instr)
 
         return None
 
@@ -1047,6 +1206,8 @@ class ReilEmulator(object):
         """
         op0_val = self.read_operand(instr.operands[0])  # Branch condition.
         op2_val = self.read_operand(instr.operands[2])  # Target address.
+
+        # self._tainter._taint_jcc(instr)
 
         return op2_val if op0_val != 0 else None
 
@@ -1059,8 +1220,7 @@ class ReilEmulator(object):
 
         self.write_operand(instr.operands[2], op2_val)
 
-        # Propagate taint.
-        self.set_operand_taint(instr.operands[2], False)
+        # self._tainter._taint_undef(instr)
 
         return None
 
@@ -1072,6 +1232,8 @@ class ReilEmulator(object):
     def _execute_nop(self, instr):
         """Execute NOP instruction.
         """
+        # self._tainter._taint_nop(instr)
+
         return None
 
     # Ad hoc Instructions
@@ -1079,7 +1241,9 @@ class ReilEmulator(object):
     def _execute_ret(self, instr):
         """Execute RET instruction.
         """
-        pass
+        # self._tainter._taint_ret(instr)
+
+        return None
 
     # Extension
     # ======================================================================== #
@@ -1096,12 +1260,8 @@ class ReilEmulator(object):
 
         op2_val = op0_val | op2_mask
 
-        # Get taint information.
-        op0_taint = self.get_operand_taint(instr.operands[0])
-
-        # Propagate taint.
-        self.set_operand_taint(instr.operands[2], op0_taint)
-
         self.write_operand(instr.operands[2], op2_val)
+
+        # self._tainter._taint_sext(instr)
 
         return None
