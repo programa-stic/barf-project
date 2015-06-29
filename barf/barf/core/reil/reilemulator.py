@@ -632,11 +632,8 @@ class ReilEmulator(object):
         }
 
         # Instructions pre and post handlers.
-        self._instr_pre_handler = {}
-        self._instr_post_handler = {}
-
-        self._instr_pre_handler_global = {}
-        self._instr_post_handler_global = {}
+        self._instr_pre_handler = None
+        self._instr_post_handler = None
 
         self._set_default_instruction_handlers()
 
@@ -644,29 +641,19 @@ class ReilEmulator(object):
 
     # Instruction's handler methods
     # ======================================================================== #
-    def set_instruction_pre_handler(self, mnemonic, function, parameter):
-        self._instr_pre_handler[mnemonic] = (function, parameter)
+    def set_instruction_pre_handler(self, function, parameter):
+        self._instr_pre_handler = (function, parameter)
 
-    def set_instruction_post_handler(self, mnemonic, function, parameter):
-        self._instr_post_handler[mnemonic] = (function, parameter)
-
-    def set_instruction_pre_handler_global(self, function, parameter):
-        self._instr_pre_handler_global = (function, parameter)
-
-    def set_instruction_post_handler_global(self, function, parameter):
-        self._instr_post_handler_global = (function, parameter)
+    def set_instruction_post_handler(self, function, parameter):
+        self._instr_post_handler = (function, parameter)
 
     # Instruction's handler auxiliary methods
     # ======================================================================== #
     def _set_default_instruction_handlers(self):
-        empty_fn = lambda emu, instr, param: None
-        empty_param = None
+        empty_fn, empty_param = lambda emu, instr, param: None, None
 
-        self._instr_pre_handler = defaultdict(lambda: (empty_fn, empty_param))
-        self._instr_post_handler = defaultdict(lambda: (empty_fn, empty_param))
-
-        self._instr_pre_handler_global = (empty_fn, empty_param)
-        self._instr_post_handler_global = (empty_fn, empty_param)
+        self._instr_pre_handler = (empty_fn, empty_param)
+        self._instr_post_handler = (empty_fn, empty_param)
 
     # Execution methods
     # ======================================================================== #
@@ -777,15 +764,11 @@ class ReilEmulator(object):
         if verbose:
             print("0x%08x:%02x : %s" % (instr.address >> 8, instr.address & 0xff, instr))
 
-        pre_handler_fn, pre_handler_param = self._instr_pre_handler[instr.mnemonic]
-        post_handler_fn, post_handler_param = self._instr_post_handler[instr.mnemonic]
-
-        pre_handler_fn_global, pre_handler_param_global = self._instr_pre_handler_global
-        post_handler_fn_global, post_handler_param_global = self._instr_post_handler_global
+        pre_handler_fn, pre_handler_param = self._instr_pre_handler
+        post_handler_fn, post_handler_param = self._instr_post_handler
 
         # Execute pre instruction handlers
         pre_handler_fn(self, instr, pre_handler_param)
-        pre_handler_fn_global(self, instr, pre_handler_param_global)
 
         # Execute instruction
         next_addr = self._executors[instr.mnemonic](instr)
@@ -795,7 +778,6 @@ class ReilEmulator(object):
 
         # Execute post instruction handlers
         post_handler_fn(self, instr, post_handler_param)
-        post_handler_fn_global(self, instr, post_handler_param_global)
 
         return next_addr
 
