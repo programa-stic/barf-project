@@ -278,6 +278,7 @@ class ReilEmulatorZeroDivisionError(Exception):
 class ReilEmulatorInvalidAddressError(Exception):
     pass
 
+
 class ReilEmulatorTainter(object):
 
     def __init__(self, emulator):
@@ -483,7 +484,7 @@ class ReilEmulatorTainter(object):
     def _taint_ldm(self, instr):
         """Taint LDM instruction.
         """
-        op0_val = self._emulator.read_operand(instr.operands[0])                  # Memory address.
+        op0_val = self._emulator.read_operand(instr.operands[0])  # Memory address.
 
         # Get taint information.
         op0_taint = self.get_memory_taint(op0_val, instr.operands[2].size)
@@ -797,8 +798,8 @@ class ReilEmulator(object):
         self._regs_read = set()
 
         # Instructions pre and post handlers.
-        self._instr_pre_handler = {}
-        self._instr_post_handler = {}
+        self._instr_pre_handler = None
+        self._instr_post_handler = None
 
         self._set_default_instruction_handlers()
 
@@ -950,8 +951,6 @@ class ReilEmulator(object):
 
         self.write_operand(instr.operands[2], op2_val)
 
-        # self._tainter._taint_add(instr)
-
         return None
 
     def _execute_sub(self, instr):
@@ -964,8 +963,6 @@ class ReilEmulator(object):
 
         self.write_operand(instr.operands[2], op2_val)
 
-        # self._tainter._taint_sub(instr)
-
         return None
 
     def _execute_mul(self, instr):
@@ -977,8 +974,6 @@ class ReilEmulator(object):
         op2_val = op0_val * op1_val
 
         self.write_operand(instr.operands[2], op2_val)
-
-        # self._tainter._taint_mul(instr)
 
         return None
 
@@ -995,8 +990,6 @@ class ReilEmulator(object):
 
         self.write_operand(instr.operands[2], op2_val)
 
-        # self._tainter._taint_div(instr)
-
         return None
 
     def _execute_mod(self, instr):
@@ -1011,8 +1004,6 @@ class ReilEmulator(object):
         op2_val = op0_val % op1_val
 
         self.write_operand(instr.operands[2], op2_val)
-
-        # self._tainter._taint_mod(instr)
 
         return None
 
@@ -1032,8 +1023,6 @@ class ReilEmulator(object):
 
         self.write_operand(instr.operands[2], op2_val)
 
-        # self._tainter._taint_bsh(instr)
-
         return None
 
     # Bitwise instructions
@@ -1048,8 +1037,6 @@ class ReilEmulator(object):
 
         self.write_operand(instr.operands[2], op2_val)
 
-        # self._tainter._taint_and(instr)
-
         return None
 
     def _execute_or(self, instr):
@@ -1062,8 +1049,6 @@ class ReilEmulator(object):
 
         self.write_operand(instr.operands[2], op2_val)
 
-        # self._tainter._taint_or(instr)
-
         return None
 
     def _execute_xor(self, instr):
@@ -1075,8 +1060,6 @@ class ReilEmulator(object):
         op2_val = op0_val ^ op1_val
 
         self.write_operand(instr.operands[2], op2_val)
-
-        # self._tainter._taint_xor(instr)
 
         return None
 
@@ -1093,8 +1076,6 @@ class ReilEmulator(object):
 
         self.write_operand(instr.operands[2], op2_val)
 
-        # self._tainter._taint_ldm(instr)
-
         return None
 
     def _execute_stm(self, instr):
@@ -1110,8 +1091,6 @@ class ReilEmulator(object):
 
         self.write_memory(op2_val, op0_size, op0_val)
 
-        # self._tainter._taint_stm(instr)
-
         return None
 
     def _execute_str(self, instr):
@@ -1120,8 +1099,6 @@ class ReilEmulator(object):
         op0_val = self.read_operand(instr.operands[0])
 
         self.write_operand(instr.operands[2], op0_val)
-
-        # self._tainter._taint_str(instr)
 
         return None
 
@@ -1136,8 +1113,6 @@ class ReilEmulator(object):
 
         self.write_operand(instr.operands[2], op2_val)
 
-        # self._tainter._taint_bisz(instr)
-
         return None
 
     def _execute_jcc(self, instr):
@@ -1145,8 +1120,6 @@ class ReilEmulator(object):
         """
         op0_val = self.read_operand(instr.operands[0])  # Branch condition.
         op2_val = self.read_operand(instr.operands[2])  # Target address.
-
-        # self._tainter._taint_jcc(instr)
 
         return op2_val if op0_val != 0 else None
 
@@ -1159,8 +1132,6 @@ class ReilEmulator(object):
 
         self.write_operand(instr.operands[2], op2_val)
 
-        # self._tainter._taint_undef(instr)
-
         return None
 
     def _execute_unkn(self, instr):
@@ -1171,8 +1142,6 @@ class ReilEmulator(object):
     def _execute_nop(self, instr):
         """Execute NOP instruction.
         """
-        # self._tainter._taint_nop(instr)
-
         return None
 
     # Ad hoc Instructions
@@ -1180,8 +1149,6 @@ class ReilEmulator(object):
     def _execute_ret(self, instr):
         """Execute RET instruction.
         """
-        # self._tainter._taint_ret(instr)
-
         return None
 
     # Extension
@@ -1200,7 +1167,5 @@ class ReilEmulator(object):
         op2_val = op0_val | op2_mask
 
         self.write_operand(instr.operands[2], op2_val)
-
-        # self._tainter._taint_sext(instr)
 
         return None
