@@ -800,9 +800,6 @@ class ReilEmulator(object):
         self._instr_pre_handler = {}
         self._instr_post_handler = {}
 
-        self._instr_pre_handler_global = {}
-        self._instr_post_handler_global = {}
-
         self._set_default_instruction_handlers()
 
     def reset_memory(self):
