@@ -113,11 +113,7 @@ class ReilEmulatorTests(unittest.TestCase):
     def setUp(self):
         self._arch_info = X86ArchitectureInformation(ARCH_X86_MODE_32)
 
-        self._emulator = ReilEmulator(self._arch_info.address_size)
-
-        self._emulator.set_arch_registers(self._arch_info.registers_gp_all)
-        self._emulator.set_arch_registers_size(self._arch_info.registers_size)
-        self._emulator.set_arch_alias_mapper(self._arch_info.alias_mapper)
+        self._emulator = ReilEmulator(self._arch_info)
 
         self._asm_parser = X86Parser()
         self._reil_parser = ReilParser()
@@ -309,11 +305,7 @@ class ReilEmulatorTaintTests(unittest.TestCase):
     def setUp(self):
         self._arch_info = X86ArchitectureInformation(ARCH_X86_MODE_32)
 
-        self._emulator = ReilEmulator(self._arch_info.address_size)
-
-        self._emulator.set_arch_registers(self._arch_info.registers_gp_all)
-        self._emulator.set_arch_registers_size(self._arch_info.registers_size)
-        self._emulator.set_arch_alias_mapper(self._arch_info.alias_mapper)
+        self._emulator = ReilEmulator(self._arch_info)
 
         self._asm_parser = X86Parser()
         self._translator = X86Translator()

@@ -358,16 +358,16 @@ class ReilEmulatorTainter(object):
     # Taint auxiliary methods
     # ======================================================================== #
     def _get_register_taint(self, register):
-        if register.name in self._emulator._arch_alias_mapper and register.name not in self._emulator._arch_flags:
-            base_name, _ = self._emulator._arch_alias_mapper[register.name]
+        if register.name in self._emulator._arch.alias_mapper and register.name not in self._emulator._arch.registers_flags:
+            base_name, _ = self._emulator._arch.alias_mapper[register.name]
         else:
             base_name = register.name
 
         return self._taints_regs.get(base_name, False)
 
     def _set_register_taint(self, register, taint):
-        if register.name in self._emulator._arch_alias_mapper and register.name not in self._emulator._arch_flags:
-            base_name, _ = self._emulator._arch_alias_mapper[register.name]
+        if register.name in self._emulator._arch.alias_mapper and register.name not in self._emulator._arch.registers_flags:
+            base_name, _ = self._emulator._arch.alias_mapper[register.name]
         else:
             base_name = register.name
 
@@ -569,15 +569,18 @@ class ReilEmulator(object):
 
     """Reil Emulator."""
 
-    def __init__(self, address_size):
+    def __init__(self, arch):
 
         # TODO: Pass ReilMemory as a parameter.
 
+        # Architecture information.
+        self._arch = arch
+
         # Memory address size.
-        self._address_size = address_size
+        self._address_size = self._arch.address_size
 
         # An instance of a ReilMemory.
-        self._mem = ReilMemory(self._address_size)
+        self._mem = ReilMemory(self._arch.address_size)
 
         # Instruction Pointer.
         self._ip = None
@@ -588,12 +591,6 @@ class ReilEmulator(object):
         # Set of read and write registers during execution.
         self._regs_written = set()
         self._regs_read = set()
-
-        # Architecture information.
-        self._arch_regs = []
-        self._arch_flags = []
-        self._arch_regs_size = {}
-        self._arch_alias_mapper = {}
 
         # Instruction implementation.
         self._executors = {
@@ -843,43 +840,6 @@ class ReilEmulator(object):
         """
         return self._regs_written
 
-    # Architecture information methods
-    # ======================================================================== #
-    # TODO: Remove function. Use ArchitectureInformation instead.
-    def set_arch_registers(self, registers):
-        """Set native registers.
-        """
-        self._arch_regs = registers
-
-    # TODO: Remove function. Use ArchitectureInformation instead.
-    def set_arch_flags(self, flags):
-        """Set native flags.
-        """
-        self._arch_flags = flags
-
-    # TODO: Remove function. Use ArchitectureInformation instead.
-    def set_arch_registers_size(self, registers_size):
-        """Set native registers size.
-        """
-        self._arch_regs_size = registers_size
-
-    # TODO: Remove function. Use ArchitectureInformation instead.
-    def set_arch_alias_mapper(self, alias_mapper):
-        """Set native register alias mapper.
-
-        This is necessary as some architecture has register alias. For
-        example, in Intel x86 (32 bits), *ax* refers to the lower half
-        of the *eax* register, so when *ax* is modified so it is *eax*.
-        Then, this alias_mapper is a dictionary where its keys are
-        registers (names, only) and each associated value is a tuple
-        of the form (base register name, offset).
-        This information is used to modified the correct register at
-        the correct location (within the register) when a register alias
-        value is changed.
-
-        """
-        self._arch_alias_mapper = alias_mapper
-
     # Read/Write methods
     # ======================================================================== #
     def read_operand(self, operand):
@@ -907,9 +867,9 @@ class ReilEmulator(object):
     # Read/Write auxiliary methods
     # ======================================================================== #
     def _get_register_value(self, register):
-        if register.name in self._arch_alias_mapper:
-            base_reg_name, offset = self._arch_alias_mapper[register.name]
-            base_reg_size = self._arch_regs_size[base_reg_name]
+        if register.name in self._arch.alias_mapper:
+            base_reg_name, offset = self._arch.alias_mapper[register.name]
+            base_reg_size = self._arch.registers_size[base_reg_name]
         else:
             base_reg_name, offset = register.name, 0
             base_reg_size = register.size
@@ -927,7 +887,7 @@ class ReilEmulator(object):
         reg_val = extract_value(base_val, offset, register.size)
 
         # Keep track of native register reads.
-        if register.name in self._arch_regs:
+        if register.name in self._arch.registers_gp_all:
             self._regs_read.add(register.name)
 
         # Debug
@@ -943,7 +903,7 @@ class ReilEmulator(object):
         self._regs[base_reg_name] = insert_value(base_val, value, offset, register.size)
 
         # Keep track of native register writes.
-        if register.name in self._arch_regs:
+        if register.name in self._arch.registers_gp_all:
             self._regs_written.add(register.name)
 
         # Debug

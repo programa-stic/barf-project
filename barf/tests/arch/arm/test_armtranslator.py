@@ -50,11 +50,7 @@ class ArmTranslationTests(unittest.TestCase):
 
         self.arm_parser = ArmParser(self.arch_mode)
         self.arm_translator = ArmTranslator(self.arch_mode, self.trans_mode)
-        self.reil_emulator = ReilEmulator(self.arch_info.address_size)
-
-        self.reil_emulator.set_arch_registers(self.arch_info.registers_gp_all)
-        self.reil_emulator.set_arch_registers_size(self.arch_info.registers_size)
-        self.reil_emulator.set_arch_alias_mapper(self.arch_info.alias_mapper)
+        self.reil_emulator = ReilEmulator(self.arch_info)
 
         self.context_filename = "failing_context.data"
 
