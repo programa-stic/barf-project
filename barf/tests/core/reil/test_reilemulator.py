@@ -211,7 +211,7 @@ class ReilEmulatorTests(unittest.TestCase):
 
         paramter = []
 
-        self._emulator.set_instruction_pre_handler_global(pre_hanlder, paramter)
+        self._emulator.set_instruction_pre_handler(pre_hanlder, paramter)
 
         reil_ctx_out, reil_mem_out = self._emulator.execute(
             reil_instrs,
@@ -232,7 +232,7 @@ class ReilEmulatorTests(unittest.TestCase):
 
         paramter = []
 
-        self._emulator.set_instruction_post_handler_global(post_hanlder, paramter)
+        self._emulator.set_instruction_post_handler(post_hanlder, paramter)
 
         reil_ctx_out, reil_mem_out = self._emulator.execute(
             reil_instrs,
@@ -240,90 +240,6 @@ class ReilEmulatorTests(unittest.TestCase):
         )
 
         self.assertTrue(len(paramter) > 0)
-
-    def test_pre_hanlder_by_mnemonic_1(self):
-        def pre_hanlder(emulator, instruction, parameter):
-            paramter.append(True)
-
-        asm = ["mov eax, ebx"]
-
-        x86_instrs = map(self._asm_parser.parse, asm)
-        self.__set_address(0xdeadbeef, x86_instrs)
-        reil_instrs = map(self._translator.translate, x86_instrs)
-
-        paramter = []
-
-        self._emulator.set_instruction_pre_handler(ReilMnemonic.STR, pre_hanlder, paramter)
-
-        reil_ctx_out, reil_mem_out = self._emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8
-        )
-
-        self.assertTrue(len(paramter) > 0)
-
-    def test_pre_hanlder_by_mnemonic_2(self):
-        def pre_hanlder(emulator, instruction, parameter):
-            paramter.append(True)
-
-        asm = ["mov eax, ebx"]
-
-        x86_instrs = map(self._asm_parser.parse, asm)
-        self.__set_address(0xdeadbeef, x86_instrs)
-        reil_instrs = map(self._translator.translate, x86_instrs)
-
-        paramter = []
-
-        self._emulator.set_instruction_pre_handler(ReilMnemonic.STM, pre_hanlder, paramter)
-
-        reil_ctx_out, reil_mem_out = self._emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8
-        )
-
-        self.assertTrue(len(paramter) == 0)
-
-    def test_post_hanlder_by_mnemonic_1(self):
-        def post_hanlder(emulator, instruction, parameter):
-            paramter.append(True)
-
-        asm = ["mov eax, ebx"]
-
-        x86_instrs = map(self._asm_parser.parse, asm)
-        self.__set_address(0xdeadbeef, x86_instrs)
-        reil_instrs = map(self._translator.translate, x86_instrs)
-
-        paramter = []
-
-        self._emulator.set_instruction_pre_handler(ReilMnemonic.STR, post_hanlder, paramter)
-
-        reil_ctx_out, reil_mem_out = self._emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8
-        )
-
-        self.assertTrue(len(paramter) > 0)
-
-    def test_post_hanlder_by_mnemonic_2(self):
-        def post_hanlder(emulator, instruction, parameter):
-            paramter.append(True)
-
-        asm = ["mov eax, ebx"]
-
-        x86_instrs = map(self._asm_parser.parse, asm)
-        self.__set_address(0xdeadbeef, x86_instrs)
-        reil_instrs = map(self._translator.translate, x86_instrs)
-
-        paramter = []
-
-        self._emulator.set_instruction_pre_handler(ReilMnemonic.STM, post_hanlder, paramter)
-
-        reil_ctx_out, reil_mem_out = self._emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8
-        )
-
-        self.assertTrue(len(paramter) == 0)
 
     def test_zero_division_error_1(self):
         asm_instrs  = [self._asm_parser.parse("div ebx")]
