@@ -48,8 +48,6 @@ Byte addressable memory based on a dictionary.
 import logging
 import random
 
-from collections import defaultdict
-
 from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
 from barf.core.reil.reil import ReilRegisterOperand
@@ -78,20 +76,20 @@ class ReilMemory(object):
         # TODO: Use _endianness parameter.
 
         # Memory's address size.
-        self._address_size = address_size
+        self.__address_size = address_size
 
         # Memory's endianness.
-        self._endianness = REIL_MEMORY_ENDIANNESS_LE
+        self.__endianness = REIL_MEMORY_ENDIANNESS_LE
 
         # Dictionary that implements the memory itself.
-        self._memory = {}
+        self.__memory = {}
 
         # Previous state of memory. Requiere for some *special*
         # functions.
-        self._memory_prev = {}
+        self.__memory_prev = {}
 
         # Write operations counter.
-        self._write_count = 0
+        self.__write_count = 0
 
     # Read methods
     # ======================================================================== #
@@ -110,9 +108,12 @@ class ReilMemory(object):
         return value
 
     def read_inverse(self, value, size):
-        """Return a list of memory addresses that contain the specified value.
+        """Return a list of memory addresses that contain the specified
+        value.
+
         """
-        addr_candidates = [addr for addr, val in self._memory.items() if val == (value & 0xff)]
+        addr_candidates = [addr for addr, val in self.__memory.items()
+                                    if val == (value & 0xff)]
         addr_matchings = []
 
         for addr in addr_candidates:
@@ -121,7 +122,7 @@ class ReilMemory(object):
             for i in xrange(0, size / 8):
                 byte_curr = (value >> (i * 8)) & 0xff
                 try:
-                    match = self._memory[addr + i] == byte_curr
+                    match = self.__memory[addr + i] == byte_curr
                 except KeyError:
                     match = False
 
@@ -145,7 +146,7 @@ class ReilMemory(object):
         for i in xrange(0, size / 8):
             addr = address + i
 
-            if addr in self._memory:
+            if addr in self.__memory:
                 value = self._read_byte(addr) << (i * 8) | value
             else:
                 return False, None
@@ -164,7 +165,7 @@ class ReilMemory(object):
         for i in xrange(0, size / 8):
             addr = address + i
 
-            if addr in self._memory_prev:
+            if addr in self.__memory_prev:
                 _, val_byte = self._try_read_byte_prev(addr)
                 value = val_byte << (i * 8) | value
             else:
@@ -178,10 +179,10 @@ class ReilMemory(object):
         """Read a byte from memory.
         """
         # Initialize memory location with a random value.
-        if not address in self._memory:
-            self._memory[address] = random.randint(0x00, 0xff)
+        if not address in self.__memory:
+            self.__memory[address] = random.randint(0x00, 0xff)
 
-        return self._memory[address]
+        return self.__memory[address]
 
     def _try_read_byte_prev(self, address):
         """Read previous value for memory location.
@@ -191,10 +192,10 @@ class ReilMemory(object):
 
         """
         # Initialize memory location with a random value
-        if not address in self._memory_prev:
+        if not address in self.__memory_prev:
             return False, None
 
-        return True, self._memory_prev[address]
+        return True, self.__memory_prev[address]
 
     # Write methods
     # ======================================================================== #
@@ -204,7 +205,7 @@ class ReilMemory(object):
         for i in xrange(0, size / 8):
             self._write_byte(address + i, (value >> (i * 8)) & 0xff)
 
-        self._write_count += 1
+        self.__write_count += 1
 
         if verbose:
             taint = None
@@ -216,33 +217,33 @@ class ReilMemory(object):
         """Write byte in memory.
         """
         # Save previous address content.
-        if address in self._memory:
-            self._memory_prev[address] = self._memory[address]
+        if address in self.__memory:
+            self.__memory_prev[address] = self.__memory[address]
 
-        self._memory[address] = value & 0xff
+        self.__memory[address] = value & 0xff
 
     # Misc methods
     # ======================================================================== #
     def get_addresses(self):
         """Get accessed addresses.
         """
-        return self._memory.keys()
+        return self.__memory.keys()
 
     def get_write_count(self):
         """Get number of write operations performed on the memory.
         """
-        return self._write_count
+        return self.__write_count
 
     def reset(self):
         # Dictionary that implements the memory itself.
-        self._memory = {}
+        self.__memory = {}
 
         # Previous state of memory. Requiere for some *special*
         # functions.
-        self._memory_prev = {}
+        self.__memory_prev = {}
 
         # Write operations counter.
-        self._write_count = 0
+        self.__write_count = 0
 
     # Debug methods
     # ======================================================================== #
@@ -265,30 +266,509 @@ class ReilMemory(object):
     def __str__(self):
         lines = []
 
-        for addr in sorted(self._memory.keys()):
-            lines += ["0x%08x : 0x%08x" % (addr, self._memory[addr])]
+        for addr in sorted(self.__memory.keys()):
+            lines += ["0x%08x : 0x%08x" % (addr, self.__memory[addr])]
 
         return "\n".join(lines)
 
 
-class ReilEmulatorZeroDivisionError(Exception):
+class ReilCpuZeroDivisionError(Exception):
     pass
 
 
-class ReilEmulatorInvalidAddressError(Exception):
+class ReilCpuInvalidAddressError(Exception):
     pass
+
+
+class ReilCpu(object):
+
+    def __init__(self, arch, memory, tainter, emulator):
+        self.__emu = emulator
+
+        self.__arch = arch
+        self.__mem = memory
+
+        self.__tainter = tainter
+
+        # Instruction Pointer.
+        self.__ip = None
+
+        # Registers.
+        self.__regs = {}
+
+        # Set of read and write registers during execution.
+        self.__regs_written = set()
+        self.__regs_read = set()
+
+        # Instructions pre and post handlers.
+        self.__instr_pre_handler = None, None
+        self.__instr_post_handler = None, None
+
+        self.__set_default_handlers()
+
+        # Instruction implementation.
+        self.__executors = {
+            # Arithmetic Instructions
+            ReilMnemonic.ADD : self.__execute_add,
+            ReilMnemonic.SUB : self.__execute_sub,
+            ReilMnemonic.MUL : self.__execute_mul,
+            ReilMnemonic.DIV : self.__execute_div,
+            ReilMnemonic.MOD : self.__execute_mod,
+            ReilMnemonic.BSH : self.__execute_bsh,
+
+            # Bitwise Instructions
+            ReilMnemonic.AND : self.__execute_and,
+            ReilMnemonic.OR  : self.__execute_or,
+            ReilMnemonic.XOR : self.__execute_xor,
+
+            # Data Transfer Instructions
+            ReilMnemonic.LDM : self.__execute_ldm,
+            ReilMnemonic.STM : self.__execute_stm,
+            ReilMnemonic.STR : self.__execute_str,
+
+            # Conditional Instructions
+            ReilMnemonic.BISZ : self.__execute_bisz,
+            ReilMnemonic.JCC  : self.__execute_jcc,
+
+            # Other Instructions
+            ReilMnemonic.UNDEF : self.__execute_undef,
+            ReilMnemonic.UNKN  : self.__execute_unkn,
+            ReilMnemonic.NOP   : self.__execute_nop,
+
+            # Ad hoc Instructions
+            ReilMnemonic.RET : self.__execute_ret,
+
+            # Extensions
+            ReilMnemonic.SEXT : self.__execute_sext,
+        }
+
+    # Auxiliary execution methods
+    # ======================================================================== #
+    def execute(self, instr):
+        if verbose:
+            print("0x%08x:%02x : %s" % (instr.address >> 8,
+                                        instr.address & 0xff,
+                                        instr))
+
+        pre_handler_fn, pre_handler_param = self.__instr_pre_handler
+        post_handler_fn, post_handler_param = self.__instr_post_handler
+
+        # Execute pre instruction handlers
+        pre_handler_fn(self.__emu, instr, pre_handler_param)
+
+        # Execute instruction
+        next_addr = self.__executors[instr.mnemonic](instr)
+
+        # Taint instruction
+        self.__tainter.taint(instr)
+
+        # Execute post instruction handlers
+        post_handler_fn(self.__emu, instr, post_handler_param)
+
+        return next_addr
+
+    def reset(self):
+        # Instruction Pointer.
+        self.__ip = None
+
+        # Registers.
+        self.__regs = {}
+
+        # Set of read and write registers during execution.
+        self.__regs_written = set()
+        self.__regs_read = set()
+
+        # Instructions pre and post handlers.
+        self.__instr_pre_handler = None, None
+        self.__instr_post_handler = None, None
+
+        self.__set_default_handlers()
+
+    @property
+    def registers(self):
+        return self.__regs
+
+    @registers.setter
+    def registers(self, value):
+        self.__regs = value
+
+    @property
+    def read_registers(self):
+        return self.__regs_read
+
+    @property
+    def written_registers(self):
+        return self.__regs_written
+
+    # Instruction's handler methods
+    # ======================================================================== #
+    def set_instruction_pre_handler(self, function, parameter):
+        self.__instr_pre_handler = (function, parameter)
+
+    def set_instruction_post_handler(self, function, parameter):
+        self.__instr_post_handler = (function, parameter)
+
+    # Instruction's handler auxiliary methods
+    # ======================================================================== #
+    def __set_default_handlers(self):
+        empty_fn, empty_param = lambda emu, instr, param: None, None
+
+        self.__instr_pre_handler = (empty_fn, empty_param)
+        self.__instr_post_handler = (empty_fn, empty_param)
+
+    # Read/Write methods
+    # ======================================================================== #
+    def read_operand(self, operand):
+        if isinstance(operand, ReilRegisterOperand):
+            value = self._read_register(operand)
+        elif isinstance(operand, ReilImmediateOperand):
+            value = operand.immediate
+        else:
+            raise Exception("Invalid operand type : %s" % str(operand))
+
+        return value
+
+    def write_operand(self, operand, value):
+        if isinstance(operand, ReilRegisterOperand):
+            self._write_register(operand, value)
+        else:
+            raise Exception("Invalid operand type : %s" % str(operand))
+
+    def read_memory(self, address, size):
+        return self.__mem.read(address, size)
+
+    def write_memory(self, address, size, value):
+        self.__mem.write(address, size, value)
+
+    # Read/Write auxiliary methods
+    # ======================================================================== #
+    def _get_register_value(self, register):
+        if register.name in self.__arch.alias_mapper:
+            base_reg_name, offset = self.__arch.alias_mapper[register.name]
+            base_reg_size = self.__arch.registers_size[base_reg_name]
+        else:
+            base_reg_name, offset = register.name, 0
+            base_reg_size = register.size
+
+        if base_reg_name in self.__regs:
+            base_val = self.__regs[base_reg_name]
+        else:
+            base_val = random.randint(0, 2**base_reg_size - 1)
+
+        return base_reg_name, base_val, offset
+
+    def _read_register(self, register):
+        base_reg_name, base_val, offset = self._get_register_value(register)
+
+        reg_val = extract_value(base_val, offset, register.size)
+
+        # Keep track of native register reads.
+        if register.name in self.__arch.registers_gp_all:
+            self.__regs_read.add(register.name)
+
+        # Debug
+        if verbose:
+            # taint = self._get_register_taint(register)
+            taint = None
+            self._debug_read_operand(register, reg_val, base_reg_name, \
+                base_val, taint)
+
+        return reg_val
+
+    def _write_register(self, register, value):
+        base_reg_name, base_val, offset = self._get_register_value(register)
+
+        self.__regs[base_reg_name] = insert_value(base_val, value, offset, \
+            register.size)
+
+        # Keep track of native register writes.
+        if register.name in self.__arch.registers_gp_all:
+            self.__regs_written.add(register.name)
+
+        # Debug
+        if verbose:
+            # taint = self._get_register_taint(register)
+            taint = None
+            self._debug_write_operand(register, value, base_reg_name, \
+                self.__regs[base_reg_name], taint)
+
+    # Debug methods
+    # ======================================================================== #
+    def _debug_read_operand(self, reg, val, base_reg, base_val, tainted):
+        fmt = "{indent}r{{ {reg:s} = {val:08x} [{taint:s}] ({base_reg:s} = {base_val:08x})}}"
+
+        taint = "T" if tainted == True else "-"
+
+        msg = fmt.format(
+            indent=" "*10, reg=reg, val=val, base_reg=base_reg,
+            base_val=base_val, taint=taint
+        )
+
+        print(msg)
+
+    def _debug_write_operand(self, reg, val, base_reg, base_val, tainted):
+        fmt = "{indent}w{{ {reg:s} = {val:08x} [{taint:s}] ({base_reg:s} = {base_val:08x})}}"
+
+        taint = "T" if tainted else "-"
+
+        msg = fmt.format(
+            indent=" "*10, reg=reg, val=val, base_reg=base_reg,
+            base_val=base_val, taint=taint
+        )
+
+        print(msg)
+
+
+    # ======================================================================== #
+    # REIL instructions implementation
+    # ======================================================================== #
+
+    # Arithmetic instructions
+    # ======================================================================== #
+    def __execute_add(self, instr):
+        """Execute ADD instruction.
+        """
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+
+        op2_val = op0_val + op1_val
+
+        self.write_operand(instr.operands[2], op2_val)
+
+        return None
+
+    def __execute_sub(self, instr):
+        """Execute SUB instruction.
+        """
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+
+        op2_val = op0_val - op1_val
+
+        self.write_operand(instr.operands[2], op2_val)
+
+        return None
+
+    def __execute_mul(self, instr):
+        """Execute MUL instruction.
+        """
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+
+        op2_val = op0_val * op1_val
+
+        self.write_operand(instr.operands[2], op2_val)
+
+        return None
+
+    def __execute_div(self, instr):
+        """Execute DIV instruction.
+        """
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+
+        if op1_val == 0:
+            raise ReilCpuZeroDivisionError()
+
+        op2_val = op0_val / op1_val
+
+        self.write_operand(instr.operands[2], op2_val)
+
+        return None
+
+    def __execute_mod(self, instr):
+        """Execute MOD instruction.
+        """
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+
+        if op1_val == 0:
+            raise ReilCpuZeroDivisionError()
+
+        op2_val = op0_val % op1_val
+
+        self.write_operand(instr.operands[2], op2_val)
+
+        return None
+
+    def __execute_bsh(self, instr):
+        """Execute BSH instruction.
+        """
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+
+        op1_size = instr.operands[1].size
+
+        # Check sign bit.
+        if op1_val & (2**(op1_size-1)) == 0:
+            op2_val = op0_val << op1_val
+        else:
+            op2_val = op0_val >> twos_complement(op1_val, op1_size)
+
+        self.write_operand(instr.operands[2], op2_val)
+
+        return None
+
+    # Bitwise instructions
+    # ======================================================================== #
+    def __execute_and(self, instr):
+        """Execute AND instruction.
+        """
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+
+        op2_val = op0_val & op1_val
+
+        self.write_operand(instr.operands[2], op2_val)
+
+        return None
+
+    def __execute_or(self, instr):
+        """Execute OR instruction.
+        """
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+
+        op2_val = op0_val | op1_val
+
+        self.write_operand(instr.operands[2], op2_val)
+
+        return None
+
+    def __execute_xor(self, instr):
+        """Execute XOR instruction.
+        """
+        op0_val = self.read_operand(instr.operands[0])
+        op1_val = self.read_operand(instr.operands[1])
+
+        op2_val = op0_val ^ op1_val
+
+        self.write_operand(instr.operands[2], op2_val)
+
+        return None
+
+    # Data transfer instructions
+    # ======================================================================== #
+    def __execute_ldm(self, instr):
+        """Execute LDM instruction.
+        """
+        assert instr.operands[0].size == self.__arch.address_size
+        assert instr.operands[2].size in [8, 16, 32, 64]
+
+        # Memory address.
+        op0_val = self.read_operand(instr.operands[0])
+        # Data.
+        op2_val = self.read_memory(op0_val, instr.operands[2].size)
+
+        self.write_operand(instr.operands[2], op2_val)
+
+        return None
+
+    def __execute_stm(self, instr):
+        """Execute STM instruction.
+        """
+        assert instr.operands[0].size in [8, 16, 32, 64]
+        assert instr.operands[2].size == self.__arch.address_size
+
+        op0_val = self.read_operand(instr.operands[0])  # Data.
+        op2_val = self.read_operand(instr.operands[2])  # Memory address.
+
+        op0_size = instr.operands[0].size
+
+        self.write_memory(op2_val, op0_size, op0_val)
+
+        return None
+
+    def __execute_str(self, instr):
+        """Execute STR instruction.
+        """
+        op0_val = self.read_operand(instr.operands[0])
+
+        self.write_operand(instr.operands[2], op0_val)
+
+        return None
+
+    # Conditional instructions
+    # ======================================================================== #
+    def __execute_bisz(self, instr):
+        """Execute BISZ instruction.
+        """
+        op0_val = self.read_operand(instr.operands[0])
+
+        op2_val = 1 if op0_val == 0 else 0
+
+        self.write_operand(instr.operands[2], op2_val)
+
+        return None
+
+    def __execute_jcc(self, instr):
+        """Execute JCC instruction.
+        """
+        op0_val = self.read_operand(instr.operands[0])  # Branch condition.
+        op2_val = self.read_operand(instr.operands[2])  # Target address.
+
+        return op2_val if op0_val != 0 else None
+
+    # Other instructions
+    # ======================================================================== #
+    def __execute_undef(self, instr):
+        """Execute UNDEF instruction.
+        """
+        op2_val = random.randint(0, instr.operands[2].size)
+
+        self.write_operand(instr.operands[2], op2_val)
+
+        return None
+
+    def __execute_unkn(self, instr):
+        """Execute UNKN instruction.
+        """
+        raise Exception("Unknown instruction (UNKN).")
+
+    def __execute_nop(self, instr):
+        """Execute NOP instruction.
+        """
+        return None
+
+    # Ad hoc Instructions
+    # ======================================================================== #
+    def __execute_ret(self, instr):
+        """Execute RET instruction.
+        """
+        return None
+
+    # Extension
+    # ======================================================================== #
+    def __execute_sext(self, instr):
+        """Execute SEXT instruction.
+        """
+        op0_size = instr.operands[0].size
+        op2_size = instr.operands[2].size
+
+        op0_val = self.read_operand(instr.operands[0])
+        op0_msb = op0_val >> (op0_size-1)
+
+        op2_mask = (2**op2_size-1) & ~(2**op0_size-1) if op0_msb == 1 else 0x0
+
+        op2_val = op0_val | op2_mask
+
+        self.write_operand(instr.operands[2], op2_val)
+
+        return None
 
 
 class ReilEmulatorTainter(object):
 
-    def __init__(self, emulator):
-        self._emulator = emulator
+    def __init__(self, arch, emulator):
+        self.__arch = arch
+
+        self.__emu = emulator
 
         # Taint information.
-        self._taints_regs = {}
-        self._taints_memory = {}
+        self.__taint_reg = {}
+        self.__taint_mem = {}
 
-        self._tainter = {
+        self.__tainter = {
             # Arithmetic Instructions
             ReilMnemonic.ADD : self._taint_add,
             ReilMnemonic.SUB : self._taint_sub,
@@ -324,13 +804,18 @@ class ReilEmulatorTainter(object):
         }
 
     def taint(self, instruction):
-        self._tainter[instruction.mnemonic](instruction)
+        self.__tainter[instruction.mnemonic](instruction)
+
+    def reset(self):
+        # Taint information.
+        self.__taint_reg = {}
+        self.__taint_mem = {}
 
     # Taint methods
     # ======================================================================== #
     def get_operand_taint(self, operand):
         if isinstance(operand, ReilRegisterOperand):
-            taint = self._get_register_taint(operand)
+            taint = self.get_register_taint(operand)
         elif isinstance(operand, ReilImmediateOperand):
             taint = False
         else:
@@ -340,7 +825,13 @@ class ReilEmulatorTainter(object):
 
     def set_operand_taint(self, operand, taint):
         if isinstance(operand, ReilRegisterOperand):
-            self._set_register_taint(operand, taint)
+            self.set_register_taint(operand, taint)
+        else:
+            raise Exception("Invalid operand: %s" % str(operand))
+
+    def clear_operand_taint(self, operand):
+        if isinstance(operand, ReilRegisterOperand):
+            self.clear_register_taint(operand)
         else:
             raise Exception("Invalid operand: %s" % str(operand))
 
@@ -348,31 +839,56 @@ class ReilEmulatorTainter(object):
         tainted = False
 
         for i in xrange(0, size / 8):
-            tainted = tainted or self._taints_memory.get(address + i, False)
+            tainted = tainted or self.__taint_mem.get(address + i, False)
 
         return tainted
 
     def set_memory_taint(self, address, size, taint):
         for i in xrange(0, size / 8):
-            self._taints_memory[address + i] = taint
+            self.__taint_mem[address + i] = taint
+
+    def clear_memory_taint(self, address, size):
+        for i in xrange(0, size / 8):
+            self.__taint_mem[address + i] = False
 
     # Taint auxiliary methods
     # ======================================================================== #
-    def _get_register_taint(self, register):
-        if register.name in self._emulator._arch.alias_mapper and register.name not in self._emulator._arch.registers_flags:
-            base_name, _ = self._emulator._arch.alias_mapper[register.name]
+    def get_register_taint(self, register):
+        if register.name in self.__arch.alias_mapper and \
+            register.name not in self.__arch.registers_flags:
+            base_name, _ = self.__arch.alias_mapper[register.name]
         else:
             base_name = register.name
 
-        return self._taints_regs.get(base_name, False)
+        return self.__taint_reg.get(base_name, False)
 
-    def _set_register_taint(self, register, taint):
-        if register.name in self._emulator._arch.alias_mapper and register.name not in self._emulator._arch.registers_flags:
-            base_name, _ = self._emulator._arch.alias_mapper[register.name]
+    def set_register_taint(self, register, taint):
+        if register.name in self.__arch.alias_mapper and \
+            register.name not in self.__arch.registers_flags:
+            base_name, _ = self.__arch.alias_mapper[register.name]
         else:
             base_name = register.name
 
-        self._taints_regs[base_name] = taint
+        self.__taint_reg[base_name] = taint
+
+        if verbose:
+            reg = register.name
+            base_reg = base_name
+
+            fmt = "{indent}t{{ {reg:s} ({base_reg:s})}}"
+
+            msg = fmt.format(indent=" "*10, reg=reg, base_reg=base_reg)
+
+            print(msg)
+
+    def clear_register_taint(self, register):
+        if register.name in self.__arch.alias_mapper and \
+            register.name not in self.__arch.registers_flags:
+            base_name, _ = self.__arch.alias_mapper[register.name]
+        else:
+            base_name = register.name
+
+        self.__taint_reg[base_name] = False
 
         if verbose:
             reg = register.name
@@ -484,7 +1000,8 @@ class ReilEmulatorTainter(object):
     def _taint_ldm(self, instr):
         """Taint LDM instruction.
         """
-        op0_val = self._emulator.read_operand(instr.operands[0])  # Memory address.
+        # Memory address.
+        op0_val = self.__emu.read_operand(instr.operands[0])
 
         # Get taint information.
         op0_taint = self.get_memory_taint(op0_val, instr.operands[2].size)
@@ -495,7 +1012,8 @@ class ReilEmulatorTainter(object):
     def _taint_stm(self, instr):
         """Taint STM instruction.
         """
-        op2_val = self._emulator.read_operand(instr.operands[2])  # Memory address.
+        # Memory address.
+        op2_val = self.__emu.read_operand(instr.operands[2])
 
         # Get taint information.
         op0_size = instr.operands[0].size
@@ -571,87 +1089,17 @@ class ReilEmulator(object):
     """Reil Emulator."""
 
     def __init__(self, arch):
-
-        # TODO: Pass ReilMemory as a parameter.
-
         # Architecture information.
-        self._arch = arch
+        self.__arch = arch
 
-        # Memory address size.
-        self._address_size = self._arch.address_size
+        # An instance of a ReilTainter.
+        self.__tainter = ReilEmulatorTainter(self.__arch, self)
 
         # An instance of a ReilMemory.
-        self._mem = ReilMemory(self._arch.address_size)
+        self.__mem = ReilMemory(self.__arch.address_size)
 
-        # Instruction Pointer.
-        self._ip = None
-
-        # Registers.
-        self._regs = {}
-
-        # Set of read and write registers during execution.
-        self._regs_written = set()
-        self._regs_read = set()
-
-        # Instruction implementation.
-        self._executors = {
-            # Arithmetic Instructions
-            ReilMnemonic.ADD : self._execute_add,
-            ReilMnemonic.SUB : self._execute_sub,
-            ReilMnemonic.MUL : self._execute_mul,
-            ReilMnemonic.DIV : self._execute_div,
-            ReilMnemonic.MOD : self._execute_mod,
-            ReilMnemonic.BSH : self._execute_bsh,
-
-            # Bitwise Instructions
-            ReilMnemonic.AND : self._execute_and,
-            ReilMnemonic.OR  : self._execute_or,
-            ReilMnemonic.XOR : self._execute_xor,
-
-            # Data Transfer Instructions
-            ReilMnemonic.LDM : self._execute_ldm,
-            ReilMnemonic.STM : self._execute_stm,
-            ReilMnemonic.STR : self._execute_str,
-
-            # Conditional Instructions
-            ReilMnemonic.BISZ : self._execute_bisz,
-            ReilMnemonic.JCC  : self._execute_jcc,
-
-            # Other Instructions
-            ReilMnemonic.UNDEF : self._execute_undef,
-            ReilMnemonic.UNKN  : self._execute_unkn,
-            ReilMnemonic.NOP   : self._execute_nop,
-
-            # Ad hoc Instructions
-            ReilMnemonic.RET : self._execute_ret,
-
-            # Extensions
-            ReilMnemonic.SEXT : self._execute_sext,
-        }
-
-        # Instructions pre and post handlers.
-        self._instr_pre_handler = None
-        self._instr_post_handler = None
-
-        self._set_default_instruction_handlers()
-
-        self._tainter = ReilEmulatorTainter(self)
-
-    # Instruction's handler methods
-    # ======================================================================== #
-    def set_instruction_pre_handler(self, function, parameter):
-        self._instr_pre_handler = (function, parameter)
-
-    def set_instruction_post_handler(self, function, parameter):
-        self._instr_post_handler = (function, parameter)
-
-    # Instruction's handler auxiliary methods
-    # ======================================================================== #
-    def _set_default_instruction_handlers(self):
-        empty_fn, empty_param = lambda emu, instr, param: None, None
-
-        self._instr_pre_handler = (empty_fn, empty_param)
-        self._instr_post_handler = (empty_fn, empty_param)
+        # An instance of a ReilCpu.
+        self.__cpu = ReilCpu(self.__arch, self.__mem, self.__tainter, self)
 
     # Execution methods
     # ======================================================================== #
@@ -659,79 +1107,98 @@ class ReilEmulator(object):
         """Execute instructions.
         """
         if registers:
-            self._regs = dict(registers)
+            self.__cpu.registers = dict(registers)
 
-        self._ip = start if start else container[0].address
+        ip = start if start else container[0].address
 
-        while self._ip and self._ip != end:
-            instr = container.fetch(self._ip)
+        while ip and ip != end:
+            instr = container.fetch(ip)
 
-            next = self._execute_one(instr)
+            next_ip = self.__cpu.execute(instr)
 
-            self._ip = next if next else container.get_next_address(self._ip)
+            ip = next_ip if next_ip else container.get_next_address(ip)
 
-        return self._regs.copy(), self._mem
+        return dict(self.__cpu.registers), self.__mem
 
     def execute_lite(self, instructions, context=None):
         """Execute a list of instructions. It does not support loops.
         """
         if context:
-            self._regs = dict(context)
+            self.__cpu.registers = dict(context)
 
         for instr in instructions:
-            self._execute_one(instr)
+            self.__cpu.execute(instr)
 
-        return self._regs.copy(), self._mem
+        return dict(self.__cpu.registers), self.__mem
 
-    # Auxiliary execution methods
-    # ======================================================================== #
-    def _execute_one(self, instr):
-        if verbose:
-            print("0x%08x:%02x : %s" % (instr.address >> 8, instr.address & 0xff, instr))
-
-        pre_handler_fn, pre_handler_param = self._instr_pre_handler
-        post_handler_fn, post_handler_param = self._instr_post_handler
-
-        # Execute pre instruction handlers
-        pre_handler_fn(self, instr, pre_handler_param)
-
-        # Execute instruction
-        next_addr = self._executors[instr.mnemonic](instr)
-
-        # Taint instruction
-        self._tainter.taint(instr)
-
-        # Execute post instruction handlers
-        post_handler_fn(self, instr, post_handler_param)
-
-        return next_addr
-
-    # Misc methods
+    # Reset methods
     # ======================================================================== #
     def reset(self):
         """Reset emulator. All registers and memory are reset.
         """
-        # An instance of a ReilMemory.
-        self._mem = ReilMemory(self._address_size)
-
-        # Instruction Pointer.
-        self._ip = None
-
-        # Registers.
-        self._regs = {}
-
-        # Set of read and write registers during execution.
-        self._regs_written = set()
-        self._regs_read = set()
-
-        # Instructions pre and post handlers.
-        self._instr_pre_handler = None
-        self._instr_post_handler = None
-
-        self._set_default_instruction_handlers()
+        self.__mem.reset()
+        self.__cpu.reset()
+        self.__tainter.reset()
 
     def reset_memory(self):
-        self._mem.reset()
+        self.__mem.reset()
+
+    def reset_cpu(self):
+        self.__cpu.reset()
+
+    def reset_tainter(self):
+        self.__tainter.reset()
+
+    # Handler methods
+    # ======================================================================== #
+    def set_instruction_pre_handler(self, function, parameter):
+        self.__cpu.set_instruction_pre_handler(function, parameter)
+
+    def set_instruction_post_handler(self, function, parameter):
+        self.__cpu.set_instruction_post_handler(function, parameter)
+
+    # Read/Write methods
+    # ======================================================================== #
+    def read_operand(self, operand):
+        return self.__cpu.read_operand(operand)
+
+    def write_operand(self, operand, value):
+        self.__cpu.write_operand(operand, value)
+
+    def read_memory(self, address, size):
+        return self.__mem.read(address, size)
+
+    def write_memory(self, address, size, value):
+        self.__mem.write(address, size, value)
+
+    # Taint methods
+    # ======================================================================== #
+    def get_operand_taint(self, register):
+        return self.__tainter.get_operand_taint(register)
+
+    def set_operand_taint(self, register, value):
+        self.__tainter.set_operand_taint(register, value)
+
+    def clear_operand_taint(self, register):
+        self.__tainter.clear_operand_taint(register)
+
+    def get_register_taint(self, register):
+        return self.__tainter.get_register_taint(register)
+
+    def set_register_taint(self, register, value):
+        self.__tainter.set_register_taint(register, value)
+
+    def clear_register_taint(self, register):
+        self.__tainter.clear_register_taint(register)
+
+    def get_memory_taint(self, address, size):
+        return self.__tainter.get_memory_taint(address, size)
+
+    def set_memory_taint(self, address, size, value):
+        self.__tainter.set_memory_taint(address, size, value)
+
+    def clear_memory_taint(self, address, size):
+        self.__tainter.clear_memory_taint(address, size)
 
     # Properties
     # ======================================================================== #
@@ -739,360 +1206,34 @@ class ReilEmulator(object):
     def registers(self):
         """Return registers.
         """
-        return self._regs
+        return self.__cpu.registers
 
     @registers.setter
     def registers(self, value):
         """Return registers.
         """
-        self._regs = dict(value)
+        self.__cpu.registers = value
 
     @property
     def memory(self):
         """Return memory.
         """
-        return self._mem
+        return self.__mem
+
+    @property
+    def cpu(self):
+        """Return memory.
+        """
+        return self.__cpu
 
     @property
     def read_registers(self):
         """Return read (native) registers.
         """
-        return self._regs_read
+        return self.__cpu.read_registers
 
     @property
     def written_registers(self):
         """Return written (native) registers.
         """
-        return self._regs_written
-
-    # Read/Write methods
-    # ======================================================================== #
-    def read_operand(self, operand):
-        if isinstance(operand, ReilRegisterOperand):
-            value = self._read_register(operand)
-        elif isinstance(operand, ReilImmediateOperand):
-            value = operand.immediate
-        else:
-            raise Exception("Invalid operand type : %s" % str(operand))
-
-        return value
-
-    def write_operand(self, operand, value):
-        if isinstance(operand, ReilRegisterOperand):
-            self._write_register(operand, value)
-        else:
-            raise Exception("Invalid operand type : %s" % str(operand))
-
-    def read_memory(self, address, size):
-        return self._mem.read(address, size)
-
-    def write_memory(self, address, size, value):
-        self._mem.write(address, size, value)
-
-    # Read/Write auxiliary methods
-    # ======================================================================== #
-    def _get_register_value(self, register):
-        if register.name in self._arch.alias_mapper:
-            base_reg_name, offset = self._arch.alias_mapper[register.name]
-            base_reg_size = self._arch.registers_size[base_reg_name]
-        else:
-            base_reg_name, offset = register.name, 0
-            base_reg_size = register.size
-
-        if base_reg_name in self._regs:
-            base_val = self._regs[base_reg_name]
-        else:
-            base_val = random.randint(0, 2**base_reg_size - 1)
-
-        return base_reg_name, base_val, offset
-
-    def _read_register(self, register):
-        base_reg_name, base_val, offset = self._get_register_value(register)
-
-        reg_val = extract_value(base_val, offset, register.size)
-
-        # Keep track of native register reads.
-        if register.name in self._arch.registers_gp_all:
-            self._regs_read.add(register.name)
-
-        # Debug
-        if verbose:
-            taint = self._get_register_taint(register)
-            self._debug_read_operand(register, reg_val, base_reg_name, base_val, taint)
-
-        return reg_val
-
-    def _write_register(self, register, value):
-        base_reg_name, base_val, offset = self._get_register_value(register)
-
-        self._regs[base_reg_name] = insert_value(base_val, value, offset, register.size)
-
-        # Keep track of native register writes.
-        if register.name in self._arch.registers_gp_all:
-            self._regs_written.add(register.name)
-
-        # Debug
-        if verbose:
-            taint = self._get_register_taint(register)
-            self._debug_write_operand(register, value, base_reg_name, self._regs[base_reg_name], taint)
-
-    # Debug methods
-    # ======================================================================== #
-    def _debug_read_operand(self, reg, val, base_reg, base_val, tainted):
-        fmt = "{indent}r{{ {reg:s} = {val:08x} [{taint:s}] ({base_reg:s} = {base_val:08x})}}"
-
-        taint = "T" if tainted == True else "-"
-
-        msg = fmt.format(
-            indent=" "*10, reg=reg, val=val, base_reg=base_reg,
-            base_val=base_val, taint=taint
-        )
-
-        print(msg)
-
-    def _debug_write_operand(self, reg, val, base_reg, base_val, tainted):
-        fmt = "{indent}w{{ {reg:s} = {val:08x} [{taint:s}] ({base_reg:s} = {base_val:08x})}}"
-
-        taint = "T" if tainted else "-"
-
-        msg = fmt.format(
-            indent=" "*10, reg=reg, val=val, base_reg=base_reg,
-            base_val=base_val, taint=taint
-        )
-
-        print(msg)
-
-    # ======================================================================== #
-    # REIL instructions implementation
-    # ======================================================================== #
-
-    # Arithmetic instructions
-    # ======================================================================== #
-    def _execute_add(self, instr):
-        """Execute ADD instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        op2_val = op0_val + op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def _execute_sub(self, instr):
-        """Execute SUB instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        op2_val = op0_val - op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def _execute_mul(self, instr):
-        """Execute MUL instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        op2_val = op0_val * op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def _execute_div(self, instr):
-        """Execute DIV instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        if op1_val == 0:
-            raise ReilEmulatorZeroDivisionError()
-
-        op2_val = op0_val / op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def _execute_mod(self, instr):
-        """Execute MOD instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        if op1_val == 0:
-            raise ReilEmulatorZeroDivisionError()
-
-        op2_val = op0_val % op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def _execute_bsh(self, instr):
-        """Execute BSH instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        op1_size = instr.operands[1].size
-
-        # Check sign bit.
-        if op1_val & (2**(op1_size-1)) == 0:
-            op2_val = op0_val << op1_val
-        else:
-            op2_val = op0_val >> twos_complement(op1_val, op1_size)
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    # Bitwise instructions
-    # ======================================================================== #
-    def _execute_and(self, instr):
-        """Execute AND instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        op2_val = op0_val & op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def _execute_or(self, instr):
-        """Execute OR instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        op2_val = op0_val | op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def _execute_xor(self, instr):
-        """Execute XOR instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        op2_val = op0_val ^ op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    # Data transfer instructions
-    # ======================================================================== #
-    def _execute_ldm(self, instr):
-        """Execute LDM instruction.
-        """
-        assert instr.operands[0].size == self._address_size
-        assert instr.operands[2].size in [8, 16, 32, 64]
-
-        op0_val = self.read_operand(instr.operands[0])                  # Memory address.
-        op2_val = self.read_memory(op0_val, instr.operands[2].size)     # Data.
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def _execute_stm(self, instr):
-        """Execute STM instruction.
-        """
-        assert instr.operands[0].size in [8, 16, 32, 64]
-        assert instr.operands[2].size == self._address_size
-
-        op0_val = self.read_operand(instr.operands[0])  # Data.
-        op2_val = self.read_operand(instr.operands[2])  # Memory address.
-
-        op0_size = instr.operands[0].size
-
-        self.write_memory(op2_val, op0_size, op0_val)
-
-        return None
-
-    def _execute_str(self, instr):
-        """Execute STR instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-
-        self.write_operand(instr.operands[2], op0_val)
-
-        return None
-
-    # Conditional instructions
-    # ======================================================================== #
-    def _execute_bisz(self, instr):
-        """Execute BISZ instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-
-        op2_val = 1 if op0_val == 0 else 0
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def _execute_jcc(self, instr):
-        """Execute JCC instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])  # Branch condition.
-        op2_val = self.read_operand(instr.operands[2])  # Target address.
-
-        return op2_val if op0_val != 0 else None
-
-    # Other instructions
-    # ======================================================================== #
-    def _execute_undef(self, instr):
-        """Execute UNDEF instruction.
-        """
-        op2_val = random.randint(0, instr.operands[2].size)
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def _execute_unkn(self, instr):
-        """Execute UNKN instruction.
-        """
-        raise Exception("Unknown instruction (UNKN).")
-
-    def _execute_nop(self, instr):
-        """Execute NOP instruction.
-        """
-        return None
-
-    # Ad hoc Instructions
-    # ======================================================================== #
-    def _execute_ret(self, instr):
-        """Execute RET instruction.
-        """
-        return None
-
-    # Extension
-    # ======================================================================== #
-    def _execute_sext(self, instr):
-        """Execute SEXT instruction.
-        """
-        op0_size = instr.operands[0].size
-        op2_size = instr.operands[2].size
-
-        op0_val = self.read_operand(instr.operands[0])
-        op0_msb = op0_val >> (op0_size-1)
-
-        op2_mask = (2**op2_size-1) & ~(2**op0_size-1) if op0_msb == 1 else 0x0
-
-        op2_val = op0_val | op2_mask
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
+        return self.__cpu.written_registers

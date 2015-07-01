@@ -29,8 +29,8 @@ from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86parser import X86Parser
 from barf.arch.x86.x86translator import X86Translator
 from barf.core.reil import ReilEmulator
-from barf.core.reil import ReilEmulatorInvalidAddressError
-from barf.core.reil import ReilEmulatorZeroDivisionError
+from barf.core.reil import ReilCpuInvalidAddressError
+from barf.core.reil import ReilCpuZeroDivisionError
 from barf.core.reil import ReilMemory
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilParser
@@ -248,7 +248,7 @@ class ReilEmulatorTests(unittest.TestCase):
             "ebx" : 0x0,
         }
 
-        self.assertRaises(ReilEmulatorZeroDivisionError, self._emulator.execute_lite, reil_instrs, context=regs_initial)
+        self.assertRaises(ReilCpuZeroDivisionError, self._emulator.execute_lite, reil_instrs, context=regs_initial)
 
     def test_zero_division_error_2(self):
         instrs = ["mod [DWORD eax, DWORD ebx, DWORD t0]"]
@@ -260,7 +260,7 @@ class ReilEmulatorTests(unittest.TestCase):
             "ebx" : 0x0,
         }
 
-        self.assertRaises(ReilEmulatorZeroDivisionError, self._emulator.execute_lite, reil_instrs, context=regs_initial)
+        self.assertRaises(ReilCpuZeroDivisionError, self._emulator.execute_lite, reil_instrs, context=regs_initial)
 
     def test_invalid_address_error_1(self):
         asm_instrs = [self._asm_parser.parse("jmp eax")]
@@ -273,7 +273,7 @@ class ReilEmulatorTests(unittest.TestCase):
             "eax" : 0xffffffff,
         }
 
-        self.assertRaises(ReilEmulatorInvalidAddressError, self._emulator.execute, reil_instrs, 0xdeadbeef << 8, context=regs_initial)
+        self.assertRaises(ReilCpuInvalidAddressError, self._emulator.execute, reil_instrs, 0xdeadbeef << 8, context=regs_initial)
 
     def test_invalid_address_error_2(self):
         asm_instrs = [self._asm_parser.parse("mov eax, 0xdeadbeef")]
@@ -286,7 +286,7 @@ class ReilEmulatorTests(unittest.TestCase):
             "eax" : 0xffffffff,
         }
 
-        self.assertRaises(ReilEmulatorInvalidAddressError, self._emulator.execute, reil_instrs, 0xdeadbef0 << 8, context=regs_initial)
+        self.assertRaises(ReilCpuInvalidAddressError, self._emulator.execute, reil_instrs, 0xdeadbef0 << 8, context=regs_initial)
 
     # Auxiliary methods
     # ======================================================================== #
@@ -320,14 +320,14 @@ class ReilEmulatorTaintTests(unittest.TestCase):
             "ebx" : 0x2,
         }
 
-        self._emulator._tainter._set_register_taint(ReilRegisterOperand("ebx", 32), True)
+        self._emulator.set_register_taint(ReilRegisterOperand("ebx", 32), True)
 
         regs_final, _ = self._emulator.execute_lite(
             reil_instrs,
             context=regs_initial
         )
 
-        self.assertEqual(self._emulator._tainter._get_register_taint(ReilRegisterOperand("eax", 32)), True)
+        self.assertEqual(self._emulator.get_register_taint(ReilRegisterOperand("eax", 32)), True)
 
     def test_store_mem_1(self):
         asm_instrs  = self._asm_parser.parse("mov [eax], ebx")
@@ -341,14 +341,14 @@ class ReilEmulatorTaintTests(unittest.TestCase):
             "ebx" : 0x2,
         }
 
-        self._emulator._tainter._set_register_taint(ReilRegisterOperand("ebx", 32), True)
+        self._emulator.set_register_taint(ReilRegisterOperand("ebx", 32), True)
 
         regs_final, _ = self._emulator.execute_lite(
             reil_instrs,
             context=regs_initial
         )
 
-        self.assertEqual(self._emulator._tainter.get_memory_taint(regs_initial['eax'], 4 * 8), True)
+        self.assertEqual(self._emulator.get_memory_taint(regs_initial['eax'], 4 * 8), True)
 
     def test_store_mem_2(self):
         asm_instrs  = self._asm_parser.parse("mov [eax], ebx")
@@ -362,14 +362,14 @@ class ReilEmulatorTaintTests(unittest.TestCase):
             "ebx" : 0x2,
         }
 
-        self._emulator._tainter._set_register_taint(ReilRegisterOperand("eax", 32), True)
+        self._emulator.set_register_taint(ReilRegisterOperand("eax", 32), True)
 
         regs_final, _ = self._emulator.execute_lite(
             reil_instrs,
             context=regs_initial
         )
 
-        self.assertEqual(self._emulator._tainter.get_memory_taint(regs_initial['eax'], 4 * 8), False)
+        self.assertEqual(self._emulator.get_memory_taint(regs_initial['eax'], 4 * 8), False)
 
     def test_load_mem_1(self):
         asm_instrs  = self._asm_parser.parse("mov eax, [ebx]")
@@ -383,14 +383,14 @@ class ReilEmulatorTaintTests(unittest.TestCase):
             "ebx" : 0xcafecafe,
         }
 
-        self._emulator._tainter.set_memory_taint(regs_initial["ebx"], 4 * 8, True)
+        self._emulator.set_memory_taint(regs_initial["ebx"], 4 * 8, True)
 
         regs_final, _ = self._emulator.execute_lite(
             reil_instrs,
             context=regs_initial
         )
 
-        self.assertEqual(self._emulator._tainter._get_register_taint(ReilRegisterOperand("eax", 32)), True)
+        self.assertEqual(self._emulator.get_register_taint(ReilRegisterOperand("eax", 32)), True)
 
     def __set_address(self, address, asm_instrs):
         addr = address
