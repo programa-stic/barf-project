@@ -669,6 +669,23 @@ class ReilEmulator(object):
 
         return self._regs.copy(), self._mem
 
+    def execute2(self, container, start=None, end=None, registers=None):
+        """Execute instructions.
+        """
+        if registers:
+            self._regs = dict(registers)
+
+        self._ip = start if start else container[0].address
+
+        while self._ip and self._ip != end:
+            instr = container.fetch(self._ip)
+
+            next = self._execute_one(instr)
+
+            self._ip = next if next else container.get_next_address(self._ip)
+
+        return self._regs.copy(), self._mem
+
     def execute(self, instructions, start_address, end_address=None, context=None):
         """Execute instructions.
         """
