@@ -655,21 +655,7 @@ class ReilEmulator(object):
 
     # Execution methods
     # ======================================================================== #
-    def execute_lite(self, instructions, context=None):
-        """Execute a list of instructions. It does not support loops.
-        """
-        if verbose:
-            print("[+] Executing instructions...")
-
-        if context:
-            self._regs = context.copy()
-
-        for instr in instructions:
-            self._execute_one(instr)
-
-        return self._regs.copy(), self._mem
-
-    def execute2(self, container, start=None, end=None, registers=None):
+    def execute(self, container, start=None, end=None, registers=None):
         """Execute instructions.
         """
         if registers:
@@ -686,90 +672,14 @@ class ReilEmulator(object):
 
         return self._regs.copy(), self._mem
 
-    def execute(self, instructions, start_address, end_address=None, context=None):
-        """Execute instructions.
+    def execute_lite(self, instructions, context=None):
+        """Execute a list of instructions. It does not support loops.
         """
-        if verbose:
-            print("[+] Executing instructions (full)...")
-
         if context:
-            self._regs = context.copy()
+            self._regs = dict(context)
 
-        main_index = 0
-        sub_index = 0
-
-        if start_address == None:
-            self._ip = instructions[main_index][sub_index].address
-        else:
-            next_addr = start_address
-
-            found = False
-
-            for idx, instrs in enumerate(instructions):
-                if instrs[0].address >> 8 == next_addr >> 8:
-                    main_index = idx
-                    sub_index = next_addr & 0xff
-
-                    found = True
-
-            if not found:
-                raise ReilEmulatorInvalidAddressError("Invalid address: %s" % hex(next_addr))
-
-            self._ip = instructions[main_index][sub_index].address
-
-        instr_count = 0
-
-        while True:
-            # fetch instruction
-            instr = instructions[main_index][sub_index]
-
-            # execute instruction
-            next_addr = self._execute_one(instr)
-
-            # update instruction pointer
-            if next_addr:
-                if end_address and next_addr == end_address:
-                    if verbose:
-                        print("[+] End address reached...")
-
-                    break
-
-                found = False
-
-                for idx, instrs in enumerate(instructions):
-                    if instrs[0].address >> 8 == next_addr >> 8:
-                        main_index = idx
-                        sub_index = next_addr & 0xff
-
-                        found = True
-
-                if not found:
-                    raise ReilEmulatorInvalidAddressError("Invalid address: %s" % hex(next_addr))
-            else:
-                sub_index += 1
-
-                if sub_index >= len(instructions[main_index]):
-                    main_index += 1
-                    sub_index = 0
-
-                    if main_index >= len(instructions):
-                        break
-
-                next_addr = instructions[main_index][sub_index].address
-
-            self._ip = next_addr
-
-            # update instruction counter
-            instr_count += 1
-
-            if end_address and self._ip == end_address:
-                if verbose:
-                    print("[+] End address reached...")
-
-                break
-
-        if verbose:
-            print("[+] Executed instruction count : %d" % instr_count)
+        for instr in instructions:
+            self._execute_one(instr)
 
         return self._regs.copy(), self._mem
 

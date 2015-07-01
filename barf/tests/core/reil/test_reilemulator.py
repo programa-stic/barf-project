@@ -209,9 +209,8 @@ class ReilEmulatorTests(unittest.TestCase):
 
         self._emulator.set_instruction_pre_handler(pre_hanlder, paramter)
 
-        reil_ctx_out, reil_mem_out = self._emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8
+        reil_ctx_out, reil_mem_out = self._emulator.execute_lite(
+            reil_instrs[0]
         )
 
         self.assertTrue(len(paramter) > 0)
@@ -230,9 +229,8 @@ class ReilEmulatorTests(unittest.TestCase):
 
         self._emulator.set_instruction_post_handler(post_hanlder, paramter)
 
-        reil_ctx_out, reil_mem_out = self._emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8
+        reil_ctx_out, reil_mem_out = self._emulator.execute_lite(
+            reil_instrs[0]
         )
 
         self.assertTrue(len(paramter) > 0)
