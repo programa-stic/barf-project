@@ -23,6 +23,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+def extract_sign_bit(value, size):
+    return value >> (size-1)
+
 def twos_complement(value, size):
     return 2**size - value
 
