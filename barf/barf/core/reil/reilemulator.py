@@ -51,6 +51,7 @@ import random
 from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
 from barf.core.reil.reil import ReilRegisterOperand
+from barf.utils.utils import extract_sign_bit
 from barf.utils.utils import extract_value
 from barf.utils.utils import insert_value
 from barf.utils.utils import twos_complement
@@ -73,7 +74,7 @@ class ReilMemory(object):
 
         # TODO: Set endianness through a parameter.
         # TODO: Check that all addresses have size address_size.
-        # TODO: Use _endianness parameter.
+        # TODO: Use endianness parameter.
 
         # Memory's address size.
         self.__address_size = address_size
@@ -308,6 +309,10 @@ class ReilCpuInvalidAddressError(Exception):
     pass
 
 
+class ReilCpuInvalidInstruction(Exception):
+    pass
+
+
 class ReilCpu(object):
 
     def __init__(self, arch, memory, tainter, emulator):
@@ -323,36 +328,29 @@ class ReilCpu(object):
         # Reil tainter instance.
         self.__tainter = tainter
 
-        # Instruction Pointer.
-        self.__ip = None
-
         # Registers.
-        self.__regs = {}
-
-        # Set of read and write registers during execution.
+        self.__regs = dict()
         self.__regs_written = set()
         self.__regs_read = set()
 
         # Instructions pre and post handlers.
-        self.__instr_pre_handler = None, None
-        self.__instr_post_handler = None, None
-
-        self.__set_default_handlers()
+        self.__instr_handler_pre = None, None
+        self.__instr_handler_post = None, None
 
         # Instruction implementation.
         self.__executors = {
             # Arithmetic Instructions
-            ReilMnemonic.ADD : self.__execute_add,
-            ReilMnemonic.SUB : self.__execute_sub,
-            ReilMnemonic.MUL : self.__execute_mul,
-            ReilMnemonic.DIV : self.__execute_div,
-            ReilMnemonic.MOD : self.__execute_mod,
+            ReilMnemonic.ADD : self.__execute_binary_op,
+            ReilMnemonic.SUB : self.__execute_binary_op,
+            ReilMnemonic.MUL : self.__execute_binary_op,
+            ReilMnemonic.DIV : self.__execute_binary_op,
+            ReilMnemonic.MOD : self.__execute_binary_op,
             ReilMnemonic.BSH : self.__execute_bsh,
 
             # Bitwise Instructions
-            ReilMnemonic.AND : self.__execute_and,
-            ReilMnemonic.OR  : self.__execute_or,
-            ReilMnemonic.XOR : self.__execute_xor,
+            ReilMnemonic.AND : self.__execute_binary_op,
+            ReilMnemonic.OR  : self.__execute_binary_op,
+            ReilMnemonic.XOR : self.__execute_binary_op,
 
             # Data Transfer Instructions
             ReilMnemonic.LDM : self.__execute_ldm,
@@ -366,17 +364,17 @@ class ReilCpu(object):
             # Other Instructions
             ReilMnemonic.UNDEF : self.__execute_undef,
             ReilMnemonic.UNKN  : self.__execute_unkn,
-            ReilMnemonic.NOP   : self.__execute_nop,
+            ReilMnemonic.NOP   : self.__execute_skip,
 
             # Ad hoc Instructions
-            ReilMnemonic.RET : self.__execute_ret,
+            ReilMnemonic.RET : self.__execute_skip,
 
             # Extensions
             ReilMnemonic.SEXT : self.__execute_sext,
         }
 
-    # Auxiliary execution methods
-    # ======================================================================== #
+        self.__set_default_handlers()
+
     def execute(self, instr):
         if verbose:
             print("0x%08x:%02x : %s" % (instr.address >> 8,
@@ -384,8 +382,8 @@ class ReilCpu(object):
                                         instr))
 
         # Execute pre instruction handlers
-        pre_handler_fn, pre_handler_param = self.__instr_pre_handler
-        pre_handler_fn(self.__emu, instr, pre_handler_param)
+        handler_fn_pre, handler_param_pre = self.__instr_handler_pre
+        handler_fn_pre(self.__emu, instr, handler_param_pre)
 
         # Execute instruction
         next_addr = self.__executors[instr.mnemonic](instr)
@@ -394,28 +392,25 @@ class ReilCpu(object):
         self.__tainter.taint(instr)
 
         # Execute post instruction handlers
-        post_handler_fn, post_handler_param = self.__instr_post_handler
-        post_handler_fn(self.__emu, instr, post_handler_param)
+        handler_fn_post, handler_param_post = self.__instr_handler_post
+        handler_fn_post(self.__emu, instr, handler_param_post)
 
         return next_addr
 
     def reset(self):
-        # Instruction Pointer.
-        self.__ip = None
-
         # Registers.
-        self.__regs = {}
-
-        # Set of read and write registers during execution.
+        self.__regs = dict()
         self.__regs_written = set()
         self.__regs_read = set()
 
         # Instructions pre and post handlers.
-        self.__instr_pre_handler = None, None
-        self.__instr_post_handler = None, None
+        self.__instr_handler_pre = None, None
+        self.__instr_handler_post = None, None
 
         self.__set_default_handlers()
 
+    # Properties
+    # ======================================================================== #
     @property
     def registers(self):
         return self.__regs
@@ -435,18 +430,18 @@ class ReilCpu(object):
     # Instruction's handler methods
     # ======================================================================== #
     def set_instruction_pre_handler(self, function, parameter):
-        self.__instr_pre_handler = (function, parameter)
+        self.__instr_handler_pre = (function, parameter)
 
     def set_instruction_post_handler(self, function, parameter):
-        self.__instr_post_handler = (function, parameter)
+        self.__instr_handler_post = (function, parameter)
 
     # Instruction's handler auxiliary methods
     # ======================================================================== #
     def __set_default_handlers(self):
         empty_fn, empty_param = lambda emu, instr, param: None, None
 
-        self.__instr_pre_handler = (empty_fn, empty_param)
-        self.__instr_post_handler = (empty_fn, empty_param)
+        self.__instr_handler_pre = (empty_fn, empty_param)
+        self.__instr_handler_post = (empty_fn, empty_param)
 
     # Read/Write methods
     # ======================================================================== #
@@ -500,8 +495,7 @@ class ReilCpu(object):
 
         # Debug
         if verbose:
-            # taint = self._get_register_taint(register)
-            taint = None
+            taint = self.__tainter.get_register_taint(register)
             self.__debug_read_operand(register, reg_val, base_reg_name, \
                 base_val, taint)
 
@@ -519,15 +513,15 @@ class ReilCpu(object):
 
         # Debug
         if verbose:
-            # taint = self._get_register_taint(register)
-            taint = None
+            taint = self.__tainter.get_register_taint(register)
             self.__debug_write_operand(register, value, base_reg_name, \
                 self.__regs[base_reg_name], taint)
 
     # Debug methods
     # ======================================================================== #
     def __debug_read_operand(self, reg, val, base_reg, base_val, tainted):
-        fmt = "{indent}r{{ {reg:s} = {val:08x} [{taint:s}] ({base_reg:s} = {base_val:08x})}}"
+        fmt = "{indent}r{{ {reg:s} = {val:08x} [{taint:s}] " + \
+              "({base_reg:s} = {base_val:08x})}}"
 
         taint = "T" if tainted == True else "-"
 
@@ -539,7 +533,8 @@ class ReilCpu(object):
         print(msg)
 
     def __debug_write_operand(self, reg, val, base_reg, base_val, tainted):
-        fmt = "{indent}w{{ {reg:s} = {val:08x} [{taint:s}] ({base_reg:s} = {base_val:08x})}}"
+        fmt = "{indent}w{{ {reg:s} = {val:08x} [{taint:s}] " + \
+              "({base_reg:s} = {base_val:08x})}}"
 
         taint = "T" if tainted else "-"
 
@@ -550,79 +545,12 @@ class ReilCpu(object):
 
         print(msg)
 
-
     # ======================================================================== #
     # REIL instructions implementation
     # ======================================================================== #
 
     # Arithmetic instructions
     # ======================================================================== #
-    def __execute_add(self, instr):
-        """Execute ADD instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        op2_val = op0_val + op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def __execute_sub(self, instr):
-        """Execute SUB instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        op2_val = op0_val - op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def __execute_mul(self, instr):
-        """Execute MUL instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        op2_val = op0_val * op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def __execute_div(self, instr):
-        """Execute DIV instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        if op1_val == 0:
-            raise ReilCpuZeroDivisionError()
-
-        op2_val = op0_val / op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def __execute_mod(self, instr):
-        """Execute MOD instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        if op1_val == 0:
-            raise ReilCpuZeroDivisionError()
-
-        op2_val = op0_val % op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
     def __execute_bsh(self, instr):
         """Execute BSH instruction.
         """
@@ -632,7 +560,7 @@ class ReilCpu(object):
         op1_size = instr.operands[1].size
 
         # Check sign bit.
-        if op1_val & (2**(op1_size-1)) == 0:
+        if extract_sign_bit(op1_val, op1_size) == 0:
             op2_val = op0_val << op1_val
         else:
             op2_val = op0_val >> twos_complement(op1_val, op1_size)
@@ -643,41 +571,29 @@ class ReilCpu(object):
 
     # Bitwise instructions
     # ======================================================================== #
-    def __execute_and(self, instr):
-        """Execute AND instruction.
-        """
+    def __execute_binary_op(self, instr):
+        op_map = {
+            ReilMnemonic.ADD : lambda a, b: a + b,
+            ReilMnemonic.SUB : lambda a, b: a - b,
+            ReilMnemonic.MUL : lambda a, b: a * b,
+            ReilMnemonic.DIV : lambda a, b: a / b,
+            ReilMnemonic.MOD : lambda a, b: a % b,
+
+            ReilMnemonic.AND : lambda a, b: a & b,
+            ReilMnemonic.OR  : lambda a, b: a | b,
+            ReilMnemonic.XOR : lambda a, b: a ^ b,
+        }
+
         op0_val = self.read_operand(instr.operands[0])
         op1_val = self.read_operand(instr.operands[1])
 
-        op2_val = op0_val & op1_val
+        if instr.mnemonic in [ReilMnemonic.DIV, ReilMnemonic.MOD] and \
+            op1_val == 0:
+            raise ReilCpuZeroDivisionError()
+
+        op2_val = op_map[instr.mnemonic](op0_val, op1_val)
 
         self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def __execute_or(self, instr):
-        """Execute OR instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        op2_val = op0_val | op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
-
-    def __execute_xor(self, instr):
-        """Execute XOR instruction.
-        """
-        op0_val = self.read_operand(instr.operands[0])
-        op1_val = self.read_operand(instr.operands[1])
-
-        op2_val = op0_val ^ op1_val
-
-        self.write_operand(instr.operands[2], op2_val)
-
-        return None
 
     # Data transfer instructions
     # ======================================================================== #
@@ -755,21 +671,14 @@ class ReilCpu(object):
     def __execute_unkn(self, instr):
         """Execute UNKN instruction.
         """
-        raise Exception("Unknown instruction (UNKN).")
+        raise ReilCpuInvalidInstruction()
 
-    def __execute_nop(self, instr):
-        """Execute NOP instruction.
+    def __execute_skip(self, instr):
+        """Skip instruction.
         """
         return None
 
-    # Ad hoc Instructions
-    # ======================================================================== #
-    def __execute_ret(self, instr):
-        """Execute RET instruction.
-        """
-        return None
-
-    # Extension
+    # REIL extension instructions
     # ======================================================================== #
     def __execute_sext(self, instr):
         """Execute SEXT instruction.
@@ -778,7 +687,7 @@ class ReilCpu(object):
         op2_size = instr.operands[2].size
 
         op0_val = self.read_operand(instr.operands[0])
-        op0_msb = op0_val >> (op0_size-1)
+        op0_msb = extract_sign_bit(op0_val, op0_size)
 
         op2_mask = (2**op2_size-1) & ~(2**op0_size-1) if op0_msb == 1 else 0x0
 
@@ -846,7 +755,7 @@ class ReilEmulatorTainter(object):
         self.__taint_reg = {}
         self.__taint_mem = {}
 
-    # Taint methods
+    # Operand taint methods
     # ======================================================================== #
     def get_operand_taint(self, operand):
         if isinstance(operand, ReilRegisterOperand):
@@ -870,6 +779,8 @@ class ReilEmulatorTainter(object):
         else:
             raise Exception("Invalid operand: %s" % str(operand))
 
+    # Memory taint methods
+    # ======================================================================== #
     def get_memory_taint(self, address, size):
         tainted = False
 
@@ -886,54 +797,51 @@ class ReilEmulatorTainter(object):
         for i in xrange(0, size / 8):
             self.__taint_mem[address + i] = False
 
-    # Taint auxiliary methods
+    # Register taint methods
     # ======================================================================== #
     def get_register_taint(self, register):
-        if register.name in self.__arch.alias_mapper and \
-            register.name not in self.__arch.registers_flags:
-            base_name, _ = self.__arch.alias_mapper[register.name]
-        else:
-            base_name = register.name
+        base_name = self.__get_base_register(register.name)
 
         return self.__taint_reg.get(base_name, False)
 
     def set_register_taint(self, register, taint):
-        if register.name in self.__arch.alias_mapper and \
-            register.name not in self.__arch.registers_flags:
-            base_name, _ = self.__arch.alias_mapper[register.name]
-        else:
-            base_name = register.name
+        base_name = self.__get_base_register(register.name)
 
         self.__taint_reg[base_name] = taint
 
         if verbose:
-            reg = register.name
-            base_reg = base_name
-
-            fmt = "{indent}t{{ {reg:s} ({base_reg:s})}}"
-
-            msg = fmt.format(indent=" "*10, reg=reg, base_reg=base_reg)
-
-            print(msg)
+            self.__debug_taint(register)
 
     def clear_register_taint(self, register):
-        if register.name in self.__arch.alias_mapper and \
-            register.name not in self.__arch.registers_flags:
-            base_name, _ = self.__arch.alias_mapper[register.name]
-        else:
-            base_name = register.name
+        base_name = self.__get_base_register(register.name)
 
         self.__taint_reg[base_name] = False
 
         if verbose:
-            reg = register.name
-            base_reg = base_name
+            self.__debug_taint(register)
 
-            fmt = "{indent}t{{ {reg:s} ({base_reg:s})}}"
+    # Taint auxiliary methods
+    # ======================================================================== #
+    def __get_base_register(self, register):
+        if register in self.__arch.alias_mapper and \
+            register not in self.__arch.registers_flags:
+            base_name, _ = self.__arch.alias_mapper[register]
+        else:
+            base_name = register
 
-            msg = fmt.format(indent=" "*10, reg=reg, base_reg=base_reg)
+        return base_name
 
-            print(msg)
+    # Taint auxiliary methods
+    # ======================================================================== #
+    def __debug_taint(self, register):
+        reg = register.name
+        base_reg = self.__get_base_register(register.name)
+
+        fmt = "{indent}t{{ {reg:s} ({base_reg:s})}}"
+
+        msg = fmt.format(indent=" "*10, reg=reg, base_reg=base_reg)
+
+        print(msg)
 
     # Taint methods
     # ======================================================================== #
@@ -971,7 +879,7 @@ class ReilEmulatorTainter(object):
         self.set_memory_taint(op2_val, op0_size, op0_taint)
 
     def __taint_move(self, instr):
-        """Taint STR instruction.
+        """Taint registers move instruction.
         """
         # Get taint information.
         op0_taint = self.get_operand_taint(instr.operands[0])
@@ -986,7 +894,7 @@ class ReilEmulatorTainter(object):
         self.set_operand_taint(instr.operands[2], False)
 
     def __taint_nothing(self, instr):
-        """Taint RET instruction.
+        """Taint nothing.
         """
         pass
 
