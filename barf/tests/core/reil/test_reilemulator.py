@@ -28,10 +28,11 @@ from barf.arch import ARCH_X86_MODE_32
 from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86parser import X86Parser
 from barf.arch.x86.x86translator import X86Translator
-from barf.core.reil import ReilEmulator
 from barf.core.reil import ReilCpuInvalidAddressError
 from barf.core.reil import ReilCpuZeroDivisionError
+from barf.core.reil import ReilEmulator
 from barf.core.reil import ReilMemory
+from barf.core.reil import ReilMemoryEx
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilParser
 from barf.core.reil import ReilRegisterOperand
@@ -84,7 +85,7 @@ class ReilMemoryTests(unittest.TestCase):
 
     def test_write_read_byte_4(self):
         address_size = 32
-        memory = ReilMemory(address_size)
+        memory = ReilMemoryEx(address_size)
 
         addr0 = 0x00001000
         write_val = 0xdeadbeef
