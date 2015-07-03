@@ -167,8 +167,7 @@ class ReilMemoryEx(ReilMemory):
     def __init__(self, address_size):
         super(ReilMemoryEx, self).__init__(address_size)
 
-        # Previous state of memory. Requiere for some *special*
-        # functions.
+        # Previous state of memory.
         self.__memory_prev = {}
 
         # Write operations counter.
@@ -495,7 +494,7 @@ class ReilCpu(object):
 
         # Debug
         if verbose:
-            taint = self.__tainter.get_register_taint(register)
+            taint = self.__tainter.get_register_taint(register.name)
             self.__debug_read_operand(register, reg_val, base_reg_name, \
                 base_val, taint)
 
@@ -513,7 +512,7 @@ class ReilCpu(object):
 
         # Debug
         if verbose:
-            taint = self.__tainter.get_register_taint(register)
+            taint = self.__tainter.get_register_taint(register.name)
             self.__debug_write_operand(register, value, base_reg_name, \
                 self.__regs[base_reg_name], taint)
 
@@ -708,8 +707,8 @@ class ReilEmulatorTainter(object):
         self.__emu = emulator
 
         # Taint information.
-        self.__taint_reg = {}
-        self.__taint_mem = {}
+        self.__taint_reg = {}   # Register-level tainting
+        self.__taint_mem = {}   # Byte-level tainting
 
         # Taint function lookup table.
         self.__tainter = {
@@ -759,7 +758,7 @@ class ReilEmulatorTainter(object):
     # ======================================================================== #
     def get_operand_taint(self, operand):
         if isinstance(operand, ReilRegisterOperand):
-            taint = self.get_register_taint(operand)
+            taint = self.get_register_taint(operand.name)
         elif isinstance(operand, ReilImmediateOperand):
             taint = False
         else:
@@ -769,7 +768,7 @@ class ReilEmulatorTainter(object):
 
     def set_operand_taint(self, operand, taint):
         if isinstance(operand, ReilRegisterOperand):
-            self.set_register_taint(operand, taint)
+            self.set_register_taint(operand.name, taint)
         else:
             raise Exception("Invalid operand: %s" % str(operand))
 
@@ -784,38 +783,32 @@ class ReilEmulatorTainter(object):
     def get_memory_taint(self, address, size):
         tainted = False
 
-        for i in xrange(0, size / 8):
+        for i in xrange(0, size):
             tainted = tainted or self.__taint_mem.get(address + i, False)
 
         return tainted
 
     def set_memory_taint(self, address, size, taint):
-        for i in xrange(0, size / 8):
+        for i in xrange(0, size):
             self.__taint_mem[address + i] = taint
 
     def clear_memory_taint(self, address, size):
-        for i in xrange(0, size / 8):
+        for i in xrange(0, size):
             self.__taint_mem[address + i] = False
 
     # Register taint methods
     # ======================================================================== #
     def get_register_taint(self, register):
-        base_name = self.__get_base_register(register.name)
-
-        return self.__taint_reg.get(base_name, False)
+        return self.__taint_reg.get(self.__get_base_register(register), False)
 
     def set_register_taint(self, register, taint):
-        base_name = self.__get_base_register(register.name)
-
-        self.__taint_reg[base_name] = taint
+        self.__taint_reg[self.__get_base_register(register)] = taint
 
         if verbose:
             self.__debug_taint(register)
 
     def clear_register_taint(self, register):
-        base_name = self.__get_base_register(register.name)
-
-        self.__taint_reg[base_name] = False
+        self.__taint_reg[self.__get_base_register(register)] = False
 
         if verbose:
             self.__debug_taint(register)
@@ -825,6 +818,7 @@ class ReilEmulatorTainter(object):
     def __get_base_register(self, register):
         if register in self.__arch.alias_mapper and \
             register not in self.__arch.registers_flags:
+            # NOTE: Flags are tainted individually.
             base_name, _ = self.__arch.alias_mapper[register]
         else:
             base_name = register
@@ -834,14 +828,11 @@ class ReilEmulatorTainter(object):
     # Taint auxiliary methods
     # ======================================================================== #
     def __debug_taint(self, register):
-        reg = register.name
-        base_reg = self.__get_base_register(register.name)
+        base_register = self.__get_base_register(register)
 
         fmt = "{indent}t{{ {reg:s} ({base_reg:s})}}"
 
-        msg = fmt.format(indent=" "*10, reg=reg, base_reg=base_reg)
-
-        print(msg)
+        print(fmt.format(indent=" "*10, reg=register, base_reg=base_register))
 
     # Taint methods
     # ======================================================================== #
@@ -856,11 +847,11 @@ class ReilEmulatorTainter(object):
     def __taint_load(self, instr):
         """Taint LDM instruction.
         """
-        # Memory address.
+        # Get memory address.
         op0_val = self.__emu.read_operand(instr.operands[0])
 
         # Get taint information.
-        op0_taint = self.get_memory_taint(op0_val, instr.operands[2].size)
+        op0_taint = self.get_memory_taint(op0_val, instr.operands[2].size / 8)
 
         # Propagate taint.
         self.set_operand_taint(instr.operands[2], op0_taint)
@@ -868,7 +859,7 @@ class ReilEmulatorTainter(object):
     def __taint_store(self, instr):
         """Taint STM instruction.
         """
-        # Memory address.
+        # Get memory address.
         op2_val = self.__emu.read_operand(instr.operands[2])
 
         # Get taint information.
@@ -876,7 +867,7 @@ class ReilEmulatorTainter(object):
         op0_taint = self.get_operand_taint(instr.operands[0])
 
         # Propagate taint.
-        self.set_memory_taint(op2_val, op0_size, op0_taint)
+        self.set_memory_taint(op2_val, op0_size / 8, op0_taint)
 
     def __taint_move(self, instr):
         """Taint registers move instruction.
