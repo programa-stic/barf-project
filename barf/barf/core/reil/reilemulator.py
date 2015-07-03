@@ -97,7 +97,7 @@ class ReilMemory(object):
 
         if verbose:
             taint = None
-            self.__debug_read_memory(address, value, taint)
+            self._debug_read_memory(address, value, taint)
 
         return value
 
@@ -120,7 +120,7 @@ class ReilMemory(object):
 
         if verbose:
             taint = None
-            self.__debug_write_memory(address, value, taint)
+            self._debug_write_memory(address, value, taint)
 
     def __write_byte(self, address, value):
         """Write byte in memory.
@@ -135,14 +135,14 @@ class ReilMemory(object):
 
     # Debug methods
     # ======================================================================== #
-    def __debug_read_memory(self, addr, val, tainted):
+    def _debug_read_memory(self, addr, val, tainted):
         fmt = "{indent}r{{ m[{addr:08x}] = {val:08x} [{taint:s}]}}"
         taint = "T" if tainted else "-"
         msg = fmt.format(indent=" "*10, addr=addr, val=val, taint=taint)
 
         print(msg)
 
-    def __debug_write_memory(self, addr, val, tainted):
+    def _debug_write_memory(self, addr, val, tainted):
         fmt = "{indent}w{{ m[{addr:08x}] = {val:08x} [{taint:s}]}}"
         taint = "T" if tainted else "-"
         msg = fmt.format(indent=" "*10, addr=addr, val=val, taint=taint)
@@ -266,7 +266,7 @@ class ReilMemoryEx(ReilMemory):
 
         if verbose:
             taint = None
-            self.__debug_write_memory(address, value, taint)
+            self._debug_write_memory(address, value, taint)
 
     def __write_byte(self, address, value):
         """Write byte in memory.
@@ -468,25 +468,29 @@ class ReilCpu(object):
 
     # Read/Write auxiliary methods
     # ======================================================================== #
-    def __get_register_value(self, register):
+    def __get_register_info(self, register):
         if register.name in self.__arch.alias_mapper:
-            base_reg_name, offset = self.__arch.alias_mapper[register.name]
-            base_reg_size = self.__arch.registers_size[base_reg_name]
+            base_register, offset = self.__arch.alias_mapper[register.name]
+            base_size = self.__arch.registers_size[base_register]
         else:
-            base_reg_name, offset = register.name, 0
-            base_reg_size = register.size
+            base_register, offset = register.name, 0
+            base_size = register.size
 
-        if base_reg_name in self.__regs:
-            base_val = self.__regs[base_reg_name]
-        else:
-            base_val = random.randint(0, 2**base_reg_size - 1)
+        return base_register, base_size, offset
 
-        return base_reg_name, base_val, offset
+    def __get_register_value(self, register):
+        base_register, base_size, offset = self.__get_register_info(register)
+
+        if base_register not in self.__regs:
+            self.__regs[base_register] = random.randint(0, 2**base_size - 1)
+
+        base_value = self.__regs[base_register]
+
+        return base_register, base_value, offset
 
     def __read_register(self, register):
-        base_reg_name, base_val, offset = self.__get_register_value(register)
-
-        reg_val = extract_value(base_val, offset, register.size)
+        base_register, base_value, offset = self.__get_register_value(register)
+        value = extract_value(base_value, offset, register.size)
 
         # Keep track of native register reads.
         if register.name in self.__arch.registers_gp_all:
@@ -494,17 +498,15 @@ class ReilCpu(object):
 
         # Debug
         if verbose:
-            taint = self.__tainter.get_register_taint(register.name)
-            self.__debug_read_operand(register, reg_val, base_reg_name, \
-                base_val, taint)
+            self.__debug_read_operand(base_register, register.name, value)
 
-        return reg_val
+        return value
 
     def __write_register(self, register, value):
-        base_reg_name, base_val, offset = self.__get_register_value(register)
+        base_register, base_value, offset = self.__get_register_value(register)
+        base_value_new = insert_value(base_value, value, offset, register.size)
 
-        self.__regs[base_reg_name] = insert_value(base_val, value, offset, \
-            register.size)
+        self.__regs[base_register] = base_value_new
 
         # Keep track of native register writes.
         if register.name in self.__arch.registers_gp_all:
@@ -512,37 +514,45 @@ class ReilCpu(object):
 
         # Debug
         if verbose:
-            taint = self.__tainter.get_register_taint(register.name)
-            self.__debug_write_operand(register, value, base_reg_name, \
-                self.__regs[base_reg_name], taint)
+            self.__debug_write_operand(base_register, register.name, value)
 
     # Debug methods
     # ======================================================================== #
-    def __debug_read_operand(self, reg, val, base_reg, base_val, tainted):
-        fmt = "{indent}r{{ {reg:s} = {val:08x} [{taint:s}] " + \
-              "({base_reg:s} = {base_val:08x})}}"
+    def __debug_read_operand(self, base_register, register, value):
+        base_value = self.__regs[base_register]
+        taint = "T" if self.__tainter.get_register_taint(register) else "-"
 
-        taint = "T" if tainted == True else "-"
+        params = {
+            "indent"        : " "*10,
+            "register"      : register,
+            "value"         : value,
+            "base_register" : base_register,
+            "base_value"    : base_value,
+            "taint"         : taint
+        }
 
-        msg = fmt.format(
-            indent=" "*10, reg=reg, val=val, base_reg=base_reg,
-            base_val=base_val, taint=taint
-        )
+        fmt = "{indent}r{{ {register:s} = {value:08x} [{taint:s}] " + \
+              "({base_register:s} = {base_value:08x})}}"
 
-        print(msg)
+        print(fmt.format(**params))
 
-    def __debug_write_operand(self, reg, val, base_reg, base_val, tainted):
-        fmt = "{indent}w{{ {reg:s} = {val:08x} [{taint:s}] " + \
-              "({base_reg:s} = {base_val:08x})}}"
+    def __debug_write_operand(self, base_register, register, value):
+        base_value = self.__regs[base_register]
+        taint = "T" if self.__tainter.get_register_taint(register) else "-"
 
-        taint = "T" if tainted else "-"
+        params = {
+            "indent"        : " "*10,
+            "register"      : register,
+            "value"         : value,
+            "base_register" : base_register,
+            "base_value"    : base_value,
+            "taint"         : taint
+        }
 
-        msg = fmt.format(
-            indent=" "*10, reg=reg, val=val, base_reg=base_reg,
-            base_val=base_val, taint=taint
-        )
+        fmt = "{indent}w{{ {register:s} = {value:08x} [{taint:s}] " + \
+              "({base_register:s} = {base_value:08x})}}"
 
-        print(msg)
+        print(fmt.format(**params))
 
     # ======================================================================== #
     # REIL instructions implementation
@@ -804,14 +814,8 @@ class ReilEmulatorTainter(object):
     def set_register_taint(self, register, taint):
         self.__taint_reg[self.__get_base_register(register)] = taint
 
-        if verbose:
-            self.__debug_taint(register)
-
     def clear_register_taint(self, register):
         self.__taint_reg[self.__get_base_register(register)] = False
-
-        if verbose:
-            self.__debug_taint(register)
 
     # Taint auxiliary methods
     # ======================================================================== #
@@ -824,15 +828,6 @@ class ReilEmulatorTainter(object):
             base_name = register
 
         return base_name
-
-    # Taint auxiliary methods
-    # ======================================================================== #
-    def __debug_taint(self, register):
-        base_register = self.__get_base_register(register)
-
-        fmt = "{indent}t{{ {reg:s} ({base_reg:s})}}"
-
-        print(fmt.format(indent=" "*10, reg=register, base_reg=base_register))
 
     # Taint methods
     # ======================================================================== #
