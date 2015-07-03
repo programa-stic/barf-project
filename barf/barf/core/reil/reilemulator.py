@@ -92,7 +92,7 @@ class ReilMemory(object):
         """
         value = 0x0
 
-        for i in xrange(0, size / 8):
+        for i in xrange(0, size):
             value = self._read_byte(address + i) << (i * 8) | value
 
         if verbose:
@@ -115,7 +115,7 @@ class ReilMemory(object):
     def write(self, address, size, value):
         """Write arbitrary size content to memory.
         """
-        for i in xrange(0, size / 8):
+        for i in xrange(0, size):
             self.__write_byte(address + i, (value >> (i * 8)) & 0xff)
 
         if verbose:
@@ -188,7 +188,7 @@ class ReilMemoryEx(ReilMemory):
         for addr in addr_candidates:
             match = True
 
-            for i in xrange(0, size / 8):
+            for i in xrange(0, size):
                 byte_curr = (value >> (i * 8)) & 0xff
                 try:
                     match = self._memory[addr + i] == byte_curr
@@ -212,7 +212,7 @@ class ReilMemoryEx(ReilMemory):
         """
         value = 0x0
 
-        for i in xrange(0, size / 8):
+        for i in xrange(0, size):
             addr = address + i
 
             if addr in self._memory:
@@ -231,7 +231,7 @@ class ReilMemoryEx(ReilMemory):
         """
         value = 0x0
 
-        for i in xrange(0, size / 8):
+        for i in xrange(0, size):
             addr = address + i
 
             if addr in self.__memory_prev:
@@ -260,7 +260,7 @@ class ReilMemoryEx(ReilMemory):
     def write(self, address, size, value):
         """Write arbitrary size content to memory.
         """
-        for i in xrange(0, size / 8):
+        for i in xrange(0, size):
             self.__write_byte(address + i, (value >> (i * 8)) & 0xff)
 
         self.__write_count += 1
@@ -606,7 +606,7 @@ class ReilCpu(object):
         # Memory address.
         op0_val = self.read_operand(instr.operands[0])
         # Data.
-        op2_val = self.read_memory(op0_val, instr.operands[2].size)
+        op2_val = self.read_memory(op0_val, instr.operands[2].size / 8)
 
         self.write_operand(instr.operands[2], op2_val)
 
@@ -623,7 +623,7 @@ class ReilCpu(object):
 
         op0_size = instr.operands[0].size
 
-        self.write_memory(op2_val, op0_size, op0_val)
+        self.write_memory(op2_val, op0_size / 8, op0_val)
 
         return None
 

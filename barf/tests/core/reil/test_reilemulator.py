@@ -46,8 +46,8 @@ class ReilMemoryTests(unittest.TestCase):
         addr = 0x00001000
         write_val = 0xdeadbeef
 
-        memory.write(addr, 32, write_val)
-        read_val = memory.read(addr, 32)
+        memory.write(addr, 32 / 8, write_val)
+        read_val = memory.read(addr, 32 / 8)
 
         self.assertEqual(write_val, read_val)
 
@@ -58,16 +58,16 @@ class ReilMemoryTests(unittest.TestCase):
         addr = 0x00001000
         write_val = 0xdeadbeef
 
-        memory.write(addr, 32, write_val)
-        read_val = memory.read(addr, 32)
+        memory.write(addr, 32 / 8, write_val)
+        read_val = memory.read(addr, 32 / 8)
 
         self.assertEqual(write_val, read_val)
 
         addr = 0x00001001
         write_val = 0x1234
 
-        memory.write(addr, 16, write_val)
-        read_val = memory.read(addr, 16)
+        memory.write(addr, 16 / 8, write_val)
+        read_val = memory.read(addr, 16 / 8)
 
         self.assertEqual(write_val, read_val)
 
@@ -78,8 +78,8 @@ class ReilMemoryTests(unittest.TestCase):
         addr = 0x00001000
         write_val = 0xdeadbeefcafecafe
 
-        memory.write(addr, 64, write_val)
-        read_val = memory.read(addr, 64)
+        memory.write(addr, 64 / 8, write_val)
+        read_val = memory.read(addr, 64 / 8)
 
         self.assertEqual(write_val, read_val)
 
@@ -90,20 +90,20 @@ class ReilMemoryTests(unittest.TestCase):
         addr0 = 0x00001000
         write_val = 0xdeadbeef
 
-        memory.write(addr0, 32, write_val)
-        read_val = memory.read(addr0, 32)
+        memory.write(addr0, 32 / 8, write_val)
+        read_val = memory.read(addr0, 32 / 8)
 
         self.assertEqual(write_val, read_val)
 
         addr1 = 0x00004000
         write_val = 0xdeadbeef
 
-        memory.write(addr1, 32, write_val)
-        read_val = memory.read(addr1, 32)
+        memory.write(addr1, 32 / 8, write_val)
+        read_val = memory.read(addr1, 32 / 8)
 
         self.assertEqual(write_val, read_val)
 
-        addrs = memory.read_inverse(0xdeadbeef, 32)
+        addrs = memory.read_inverse(0xdeadbeef, 32 / 8)
 
         self.assertEqual(addr0, addrs[0])
         self.assertEqual(addr1, addrs[1])
