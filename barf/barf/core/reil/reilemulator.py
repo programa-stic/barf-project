@@ -59,8 +59,8 @@ from barf.utils.utils import twos_complement
 
 logger = logging.getLogger("reilemulator")
 
-verbose = False
-# verbose = True
+DEBUG = False
+# DEBUG = True
 
 REIL_MEMORY_ENDIANNESS_LE = 0x0     # Little Endian
 REIL_MEMORY_ENDIANNESS_BE = 0x1     # Big Endian
@@ -347,7 +347,7 @@ class ReilCpu(object):
         self.__set_default_handlers()
 
     def execute(self, instr):
-        if verbose:
+        if DEBUG:
             print("0x%08x:%02x : %s" % (instr.address >> 8,
                                         instr.address & 0xff,
                                         instr))
@@ -435,14 +435,16 @@ class ReilCpu(object):
     def read_memory(self, address, size):
         value = self.__mem.read(address, size)
 
-        self.__debug_read_memory(address, size, value)
+        if DEBUG:
+            self.__debug_read_memory(address, size, value)
 
         return value
 
     def write_memory(self, address, size, value):
         self.__mem.write(address, size, value)
 
-        self.__debug_write_memory(address, size, value)
+        if DEBUG:
+            self.__debug_write_memory(address, size, value)
 
     # Read/Write auxiliary methods
     # ======================================================================== #
@@ -474,8 +476,7 @@ class ReilCpu(object):
         if register.name in self.__arch.registers_gp_all:
             self.__regs_read.add(register.name)
 
-        # Debug
-        if verbose:
+        if DEBUG:
             self.__debug_read_operand(base_register, register.name, value)
 
         return value
@@ -490,8 +491,7 @@ class ReilCpu(object):
         if register.name in self.__arch.registers_gp_all:
             self.__regs_written.add(register.name)
 
-        # Debug
-        if verbose:
+        if DEBUG:
             self.__debug_write_operand(base_register, register.name, value)
 
     # Debug methods
