@@ -670,6 +670,10 @@ class ReilSequence(object):
         return len(self.__sequence)
 
 
+class ReilContainerInvalidAddressError(Exception):
+    pass
+
+
 class ReilContainer(object):
 
     """Reil instruction container.
@@ -690,7 +694,7 @@ class ReilContainer(object):
         base_addr, index = split_address(address)
 
         if base_addr not in self.__container.keys():
-            raise Exception("Invalid address.")
+            raise ReilContainerInvalidAddressError()
 
         return self.__container[base_addr].get(index)
 

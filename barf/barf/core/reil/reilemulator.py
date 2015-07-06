@@ -51,6 +51,7 @@ import random
 from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
 from barf.core.reil.reil import ReilRegisterOperand
+from barf.core.reil.reil import ReilContainerInvalidAddressError
 from barf.utils.utils import extract_sign_bit
 from barf.utils.utils import extract_value
 from barf.utils.utils import insert_value
@@ -95,10 +96,6 @@ class ReilMemory(object):
         for i in xrange(0, size):
             value = self._read_byte(address + i) << (i * 8) | value
 
-        if verbose:
-            taint = None
-            self._debug_read_memory(address, value, taint)
-
         return value
 
     def _read_byte(self, address):
@@ -118,10 +115,6 @@ class ReilMemory(object):
         for i in xrange(0, size):
             self.__write_byte(address + i, (value >> (i * 8)) & 0xff)
 
-        if verbose:
-            taint = None
-            self._debug_write_memory(address, value, taint)
-
     def __write_byte(self, address, value):
         """Write byte in memory.
         """
@@ -132,22 +125,6 @@ class ReilMemory(object):
     def reset(self):
         # Dictionary that implements the memory itself.
         self._memory = {}
-
-    # Debug methods
-    # ======================================================================== #
-    def _debug_read_memory(self, addr, val, tainted):
-        fmt = "{indent}r{{ m[{addr:08x}] = {val:08x} [{taint:s}]}}"
-        taint = "T" if tainted else "-"
-        msg = fmt.format(indent=" "*10, addr=addr, val=val, taint=taint)
-
-        print(msg)
-
-    def _debug_write_memory(self, addr, val, tainted):
-        fmt = "{indent}w{{ m[{addr:08x}] = {val:08x} [{taint:s}]}}"
-        taint = "T" if tainted else "-"
-        msg = fmt.format(indent=" "*10, addr=addr, val=val, taint=taint)
-
-        print(msg)
 
     # Magic methods
     # ======================================================================== #
@@ -264,10 +241,6 @@ class ReilMemoryEx(ReilMemory):
 
         self.__write_count += 1
 
-        if verbose:
-            taint = None
-            self._debug_write_memory(address, value, taint)
-
     def __write_byte(self, address, value):
         """Write byte in memory.
         """
@@ -282,8 +255,7 @@ class ReilMemoryEx(ReilMemory):
     def reset(self):
         super(ReilMemoryEx, self).reset()
 
-        # Previous state of memory. Requiere for some *special*
-        # functions.
+        # Previous state of memory.
         self.__memory_prev = {}
 
         # Write operations counter.
@@ -461,10 +433,16 @@ class ReilCpu(object):
             raise Exception("Invalid operand type : %s" % str(operand))
 
     def read_memory(self, address, size):
-        return self.__mem.read(address, size)
+        value = self.__mem.read(address, size)
+
+        self.__debug_read_memory(address, size, value)
+
+        return value
 
     def write_memory(self, address, size, value):
         self.__mem.write(address, size, value)
+
+        self.__debug_write_memory(address, size, value)
 
     # Read/Write auxiliary methods
     # ======================================================================== #
@@ -551,6 +529,34 @@ class ReilCpu(object):
 
         fmt = "{indent}w{{ {register:s} = {value:08x} [{taint:s}] " + \
               "({base_register:s} = {base_value:08x})}}"
+
+        print(fmt.format(**params))
+
+    def __debug_read_memory(self, address, size, value):
+        taint = "T" if self.__tainter.get_memory_taint(address, size) else "-"
+
+        params = {
+            "indent"  : " "*10,
+            "address" : address,
+            "value"   : value,
+            "taint"   : taint
+        }
+
+        fmt = "{indent}r{{ m[{address:08x}] = {value:08x} [{taint:s}]}}"
+
+        print(fmt.format(**params))
+
+    def __debug_write_memory(self, address, size, value):
+        taint = "T" if self.__tainter.get_memory_taint(address, size) else "-"
+
+        params = {
+            "indent"  : " "*10,
+            "address" : address,
+            "value"   : value,
+            "taint"   : taint
+        }
+
+        fmt = "{indent}w{{ m[{address:08x}] = {value:08x} [{taint:s}]}}"
 
         print(fmt.format(**params))
 
@@ -913,7 +919,10 @@ class ReilEmulator(object):
         ip = start if start else container[0].address
 
         while ip and ip != end:
-            instr = container.fetch(ip)
+            try:
+                instr = container.fetch(ip)
+            except ReilContainerInvalidAddressError:
+                raise ReilCpuInvalidAddressError()
 
             next_ip = self.__cpu.execute(instr)
 
