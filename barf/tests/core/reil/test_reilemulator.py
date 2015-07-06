@@ -36,6 +36,9 @@ from barf.core.reil import ReilMemoryEx
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilParser
 from barf.core.reil import ReilRegisterOperand
+from barf.core.reil import ReilContainer
+from barf.core.reil import ReilSequence
+
 
 class ReilMemoryTests(unittest.TestCase):
 
@@ -165,13 +168,11 @@ class ReilEmulatorTests(unittest.TestCase):
 
             asm_instrs.append(asm_instr)
 
-        reil_instrs = [self._translator.translate(instr)
-                        for instr in asm_instrs]
+        reil_instrs = self.__translate(asm_instrs)
 
         regs_final, _ = self._emulator.execute(
             reil_instrs,
-            0x08048060 << 8,
-            context=[]
+            start=0x08048060 << 8
         )
 
         self.assertEqual(regs_final["eax"], 0xa)
@@ -268,26 +269,26 @@ class ReilEmulatorTests(unittest.TestCase):
 
         self.__set_address(0xdeadbeef, asm_instrs)
 
-        reil_instrs = [self._translator.translate(asm_instrs[0])]
+        reil_instrs = self.__translate(asm_instrs)
 
         regs_initial = {
             "eax" : 0xffffffff,
         }
 
-        self.assertRaises(ReilCpuInvalidAddressError, self._emulator.execute, reil_instrs, 0xdeadbeef << 8, context=regs_initial)
+        self.assertRaises(ReilCpuInvalidAddressError, self._emulator.execute, reil_instrs, start=0xdeadbeef << 8, registers=regs_initial)
 
     def test_invalid_address_error_2(self):
         asm_instrs = [self._asm_parser.parse("mov eax, 0xdeadbeef")]
 
         self.__set_address(0xdeadbeef, asm_instrs)
 
-        reil_instrs = [self._translator.translate(asm_instrs[0])]
+        reil_instrs = self.__translate(asm_instrs)
 
         regs_initial = {
             "eax" : 0xffffffff,
         }
 
-        self.assertRaises(ReilCpuInvalidAddressError, self._emulator.execute, reil_instrs, 0xdeadbef0 << 8, context=regs_initial)
+        self.assertRaises(ReilCpuInvalidAddressError, self._emulator.execute, reil_instrs, start=0xdeadbef0 << 8, registers=regs_initial)
 
     # Auxiliary methods
     # ======================================================================== #
@@ -297,6 +298,33 @@ class ReilEmulatorTests(unittest.TestCase):
         for asm_instr in asm_instrs:
             asm_instr.address = addr
             addr += 1
+
+    def __translate(self, asm_instrs):
+        instr_container = ReilContainer()
+
+        asm_instr_last = None
+        instr_seq_prev = None
+
+        for asm_instr in asm_instrs:
+            instr_seq = ReilSequence()
+
+            for reil_instr in self._translator.translate(asm_instr):
+                instr_seq.append(reil_instr)
+
+            if instr_seq_prev:
+                instr_seq_prev.next_sequence_address = instr_seq.address
+
+            instr_container.add(instr_seq)
+
+            instr_seq_prev = instr_seq
+
+        if instr_seq_prev:
+            if asm_instr_last:
+                instr_seq_prev.next_sequence_address = (asm_instr_last.address + asm_instr_last.size) << 8
+
+        # instr_container.dump()
+
+        return instr_container
 
 
 class ReilEmulatorTaintTests(unittest.TestCase):
