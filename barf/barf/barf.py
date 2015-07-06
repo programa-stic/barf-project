@@ -283,11 +283,43 @@ class BARF(object):
         # load memory
         if 'memory' in context:
             for addr, val in context['memory'].items():
-                self.ir_emulator.memory.write(addr, 32, val)
+                self.ir_emulator.memory.write(addr, 32 / 8, val)
 
-        instrs = [reil for _, _, reil in self.translate(ea_start, ea_end)]
+        # instrs = [reil for _, _, reil in self.translate(ea_start, ea_end)]
 
-        self.ir_emulator.execute(instrs, start_addr << 8, end_address=end_addr << 8)
+        # self.ir_emulator.execute(instrs, start_addr << 8, end_address=end_addr << 8)
+
+        # Create ReilContainer
+        # ==================================================================== #
+        from core.reil.reil import ReilContainer
+        from core.reil.reil import ReilSequence
+
+        instr_container = ReilContainer()
+
+        asm_instr_last = None
+        instr_seq_prev = None
+
+        for asm_addr, asm_instr, asm_size in self.disassemble(ea_start, ea_end):
+            instr_seq = ReilSequence()
+
+            for reil_instr in self.ir_translator.translate(asm_instr):
+                instr_seq.append(reil_instr)
+
+            if instr_seq_prev:
+                instr_seq_prev.next_sequence_address = instr_seq.address
+
+            instr_container.add(instr_seq)
+
+            instr_seq_prev = instr_seq
+
+        if instr_seq_prev:
+            if asm_instr_last:
+                instr_seq_prev.next_sequence_address = (asm_instr_last.address + asm_instr_last.size) << 8
+        # ==================================================================== #
+
+        instr_container.dump()
+
+        self.ir_emulator.execute(instr_container, start_addr << 8, end=end_addr << 8)
 
         context_out = {}
 
