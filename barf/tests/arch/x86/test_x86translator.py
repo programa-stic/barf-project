@@ -35,7 +35,9 @@ from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86parser import X86Parser
 from barf.arch.x86.x86translator import FULL_TRANSLATION
 from barf.arch.x86.x86translator import X86Translator
+from barf.core.reil import ReilContainer
 from barf.core.reil import ReilEmulator
+from barf.core.reil import ReilSequence
 
 
 @unittest.skipUnless(platform.machine().lower() == 'x86_64',
@@ -50,13 +52,36 @@ class X86TranslationTests(unittest.TestCase):
 
         self.x86_parser = X86Parser(self.arch_mode)
         self.x86_translator = X86Translator(self.arch_mode, self.trans_mode)
-        self.reil_emulator = ReilEmulator(self.arch_info.address_size)
-
-        self.reil_emulator.set_arch_registers(self.arch_info.registers_gp_all)
-        self.reil_emulator.set_arch_registers_size(self.arch_info.registers_size)
-        self.reil_emulator.set_arch_alias_mapper(self.arch_info.alias_mapper)
+        self.reil_emulator = ReilEmulator(self.arch_info)
 
         self.context_filename = "failing_context.data"
+
+    def _translate(self, asm_instrs):
+        instr_container = ReilContainer()
+
+        asm_instr_last = None
+        instr_seq_prev = None
+
+        for asm_instr in asm_instrs:
+            instr_seq = ReilSequence()
+
+            for reil_instr in self.x86_translator.translate(asm_instr):
+                instr_seq.append(reil_instr)
+
+            if instr_seq_prev:
+                instr_seq_prev.next_sequence_address = instr_seq.address
+
+            instr_container.add(instr_seq)
+
+            instr_seq_prev = instr_seq
+
+        if instr_seq_prev:
+            if asm_instr_last:
+                instr_seq_prev.next_sequence_address = (asm_instr_last.address + asm_instr_last.size) << 8
+
+        # instr_container.dump()
+
+        return instr_container
 
     def test_lea(self):
         asm = ["lea eax, [ebx + 0x100]"]
@@ -71,9 +96,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -98,9 +123,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -125,9 +150,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -152,9 +177,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -179,9 +204,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # Undefined flags...
@@ -209,9 +234,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -236,9 +261,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # Undefined flags...
@@ -266,9 +291,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # Undefined flags...
@@ -296,9 +321,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # Undefined flags...
@@ -326,9 +351,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -353,9 +378,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -380,9 +405,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -407,9 +432,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -439,9 +464,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # Undefined flags...
@@ -508,9 +533,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -541,9 +566,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # FIX: Remove this once the sbb translation gets fixed.
@@ -571,9 +596,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -598,9 +623,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -625,9 +650,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -652,9 +677,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -679,9 +704,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -706,9 +731,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -733,9 +758,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -760,9 +785,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -787,9 +812,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -814,9 +839,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -841,9 +866,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -868,9 +893,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -895,9 +920,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -922,9 +947,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -949,9 +974,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -976,9 +1001,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1003,9 +1028,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1030,9 +1055,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1057,9 +1082,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1084,9 +1109,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1111,9 +1136,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1138,9 +1163,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1165,9 +1190,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1192,9 +1217,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1219,9 +1244,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1246,9 +1271,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1273,9 +1298,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1300,9 +1325,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1327,9 +1352,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1354,9 +1379,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1381,9 +1406,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1408,9 +1433,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1435,9 +1460,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1462,9 +1487,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1489,9 +1514,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1516,9 +1541,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1543,9 +1568,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1570,9 +1595,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1597,9 +1622,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1624,9 +1649,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1651,9 +1676,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1678,9 +1703,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1705,9 +1730,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1732,9 +1757,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1759,9 +1784,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1786,9 +1811,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1813,9 +1838,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1840,9 +1865,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1867,9 +1892,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1894,9 +1919,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1921,9 +1946,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1948,9 +1973,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -1975,9 +2000,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2002,9 +2027,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2029,9 +2054,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2056,9 +2081,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2083,9 +2108,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2110,9 +2135,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2137,9 +2162,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2164,9 +2189,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2191,9 +2216,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2218,9 +2243,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2245,9 +2270,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2272,9 +2297,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2299,9 +2324,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2326,9 +2351,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2372,9 +2397,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm_pyasmjit), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2399,9 +2424,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # Undefined flags...
@@ -2434,9 +2459,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # Undefined flags...
@@ -2469,9 +2494,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # Undefined flags...
@@ -2504,9 +2529,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # Undefined flags...
@@ -2540,9 +2565,9 @@ class X86TranslationTests(unittest.TestCase):
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
 
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2568,9 +2593,9 @@ class X86TranslationTests(unittest.TestCase):
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
 
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2596,9 +2621,9 @@ class X86TranslationTests(unittest.TestCase):
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
 
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2624,9 +2649,9 @@ class X86TranslationTests(unittest.TestCase):
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
 
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2652,9 +2677,9 @@ class X86TranslationTests(unittest.TestCase):
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
 
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2680,9 +2705,9 @@ class X86TranslationTests(unittest.TestCase):
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
 
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2707,9 +2732,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # NOTE: OF and CF can be left undefined in some cases. They are
@@ -2739,9 +2764,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # NOTE: OF and CF can be left undefined in some cases. They are
@@ -2774,9 +2799,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # NOTE: OF and CF can be left undefined in some cases. They are
@@ -2809,9 +2834,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # NOTE: OF and CF can be left undefined in some cases. They are
@@ -2841,9 +2866,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         # NOTE: The OF, SF, AF, and PF flags are undefined.
@@ -2874,10 +2899,10 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            end_address=(0xdeadbeef + 0x1) << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            end=(0xdeadbeef + 0x1) << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
@@ -2902,9 +2927,9 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_rv, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
         reil_ctx_out, reil_mem_out = self.reil_emulator.execute(
-            reil_instrs,
-            0xdeadbeef << 8,
-            context=ctx_init
+            self._translate(x86_instrs),
+            start=0xdeadbeef << 8,
+            registers=ctx_init
         )
 
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)

@@ -288,7 +288,7 @@ class GadgetClassifier(object):
             dst_size = self._arch_regs_size[dst_reg]
 
             # Look for memory addresses that contain *dst_val*.
-            for src_addr in mem_fini.read_inverse(dst_val, dst_size):
+            for src_addr in mem_fini.read_inverse(dst_val, dst_size / 8):
 
                 # Look for registers whose values are used as memory
                 # addresses.
@@ -320,7 +320,7 @@ class GadgetClassifier(object):
 
             dst_size = self._arch_regs_size[dst_reg]
 
-            for src_addr in mem_fini.read_inverse(dst_val, dst_size):
+            for src_addr in mem_fini.read_inverse(dst_val, dst_size / 8):
                 src_reg_ir = ReilEmptyOperand()
                 src_off_ir = ReilImmediateOperand(src_addr, self._address_size)
                 dst_reg_ir = ReilRegisterOperand(dst_reg, self._arch_regs_size[dst_reg])
@@ -347,7 +347,7 @@ class GadgetClassifier(object):
 
             src_size = self._arch_regs_size[src_reg]
 
-            for addr in mem_fini.read_inverse(src_val, src_size):
+            for addr in mem_fini.read_inverse(src_val, src_size / 8):
                 for dst_reg, dst_val in regs_init.items():
                     # Make sure the *dst* register was written.
                     if not dst_reg in read_regs:
@@ -376,7 +376,7 @@ class GadgetClassifier(object):
 
             src_size = self._arch_regs_size[src_reg]
 
-            for addr in mem_fini.read_inverse(src_val, src_size):
+            for addr in mem_fini.read_inverse(src_val, src_size / 8):
                 offset = addr & (2**self._address_size - 1)
 
                 src_reg_ir = ReilRegisterOperand(src_reg, self._arch_regs_size[src_reg])
@@ -405,7 +405,7 @@ class GadgetClassifier(object):
                 dst_size = self._arch_regs_size[dst_reg]
 
                 for addr in mem_fini.get_addresses():
-                    success, val = mem_fini.try_read(addr, dst_size)
+                    success, val = mem_fini.try_read(addr, dst_size / 8)
 
                     if success and dst_val == op_fn(regs_init[dst_reg], val) & (2**dst_size - 1):
 
@@ -440,7 +440,7 @@ class GadgetClassifier(object):
                 dst_size = self._arch_regs_size[dst_reg]
 
                 for addr in mem_fini.get_addresses():
-                    success, val = mem_fini.try_read(addr, dst_size)
+                    success, val = mem_fini.try_read(addr, dst_size / 8)
 
                     if success and dst_val == op_fn(regs_init[dst_reg], val) & (2**dst_size - 1):
                         src_reg_ir = ReilEmptyOperand()
@@ -464,8 +464,8 @@ class GadgetClassifier(object):
         for op_name, op_fn in self._binary_ops.items():
             for size in [8, 16, 32, 64]:
                 for addr in mem_fini.get_addresses():
-                    success_read_curr, val_curr = mem_fini.try_read(addr, size)
-                    success_read_prev, val_prev = mem_fini.try_read_prev(addr, size)
+                    success_read_curr, val_curr = mem_fini.try_read(addr, size / 8)
+                    success_read_prev, val_prev = mem_fini.try_read_prev(addr, size / 8)
 
                     if success_read_curr and success_read_prev:
                         for src_reg, src_val in regs_init.items():
@@ -505,8 +505,8 @@ class GadgetClassifier(object):
         for op_name, op_fn in self._binary_ops.items():
             for size in [8, 16, 32, 64]:
                 for addr in mem_fini.get_addresses():
-                    success_read_curr, val_curr = mem_fini.try_read(addr, size)
-                    success_read_prev, val_prev = mem_fini.try_read_prev(addr, size)
+                    success_read_curr, val_curr = mem_fini.try_read(addr, size / 8)
+                    success_read_prev, val_prev = mem_fini.try_read_prev(addr, size / 8)
 
                     if success_read_curr and success_read_prev:
                         for src_reg, src_val in regs_init.items():

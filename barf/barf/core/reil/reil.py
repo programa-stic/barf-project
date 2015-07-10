@@ -53,6 +53,10 @@ Instructions
 # Display operands size in intruction
 show_size = True
 
+# TODO: Create module util and move this function there.
+def split_address(address):
+    return address >> 0x08, address & 0xff
+
 class ReilMnemonic(object):
 
     """Enumeration of IR mnemonics.
@@ -630,3 +634,87 @@ class DualInstruction(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+
+class ReilSequence(object):
+
+    def __init__(self):
+        self.__sequence = []
+        self.__next_seq_address = None
+
+    def append(self, instruction):
+        self.__sequence.append(instruction)
+
+    def get(self, index):
+        return self.__sequence[index]
+
+    def dump(self):
+        for instr in self.__sequence:
+            base_addr, index = split_address(instr.address)
+
+            print("{:08x}:{:02x}\t{}".format(base_addr, index, instr))
+
+    @property
+    def address(self):
+        return self.__sequence[0].address if self.__sequence else None
+
+    @property
+    def next_sequence_address(self):
+        return self.__next_seq_address
+
+    @next_sequence_address.setter
+    def next_sequence_address(self, address):
+        self.__next_seq_address = address
+
+    def __len__(self):
+        return len(self.__sequence)
+
+
+class ReilContainerInvalidAddressError(Exception):
+    pass
+
+
+class ReilContainer(object):
+
+    """Reil instruction container.
+    """
+
+    def __init__(self):
+        self.__container = {}
+
+    def add(self, sequence):
+        base_addr, _ = split_address(sequence.address)
+
+        if base_addr in self.__container.keys():
+            raise Exception("Invalid sequence")
+
+        self.__container[base_addr] = sequence
+
+    def fetch(self, address):
+        base_addr, index = split_address(address)
+
+        if base_addr not in self.__container.keys():
+            raise ReilContainerInvalidAddressError()
+
+        return self.__container[base_addr].get(index)
+
+    def get_next_address(self, address):
+        base_addr, index = split_address(address)
+
+        if base_addr not in self.__container.keys():
+            raise Exception("Invalid address.")
+
+        addr = address
+
+        if index < len(self.__container[base_addr]) - 1:
+            addr += 1
+        else:
+            addr = self.__container[base_addr].next_sequence_address
+
+        return addr
+
+    def dump(self):
+        for base_addr in sorted(self.__container.keys()):
+            self.__container[base_addr].dump()
+
+            print("-" * 80)

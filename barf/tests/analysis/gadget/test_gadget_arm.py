@@ -49,11 +49,8 @@ class ArmGadgetClassifierTests(unittest.TestCase):
         self._arch_info = ArmArchitectureInformation(ARCH_ARM_MODE_32)
         self._smt_solver = SmtSolver()
         self._smt_translator = SmtTranslator(self._smt_solver, self._arch_info.address_size)
-        self._ir_emulator = ReilEmulator(self._arch_info.address_size)
 
-        self._ir_emulator.set_arch_registers(self._arch_info.registers_gp_all)
-        self._ir_emulator.set_arch_registers_size(self._arch_info.registers_size)
-        self._ir_emulator.set_arch_alias_mapper(self._arch_info.alias_mapper)
+        self._ir_emulator = ReilEmulator(self._arch_info)
 
         self._smt_translator.set_arch_alias_mapper(self._arch_info.alias_mapper)
         self._smt_translator.set_arch_registers_size(self._arch_info.registers_size)
