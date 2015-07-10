@@ -31,6 +31,7 @@ from barf.analysis.gadget.gadgetfinder import GadgetFinder
 from barf.analysis.gadget.gadgetverifier import GadgetVerifier
 from barf.arch import ARCH_X86
 from barf.arch import ARCH_X86_MODE_32
+from barf.arch import ARCH_X86_MODE_64
 from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86disassembler import X86Disassembler
 from barf.arch.x86.x86translator import LITE_TRANSLATION
@@ -1488,6 +1489,70 @@ class GadgetVerifierTests(unittest.TestCase):
 
         self.assertTrue(ReilRegisterOperand("edx", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+
+    def print_candidates(self, candidates):
+        print "Candidates :"
+
+        for gadget in candidates:
+            print gadget
+            print "-" * 10
+
+    def print_classified(self, classified):
+        print "Classified :"
+
+        for gadget in classified:
+            print gadget
+            print gadget.type
+            print "-" * 10
+
+
+class GadgetVerifierTests64(unittest.TestCase):
+
+    def setUp(self):
+        self._arch_info = X86ArchitectureInformation(ARCH_X86_MODE_64)
+        self._smt_solver = SmtSolver()
+        self._smt_translator = SmtTranslator(self._smt_solver, self._arch_info.address_size)
+        self._ir_emulator = ReilEmulator(self._arch_info.address_size)
+
+        self._ir_emulator.set_arch_registers(self._arch_info.registers_gp_all)
+        self._ir_emulator.set_arch_registers_size(self._arch_info.registers_size)
+        self._ir_emulator.set_arch_alias_mapper(self._arch_info.alias_mapper)
+
+        self._smt_translator.set_arch_alias_mapper(self._arch_info.alias_mapper)
+        self._smt_translator.set_arch_registers_size(self._arch_info.registers_size)
+
+        self._code_analyzer = CodeAnalyzer(self._smt_solver, self._smt_translator)
+
+        self._g_classifier = GadgetClassifier(self._ir_emulator, self._arch_info)
+        self._g_verifier = GadgetVerifier(self._code_analyzer, self._arch_info)
+
+    def test_store_memory_1(self):
+        # testing : m[dst_reg + offset] <- src_reg
+
+        # mov dword ptr [rax], esi ; ret
+        binary  = "\x89\x30"                # 0x00 : (2) mov [rax], esi
+        binary += "\xC3"                    # 0x02 : (1) ret
+
+        disassembler = X86Disassembler(architecture_mode=ARCH_X86_MODE_64)
+        translator = X86Translator(architecture_mode=ARCH_X86_MODE_64,
+                               translation_mode=LITE_TRANSLATION)
+
+        g_finder = GadgetFinder(disassembler, binary, translator, ARCH_X86, ARCH_X86_MODE_64)
+
+        g_candidates = g_finder.find(0x00000000, 0x00000002)
+        g_classified = self._g_classifier.classify(g_candidates[0])
+
+        # self.print_candidates(g_candidates)
+        # self.print_classified(g_classified)
+
+        verified = self._g_verifier.verify(g_classified[0])
+
+        self.assertEquals(len(g_candidates), 1)
+        self.assertEquals(len(g_classified), 1)
+
+        self.assertEquals(g_classified[0].type, GadgetType.StoreMemory)
+        self.assertEquals(g_classified[0].sources, [ReilRegisterOperand("esi", 32)])
+        self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("rax", 64), ReilImmediateOperand(0x0, 64)])
 
     def print_candidates(self, candidates):
         print "Candidates :"
