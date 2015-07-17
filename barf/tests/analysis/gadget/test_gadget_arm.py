@@ -55,7 +55,7 @@ class ArmGadgetClassifierTests(unittest.TestCase):
         self._smt_translator.set_arch_alias_mapper(self._arch_info.alias_mapper)
         self._smt_translator.set_arch_registers_size(self._arch_info.registers_size)
 
-        self._code_analyzer = CodeAnalyzer(self._smt_solver, self._smt_translator)
+        self._code_analyzer = CodeAnalyzer(self._smt_solver, self._smt_translator, self._arch_info)
 
         self._g_classifier = GadgetClassifier(self._ir_emulator, self._arch_info)
         self._g_verifier = GadgetVerifier(self._code_analyzer, self._arch_info)

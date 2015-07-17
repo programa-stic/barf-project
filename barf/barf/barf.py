@@ -152,7 +152,7 @@ class BARF(object):
         self.bb_builder = BasicBlockBuilder(self.disassembler, self.text_section, self.ir_translator)
 
         ## code analyzer
-        self.code_analyzer = CodeAnalyzer(self.smt_solver, self.smt_translator)
+        self.code_analyzer = CodeAnalyzer(self.smt_solver, self.smt_translator, self.arch_info)
 
         ## gadget
         self.gadget_classifier = GadgetClassifier(self.ir_emulator, self.arch_info)

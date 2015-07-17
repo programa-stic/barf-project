@@ -142,7 +142,7 @@ class CodeAnalyzerTests(unittest.TestCase):
         # bb_graph.save("bb_graph.png")
         # bb_graph.save("bb_graph_ir.png", print_ir=True)
 
-        codeAnalyzer = CodeAnalyzer(self._smt_solver, self._smt_translator)
+        codeAnalyzer = CodeAnalyzer(self._smt_solver, self._smt_translator, self._arch_info)
 
         codeAnalyzer.set_context(GenericContext(registers, flags, memory))
 

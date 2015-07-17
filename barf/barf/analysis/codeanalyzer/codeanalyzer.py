@@ -194,7 +194,7 @@ class CodeAnalyzer(object):
     """Implements code analyzer using a SMT solver.
     """
 
-    def __init__(self, solver, translator):
+    def __init__(self, solver, translator, arch):
 
         # A SMT solver instance
         self._solver = solver
@@ -207,6 +207,8 @@ class CodeAnalyzer(object):
 
         self.read_addrs = []
         self.write_addrs = []
+
+        self._arch_info = arch
 
     def set_context(self, context):
         """Set context for the SMT solver.
@@ -413,7 +415,7 @@ class CodeAnalyzer(object):
     def get_register_expr(self, register_name, mode="post"):
         """Return a smt bit vector that represents a register.
         """
-        reg_info = self._translator._arch_alias_mapper.get(register_name, None)
+        reg_info = self._arch_info.alias_mapper.get(register_name, None)
 
         if reg_info:
             var_base_name, offset = reg_info
@@ -425,13 +427,13 @@ class CodeAnalyzer(object):
             else:
                 raise Exception()
 
-            var_size = self._translator._arch_regs_size[var_base_name]
+            var_size = self._arch_info.registers_size[var_base_name]
 
             ret_val = self._translator._solver.mkBitVec(var_size, var_name)
             ret_val = smtlibv2.EXTRACT(
                 ret_val,
                 offset,
-                self._translator._arch_regs_size[register_name]
+                self._arch_info.registers_size[register_name]
             )
         else:
             if mode == "pre":
@@ -441,7 +443,7 @@ class CodeAnalyzer(object):
             else:
                 raise Exception()
 
-            var_size = self._translator._arch_regs_size[register_name]
+            var_size = self._arch_info.registers_size[register_name]
 
             ret_val = self._solver.mkBitVec(var_size, var_name)
 
