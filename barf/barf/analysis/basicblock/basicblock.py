@@ -349,7 +349,7 @@ class BasicBlockBuilder(object):
         # Memory of the program being analyze.
         self._mem = memory
 
-    def build(self, start_address, end_address):
+    def build(self, start_address, end_address, symbols=None):
         """Return the list of basic blocks.
 
         Linear Sweep Disassembly.
@@ -365,7 +365,7 @@ class BasicBlockBuilder(object):
 
         if verbose:
             print("      Finding candidate BBs...")
-        bbs = self._find_candidate_bbs(start_address, end_address)
+        bbs = self._find_candidate_bbs(start_address, end_address, symbols=symbols)
         if verbose:
             print("        %d" % len(bbs))
 
@@ -392,7 +392,7 @@ class BasicBlockBuilder(object):
 
         if verbose:
             print("      Stripping BBs...")
-        bbs = self._strip_bbs(bbs)
+        # bbs = self._strip_bbs(bbs)
         if verbose:
             print("        %d" % len(bbs))
 
@@ -404,7 +404,10 @@ class BasicBlockBuilder(object):
 
         return bbs
 
-    def _find_candidate_bbs(self, start_address, end_address, mode=BARF_DISASM_MIXED):
+    def _find_candidate_bbs(self, start_address, end_address, mode=BARF_DISASM_MIXED, symbols=None):
+        if not symbols:
+            symbols = {}
+
         bbs = []
 
         addrs_to_process = Queue()
@@ -418,7 +421,9 @@ class BasicBlockBuilder(object):
             # there no standard way to check if an item is in the queue
             # before pushing it in. So, it is necesary to check if the pop
             # address have already been processed.
-            if curr_addr in addrs_processed:
+            if curr_addr in addrs_processed or \
+                (curr_addr in symbols and curr_addr != start_address) or \
+                not (curr_addr >= start_address and curr_addr <= end_address):
                 continue
 
             # print "curr_addr : ", hex(curr_addr)
@@ -441,7 +446,10 @@ class BasicBlockBuilder(object):
 
                 # print "next_addr : ", hex(next_addr)
 
-                if next_addr < end_address and not next_addr in addrs_processed:
+                if  not self._ends_in_direct_jmp(bb) and \
+                    not self._ends_in_return(bb) and \
+                    next_addr < end_address and \
+                    not next_addr in addrs_processed:
                     addrs_to_process.put(next_addr)
 
             # recursive descent mode: add branches to process queue
@@ -451,6 +459,18 @@ class BasicBlockBuilder(object):
                         addrs_to_process.put(addr)
 
         return bbs
+
+    def _ends_in_direct_jmp(self, bb):
+        last_instr = bb.instrs[-1].ir_instrs[-1]
+
+        return last_instr.mnemonic == ReilMnemonic.JCC and \
+            isinstance(last_instr.operands[0], ReilImmediateOperand) and \
+            last_instr.operands[0].immediate == 0x1
+
+    def _ends_in_return(self, bb):
+        last_instr = bb.instrs[-1].ir_instrs[-1]
+
+        return last_instr.mnemonic == ReilMnemonic.RET
 
     def _refine_bbs(self, bbs):
         bbs.sort(key=lambda x : x.address)
@@ -471,10 +491,15 @@ class BasicBlockBuilder(object):
                 if bb1.contains(bb2.address) and bb1 != bb2:
                     # print "split!!", hex(bb2.address)
 
-                    bba = self._divide_bb(bb1, bb2.address)
+                    # bba = self._divide_bb(bb1, bb2.address)
+                    bb_old, bba = self._divide_bb(bb1, bb2.address)
 
                     if len(bba.instrs) > 0 and bba not in bbs_new:
                         bbs_new += [bba]
+
+                    # if len(bb_old.instrs) > 0 and bb_old not in bbs_new:
+                    #     bbs_new += [bb_old]
+                    bb1 = bb_old
 
                     bb_divided = True
 
@@ -517,18 +542,30 @@ class BasicBlockBuilder(object):
 
         return bb
 
+    # def _divide_bb(self, bb, address):
+    #     bb_new = BasicBlock()
+
+    #     for dinstr in bb.instrs:
+    #         if dinstr.address == address:
+    #             break
+
+    #         bb_new.instrs.append(dinstr)
+
+    #     bb_new.direct_branch = address
+
+    #     return bb_new
+
     def _divide_bb(self, bb, address):
-        bb_new = BasicBlock()
+        bb_old = self._disassemble_bb(bb.start_address, address)
+        bb_old.direct_branch = address
 
-        for dinstr in bb.instrs:
-            if dinstr.address == address:
-                break
+        bb_new = self._disassemble_bb(address, bb.end_address)
 
-            bb_new.instrs.append(dinstr)
+        bb_new.direct_branch = bb.direct_branch
+        bb_new.taken_branch = bb.taken_branch
+        bb_new.not_taken_branch = bb.not_taken_branch
 
-        bb_new.direct_branch = address
-
-        return bb_new
+        return bb_new, bb_old
 
     def _disassemble_bb(self, start_address, end_address):
         bb_current = BasicBlock()
@@ -566,7 +603,9 @@ class BasicBlockBuilder(object):
 
             # TODO: Manage 'call' instruction properly (without
             # resorting to 'asm.mnemonic == "call"').
-            if ir[-1].mnemonic == ReilMnemonic.JCC and not asm.mnemonic == "call":
+            if  ir[-1].mnemonic == ReilMnemonic.JCC and \
+                not asm.mnemonic == "call" and \
+                not asm.prefix in ["rep", "repe", "repne", "repz"]:
                 taken, not_taken, direct = self._extract_branches(addr, asm, asm.size, ir)
                 break
 
@@ -621,7 +660,7 @@ class BasicBlockBuilder(object):
             # set branch address according to its type
             if isinstance(cond, ReilImmediateOperand):
                 if cond.immediate == 0x0:
-                    taken_branch = addr + size
+                    # taken_branch = addr + size # It does not make sense to add a taken branch when you know it can't be taken.
                     not_taken_branch = branch_addr
                 if cond.immediate == 0x1 and asm.mnemonic == 'call':
                     direct_branch = addr + size
