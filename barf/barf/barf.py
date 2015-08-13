@@ -223,7 +223,7 @@ class BARF(object):
             # update instruction pointer
             curr_addr += asm.size
 
-    def recover_cfg(self, ea_start=None, ea_end=None):
+    def recover_cfg(self, ea_start=None, ea_end=None, symbols=None):
         """Recover CFG
 
         :param ea_start: start address
@@ -238,7 +238,7 @@ class BARF(object):
         start_addr = ea_start if ea_start else self.binary.ea_start
         end_addr = ea_end if ea_end else self.binary.ea_end
 
-        bb_list = self.bb_builder.build(start_addr, end_addr)
+        bb_list = self.bb_builder.build(start_addr, end_addr, symbols)
         bb_graph = BasicBlockGraph(bb_list)
 
         return bb_graph
