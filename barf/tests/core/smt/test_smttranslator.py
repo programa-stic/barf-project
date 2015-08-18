@@ -367,6 +367,42 @@ class SmtTranslatorTests(unittest.TestCase):
 
         self.assertEqual(is_sat, True)
 
+    def test_sext_1(self):
+        instr = self._parser.parse(["sext [WORD 0xffff, EMPTY, DWORD t1]"])
+
+        self._solver.reset()
+
+        smt_expr = self._translator.translate(instr[0])
+
+        self._solver.add(smt_expr[0])
+
+        # add constrains
+        constraints = [
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0xffffffff,
+        ]
+
+        self._solver.add(constraints[0])
+
+        self.assertEqual(self._solver.check(), 'unsat')
+
+    def test_sext_2(self):
+        instr = self._parser.parse(["sext [WORD 0x7fff, EMPTY, DWORD t1]"])
+
+        self._solver.reset()
+
+        smt_expr = self._translator.translate(instr[0])
+
+        self._solver.add(smt_expr[0])
+
+        # add constrains
+        constraints = [
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0x00007fff,
+        ]
+
+        self._solver.add(constraints[0])
+
+        self.assertEqual(self._solver.check(), 'unsat')
+
 
 def main():
     unittest.main()

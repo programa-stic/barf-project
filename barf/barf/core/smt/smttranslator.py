@@ -686,7 +686,7 @@ class SmtTranslator(object):
         if oprnd1.size == oprnd3.size:
             expr = (op1_var == op3_var)
         elif oprnd1.size < oprnd3.size:
-            expr = (op1_var == smtlibv2.SEXTEND(op1_var, op3_var))
+            expr = (op3_var == smtlibv2.SEXTEND(op1_var, op1_var.size, op3_var.size))
 
             # Make sure that the values that can take dst operand
             # do not exceed the range of the source operand.
@@ -707,3 +707,5 @@ class SmtTranslator(object):
 
         if parent_reg_constrs:
             rv += parent_reg_constrs
+
+        return rv
