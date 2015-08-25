@@ -28,10 +28,32 @@ disassembly framework.
 
 """
 from capstone import *
+from capstone.arm import *
 
 from barf.arch import ARCH_ARM_MODE_32
 from barf.arch.arm.armparser import ArmParser
 from barf.core.disassembler import Disassembler
+
+from barf.arch.arm.armbase import ArmInstruction
+from barf.arch.arm.armbase import *
+
+cc_capstone_barf_mapper = {
+    ARM_CC_EQ : ARM_COND_CODE_EQ,
+    ARM_CC_NE : ARM_COND_CODE_NE,
+    ARM_CC_MI : ARM_COND_CODE_MI,
+    ARM_CC_PL : ARM_COND_CODE_PL,
+    ARM_CC_VS : ARM_COND_CODE_VS,
+    ARM_CC_VC : ARM_COND_CODE_VC,
+    ARM_CC_HI : ARM_COND_CODE_HI,
+    ARM_CC_LS : ARM_COND_CODE_LS,
+    ARM_CC_GE : ARM_COND_CODE_GE,
+    ARM_CC_LT : ARM_COND_CODE_LT,
+    ARM_CC_GT : ARM_COND_CODE_GT,
+    ARM_CC_LE : ARM_COND_CODE_LE,
+    ARM_CC_AL : ARM_COND_CODE_AL,
+    ARM_CC_HS : ARM_COND_CODE_HS,
+    ARM_CC_LO : ARM_COND_CODE_LO,
+}
 
 class ArmDisassembler(Disassembler):
     """ARM Disassembler.
@@ -39,27 +61,115 @@ class ArmDisassembler(Disassembler):
 
     def __init__(self, architecture_mode=ARCH_ARM_MODE_32):
         super(ArmDisassembler, self).__init__()
+        
+        self._architecture_mode = architecture_mode
+        self._arch_info = ArmArchitectureInformation(architecture_mode)
 
         arch_mode_map = {
-            ARCH_ARM_MODE_32 : CS_MODE_ARM,
+            # TODO: ARM vs CS_MODE_THUMB
+            ARCH_ARM_MODE_32 : CS_MODE_THUMB,
         }
 
         self._parser = ArmParser(architecture_mode)
         self._disassembler = Cs(CS_ARCH_ARM, arch_mode_map[architecture_mode])
+        
+        # TODO: DECOUPLE: detail true vs false
+        self._disassembler.detail = True
+
+    def _cs_translate_operand(self, cs_op, cs_insn):
+        
+        if cs_op.type == ARM_OP_REG:
+            name = cs_insn.reg_name(cs_op.value.reg)
+            if name in self._arch_info.registers_size:
+                size = self._arch_info.registers_size[name]
+            else:
+                size = self._arch_info.architecture_size
+            oprnd = ArmRegisterOperand(name, size)
+
+        elif cs_op.type == ARM_OP_IMM:
+            size = self._arch_info.operand_size
+            oprnd = ArmImmediateOperand(cs_op.value.imm, size)
+
+        elif cs_op.type == ARM_OP_MEM:
+            oprnd = None
+            pass
+        else:
+            oprnd = None
+            pass
+            # TODO other operands
+#             raise Exception("Unknown Capstone operand type.")
+        
+        return oprnd
+
+    def _cs_translate_insn(self, cs_insn):
+
+        operands = [self._cs_translate_operand(op, cs_insn) for op in cs_insn.operands]
+        
+        # Special case: register list "{rX - rX}", stored as a series of registers has
+        # to be converted to ArmRegisterListOperand.
+        if "{" in cs_insn.op_str:
+            print "REGLIST"
+            reg_list = []
+            for r in operands:
+                reg_list.append([r])
+    
+            operands = [ArmRegisterListOperand(reg_list, reg_list[0][0].size)]
+            
+        # TODO: Temporary hack to accommodate THUMB short notation:
+        # "add r0, r1" -> "add r0, r0, r1"
+        if len(operands) == 2 and cs_insn.mnemonic == "add":
+            operands = [operands[0],operands[0],operands[1]]
+
+        # TODO: Remove suffixes of the mnemonic (cs_insn.mnemonic[:-2])
+    
+        instr = ArmInstruction(
+            cs_insn.mnemonic + " " + cs_insn.op_str,
+            cs_insn.mnemonic,
+            operands,
+            self._architecture_mode
+        )
+        
+        # print "ORIG INSN: " + instr.orig_instr + "   ADD: " + hex(cs_insn.address)
+    
+        if cs_insn.cc is not ARM_CC_INVALID:
+            instr.condition_code = cc_capstone_barf_mapper[cs_insn.cc]
+    
+        if cs_insn.update_flags:
+            instr.update_flags = True
+    
+        # TODO: LOAD/STORE MODE (it may be necessary to parse the mnemonic).    
+#         if "ldm_stm_addr_mode" in mnemonic:
+#             instr.ldm_stm_addr_mode = ldm_stm_am_mapper[mnemonic["ldm_stm_addr_mode"]]
+    
+        return instr
 
     def disassemble(self, data, address):
         """Disassemble the data into an instruction.
         """
-        asm, size = self._cs_disassemble_one(data, address)
-
-        instr = self._parser.parse(asm) if asm else None
+        # TODO: DECOUPLE: parser vs capstone translation
+        disasm = self._cs_disassemble_one(data, address)
+        
+        instr =  self._cs_translate_insn(disasm)
 
         if instr:
             instr.address = address
-            instr.size = size
-            instr.bytes = data[0:size]
-
+            instr.size = disasm.size
+            instr.bytes = data[0:disasm.size]
+ 
         return instr
+        
+        
+
+#         asm, size = self._cs_disassemble_one(data, address)
+# 
+#         instr = self._parser.parse(asm) if asm else None
+# 
+#         if instr:
+#             instr.address = address
+#             instr.size = size
+#             instr.bytes = data[0:size]
+# 
+#         return instr
 
     def disassemble_all(self, data, address):
         """Disassemble the data into multiple instructions.
@@ -69,18 +179,32 @@ class ArmDisassembler(Disassembler):
     def _cs_disassemble_one(self, data, address):
         """Disassemble the data into an instruction in string form.
         """
-        asm, size = "", 0
-
-        disasm = list(self._disassembler.disasm_lite(data, address))
-
+        # TODO: DECOUPLE: disasm_lite vs disasm
+        disasm = list(self._disassembler.disasm(data, address))
+    
         if len(disasm) > 0:
-            address, size, mnemonic, op_str = disasm[0]
-
-            asm = str(mnemonic + " " + op_str).strip()
+            return disasm[0]
         else:
-            # FIXME: Hack to bypass immediate constants embedded in the
-            # text section that do not conform to any valid instruction.
-            asm = "mov r0, r0" # Preferred ARM no-operation code
-            size = 4
+            cs_arm = Cs(CS_ARCH_ARM, CS_MODE_ARM)
+            disasm = list(cs_arm.disasm(data, address))
+            if len(disasm) > 0:
+                return disasm[0]
+            else:
+                raise Exception("CAPSTONE: Unknown instruction (Addr: {:s}).".format(hex(address)))
+            
 
-        return asm, size
+#         asm, size = "", 0
+# 
+#         disasm = list(self._disassembler.disasm(data, address))
+# 
+#         if len(disasm) > 0:
+#             address, size, mnemonic, op_str = disasm[0]
+# 
+#             asm = str(mnemonic + " " + op_str).strip()
+#         else:
+#             # FIXME: Hack to bypass immediate constants embedded in the
+#             # text section that do not conform to any valid instruction.
+#             asm = "mov r0, r0" # Preferred ARM no-operation code
+#             size = 4
+# 
+#         return asm, size
