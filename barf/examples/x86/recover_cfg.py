@@ -24,6 +24,6 @@ if __name__ == "__main__":
     #
     print("[+] Recovering program CFG...")
 
-    cfg = barf.recover_cfg()
+    cfg = barf.recover_cfg(ea_start=0x40052d, ea_end=0x400560)
 
     cfg.save(filename + "_cfg", print_ir=True)

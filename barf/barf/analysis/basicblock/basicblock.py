@@ -210,8 +210,8 @@ class BasicBlockGraph(object):
 
     def __init__(self, basic_blocks):
 
-        # List of basic blocks.
-        self._basic_blocks = basic_blocks
+        # List of basic blocks sorted by address.
+        self._basic_blocks = sorted(basic_blocks, key=lambda bb: bb.address)
 
         # Basic block accessed by address
         self._bb_by_addr = dict([(bb.address, bb) for bb in basic_blocks])
@@ -338,7 +338,7 @@ class BasicBlockGraph(object):
         lines = []
 
         asm_fmt = "{:#08x} [{:02d}] {}\\l"
-        reil_fmt = "{indent} {}\\l"
+        reil_fmt = " {}\\l"
 
         for dinstr in basic_block:
             lines += [asm_fmt.format(dinstr.address, dinstr.asm_instr.size, dinstr.asm_instr)]
