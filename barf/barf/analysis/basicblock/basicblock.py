@@ -23,6 +23,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import bisect
+import logging
 import networkx
 
 from Queue import Queue
@@ -38,6 +39,9 @@ from barf.core.reil import ReilImmediateOperand
 # CFG recovery mode
 BARF_DISASM_LINEAR = 0       # Linear Sweep
 BARF_DISASM_RECURSIVE = 1    # Recursive Descent
+
+logger = logging.getLogger(__name__)
+
 
 class BasicBlock(object):
 
@@ -215,14 +219,21 @@ class BasicBlockGraph(object):
         # Basic block graph
         self._graph = self._build_graph()
 
+		# List of entry basic blocks
+        self._entry_blocks = [bb.address for bb in basic_blocks
+                                if len(self._graph.in_edges(bb.address)) == 0]
+
+		# List of exit basic blocks
+        self._exit_blocks = [bb.address for bb in basic_blocks
+                                if len(self._graph.out_edges(bb.address)) == 0]
+
     def all_simple_bb_paths(self, start_address, end_address):
         """Return a list of path between start and end address.
         """
         bb_start = self._find_basic_block(start_address)
         bb_end = self._find_basic_block(end_address)
 
-        paths = networkx.all_simple_paths(self._graph, \
-            source=bb_start.address, target=bb_end.address)
+        paths = networkx.all_simple_paths(self._graph, source=bb_start.address, target=bb_end.address)
 
         return (map(lambda addr: self._bb_by_addr[addr], path) for path in paths)
 
@@ -230,73 +241,72 @@ class BasicBlockGraph(object):
         """Save basic block graph into a file.
         """
         node_format = {
-            'shape' : 'Mrecord',
-            'rankdir' : 'LR',
+            'shape'    : 'Mrecord',
+            'rankdir'  : 'LR',
             'fontname' : 'monospace',
-            'fontsize' : '9.0'
+            'fontsize' : '9.0',
         }
 
         edge_format = {
             'fontname' : 'monospace',
-            'fontsize' : '8.0'
+            'fontsize' : '8.0',
         }
 
         edge_colors = {
-            'taken' : 'green',
+            'taken'     : 'green',
             'not-taken' : 'red',
-            'direct' : 'blue'
+            'direct'    : 'blue',
+        }
+
+        html_entities = {
+            "!" : "&#33;",
+            "#" : "&#35;",
+            ":" : "&#58;",
+            "{" : "&#123;",
+            "}" : "&#125;",
         }
 
         try:
-            # for each conneted component
-            for idx, gr in enumerate(networkx.connected_component_subgraphs(self._graph.to_undirected())):
-                graph = Dot(graph_type="digraph", rankdir="TB")
+            dot_graph = Dot(graph_type="digraph", rankdir="TB")
 
-                # add nodes
-                nodes = {}
-                for bb_addr in gr.node.keys():
+            # Add nodes.
+            nodes = {}
+            for bb_addr in self._bb_by_addr:
+                bb_dump = self._dump_bb(self._bb_by_addr[bb_addr], print_ir)
+
+                # html-encode colon character
+                for char, encoding in html_entities.items():
+                    bb_dump = bb_dump.replace(char, encoding)
+
+                label = "{{<f0> {:#08x} | {}}}".format(bb_addr, bb_dump)
+
+                nodes[bb_addr] = Node(bb_addr, label=label, **node_format)
+
+                dot_graph.add_node(nodes[bb_addr])
+
+            # Add edges.
+            for bb_src_addr in self._bb_by_addr:
+                for bb_dst_addr, branch_type in self._bb_by_addr[bb_src_addr].branches:
                     # Skip jmp/jcc to sub routines.
-                    if not bb_addr in self._bb_by_addr:
+                    if not bb_dst_addr in self._bb_by_addr:
                         continue
 
-                    dump = self._dump_bb(self._bb_by_addr[bb_addr], print_ir)
+                    dot_graph.add_edge(
+                        Edge(
+                            nodes[bb_src_addr],
+                            nodes[bb_dst_addr],
+                            color=edge_colors[branch_type],
+                            **edge_format))
 
-                    # html-encode colon character
-                    dump = dump.replace("!", "&#33;")
-                    dump = dump.replace("#", "&#35;")
-                    dump = dump.replace(":", "&#58;")
-                    dump = dump.replace("{", "&#123;")
-                    dump = dump.replace("}", "&#125;")
-
-                    label = "{<f0> 0x%08x | %s}" % (bb_addr, dump)
-
-                    nodes[bb_addr] = Node(bb_addr, label=label, **node_format)
-
-                    graph.add_node(nodes[bb_addr])
-
-                # add edges
-                for bb_src_addr in gr.node.keys():
-                    # Skip jmp/jcc to sub routines.
-                    if not bb_src_addr in self._bb_by_addr:
-                        continue
-
-                    for bb_dst_addr, branch_type in self._bb_by_addr[bb_src_addr].branches:
-                        # Skip jmp/jcc to sub routines.
-                        if not bb_dst_addr in self._bb_by_addr:
-                            continue
-
-                        graph.add_edge(Edge(nodes[bb_src_addr],
-                            nodes[bb_dst_addr], label=branch_type, \
-                            color=edge_colors[branch_type], **edge_format))
-
-                graph.write("%s_%03d.%s" % (filename, idx, format), format=format)
-        except Exception as err:
-            import traceback
-            import sys
-            print("[E] Error loading BARF (%s:%d) : '%s'" %
-                (__name__, sys.exc_traceback.tb_lineno, str(err)))
-            print("")
-            print(traceback.format_exc())
+            # Save graph.
+            dot_graph.write("{}.{}".format(filename, format), format=format)
+        except Exception:
+            logger.error(
+                "Failed to save basic block graph: %s (%s)",
+                filename,
+                format,
+                exc_info=True
+            )
 
     # Auxiliary functions
     # ======================================================================== #
@@ -327,12 +337,15 @@ class BasicBlockGraph(object):
     def _dump_bb(self, basic_block, print_ir=False):
         lines = []
 
-        for instr in basic_block.instrs:
-            lines += ["0x%08x [%02d] " % (instr.address, instr.asm_instr.size) + str(instr.asm_instr) + "\\l"]
+        asm_fmt = "{:#08x} [{:02d}] {}\\l"
+        reil_fmt = "{indent} {}\\l"
+
+        for dinstr in basic_block:
+            lines += [asm_fmt.format(dinstr.address, dinstr.asm_instr.size, dinstr.asm_instr)]
 
             if print_ir:
-                for ir_instr in instr.ir_instrs:
-                    lines += ["              " + str(ir_instr) + "\\l"]
+                for ir_instr in dinstr.ir_instrs:
+                    lines += [reil_fmt.format(ir_instr)]
 
         return "".join(lines)
 
@@ -342,6 +355,16 @@ class BasicBlockGraph(object):
 
     def get_basic_block(self, address):
         return self._bb_by_addr[address]
+
+    @property
+    def exit_basic_blocks(self):
+        for bb_addr in self._exit_blocks:
+            yield self._bb_by_addr[bb_addr]
+
+    @property
+    def entry_basic_blocks(self):
+        for bb_addr in self._entry_blocks:
+            yield self._bb_by_addr[bb_addr]
 
 
 class BasicBlockBuilder(object):
