@@ -110,14 +110,25 @@ class ArmDisassembler(Disassembler):
         if "{" in cs_insn.op_str:
             print "REGLIST"
             reg_list = []
+            op_translated = []
+            if not("push" in cs_insn.mnemonic or "pop" in cs_insn.mnemonic):
+                # First operand is the base (in push/pop, the base register, sp,  is omitted)
+                op_translated.append(operands[0])
+                operands = operands[1:]
+                 
             for r in operands:
                 reg_list.append([r])
     
-            operands = [ArmRegisterListOperand(reg_list, reg_list[0][0].size)]
+            op_translated.append(ArmRegisterListOperand(reg_list, reg_list[0][0].size))
+            
+            operands = op_translated
             
         # TODO: Temporary hack to accommodate THUMB short notation:
         # "add r0, r1" -> "add r0, r0, r1"
-        if len(operands) == 2 and cs_insn.mnemonic == "add":
+        if len(operands) == 2 and (cs_insn.mnemonic == "add" or
+                                   cs_insn.mnemonic == "eor" or
+                                   cs_insn.mnemonic == "orr" or
+                                   cs_insn.mnemonic == "sub"):
             operands = [operands[0],operands[0],operands[1]]
 
         # TODO: Remove suffixes of the mnemonic (cs_insn.mnemonic[:-2])
@@ -129,7 +140,7 @@ class ArmDisassembler(Disassembler):
             self._architecture_mode
         )
         
-        # print "ORIG INSN: " + instr.orig_instr + "   ADD: " + hex(cs_insn.address)
+        print "ORIG INSN: " + instr.orig_instr + "   ADD: " + hex(cs_insn.address)
     
         if cs_insn.cc is not ARM_CC_INVALID:
             instr.condition_code = cc_capstone_barf_mapper[cs_insn.cc]
