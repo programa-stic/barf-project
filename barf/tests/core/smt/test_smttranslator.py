@@ -403,8 +403,8 @@ class SmtTranslatorTests(unittest.TestCase):
 
         self.assertEqual(self._solver.check(), 'unsat')
 
-    def test_bsh_left(self):
-        instr = self._parser.parse(["bsh [DWORD t1, DWORD 32, QWORD t2]"])
+    def test_bsh_left_1(self):
+        instr = self._parser.parse(["bsh [DWORD t1, DWORD 16, QWORD t2]"])
 
         self._solver.reset()
 
@@ -415,7 +415,7 @@ class SmtTranslatorTests(unittest.TestCase):
         # add constrains
         constraints = [
             self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t2")) != 0xffffffff00000000,
+            self._solver.mkBitVec(64, self._translator.get_curr_name("t2")) != 0x0000ffffffff0000,
         ]
 
         self._solver.add(constraints[0])
@@ -423,7 +423,47 @@ class SmtTranslatorTests(unittest.TestCase):
 
         self.assertEqual(self._solver.check(), 'unsat')
 
-    def test_bsh_right(self):
+    def test_bsh_left_2(self):
+        instr = self._parser.parse(["bsh [DWORD t1, DWORD 16, DWORD t2]"])
+
+        self._solver.reset()
+
+        smt_expr = self._translator.translate(instr[0])
+
+        self._solver.add(smt_expr[0])
+
+        # add constrains
+        constraints = [
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t2")) != 0xffff0000,
+        ]
+
+        self._solver.add(constraints[0])
+        self._solver.add(constraints[1])
+
+        self.assertEqual(self._solver.check(), 'unsat')
+
+    def test_bsh_left_3(self):
+        instr = self._parser.parse(["bsh [DWORD t1, DWORD 16, WORD t2]"])
+
+        self._solver.reset()
+
+        smt_expr = self._translator.translate(instr[0])
+
+        self._solver.add(smt_expr[0])
+
+        # add constrains
+        constraints = [
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
+            self._solver.mkBitVec(16, self._translator.get_curr_name("t2")) != 0x0000,
+        ]
+
+        self._solver.add(constraints[0])
+        self._solver.add(constraints[1])
+
+        self.assertEqual(self._solver.check(), 'unsat')
+
+    def test_bsh_right_1(self):
         instr = self._parser.parse(["bsh [DWORD t1, DWORD -16, QWORD t2]"])
 
         self._solver.reset()
@@ -435,13 +475,54 @@ class SmtTranslatorTests(unittest.TestCase):
         # add constrains
         constraints = [
             self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t2")) != 0x000000000000ffff,
+            self._solver.mkBitVec(64, self._translator.get_curr_name("t2")) != 0x000000000000ffff,
         ]
 
         self._solver.add(constraints[0])
         self._solver.add(constraints[1])
 
         self.assertEqual(self._solver.check(), 'unsat')
+
+    def test_bsh_right_2(self):
+        instr = self._parser.parse(["bsh [DWORD t1, DWORD -16, DWORD t2]"])
+
+        self._solver.reset()
+
+        smt_expr = self._translator.translate(instr[0])
+
+        self._solver.add(smt_expr[0])
+
+        # add constrains
+        constraints = [
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t2")) != 0x0000ffff,
+        ]
+
+        self._solver.add(constraints[0])
+        self._solver.add(constraints[1])
+
+        self.assertEqual(self._solver.check(), 'unsat')
+
+    def test_bsh_right_3(self):
+        instr = self._parser.parse(["bsh [DWORD t1, DWORD -16, WORD t2]"])
+
+        self._solver.reset()
+
+        smt_expr = self._translator.translate(instr[0])
+
+        self._solver.add(smt_expr[0])
+
+        # add constrains
+        constraints = [
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
+            self._solver.mkBitVec(16, self._translator.get_curr_name("t2")) != 0xffff,
+        ]
+
+        self._solver.add(constraints[0])
+        self._solver.add(constraints[1])
+
+        self.assertEqual(self._solver.check(), 'unsat')
+
 
 def main():
     unittest.main()
