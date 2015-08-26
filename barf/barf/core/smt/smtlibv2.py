@@ -25,24 +25,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from subprocess import PIPE, Popen
-import logging
-import copy
-import weakref
 from functools import wraps
-
+from subprocess import PIPE, Popen
+import copy
 import logging
+import weakref
+
 logger = logging.getLogger("smtlibv2")
 
-import barf
-import os
-
-# logging.basicConfig( filename = barf.__path__[0] + os.sep + "log/smtlibv2.log",
-#     # filename = "system.log",
-# #                     filename = "/dev/stdout",
-#                     format = "%(asctime)s: %(name)s:%(levelname)s: %(message)s",
-# #                    level = logging.INFO)
-#                     level = logging.DEBUG)
 
 def goaux_bv(old_method):
     @wraps(old_method)
@@ -307,13 +297,7 @@ class BitVec(Symbol):
         return Bool('bvsle', self, self.cast(other), solver=self.solver)
 
     def __eq__(self, other):
-        # print "__eq__"
-
-        other_cast = self.cast(other)
-
-        # print "other cast"
-
-        return Bool('=', self, other_cast, solver=self.solver)
+        return Bool('=', self, self.cast(other), solver=self.solver)
 
     @goaux_bool
     def __ne__(self, other):
@@ -396,7 +380,6 @@ class Bool(Symbol):
     def __xor__(self, other):
         return Bool('xor', self, self.cast(other), solver=self.solver)
 
-
     def __nonzero__(self):
         raise NotImplemented()
 
@@ -443,9 +426,6 @@ class Array_(Symbol):
         elif type(val) is str:
             assert len(val) == 1 and self.size==8
             return BitVec(self.size, '#x%02x'%ord(val), solver=self.solver)
-
-        # print self.size
-        # print val.size
         assert type(val) == BitVec and val.size == self.size
         return val
 
@@ -469,13 +449,7 @@ class Array_(Symbol):
         # return BitVec(32, 'select', self, self.cast_key(key), solver=self.solver)
 
     def store(self, key, value):
-        # print "NAME : %s" % self.value
-
         key_cast = self.cast_key(key)
-
-        # print "key : %s" % key
-        # print "key_cast : %s" % key_cast
-
         return Array_(self.size, '(store %s %s %s)'%(self, key_cast, self.cast_value(value)), solver=self.solver)
 
     def __eq__(self, other):
@@ -483,15 +457,8 @@ class Array_(Symbol):
         return Bool('=', self, other, solver=self.solver)
 
     def __neq__(self, other):
-        # print "Array_"
-
         assert isinstance(other, Array_) and other.size == self.size
-
-        rv = Bool('not', self.__eq__(other), solver=self.solver)
-
-        # print(str(rv))
-
-        return rv
+        return Bool('not', self.__eq__(other), solver=self.solver)
 
 class Array(object):
     def __init__(self, size, name, *children, **kwargs):
@@ -521,8 +488,6 @@ class Array(object):
         return self.cache[key]
 
     def __setitem__(self, key, value):
-        # print key, value
-
         new_arr = self.array.store(key,value)
         #if False and self.count >= 0 and self.array.solver is not None:
         #    aux = self.array.solver.mkArray(self.array.size).array
@@ -536,15 +501,8 @@ class Array(object):
         return Bool('=', self.array, other.array, solver=self.array.solver)
 
     def __neq__(self, other):
-        # print "Array not"
-
         assert isinstance(other.array, Array_) and other.array.size == self.array.size
-
-        rv = Bool('not', self.__eq__(other), solver=self.array.solver)
-
-        # print str(rv)
-
-        return rv
+        return Bool('not', self.__eq__(other), solver=self.array.solver)
 
 #solver
 class Z3Solver(object):
@@ -564,11 +522,9 @@ class Z3Solver(object):
         self._declarations = {} #weakref.WeakValueDictionary()
         self._constraints = set()
         self.input_symbols = list()
-        self._proc = Popen('z3 -T:120 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)        #'stp --SMTLIB2'
-        # self._proc = Popen('z3 -t:120 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)        #'stp --SMTLIB2'
-        #self._proc = Popen('stp --SMTLIB2', shell=True, stdin=PIPE, stdout=PIPE)        #'stp --SMTLIB2'
+        self._proc = Popen('z3 -t:120 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)
 
-        #fix for z3 declaration scopes
+        # Fix z3 declaration scopes
         self._send("(set-option :global-decls false)")
         self._send("(set-logic QF_AUFBV)")
 
@@ -589,8 +545,7 @@ class Z3Solver(object):
         self._constraints = state['constraints']
         self._stack = state['stack']
         self.input_symbols = state['input_symbols']
-        self._proc = Popen('z3 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)        #'stp --SMTLIB2'
-        #self._proc = Popen('stp --SMTLIB2', shell=True, stdin=PIPE, stdout=PIPE)        #'stp --SMTLIB2'
+        self._proc = Popen('z3 -t:120 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)
 
     def reset(self, full=False):
         self._send("(reset)")
@@ -607,10 +562,9 @@ class Z3Solver(object):
             self._declarations = {}
             self._constraints = set()
             self.input_symbols = list()
-            self._proc = Popen('z3 -t:120 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)        #'stp --SMTLIB2'
-            #self._proc = Popen('stp --SMTLIB2', shell=True, stdin=PIPE, stdout=PIPE)        #'stp --SMTLIB2'
+            self._proc = Popen('z3 -t:120 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)
 
-            #fix for z3 declaration scopes
+            # Fix z3 declaration scopes
             self._send("(set-option :global-decls false)")
             self._send("(set-logic QF_AUFBV)")
 
@@ -666,7 +620,6 @@ class Z3Solver(object):
         for a in self.constraints:
             buf += '%s\n'%a
         return buf
-
 
     #get-all-values min max minmax
     def getallvalues(self, x, maxcnt = 30):
@@ -839,11 +792,6 @@ class Z3Solver(object):
     ## declarations
     def mkBitVec(self, size, name = 'V', is_input=False):
         ''' Creates a symbol in the constrains store and names it name'''
-
-        # print "<<mkBitVec"
-        # print size
-        # print name
-
         assert size in [1,8,16,32,40,64,72,128,256]
         if name in self._declarations:
             # name = '%s_%d'%(name, self._get_sid())
@@ -853,12 +801,8 @@ class Z3Solver(object):
         self._declarations[name] = bv
         self._send(bv.declaration)
 
-        # print bv.declaration
-
         if is_input:
             self.input_symbols.append((bv,))
-
-        # print ">>mkBitVec"
 
         return bv
 
@@ -941,16 +885,10 @@ class CVC4Solver(object):
         self._declarations = {} #weakref.WeakValueDictionary()
         self._constraints = set()
         self.input_symbols = list()
+        self._proc = Popen('cvc4 --incremental --lang=smt2', shell=True, stdin=PIPE, stdout=PIPE)
 
-        self._proc = Popen('cvc4 --incremental --lang=smt2', shell=True, stdin=PIPE, stdout=PIPE)        #'stp --SMTLIB2'
-
-        # self._proc = Popen('z3 -t:120 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)        #'stp --SMTLIB2'
-        #self._proc = Popen('stp --SMTLIB2', shell=True, stdin=PIPE, stdout=PIPE)        #'stp --SMTLIB2'
-
-        #fix for z3 declaration scopes
-
+        # Fix CVC4 declaration scopes
         self._send("(set-logic QF_AUFBV)")
-
         self._send("(set-option :produce-models true)")
 
     #marshaling/pickle
@@ -970,18 +908,16 @@ class CVC4Solver(object):
         self._constraints = state['constraints']
         self._stack = state['stack']
         self.input_symbols = state['input_symbols']
-        #self._proc = Popen('z3 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)        #'stp --SMTLIB2'
-        #self._proc = Popen('stp --SMTLIB2', shell=True, stdin=PIPE, stdout=PIPE)        #'stp --SMTLIB2'
-        self._proc = Popen('cvc4 --incremental --lang=smt2', shell=True, stdin=PIPE, stdout=PIPE)        #'stp --SMTLIB2'
+        self._proc = Popen('cvc4 --incremental --lang=smt2', shell=True, stdin=PIPE, stdout=PIPE)
+
+        # Fix CVC4 declaration scopes
+        self._send("(set-logic QF_AUFBV)")
+        self._send("(set-option :produce-models true)")
 
     def reset(self, full=False):
         self._proc.kill()
         self._proc.wait()
-        self._proc = None
-
-        self._proc = Popen('cvc4 --incremental --lang=smt2', shell=True, stdin=PIPE, stdout=PIPE)        #'stp --SMTLIB2'
-        # self._proc = Popen('z3 -t:120 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)        # 'stp --SMTLIB2'
-        # self._proc = Popen('stp --SMTLIB2', shell=True, stdin=PIPE, stdout=PIPE)              # 'stp --SMTLIB2'
+        self._proc = Popen('cvc4 --incremental --lang=smt2', shell=True, stdin=PIPE, stdout=PIPE)
 
         if full:
             self._status = 'unknown'
@@ -991,9 +927,7 @@ class CVC4Solver(object):
             self._constraints = set()
             self.input_symbols = list()
 
-        #fix for z3 declaration scopes
-        # self._send("(set-option :global-decls false)")
-
+        # Fix CVC4 declaration scopes
         self._send("(set-logic QF_AUFBV)")
         self._send("(set-option :produce-models true)")
 
@@ -1183,27 +1117,13 @@ class CVC4Solver(object):
         self._send('(get-value (%s))'%val)
         ret = self._recv()
         assert ret.startswith('((') and ret.endswith('))')
-        # return int(ret.split(' ')[-1][2:-2],16)
-
-        # print "ret 1: ", ret
-
         ret = ret[2:-2]
         var_name, ret = ret[:ret.rfind('(')], ret[ret.rfind('('):]
-
-        # var_name, ret = ret[2:-2].split(' ', 1)
-
-        # print "ret 2: ", ret
-
         assert ret.startswith('(') and ret.endswith(')')
-
         index = ret.rfind('(')
-
         var_value, var_size = ret[index+3:-1].split(' ', 1)
-
         assert var_value.startswith('bv')
-
         value = int(var_value[2:])
-
         return value
 
     def getvaluebyname(self, name):
@@ -1254,11 +1174,6 @@ class CVC4Solver(object):
     ## declarations
     def mkBitVec(self, size, name = 'V', is_input=False):
         ''' Creates a symbol in the constrains store and names it name'''
-
-        # print "<<mkBitVec"
-        # print size
-        # print name
-
         assert size in [1,8,16,32,40,64,72,128,256]
         if name in self._declarations:
             # name = '%s_%d'%(name, self._get_sid())
@@ -1268,12 +1183,8 @@ class CVC4Solver(object):
         self._declarations[name] = bv
         self._send(bv.declaration)
 
-        # print bv.declaration
-
         if is_input:
             self.input_symbols.append((bv,))
-
-        # print ">>mkBitVec"
 
         return bv
 
