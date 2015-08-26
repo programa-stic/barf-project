@@ -22,11 +22,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import logging
+
 import barf.core.smt.smtlibv2 as smtlibv2
 
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
 from barf.core.reil import ReilImmediateOperand
+
+logger = logging.getLogger(__name__)
+
 
 class GenericRegister(object):
 
@@ -273,18 +278,16 @@ class CodeAnalyzer(object):
         """
         self._solver.reset()
 
-        _memory_access = []
-
         start_instr_found = False
+        sat = False
 
         # Traverse basic blocks, translate its instructions to SMT
         # expressions and add them as assertions.
         for bb_curr, bb_next in zip(path[:-1], path[1:]):
-            if verbose:
-                print("\n[+] BB @ 0x%08x :" % bb_curr.address)
+            logger.info("BB @ {:#x}".format(bb_curr.address))
 
             # For each dual instruction...
-            for dinstr in bb_curr.instrs:
+            for dinstr in bb_curr:
                 # If the start instruction have not been found, keep
                 # looking...
                 if not start_instr_found:
@@ -293,33 +296,20 @@ class CodeAnalyzer(object):
                     else:
                         continue
 
-                if verbose:
-                    print("    0x%08x : %-30s" % (dinstr.address, dinstr.asm_instr))
+                logger.info("{:#x} {}".format(dinstr.address, dinstr.asm_instr))
 
                 # For each REIL instruction...
-                for instr in dinstr.ir_instrs:
-                    # Keep track of memory addresses access for STORE.
-                    if instr.mnemonic == ReilMnemonic.STM:
-                        if isinstance(instr.operands[2], ReilRegisterOperand):
-                            smt_mem_addr = self._solver.mkBitVec(32, self._translator.get_curr_name(instr.operands[2].name))
-                        else:
-                            smt_mem_addr = smtlibv2.BitVec(32, "#x%08x" % instr.operands[2].immediate)
+                for reil_instr in dinstr.ir_instrs:
+                    logger.info("{:#x} {:02d} {}".format(reil_instr.address >> 0x8, reil_instr.address & 0xff, reil_instr))
 
-                        _memory_access.append(smt_mem_addr)
-
-                    # Keep track of memory addresses access for LOAD.
-                    if instr.mnemonic == ReilMnemonic.LDM:
-                        if isinstance(instr.operands[0], ReilRegisterOperand):
-                            smt_mem_addr = self._solver.mkBitVec(32, self._translator.get_curr_name(instr.operands[0].name))
-                        else:
-                            smt_mem_addr = smtlibv2.BitVec(32, "#x%08x" % instr.operands[0].immediate)
-
-                        _memory_access.append(smt_mem_addr)
-
-                    if instr.mnemonic == ReilMnemonic.JCC:
+                    if reil_instr.mnemonic == ReilMnemonic.JCC:
                         # Check that the JCC is the last instruction of
                         # the basic block (skip CALL instructions.)
                         if dinstr.address + dinstr.asm_instr.size - 1 != bb_curr.end_address:
+                            logger.error("Unexpected JCC instruction: {:#x} {} ({})".format(dinstr.address, dinstr.asm_instr, reil_instr))
+
+                            # raise Exception()
+
                             continue
 
                         # Make sure branch target address from current
@@ -328,57 +318,39 @@ class CodeAnalyzer(object):
                             bb_curr.not_taken_branch == bb_next.address or
                             bb_curr.direct_branch == bb_next.address)
 
-                        # Set jump condition accordingly.
+                        # Set branch condition accordingly.
                         if bb_curr.taken_branch == bb_next.address:
-                            branch_cond_goal = 0x1
+                            branch_var_goal = 0x1
                         elif bb_curr.not_taken_branch == bb_next.address:
-                            branch_cond_goal = 0x0
+                            branch_var_goal = 0x0
                         else:
                             continue
 
                         # Add branch condition goal contraint.
-                        branch_cond_curr = instr.operands[0]
+                        branch_var = self.get_operand_var(reil_instr.operands[0])
 
-                        if isinstance(branch_cond_curr, ReilRegisterOperand):
-                            branch_cond_smt = self._solver.mkBitVec(32, self._translator.get_curr_name(branch_cond_curr.name))
-                        else:
-                            branch_cond_smt = smtlibv2.BitVec(32, "#x%08x" % branch_cond_curr.immediate)
+                        self.add_constraint(branch_var == branch_var_goal)
 
-                        goal = branch_cond_smt == branch_cond_goal
-
-                        # Add jump condition constraint to the SMT s
-                        # solver.
-                        self._solver.add(goal)
-
-                        if verbose:
-                            print("                   %-25s" % (instr))
-                            print("")
-                            print("[+] BB take jump contraint : %s" % goal)
-
-                        # The jump was the last instruction within the
+                        # The JCC instruction was the last within the
                         # current basic block. End this iteration and
                         # start next one.
                         break
 
-                    # Translate REIL instruction to SMT expression.
-                    trans = self._translator.translate(instr)
+                    # Translate and add SMT expressions to the solver.
+                    for smt_expr in self._translator.translate(reil_instr):
+                        logger.info("{}".format(smt_expr))
 
-                    # Add SMT expression to solver.
-                    # if trans is not None:
-                    for smt_expr in trans:
                         self._solver.add(smt_expr)
 
-                    if verbose:
-                        #print("                   %-35s > %-35s" % (instr, trans))
-                        print("                   %-35s" % (instr))
+            sat = self._solver.check() == 'sat'
 
-            if verbose:
-                print("\n" + "-" * 80 + "\n")
+            logger.info("BB @ {:#x} sat? {}".format(bb_curr.address, sat))
 
-        # Check satisfiability.
-        is_sat = self._solver.check() == 'sat'
+            if not sat:
+                break
 
-        return is_sat
+        # Return satisfiability.
+        return sat
 
     def reset(self, full=False):
         """Reset current state of the analyzer.
