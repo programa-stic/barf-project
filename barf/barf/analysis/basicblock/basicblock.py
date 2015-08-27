@@ -178,13 +178,18 @@ class BasicBlock(object):
         return len(self._instrs) == 0
 
     def __str__(self):
-        lines = ["Basic Block @ 0x%08x" % (self.address if self.address else 0)]
+        lines = ["Basic Block @ {:#x}".format(self.address if self.address else 0)]
 
-        for instr in self._instrs:
-            lines += ["    %s ; %s" % (str(instr.ir_instrs[0]).ljust(25), str(instr.asm_instr))]
+        asm_fmt = "{:#x}    {}"
+        reil_fmt = "{:#x}:{:02d} {}"
 
-            for ir_instr in instr.ir_instrs[1:]:
-                lines += ["    %s" % str(ir_instr)]
+        for dinstr in self._instrs:
+            asm_instr = dinstr.asm_instr
+
+            lines += [asm_fmt.format(asm_instr.address, asm_instr)]
+
+            for reil_instr in dinstr.ir_instrs:
+                lines += [reil_fmt.format(reil_instr.address >> 0x8, reil_instr.address & 0xff, reil_instr)]
 
         return "\n".join(lines)
 
@@ -201,6 +206,23 @@ class BasicBlock(object):
 
     def __len__(self):
         return len(self._instrs)
+
+    def __getstate__(self):
+        state = {}
+        state['_instrs'] = self._instrs
+        state['_address'] = self._address
+        state['_taken_branch'] = self._taken_branch
+        state['_not_taken_branch'] = self._not_taken_branch
+        state['_direct_branch'] = self._direct_branch
+
+        return state
+
+    def __setstate__(self, state):
+        self._instrs = state['_instrs']
+        self._address = state['_address']
+        self._taken_branch = state['_taken_branch']
+        self._not_taken_branch = state['_not_taken_branch']
+        self._direct_branch = state['_direct_branch']
 
 
 class BasicBlockGraph(object):
@@ -365,6 +387,33 @@ class BasicBlockGraph(object):
     def entry_basic_blocks(self):
         for bb_addr in self._entry_blocks:
             yield self._bb_by_addr[bb_addr]
+
+    def __getstate__(self):
+        state = {}
+
+        state['_basic_blocks'] = self._basic_blocks
+
+        return state
+
+    def __setstate__(self, state):
+        basic_blocks = state['_basic_blocks']
+
+        # List of basic blocks sorted by address.
+        self._basic_blocks = sorted(basic_blocks, key=lambda bb: bb.address)
+
+        # Basic block accessed by address
+        self._bb_by_addr = dict([(bb.address, bb) for bb in basic_blocks])
+
+        # Basic block graph
+        self._graph = self._build_graph()
+
+        # List of entry basic blocks
+        self._entry_blocks = [bb.address for bb in basic_blocks
+                                if len(self._graph.in_edges(bb.address)) == 0]
+
+        # List of exit basic blocks
+        self._exit_blocks = [bb.address for bb in basic_blocks
+                                if len(self._graph.out_edges(bb.address)) == 0]
 
 
 class BasicBlockBuilder(object):

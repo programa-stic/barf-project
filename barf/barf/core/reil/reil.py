@@ -334,6 +334,21 @@ class ReilInstruction(object):
     def __hash__(self):
         return hash(str(self))
 
+    def __getstate__(self):
+        state = {}
+        state['_mnemonic'] = self._mnemonic
+        state['_operands'] = self._operands
+        state['_comment'] = self._comment
+        state['_address'] = self._address
+
+        return state
+
+    def __setstate__(self, state):
+        self._mnemonic = state['_mnemonic']
+        self._operands = state['_operands']
+        self._comment = state['_comment']
+        self._address = state['_address']
+
 
 class ReilOperand(object):
 
@@ -345,7 +360,6 @@ class ReilOperand(object):
     ]
 
     def __init__(self, size):
-
         # Size of the operand, in bits.
         self._size = size
 
@@ -367,6 +381,15 @@ class ReilOperand(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __getstate__(self):
+        state = {}
+        state['_size'] = self._size
+
+        return state
+
+    def __setstate__(self, state):
+        self._size = state['_size']
 
 
 class ReilImmediateOperand(ReilOperand):
@@ -407,6 +430,18 @@ class ReilImmediateOperand(ReilOperand):
                 self._size == other._size and \
                 self._immediate == other._immediate
 
+    def __getstate__(self):
+        state = super(ReilImmediateOperand, self).__getstate__()
+
+        state['_immediate'] = self._immediate
+
+        return state
+
+    def __setstate__(self, state):
+        super(ReilImmediateOperand, self).__setstate__(state)
+
+        self._immediate = state['_immediate']
+
 
 class ReilRegisterOperand(ReilOperand):
 
@@ -436,6 +471,18 @@ class ReilRegisterOperand(ReilOperand):
         return  type(other) is type(self) and \
                 self._size == other._size and \
                 self._name == other._name
+
+    def __getstate__(self):
+        state = super(ReilRegisterOperand, self).__getstate__()
+
+        state['_name'] = self._name
+
+        return state
+
+    def __setstate__(self, state):
+        super(ReilRegisterOperand, self).__setstate__(state)
+
+        self._name = state['_name']
 
 
 class ReilEmptyOperand(ReilRegisterOperand):
@@ -634,6 +681,19 @@ class DualInstruction(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __getstate__(self):
+        state = {}
+        state['_address'] = self._address
+        state['_asm_instr'] = self._asm_instr
+        state['_ir_instrs'] = self._ir_instrs
+
+        return state
+
+    def __setstate__(self, state):
+        self._address = state['_address']
+        self._asm_instr = state['_asm_instr']
+        self._ir_instrs = state['_ir_instrs']
 
 
 class ReilSequence(object):

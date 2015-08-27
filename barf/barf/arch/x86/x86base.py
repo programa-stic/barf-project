@@ -487,6 +487,27 @@ class X86Instruction(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __getstate__(self):
+        state = {}
+        state['_prefix'] = self._prefix
+        state['_mnemonic'] = self._mnemonic
+        state['_operands'] = self._operands
+        state['_bytes'] = self._bytes
+        state['_size'] = self._size
+        state['_address'] = self._address
+        state['_arch_mode'] = self._arch_mode
+
+        return state
+
+    def __setstate__(self, state):
+        self._prefix = state['_prefix']
+        self._mnemonic = state['_mnemonic']
+        self._operands = state['_operands']
+        self._bytes = state['_bytes']
+        self._size = state['_size']
+        self._address = state['_address']
+        self._arch_mode = state['_arch_mode']
+
 
 class X86Operand(object):
     """Representation of x86 operand."""
@@ -520,13 +541,23 @@ class X86Operand(object):
         """Set operand size."""
         self._size = value
 
+    def __getstate__(self):
+        state = {}
+        state['_modifier'] = self._modifier
+        state['_size'] = self._size
+
+        return state
+
+    def __setstate__(self, state):
+        self._modifier = state['_modifier']
+        self._size = state['_size']
+
 
 class X86ImmediateOperand(X86Operand):
     """Representation of x86 immediate operand."""
 
     __slots__ = [
         '_immediate',
-        '_size'
     ]
 
     def __init__(self, immediate, size=None):
@@ -562,13 +593,24 @@ class X86ImmediateOperand(X86Operand):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __getstate__(self):
+        state = super(X86ImmediateOperand, self).__getstate__()
+
+        state['_immediate'] = self._immediate
+
+        return state
+
+    def __setstate__(self, state):
+        super(X86ImmediateOperand, self).__setstate__(state)
+
+        self._immediate = state['_immediate']
+
 
 class X86RegisterOperand(X86Operand):
     """Representation of x86 register operand."""
 
     __slots__ = [
         '_name',
-        '_size',
     ]
 
     def __init__(self, name, size=None):
@@ -601,6 +643,18 @@ class X86RegisterOperand(X86Operand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __getstate__(self):
+        state = super(X86RegisterOperand, self).__getstate__()
+
+        state['_name'] = self._name
+
+        return state
+
+    def __setstate__(self, state):
+        super(X86RegisterOperand, self).__setstate__(state)
+
+        self._name = state['_name']
 
 
 class X86MemoryOperand(X86Operand):
@@ -695,3 +749,25 @@ class X86MemoryOperand(X86Operand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __getstate__(self):
+        state = super(X86MemoryOperand, self).__getstate__()
+
+        state['_segment'] = self._segment
+        state['_base'] = self._base
+        state['_index'] = self._index
+        state['_index'] = self._index
+        state['_scale'] = self._scale
+        state['_displacement'] = self._displacement
+
+        return state
+
+    def __setstate__(self, state):
+        super(X86MemoryOperand, self).__setstate__(state)
+
+        self._segment = state['_segment']
+        self._base = state['_base']
+        self._index = state['_index']
+        self._index = state['_index']
+        self._scale = state['_scale']
+        self._displacement = state['_displacement']
