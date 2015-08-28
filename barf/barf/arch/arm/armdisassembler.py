@@ -1,5 +1,6 @@
 # Copyright (c) 2014, Fundacion Dr. Manuel Sadosky
 # All rights reserved.
+from barf.arch.arch import ARCH_ARM_MODE_THUMB
 
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -31,6 +32,9 @@ from capstone import *
 from capstone.arm import *
 
 from barf.arch import ARCH_ARM_MODE_32
+from barf.arch import ARCH_ARM_MODE_ARM
+from barf.arch import ARCH_ARM_MODE_THUMB
+from barf.arch import ARCH_ARM_MODES_MAX
 from barf.arch.arm.armparser import ArmParser
 from barf.core.disassembler import Disassembler
 
@@ -55,6 +59,11 @@ cc_capstone_barf_mapper = {
     ARM_CC_LO : ARM_COND_CODE_LO,
 }
 
+arch_mode_barf_to_capstone_mapper = {
+    ARCH_ARM_MODE_ARM : CS_MODE_ARM,
+    ARCH_ARM_MODE_THUMB : CS_MODE_THUMB,
+}
+
 class ArmDisassembler(Disassembler):
     """ARM Disassembler.
     """
@@ -71,10 +80,15 @@ class ArmDisassembler(Disassembler):
         }
 
         self._parser = ArmParser(architecture_mode)
-        self._disassembler = Cs(CS_ARCH_ARM, arch_mode_map[architecture_mode])
         
+        self._avaliable_disassemblers = [None] * ARCH_ARM_MODES_MAX
+        self._avaliable_disassemblers[ARCH_ARM_MODE_ARM] = Cs(CS_ARCH_ARM, arch_mode_barf_to_capstone_mapper[ARCH_ARM_MODE_ARM])
+        self._avaliable_disassemblers[ARCH_ARM_MODE_THUMB] = Cs(CS_ARCH_ARM, arch_mode_barf_to_capstone_mapper[ARCH_ARM_MODE_THUMB])
         # TODO: DECOUPLE: detail true vs false
-        self._disassembler.detail = True
+        self._avaliable_disassemblers[ARCH_ARM_MODE_ARM].detail = True
+        self._avaliable_disassemblers[ARCH_ARM_MODE_THUMB].detail = True
+        
+        self._disassembler = self._avaliable_disassemblers[0]
 
     def _cs_translate_operand(self, cs_op, cs_insn):
         
@@ -140,7 +154,11 @@ class ArmDisassembler(Disassembler):
             self._architecture_mode
         )
         
-        print "ORIG INSN: " + instr.orig_instr + "   ADD: " + hex(cs_insn.address)
+        #DEBUG
+#         import binascii
+#         print "ORIG INSN: " + instr.orig_instr + "   ADD: " + hex(cs_insn.address) + "   SIZE: " + str(cs_insn.size)
+#         import pprint
+#         pprint.pprint(cs_insn.bytes)
     
         if cs_insn.cc is not ARM_CC_INVALID:
             instr.condition_code = cc_capstone_barf_mapper[cs_insn.cc]
@@ -154,9 +172,12 @@ class ArmDisassembler(Disassembler):
     
         return instr
 
-    def disassemble(self, data, address):
+    def disassemble(self, data, address, used_disassembler = 0):
         """Disassemble the data into an instruction.
         """
+        
+        self._disassembler = self._avaliable_disassemblers[used_disassembler]
+        
         # TODO: DECOUPLE: parser vs capstone translation
         disasm = self._cs_disassemble_one(data, address)
         
