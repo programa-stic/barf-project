@@ -698,6 +698,9 @@ class DualInstruction(object):
 
 class ReilSequence(object):
 
+    """Reil instruction sequence.
+    """
+
     def __init__(self):
         self.__sequence = []
         self.__next_seq_address = None
@@ -728,6 +731,10 @@ class ReilSequence(object):
 
     def __len__(self):
         return len(self.__sequence)
+
+    def __iter__(self):
+        for instr in self.__sequence:
+            yield instr
 
 
 class ReilContainerInvalidAddressError(Exception):
@@ -778,3 +785,8 @@ class ReilContainer(object):
             self.__container[base_addr].dump()
 
             print("-" * 80)
+
+    def __iter__(self):
+        for addr in sorted(self.__container.keys()):
+            for instr in self.__container[addr]:
+                yield instr
