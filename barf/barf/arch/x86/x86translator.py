@@ -1304,10 +1304,35 @@ class X86Translator(object):
         tb.add(self._builder.gen_bsh(tmp1, imm0, tmp3))
         tb.add(self._builder.gen_or(tmp3, tmp2, tmp4))
 
-        # Do division
+        # Do division.
         tb.add(self._builder.gen_div(tmp4, tmp0, tmp5))
         tb.add(self._builder.gen_mod(tmp4, tmp0, tmp6))
+
+        # Store result.
+        # TODO: Improve this code.
+        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and \
+            result_low.size == 32:
+            if result_low.name in tb._regs_mapper:
+                base_reg, offset = tb._regs_mapper[result_low.name]
+
+                reil_operand_base = ReilRegisterOperand(base_reg, tb._regs_size[base_reg])
+                reil_immediate = ReilImmediateOperand(0x0, tb._regs_size[base_reg])
+
+                tb.add(self._builder.gen_str(reil_immediate, reil_operand_base))
+
         tb.add(self._builder.gen_str(tmp5, result_low))
+
+        # TODO: Improve this code.
+        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and \
+            result_high.size == 32:
+            if result_high.name in tb._regs_mapper:
+                base_reg, offset = tb._regs_mapper[result_high.name]
+
+                reil_operand_base = ReilRegisterOperand(base_reg, tb._regs_size[base_reg])
+                reil_immediate = ReilImmediateOperand(0x0, tb._regs_size[base_reg])
+
+                tb.add(self._builder.gen_str(reil_immediate, reil_operand_base))
+
         tb.add(self._builder.gen_str(tmp6, result_high))
 
         if self._translation_mode == FULL_TRANSLATION:
