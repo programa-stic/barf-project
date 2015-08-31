@@ -311,12 +311,14 @@ class ReilCpu(object):
         # Instruction implementation.
         self.__executors = {
             # Arithmetic Instructions
-            ReilMnemonic.ADD : self.__execute_binary_op,
-            ReilMnemonic.SUB : self.__execute_binary_op,
-            ReilMnemonic.MUL : self.__execute_binary_op,
-            ReilMnemonic.DIV : self.__execute_binary_op,
-            ReilMnemonic.MOD : self.__execute_binary_op,
-            ReilMnemonic.BSH : self.__execute_bsh,
+            ReilMnemonic.ADD  : self.__execute_binary_op,
+            ReilMnemonic.SUB  : self.__execute_binary_op,
+            ReilMnemonic.MUL  : self.__execute_binary_op,
+            ReilMnemonic.DIV  : self.__execute_binary_op,
+            ReilMnemonic.SDIV : self.__execute_binary_op,
+            ReilMnemonic.MOD  : self.__execute_binary_op,
+            ReilMnemonic.SMOD : self.__execute_binary_op,
+            ReilMnemonic.BSH  : self.__execute_bsh,
 
             # Bitwise Instructions
             ReilMnemonic.AND : self.__execute_binary_op,
@@ -586,13 +588,53 @@ class ReilCpu(object):
 
     # Bitwise instructions
     # ======================================================================== #
+    def __signed_div(self, oprnd0, oprnd1, result_size):
+        op0_val = self.read_operand(oprnd0)
+        op1_val = self.read_operand(oprnd1)
+
+        op0_sign = op0_val >> oprnd0.size-1
+        op1_sign = op1_val >> oprnd1.size-1
+        result_sign = op0_sign ^ op1_sign
+
+        print(oprnd0.size, oprnd1.size, hex)
+
+        if op0_sign == 0x1:
+            op0_tmp = twos_complement(op0_val, oprnd0.size)
+        else:
+            op0_tmp = op0_val
+
+        if op1_sign == 0x1:
+            op1_tmp = twos_complement(op1_val, oprnd1.size)
+        else:
+            op1_tmp = op1_val
+
+        result_tmp = op0_tmp / op1_tmp
+
+        if result_sign == 0x1:
+            result = twos_complement(result_tmp, result_size)
+        else:
+            result = result_tmp
+
+        print(hex(op0_val), hex(op0_tmp), hex(op1_val), hex(op1_tmp), hex(result_sign), hex(result_tmp), hex(result))
+
+        return result & (2**result_size-1)
+
+    def __signed_mod(self, oprnd0, oprnd1, result_size):
+        op0_val = self.read_operand(oprnd0)
+        op1_val = self.read_operand(oprnd1)
+        quotient = self.__signed_div(oprnd0, oprnd1, result_size)
+
+        remainder = op0_val - (op1_val * quotient)
+
+        return remainder & (2**result_size-1)
+
     def __execute_binary_op(self, instr):
         op_map = {
             ReilMnemonic.ADD : lambda a, b: a + b,
             ReilMnemonic.SUB : lambda a, b: a - b,
-            ReilMnemonic.MUL : lambda a, b: a * b,
-            ReilMnemonic.DIV : lambda a, b: a / b,
-            ReilMnemonic.MOD : lambda a, b: a % b,
+            ReilMnemonic.MUL : lambda a, b: a * b,  # unsigned multiplication
+            ReilMnemonic.DIV : lambda a, b: a / b,  # unsigned division
+            ReilMnemonic.MOD : lambda a, b: a % b,  # unsigned modulo
 
             ReilMnemonic.AND : lambda a, b: a & b,
             ReilMnemonic.OR  : lambda a, b: a | b,
@@ -606,7 +648,12 @@ class ReilCpu(object):
             op1_val == 0:
             raise ReilCpuZeroDivisionError()
 
-        op2_val = op_map[instr.mnemonic](op0_val, op1_val)
+        if instr.mnemonic in [ReilMnemonic.SDIV]:
+            op2_val = self.__signed_div(instr.operands[0], instr.operands[1], instr.operands[2].size)
+        elif instr.mnemonic in [ReilMnemonic.SMOD]:
+            op2_val = self.__signed_mod(instr.operands[0], instr.operands[1], instr.operands[2].size)
+        else:
+            op2_val = op_map[instr.mnemonic](op0_val, op1_val)
 
         self.write_operand(instr.operands[2], op2_val)
 
@@ -729,12 +776,14 @@ class ReilEmulatorTainter(object):
         # Taint function lookup table.
         self.__tainter = {
             # Arithmetic Instructions
-            ReilMnemonic.ADD : self.__taint_binary_op,
-            ReilMnemonic.SUB : self.__taint_binary_op,
-            ReilMnemonic.MUL : self.__taint_binary_op,
-            ReilMnemonic.DIV : self.__taint_binary_op,
-            ReilMnemonic.MOD : self.__taint_binary_op,
-            ReilMnemonic.BSH : self.__taint_binary_op,
+            ReilMnemonic.ADD  : self.__taint_binary_op,
+            ReilMnemonic.SUB  : self.__taint_binary_op,
+            ReilMnemonic.MUL  : self.__taint_binary_op,
+            ReilMnemonic.DIV  : self.__taint_binary_op,
+            ReilMnemonic.SDIV : self.__taint_binary_op,
+            ReilMnemonic.MOD  : self.__taint_binary_op,
+            ReilMnemonic.SMOD : self.__taint_binary_op,
+            ReilMnemonic.BSH  : self.__taint_binary_op,
 
             # Bitwise Instructions
             ReilMnemonic.AND : self.__taint_binary_op,

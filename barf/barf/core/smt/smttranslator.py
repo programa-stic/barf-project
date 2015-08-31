@@ -93,7 +93,9 @@ class SmtTranslator(object):
             ReilMnemonic.SUB : self._translate_sub,
             ReilMnemonic.MUL : self._translate_mul,
             ReilMnemonic.DIV : self._translate_div,
+            ReilMnemonic.SDIV : self._translate_sdiv,
             ReilMnemonic.MOD : self._translate_mod,
+            ReilMnemonic.SMOD : self._translate_smod,
             ReilMnemonic.BSH : self._translate_bsh,
 
             # Bitwise Instructions
@@ -427,6 +429,19 @@ class SmtTranslator(object):
         op2_var = self._translate_src_oprnd(oprnd2)
         op3_var, _ = self._translate_dst_oprnd(oprnd3)
 
+        return [(op3_var == (op1_var.udiv(op2_var)))]
+
+    def _translate_sdiv(self, oprnd1, oprnd2, oprnd3):
+        """Return a formula representation of an DIV instruction.
+        """
+        assert oprnd1.size and oprnd2.size and oprnd3.size
+        assert oprnd1.size == oprnd2.size
+        assert oprnd2.size == oprnd3.size
+
+        op1_var = self._translate_src_oprnd(oprnd1)
+        op2_var = self._translate_src_oprnd(oprnd2)
+        op3_var, _ = self._translate_dst_oprnd(oprnd3)
+
         return [(op3_var == (op1_var / op2_var))]
 
     def _translate_mod(self, oprnd1, oprnd2, oprnd3):
@@ -441,6 +456,19 @@ class SmtTranslator(object):
         op3_var, _ = self._translate_dst_oprnd(oprnd3)
 
         return [(op3_var == (op1_var % op2_var))]
+
+    def _translate_smod(self, oprnd1, oprnd2, oprnd3):
+        """Return a formula representation of an MOD instruction.
+        """
+        assert oprnd1.size and oprnd2.size and oprnd3.size
+        assert oprnd1.size == oprnd2.size
+        assert oprnd2.size == oprnd3.size
+
+        op1_var = self._translate_src_oprnd(oprnd1)
+        op2_var = self._translate_src_oprnd(oprnd2)
+        op3_var, _ = self._translate_dst_oprnd(oprnd3)
+
+        return [(op3_var == (op2_var.smod(op1_var)))]
 
     def _translate_bsh(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a BSH instruction.

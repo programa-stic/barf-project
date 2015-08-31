@@ -154,6 +154,8 @@ mnemonic = Or([
 
     # Extensions.
     Literal("sext"),
+    Literal("sdiv"),
+    Literal("smod"),
 ])
 
 size = Or([

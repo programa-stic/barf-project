@@ -357,6 +357,196 @@ class X86TranslationTests(unittest.TestCase):
 
         self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
+    def test_div_5(self):
+        asm = ["idiv ebx"]
+
+        ctx_init = {
+            'rax'    : 0x0000000000000005,
+            'rbx'    : 0x0000000000000003,
+            'rdx'    : 0x0000000000000000,
+            'rflags' : 0x202,
+        }
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "sf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "zf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "pf")
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_idiv_1(self):
+        asm = ["idiv ebx"]
+
+        ctx_init = {
+            'rax'    : 0x10,
+            'rbx'    : 0x2,
+            'rdx'    : 0x0,
+            'rflags' : 0x202,
+        }
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "sf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "zf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "pf")
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_idiv_2(self):
+        asm = ["idiv ebx"]
+
+        ctx_init = {
+            'rax'    : 0xFFFFFFFFFFFFFFFF,
+            'rbx'    : 0x0000000000000001,
+            'rdx'    : 0xFFFFFFFFFFFFFFFF,
+            'rflags' : 0x202,
+        }
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "sf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "zf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "pf")
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_idiv_3(self):
+        asm = ["idiv ebx"]
+
+        ctx_init = {
+            'rax'    : 0xFFFFFFFFFFFFFFFE,
+            'rbx'    : 0xFFFFFFFFFFFFFFFF,
+            'rdx'    : 0xFFFFFFFFFFFFFFFF,
+            'rflags' : 0x202,
+        }
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "sf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "zf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "pf")
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_idiv_3(self):
+        asm = ["idiv ebx"]
+
+        ctx_init = {
+            'rax'    : 0xFFFFFFFFFFFFFFFE,
+            'rbx'    : 0xFFFFFFFFFFFFFFFF,
+            'rdx'    : 0xFFFFFFFFFFFFFFFF,
+            'rflags' : 0x202,
+        }
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "sf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "zf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "pf")
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_idiv_4(self):
+        asm = ["idiv ebx"]
+
+        ctx_init = {
+            'rax'    : 0xFFFFFFFFFFFFFFFB, # -5
+            'rbx'    : 0x0000000000000003,
+            'rdx'    : 0xFFFFFFFFFFFFFFFF,
+            'rflags' : 0x202,
+        }
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "sf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "zf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "pf")
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_idiv_5(self):
+        asm = ["idiv ebx"]
+
+        ctx_init = {
+            'rax'    : 0x0000000000000005, #  5
+            'rbx'    : 0xFFFFFFFFFFFFFFFD, # -3
+            'rdx'    : 0x0000000000000000,
+            'rflags' : 0x202,
+        }
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "sf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "zf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "pf")
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+
     # # TODO: Uncomment once imul translation gets fixed.
     # def test_imul(self):
     #     asm = ["imul eax, ebx"]
@@ -1845,6 +2035,9 @@ class X86TranslationTests(unittest.TestCase):
 
     def __run_code(self, asm_list, address, ctx_init):
         reil_instrs = self.__asm_to_reil(asm_list, address)
+
+        for reil_instr in reil_instrs:
+            print(reil_instr)
 
         _, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm_list), ctx_init)
         reil_ctx_out, _ = self.reil_emulator.execute(reil_instrs, start=0xdeadbeef << 8, registers=ctx_init)

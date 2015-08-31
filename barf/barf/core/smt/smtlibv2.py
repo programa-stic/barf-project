@@ -349,6 +349,10 @@ class BitVec(Symbol):
     def rrem(self, other):
         return BitVec(self.size, 'bvurem', self.cast(other), self, solver=self.solver)
 
+    @goaux_bv
+    def smod(self, other):
+        return BitVec(self.size, 'bvsmod', self.cast(other), self, solver=self.solver)
+
 #Booleans
 class Bool(Symbol):
     def __init__(self, value, *children, **kwargs):

@@ -94,6 +94,8 @@ class ReilMnemonic(object):
 
     # Extensions
     SEXT  = 19
+    SDIV  = 20
+    SMOD  = 21
 
     @staticmethod
     def to_string(mnemonic):
@@ -132,6 +134,8 @@ class ReilMnemonic(object):
 
             # Extensions
             ReilMnemonic.SEXT : "sext",
+            ReilMnemonic.SDIV : "sdiv",
+            ReilMnemonic.SMOD : "smod",
         }
 
         return strings[mnemonic]
@@ -173,6 +177,8 @@ class ReilMnemonic(object):
 
             # Added Instructions
             "sext" : ReilMnemonic.SEXT,
+            "sdiv" : ReilMnemonic.SDIV,
+            "smod" : ReilMnemonic.SMOD,
         }
 
         return mnemonics[string]
@@ -211,6 +217,8 @@ REIL_MNEMONICS = (
 
     # Extensions
     ReilMnemonic.SEXT,
+    ReilMnemonic.SDIV,
+    ReilMnemonic.SMOD,
 )
 
 class ReilInstruction(object):
@@ -617,6 +625,16 @@ class ReilInstructionBuilder(object):
         empty_reg = ReilEmptyOperand()
 
         return self.build(ReilMnemonic.SEXT, src, empty_reg, dst)
+
+    def gen_sdiv(self, src1, src2, dst):
+        """Return a SDIV instruction.
+        """
+        return self.build(ReilMnemonic.SDIV, src1, src2, dst)
+
+    def gen_smod(self, src1, src2, dst):
+        """Return a SMOD instruction.
+        """
+        return self.build(ReilMnemonic.SMOD, src1, src2, dst)
 
     # Auxiliary functions
     # ======================================================================== #

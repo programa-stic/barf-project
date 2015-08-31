@@ -523,6 +523,113 @@ class SmtTranslatorTests(unittest.TestCase):
 
         self.assertEqual(self._solver.check(), 'unsat')
 
+    def test_div_1(self):
+        instr = self._parser.parse(["div [DWORD 2, DWORD 1, DWORD t1]"])
+
+        self._solver.reset()
+
+        smt_expr = self._translator.translate(instr[0])
+
+        self._solver.add(smt_expr[0])
+
+        # add constrains
+        constraints = [
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0x2,
+        ]
+
+        self._solver.add(constraints[0])
+
+        self.assertEqual(self._solver.check(), 'unsat')
+
+    def test_div_2(self):
+        instr = self._parser.parse(["div [DWORD 0xffffffff, DWORD 0x2, DWORD t1]"])
+
+        self._solver.reset()
+
+        smt_expr = self._translator.translate(instr[0])
+
+        self._solver.add(smt_expr[0])
+
+        # add constrains
+        constraints = [
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0x7fffffff,
+        ]
+
+        self._solver.add(constraints[0])
+
+        self.assertEqual(self._solver.check(), 'unsat')
+
+    def test_sdiv_1(self):
+        instr = self._parser.parse(["sdiv [DWORD -2, DWORD -1, DWORD t1]"])
+
+        self._solver.reset()
+
+        smt_expr = self._translator.translate(instr[0])
+
+        self._solver.add(smt_expr[0])
+
+        # add constrains
+        constraints = [
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0x2,
+        ]
+
+        self._solver.add(constraints[0])
+
+        self.assertEqual(self._solver.check(), 'unsat')
+
+    def test_sdiv_2(self):
+        instr = self._parser.parse(["sdiv [DWORD -2, DWORD 1, DWORD t1]"])
+
+        self._solver.reset()
+
+        smt_expr = self._translator.translate(instr[0])
+
+        self._solver.add(smt_expr[0])
+
+        # add constrains
+        constraints = [
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0xfffffffe,
+        ]
+
+        self._solver.add(constraints[0])
+
+        self.assertEqual(self._solver.check(), 'unsat')
+
+    def test_smod_1(self):
+        instr = self._parser.parse(["smod [DWORD 5, DWORD -3, DWORD t1]"])
+
+        self._solver.reset()
+
+        smt_expr = self._translator.translate(instr[0])
+
+        self._solver.add(smt_expr[0])
+
+        # add constrains
+        constraints = [
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0xffffffff,
+        ]
+
+        self._solver.add(constraints[0])
+
+        self.assertEqual(self._solver.check(), 'unsat')
+
+    def test_smod_2(self):
+        instr = self._parser.parse(["smod [DWORD -5, DWORD 3, DWORD t1]"])
+
+        self._solver.reset()
+
+        smt_expr = self._translator.translate(instr[0])
+
+        self._solver.add(smt_expr[0])
+
+        # add constrains
+        constraints = [
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0x1,
+        ]
+
+        self._solver.add(constraints[0])
+
+        self.assertEqual(self._solver.check(), 'unsat')
 
 def main():
     unittest.main()

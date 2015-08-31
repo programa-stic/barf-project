@@ -1344,6 +1344,97 @@ class X86Translator(object):
             self._undefine_flag(tb, self._flags["af"])
             self._undefine_flag(tb, self._flags["pf"])
 
+    def _translate_idiv(self, tb, instruction):
+        # Flags Affected
+        # The CF, OF, SF, ZF, AF, and PF flags are undefined.
+
+        oprnd0 = tb.read(instruction.operands[0])
+
+        print(str(oprnd0), oprnd0.size)
+
+        # oprnd0 == divisor
+
+        if oprnd0.size == 8:
+            oprnd1 = ReilRegisterOperand("ah", 8)
+            oprnd2 = ReilRegisterOperand("al", 8)
+            result_low = ReilRegisterOperand("al", 8)
+            result_high = ReilRegisterOperand("ah", 8)
+        elif oprnd0.size == 16:
+            oprnd1 = ReilRegisterOperand("dx", 16)
+            oprnd2 = ReilRegisterOperand("ax", 16)
+            result_low = ReilRegisterOperand("ax", 16)
+            result_high = ReilRegisterOperand("dx", 16)
+        elif oprnd0.size == 32:
+            oprnd1 = ReilRegisterOperand("edx", 32)
+            oprnd2 = ReilRegisterOperand("eax", 32)
+            result_low = ReilRegisterOperand("eax", 32)
+            result_high = ReilRegisterOperand("edx", 32)
+        elif oprnd0.size == 64:
+            oprnd1 = ReilRegisterOperand("rdx", 64)
+            oprnd2 = ReilRegisterOperand("rax", 64)
+            result_low = ReilRegisterOperand("rax", 64)
+            result_high = ReilRegisterOperand("rdx", 64)
+
+        imm0 = tb.immediate(oprnd0.size, oprnd0.size*2)
+
+        tmp0 = tb.temporal(oprnd0.size*2)
+        tmp1 = tb.temporal(oprnd0.size*2)
+        tmp2 = tb.temporal(oprnd0.size*2)
+
+        tmp3 = tb.temporal(oprnd0.size*2)
+        tmp4 = tb.temporal(oprnd0.size*2)
+        tmp5 = tb.temporal(oprnd0.size*2)
+        tmp6 = tb.temporal(oprnd0.size*2)
+
+        # Extend operands to match their size.
+        tb.add(self._builder.gen_sext(oprnd0, tmp0))
+        tb.add(self._builder.gen_str(oprnd1, tmp1))
+        tb.add(self._builder.gen_str(oprnd2, tmp2))
+
+        # Put dividend together.
+        tb.add(self._builder.gen_bsh(tmp1, imm0, tmp3))
+        tb.add(self._builder.gen_or(tmp3, tmp2, tmp4))
+
+        # Do division.
+        tb.add(self._builder.gen_sdiv(tmp4, tmp0, tmp5))
+        tb.add(self._builder.gen_smod(tmp4, tmp0, tmp6))
+
+        # Store result.
+        # TODO: Improve this code.
+        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and \
+            result_low.size == 32:
+            if result_low.name in tb._regs_mapper:
+                base_reg, offset = tb._regs_mapper[result_low.name]
+
+                reil_operand_base = ReilRegisterOperand(base_reg, tb._regs_size[base_reg])
+                reil_immediate = ReilImmediateOperand(0x0, tb._regs_size[base_reg])
+
+                tb.add(self._builder.gen_str(reil_immediate, reil_operand_base))
+
+        tb.add(self._builder.gen_str(tmp5, result_low))
+
+        # TODO: Improve this code.
+        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and \
+            result_high.size == 32:
+            if result_high.name in tb._regs_mapper:
+                base_reg, offset = tb._regs_mapper[result_high.name]
+
+                reil_operand_base = ReilRegisterOperand(base_reg, tb._regs_size[base_reg])
+                reil_immediate = ReilImmediateOperand(0x0, tb._regs_size[base_reg])
+
+                tb.add(self._builder.gen_str(reil_immediate, reil_operand_base))
+
+        tb.add(self._builder.gen_str(tmp6, result_high))
+
+        if self._translation_mode == FULL_TRANSLATION:
+            # Flags : CF, OF, SF, ZF, AF, PF
+            self._undefine_flag(tb, self._flags["cf"])
+            self._undefine_flag(tb, self._flags["of"])
+            self._undefine_flag(tb, self._flags["sf"])
+            self._undefine_flag(tb, self._flags["zf"])
+            self._undefine_flag(tb, self._flags["af"])
+            self._undefine_flag(tb, self._flags["pf"])
+
     def _translate_inc(self, tb, instruction):
         # Flags Affected
         # The CF flag is not affected. The OF, SF, ZF, AF, and PF flags
