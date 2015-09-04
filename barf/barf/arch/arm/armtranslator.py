@@ -408,15 +408,17 @@ class ArmTranslator(object):
         # Translate instruction.
         tb = ArmTranslationBuilder(self._ir_name_generator, self._arch_mode)
 
-        # Pre-processing: evaluate flags
-        nop_cc_lbl = tb.label('condition_code_not_met')
-        if (instruction.condition_code is not None):
-            self._evaluate_condition_code(tb, instruction, nop_cc_lbl)
+        # TODO: Improve this.
+        if instruction.mnemonic in ["b", "bl", "bx", "blx", "bne", "beq", "bpl",
+                                    "ble", "bcs", "bhs", "blt"]:
+            translator_fn(tb, instruction)
+        else:
+            # Pre-processing: evaluate flags
+            if instruction.condition_code:
+                # self._evaluate_condition_code(tb, instruction, nop_cc_lbl)
+                self._evaluate_condition_code(tb, instruction)
 
-        translator_fn(tb, instruction)
-
-        tb.add(nop_cc_lbl)
-        tb.add(self._builder.gen_nop()) # Added NOP so there is a REIL instruction to jump to
+            translator_fn(tb, instruction)
 
         return tb.instanciate(instruction.address)
 
@@ -676,7 +678,8 @@ class ArmTranslator(object):
     def _evaluate_le(self, tb):
         return tb._or_regs(self._flags["zf"], self._evaluate_lt(tb))
 
-    def _evaluate_condition_code(self, tb, instruction, nop_label):
+    # def _evaluate_condition_code(self, tb, instruction, nop_label):
+    def _evaluate_condition_code(self, tb, instruction):
         if (instruction.condition_code == ARM_COND_CODE_AL):
             return
 
@@ -701,7 +704,11 @@ class ArmTranslator(object):
 
         neg_cond = tb._negate_reg(eval_cc_fn[instruction.condition_code](tb))
 
-        tb.add(self._builder.gen_jcc(neg_cond, nop_label))
+        # tb.add(self._builder.gen_jcc(neg_cond, nop_label))
+
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
+
+        tb.add(self._builder.gen_jcc(neg_cond, end_addr))
 
         return
 
@@ -931,7 +938,76 @@ class ArmTranslator(object):
     def _translate_blx(self, tb, instruction):
         self._translate_branch(tb, instruction, link = True)
 
+    def _translate_bne(self, tb, instruction):
+        self._translate_branch(tb, instruction, link = False)
+
+    def _translate_beq(self, tb, instruction):
+        self._translate_branch(tb, instruction, link = False)
+
+    def _translate_bpl(self, tb, instruction):
+        self._translate_branch(tb, instruction, link = False)
+
+    def _translate_ble(self, tb, instruction):
+        self._translate_branch(tb, instruction, link = False)
+
+    def _translate_bcs(self, tb, instruction):
+        self._translate_branch(tb, instruction, link = False)
+
+    def _translate_bhs(self, tb, instruction):
+        self._translate_branch(tb, instruction, link = False)
+
+    def _translate_blt(self, tb, instruction):
+        self._translate_branch(tb, instruction, link = False)
+
+    # def _translate_branch(self, tb, instruction, link):
+
+    #     arm_operand = instruction.operands[0]
+
+    #     if isinstance(arm_operand, ArmImmediateOperand):
+    #         target = ReilImmediateOperand(arm_operand.immediate << 8, self._pc.size + 8)
+    #     elif isinstance(arm_operand, ArmRegisterOperand):
+    #         target = ReilRegisterOperand(arm_operand.name, arm_operand.size)
+    #         target = tb._and_regs(target, ReilImmediateOperand(0xFFFFFFFE, target.size))
+
+    #         tmp0 = tb.temporal(target.size + 8)
+    #         tmp1 = tb.temporal(target.size + 8)
+
+    #         tb.add(self._builder.gen_str(target, tmp0))
+    #         tb.add(self._builder.gen_bsh(tmp0, ReilImmediateOperand(8, target.size + 8), tmp1))
+
+    #         target = tmp1
+    #     else:
+    #         raise NotImplementedError("Instruction Not Implemented: Unknown operand for branch operation.")
+
+    #     if (link):
+    #         tb.add(self._builder.gen_str(ReilImmediateOperand(instruction.address + instruction.size, self._pc.size), self._lr))
+
+    #     tb._jump_to(target)
+
     def _translate_branch(self, tb, instruction, link):
+        if (instruction.condition_code == ARM_COND_CODE_AL):
+            cond = tb.immediate(1, 1)
+        else:
+            eval_cc_fn = {
+                ARM_COND_CODE_EQ : self._evaluate_eq,
+                ARM_COND_CODE_NE : self._evaluate_ne,
+                ARM_COND_CODE_CS : self._evaluate_cs,
+                ARM_COND_CODE_HS : self._evaluate_cs,
+                ARM_COND_CODE_CC : self._evaluate_cc,
+                ARM_COND_CODE_LO : self._evaluate_cc,
+                ARM_COND_CODE_MI : self._evaluate_mi,
+                ARM_COND_CODE_PL : self._evaluate_pl,
+                ARM_COND_CODE_VS : self._evaluate_vs,
+                ARM_COND_CODE_VC : self._evaluate_vc,
+                ARM_COND_CODE_HI : self._evaluate_hi,
+                ARM_COND_CODE_LS : self._evaluate_ls,
+                ARM_COND_CODE_GE : self._evaluate_ge,
+                ARM_COND_CODE_LT : self._evaluate_lt,
+                ARM_COND_CODE_GT : self._evaluate_gt,
+                ARM_COND_CODE_LE : self._evaluate_le,
+            }
+
+            cond = eval_cc_fn[instruction.condition_code](tb)
 
         arm_operand = instruction.operands[0]
 
@@ -951,7 +1027,9 @@ class ArmTranslator(object):
         else:
             raise NotImplementedError("Instruction Not Implemented: Unknown operand for branch operation.")
 
-        if (link):
+        if link:
             tb.add(self._builder.gen_str(ReilImmediateOperand(instruction.address + instruction.size, self._pc.size), self._lr))
 
-        tb._jump_to(target)
+        tb.add(self._builder.gen_jcc(cond, target))
+
+        return
