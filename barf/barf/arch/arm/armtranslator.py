@@ -24,48 +24,46 @@
 
 import logging
 
-from barf.arch.translator import TranslationBuilder
 from barf.arch import ARCH_ARM_MODE_32
 from barf.arch import ARCH_ARM_MODE_64
 from barf.arch.arm.armbase import ArmArchitectureInformation
-from barf.arch.arm.armbase import ArmShiftedRegisterOperand
 from barf.arch.arm.armbase import ArmImmediateOperand
 from barf.arch.arm.armbase import ArmMemoryOperand
-from barf.arch.arm.armbase import ArmRegisterOperand
 from barf.arch.arm.armbase import ArmRegisterListOperand
-from barf.core.reil import ReilEmptyOperand
+from barf.arch.arm.armbase import ArmRegisterOperand
+from barf.arch.arm.armbase import ArmShiftedRegisterOperand
+from barf.arch.translator import TranslationBuilder
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilInstructionBuilder
-from barf.core.reil import ReilInstruction
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
 from barf.utils.utils import VariableNamer
 
-from barf.arch.arm.armbase import ARM_MEMORY_INDEX_OFFSET
-from barf.arch.arm.armbase import ARM_MEMORY_INDEX_POST
-from barf.arch.arm.armbase import ARM_MEMORY_INDEX_PRE
-from barf.arch.arm.armbase import ARM_COND_CODE_EQ
-from barf.arch.arm.armbase import ARM_COND_CODE_NE
-from barf.arch.arm.armbase import ARM_COND_CODE_CS
-from barf.arch.arm.armbase import ARM_COND_CODE_CC
-from barf.arch.arm.armbase import ARM_COND_CODE_HS
-from barf.arch.arm.armbase import ARM_COND_CODE_LO
-from barf.arch.arm.armbase import ARM_COND_CODE_MI
-from barf.arch.arm.armbase import ARM_COND_CODE_PL
-from barf.arch.arm.armbase import ARM_COND_CODE_VS
-from barf.arch.arm.armbase import ARM_COND_CODE_VC
-from barf.arch.arm.armbase import ARM_COND_CODE_HI
-from barf.arch.arm.armbase import ARM_COND_CODE_LS
-from barf.arch.arm.armbase import ARM_COND_CODE_GE
-from barf.arch.arm.armbase import ARM_COND_CODE_LT
-from barf.arch.arm.armbase import ARM_COND_CODE_GT
-from barf.arch.arm.armbase import ARM_COND_CODE_LE
 from barf.arch.arm.armbase import ARM_COND_CODE_AL
-from barf.arch.arm.armbase import ARM_LDM_STM_IA
-from barf.arch.arm.armbase import ARM_LDM_STM_IB
+from barf.arch.arm.armbase import ARM_COND_CODE_CC
+from barf.arch.arm.armbase import ARM_COND_CODE_CS
+from barf.arch.arm.armbase import ARM_COND_CODE_EQ
+from barf.arch.arm.armbase import ARM_COND_CODE_GE
+from barf.arch.arm.armbase import ARM_COND_CODE_GT
+from barf.arch.arm.armbase import ARM_COND_CODE_HI
+from barf.arch.arm.armbase import ARM_COND_CODE_HS
+from barf.arch.arm.armbase import ARM_COND_CODE_LE
+from barf.arch.arm.armbase import ARM_COND_CODE_LO
+from barf.arch.arm.armbase import ARM_COND_CODE_LS
+from barf.arch.arm.armbase import ARM_COND_CODE_LT
+from barf.arch.arm.armbase import ARM_COND_CODE_MI
+from barf.arch.arm.armbase import ARM_COND_CODE_NE
+from barf.arch.arm.armbase import ARM_COND_CODE_PL
+from barf.arch.arm.armbase import ARM_COND_CODE_VC
+from barf.arch.arm.armbase import ARM_COND_CODE_VS
 from barf.arch.arm.armbase import ARM_LDM_STM_DA
 from barf.arch.arm.armbase import ARM_LDM_STM_DB
 from barf.arch.arm.armbase import ARM_LDM_STM_FD
+from barf.arch.arm.armbase import ARM_LDM_STM_IA
+from barf.arch.arm.armbase import ARM_LDM_STM_IB
+from barf.arch.arm.armbase import ARM_MEMORY_INDEX_OFFSET
+from barf.arch.arm.armbase import ARM_MEMORY_INDEX_POST
+from barf.arch.arm.armbase import ARM_MEMORY_INDEX_PRE
 from barf.arch.arm.armbase import ldm_stack_am_to_non_stack_am
 from barf.arch.arm.armbase import stm_stack_am_to_non_stack_am
 
@@ -236,6 +234,7 @@ class ArmTranslationBuilder(TranslationBuilder):
 
         return ret
 
+
 def check_operands_size(instr, arch_size):
     if instr.mnemonic in [  ReilMnemonic.ADD, ReilMnemonic.SUB,
                             ReilMnemonic.MUL, ReilMnemonic.DIV,
@@ -368,13 +367,13 @@ class ArmTranslator(object):
         """
         try:
             trans_instrs = self._translate(instruction)
-        except NotImplementedError as e:
+        except NotImplementedError:
             unkn_instr = self._builder.gen_unkn()
             unkn_instr.address = instruction.address << 8 | (0x0 & 0xff)
             trans_instrs = [unkn_instr]
 
             self._log_not_supported_instruction(instruction)
-        except Exception as e:
+        except Exception:
             self._log_translation_exception(instruction)
 
             raise
@@ -415,7 +414,6 @@ class ArmTranslator(object):
         else:
             # Pre-processing: evaluate flags
             if instruction.condition_code:
-                # self._evaluate_condition_code(tb, instruction, nop_cc_lbl)
                 self._evaluate_condition_code(tb, instruction)
 
             translator_fn(tb, instruction)
@@ -459,8 +457,6 @@ class ArmTranslator(object):
             exc_info=True
         )
 
-# ============================================================================ #
-
     def _not_implemented(self, tb, instruction):
         raise NotImplementedError("Instruction Not Implemented")
 
@@ -489,7 +485,7 @@ class ArmTranslator(object):
         op2_sign = tb._extract_bit(oprnd1, oprnd0.size - 1)
         res_sign = tb._extract_bit(result, oprnd0.size - 1)
 
-        overflow =  tb._and_regs(tb._equal_regs(op1_sign, op2_sign), tb._unequal_regs(op1_sign, res_sign))
+        overflow = tb._and_regs(tb._equal_regs(op1_sign, op2_sign), tb._unequal_regs(op1_sign, res_sign))
         tb.add(self._builder.gen_str(overflow, self._flags["vf"]))
 
     # Evaluate overflow and update the flag
@@ -621,66 +617,64 @@ class ArmTranslator(object):
 
         tb.add(self._builder.gen_str(imm, flag))
 
-
-    # EQ: Z set
     def _evaluate_eq(self, tb):
+        # EQ: Z set
         return self._flags["zf"]
 
-    # NE: Z clear
     def _evaluate_ne(self, tb):
+        # NE: Z clear
         return tb._negate_reg(self._flags["zf"])
 
-    # CS: C set
     def _evaluate_cs(self, tb):
+        # CS: C set
         return self._flags["cf"]
 
-    # CC: C clear
     def _evaluate_cc(self, tb):
+        # CC: C clear
         return tb._negate_reg(self._flags["cf"])
 
-    # MI: N set
     def _evaluate_mi(self, tb):
+        # MI: N set
         return self._flags["nf"]
 
-    # PL: N clear
     def _evaluate_pl(self, tb):
+        # PL: N clear
         return tb._negate_reg(self._flags["nf"])
 
-    # VS: V set
     def _evaluate_vs(self, tb):
+        # VS: V set
         return self._flags["vf"]
 
-    # VC: V clear
     def _evaluate_vc(self, tb):
+        # VC: V clear
         return tb._negate_reg(self._flags["vf"])
 
-    # HI: C set and Z clear
     def _evaluate_hi(self, tb):
+        # HI: C set and Z clear
         return tb._and_regs(self._flags["cf"], tb._negate_reg(self._flags["zf"]))
 
-    # LS: C clear or Z set
     def _evaluate_ls(self, tb):
+        # LS: C clear or Z set
         return tb._or_regs(tb._negate_reg(self._flags["cf"]), self._flags["zf"])
 
-    # GE: N == V
     def _evaluate_ge(self, tb):
+        # GE: N == V
         return tb._equal_regs(self._flags["nf"], self._flags["vf"])
 
-    # LT: N != V
     def _evaluate_lt(self, tb):
+        # LT: N != V
         return tb._negate_reg(self._evaluate_ge(tb))
 
-    # GT: (Z == 0) and (N == V)
     def _evaluate_gt(self, tb):
+        # GT: (Z == 0) and (N == V)
         return tb._and_regs(tb._negate_reg(self._flags["zf"]), self._evaluate_ge(tb))
 
-    # LE: (Z == 1) or (N != V)
     def _evaluate_le(self, tb):
+        # LE: (Z == 1) or (N != V)
         return tb._or_regs(self._flags["zf"], self._evaluate_lt(tb))
 
-    # def _evaluate_condition_code(self, tb, instruction, nop_label):
     def _evaluate_condition_code(self, tb, instruction):
-        if (instruction.condition_code == ARM_COND_CODE_AL):
+        if instruction.condition_code == ARM_COND_CODE_AL:
             return
 
         eval_cc_fn = {
@@ -703,8 +697,6 @@ class ArmTranslator(object):
         }
 
         neg_cond = tb._negate_reg(eval_cc_fn[instruction.condition_code](tb))
-
-        # tb.add(self._builder.gen_jcc(neg_cond, nop_label))
 
         end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
 
@@ -847,9 +839,11 @@ class ArmTranslator(object):
     def _translate_stm(self, tb, instruction):
         self._translate_ldm_stm(tb, instruction, False)
 
-    # LDM and STM have exactly the same logic except one loads and the other stores
-    # It is assumed that the disassembler (for example Capstone) writes the register list in increasing order
-    def _translate_ldm_stm(self, tb, instruction, load = True):
+    def _translate_ldm_stm(self, tb, instruction, load=True):
+        # LDM and STM have exactly the same logic except one loads and the
+        # other stores It is assumed that the disassembler (for example
+        # Capstone) writes the register list in increasing order
+
         base = tb.read(instruction.operands[0])
         reg_list = tb.read(instruction.operands[1])
 
@@ -889,7 +883,7 @@ class ArmTranslator(object):
                 pointer = tb._sub_to_reg(pointer, self._ws)
                 load_store_fn(tb, pointer, reg)
         else:
-                raise Exception("Unknown addressing mode.")
+            raise Exception("Unknown addressing mode.")
 
         # Write-back
         if instruction.operands[0].wb:
@@ -905,9 +899,11 @@ class ArmTranslator(object):
     def _store_value(self, tb, mem_dir, value):
         tb.add(self._builder.gen_stm(value, mem_dir))
 
-    # PUSH and POP are equivalent to STM and LDM in FD mode with the SP (and write-back)
-    # Instructions are modified to adapt it to the LDM/STM interface
     def _translate_push_pop(self, tb, instruction, translate_fn):
+        # PUSH and POP are equivalent to STM and LDM in FD mode with the SP
+        # (and write-back) Instructions are modified to adapt it to the
+        # LDM/STM interface
+
         sp_name = "r13" # TODO: Use self._sp
         sp_size = instruction.operands[0].reg_list[0][0].size # Infer it from the registers list
         sp_reg = ArmRegisterOperand(sp_name, sp_size)
@@ -926,75 +922,50 @@ class ArmTranslator(object):
 # "Branch Instructions"
 # ============================================================================ #
     def _translate_b(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = False)
+        self._translate_branch(tb, instruction, link=False)
 
     def _translate_bl(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = True)
+        self._translate_branch(tb, instruction, link=True)
 
     # TODO: Thumb
     def _translate_bx(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = False)
+        self._translate_branch(tb, instruction, link=False)
 
     def _translate_blx(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = True)
+        self._translate_branch(tb, instruction, link=True)
 
     def _translate_bne(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = False)
+        self._translate_branch(tb, instruction, link=False)
 
     def _translate_beq(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = False)
+        self._translate_branch(tb, instruction, link=False)
 
     def _translate_bpl(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = False)
+        self._translate_branch(tb, instruction, link=False)
 
     def _translate_ble(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = False)
+        self._translate_branch(tb, instruction, link=False)
 
     def _translate_bcs(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = False)
+        self._translate_branch(tb, instruction, link=False)
 
     def _translate_bhs(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = False)
+        self._translate_branch(tb, instruction, link=False)
 
     def _translate_blt(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = False)
+        self._translate_branch(tb, instruction, link=False)
 
     def _translate_bge(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = False)
+        self._translate_branch(tb, instruction, link=False)
 
     def _translate_bhi(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = False)
+        self._translate_branch(tb, instruction, link=False)
 
     def _translate_blo(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = False)
+        self._translate_branch(tb, instruction, link=False)
 
     def _translate_bls(self, tb, instruction):
-        self._translate_branch(tb, instruction, link = False)
-
-    # def _translate_branch(self, tb, instruction, link):
-
-    #     arm_operand = instruction.operands[0]
-
-    #     if isinstance(arm_operand, ArmImmediateOperand):
-    #         target = ReilImmediateOperand(arm_operand.immediate << 8, self._pc.size + 8)
-    #     elif isinstance(arm_operand, ArmRegisterOperand):
-    #         target = ReilRegisterOperand(arm_operand.name, arm_operand.size)
-    #         target = tb._and_regs(target, ReilImmediateOperand(0xFFFFFFFE, target.size))
-
-    #         tmp0 = tb.temporal(target.size + 8)
-    #         tmp1 = tb.temporal(target.size + 8)
-
-    #         tb.add(self._builder.gen_str(target, tmp0))
-    #         tb.add(self._builder.gen_bsh(tmp0, ReilImmediateOperand(8, target.size + 8), tmp1))
-
-    #         target = tmp1
-    #     else:
-    #         raise NotImplementedError("Instruction Not Implemented: Unknown operand for branch operation.")
-
-    #     if (link):
-    #         tb.add(self._builder.gen_str(ReilImmediateOperand(instruction.address + instruction.size, self._pc.size), self._lr))
-
-    #     tb._jump_to(target)
+        self._translate_branch(tb, instruction, link=False)
 
     def _translate_branch(self, tb, instruction, link):
         if (instruction.condition_code == ARM_COND_CODE_AL):
