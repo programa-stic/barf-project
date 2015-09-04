@@ -26,19 +26,6 @@ import logging
 
 from barf.arch import ARCH_ARM_MODE_32
 from barf.arch import ARCH_ARM_MODE_64
-from barf.arch.arm.armbase import ArmArchitectureInformation
-from barf.arch.arm.armbase import ArmImmediateOperand
-from barf.arch.arm.armbase import ArmMemoryOperand
-from barf.arch.arm.armbase import ArmRegisterListOperand
-from barf.arch.arm.armbase import ArmRegisterOperand
-from barf.arch.arm.armbase import ArmShiftedRegisterOperand
-from barf.arch.translator import TranslationBuilder
-from barf.core.reil import ReilImmediateOperand
-from barf.core.reil import ReilInstructionBuilder
-from barf.core.reil import ReilMnemonic
-from barf.core.reil import ReilRegisterOperand
-from barf.utils.utils import VariableNamer
-
 from barf.arch.arm.armbase import ARM_COND_CODE_AL
 from barf.arch.arm.armbase import ARM_COND_CODE_CC
 from barf.arch.arm.armbase import ARM_COND_CODE_CS
@@ -64,8 +51,20 @@ from barf.arch.arm.armbase import ARM_LDM_STM_IB
 from barf.arch.arm.armbase import ARM_MEMORY_INDEX_OFFSET
 from barf.arch.arm.armbase import ARM_MEMORY_INDEX_POST
 from barf.arch.arm.armbase import ARM_MEMORY_INDEX_PRE
+from barf.arch.arm.armbase import ArmArchitectureInformation
+from barf.arch.arm.armbase import ArmImmediateOperand
+from barf.arch.arm.armbase import ArmMemoryOperand
+from barf.arch.arm.armbase import ArmRegisterListOperand
+from barf.arch.arm.armbase import ArmRegisterOperand
+from barf.arch.arm.armbase import ArmShiftedRegisterOperand
 from barf.arch.arm.armbase import ldm_stack_am_to_non_stack_am
 from barf.arch.arm.armbase import stm_stack_am_to_non_stack_am
+from barf.arch.translator import TranslationBuilder
+from barf.core.reil import ReilImmediateOperand
+from barf.core.reil import ReilInstructionBuilder
+from barf.core.reil import ReilMnemonic
+from barf.core.reil import ReilRegisterOperand
+from barf.utils.utils import VariableNamer
 
 FULL_TRANSLATION = 0
 LITE_TRANSLATION = 1
@@ -815,6 +814,51 @@ class ArmTranslator(object):
 
         self._update_flags_data_proc_sub(tb, oprnd1, oprnd2, result) # S = 1 (implied in the instruction)
 
+    def _translate_cbz(self, tb, instruction):
+        oprnd1 = tb.read(instruction.operands[0])
+        arm_operand = instruction.operands[1]
+
+        if isinstance(arm_operand, ArmImmediateOperand):
+            target = ReilImmediateOperand(arm_operand.immediate << 8, self._pc.size + 8)
+        elif isinstance(arm_operand, ArmRegisterOperand):
+            target = ReilRegisterOperand(arm_operand.name, arm_operand.size)
+            target = tb._and_regs(target, ReilImmediateOperand(0xFFFFFFFE, target.size))
+
+            tmp0 = tb.temporal(target.size + 8)
+            tmp1 = tb.temporal(target.size + 8)
+
+            tb.add(self._builder.gen_str(target, tmp0))
+            tb.add(self._builder.gen_bsh(tmp0, ReilImmediateOperand(8, target.size + 8), tmp1))
+
+            target = tmp1
+        else:
+            raise Exception()
+
+        tb._jump_if_zero(oprnd1, target)
+
+    def _translate_cbnz(self, tb, instruction):
+        oprnd0 = tb.read(instruction.operands[0])
+        arm_operand = instruction.operands[1]
+
+        if isinstance(arm_operand, ArmImmediateOperand):
+            target = ReilImmediateOperand(arm_operand.immediate << 8, self._pc.size + 8)
+        elif isinstance(arm_operand, ArmRegisterOperand):
+            target = ReilRegisterOperand(arm_operand.name, arm_operand.size)
+            target = tb._and_regs(target, ReilImmediateOperand(0xFFFFFFFE, target.size))
+
+            tmp0 = tb.temporal(target.size + 8)
+            tmp1 = tb.temporal(target.size + 8)
+
+            tb.add(self._builder.gen_str(target, tmp0))
+            tb.add(self._builder.gen_bsh(tmp0, ReilImmediateOperand(8, target.size + 8), tmp1))
+
+            target = tmp1
+        else:
+            raise Exception()
+
+        neg_oprnd = tb._negate_reg(oprnd0)
+
+        tb._jump_if_zero(neg_oprnd, target)
 
 # "Load/store word and unsigned byte Instructions"
 # ============================================================================ #
