@@ -959,6 +959,18 @@ class ArmTranslator(object):
     def _translate_blt(self, tb, instruction):
         self._translate_branch(tb, instruction, link = False)
 
+    def _translate_bge(self, tb, instruction):
+        self._translate_branch(tb, instruction, link = False)
+
+    def _translate_bhi(self, tb, instruction):
+        self._translate_branch(tb, instruction, link = False)
+
+    def _translate_blo(self, tb, instruction):
+        self._translate_branch(tb, instruction, link = False)
+
+    def _translate_bls(self, tb, instruction):
+        self._translate_branch(tb, instruction, link = False)
+
     # def _translate_branch(self, tb, instruction, link):
 
     #     arm_operand = instruction.operands[0]
