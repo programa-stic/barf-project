@@ -121,7 +121,7 @@ class ArmDisassembler(Disassembler):
         # Special case: register list "{rX - rX}", stored as a series of registers has
         # to be converted to ArmRegisterListOperand.
         if "{" in cs_insn.op_str:
-            print "REGLIST"
+            # print "REGLIST"
             reg_list = []
             op_translated = []
             if not("push" in cs_insn.mnemonic or "pop" in cs_insn.mnemonic):
@@ -174,29 +174,17 @@ class ArmDisassembler(Disassembler):
     def disassemble(self, data, address, used_disassembler=1):
         """Disassemble the data into an instruction.
         """
-
         self._disassembler = self._avaliable_disassemblers[used_disassembler]
 
         # TODO: DECOUPLE: parser vs capstone translation
         disasm = self._cs_disassemble_one(data, address)
 
-        if disasm:
-            instr =  self._cs_translate_insn(disasm)
+        instr =  self._cs_translate_insn(disasm)
 
-            if instr:
-                instr.address = address
-                instr.size = disasm.size
-                instr.bytes = data[0:disasm.size]
-        else:
-            asm = "mov r0, r0" # Preferred ARM no-operation code
-            size = 4
-
-            instr = self._parser.parse(asm)
-
-            if instr:
-                instr.address = address
-                instr.size = size
-                instr.bytes = data[0:size]
+        if instr:
+            instr.address = address
+            instr.size = disasm.size
+            instr.bytes = data[0:disasm.size]
 
         return instr
 
@@ -230,10 +218,7 @@ class ArmDisassembler(Disassembler):
             if len(disasm) > 0:
                 return disasm[0]
             else:
-                # raise Exception("CAPSTONE: Unknown instruction (Addr: {:s}).".format(hex(address)))
-
-                return None
-
+                raise Exception("CAPSTONE: Unknown instruction (Addr: {:s}).".format(hex(address)))
 
 #         asm, size = "", 0
 #

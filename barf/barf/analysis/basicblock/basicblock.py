@@ -587,7 +587,10 @@ class BasicBlockBuilder(object):
                 # TODO: Log error.
                 break
 
-            asm = self._disasm.disassemble(data_chunk, addr)
+            try:
+                asm = self._disasm.disassemble(data_chunk, addr)
+            except:
+                break
 
             if not asm:
                 break
