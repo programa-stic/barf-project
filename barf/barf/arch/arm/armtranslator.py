@@ -400,8 +400,14 @@ class ArmTranslator(object):
         """
 
         # Retrieve translation function.
-        translator_name = "_translate_" + instruction.mnemonic
-        translator_fn = getattr(self, translator_name, self._not_implemented)
+        # TODO: Improve this.
+        if not "." in instruction.mnemonic:
+            translator_name = "_translate_" + instruction.mnemonic
+            translator_fn = getattr(self, translator_name, self._not_implemented)
+        else:
+            mnemonic = instruction.mnemonic.split(".")[0]
+            translator_name = "_translate_" + mnemonic
+            translator_fn = getattr(self, translator_name, self._not_implemented)
 
         # Translate instruction.
         tb = ArmTranslationBuilder(self._ir_name_generator, self._arch_mode)

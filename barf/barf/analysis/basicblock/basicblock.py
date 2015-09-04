@@ -626,6 +626,11 @@ class BasicBlockBuilder(object):
                 taken, not_taken, direct = self._extract_branches(asm, ir)
                 break
 
+            # Process ARM instrs: pop reg, {reg*, pc}
+            if  asm.mnemonic == "pop" and \
+                "pc" in str(asm.operands[1]):
+                break
+
             # Update instruction pointer and iterate.
             addr += asm.size
 
