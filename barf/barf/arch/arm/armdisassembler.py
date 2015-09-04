@@ -1,6 +1,5 @@
 # Copyright (c) 2014, Fundacion Dr. Manuel Sadosky
 # All rights reserved.
-from barf.arch.arch import ARCH_ARM_MODE_THUMB
 
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -31,15 +30,14 @@ disassembly framework.
 from capstone import *
 from capstone.arm import *
 
+from barf.arch import ARCH_ARM_MODES_MAX
 from barf.arch import ARCH_ARM_MODE_32
 from barf.arch import ARCH_ARM_MODE_ARM
 from barf.arch import ARCH_ARM_MODE_THUMB
-from barf.arch import ARCH_ARM_MODES_MAX
+from barf.arch.arm.armbase import *
+from barf.arch.arm.armbase import ArmInstruction
 from barf.arch.arm.armparser import ArmParser
 from barf.core.disassembler import Disassembler
-
-from barf.arch.arm.armbase import ArmInstruction
-from barf.arch.arm.armbase import *
 
 cc_capstone_barf_mapper = {
     ARM_CC_EQ : ARM_COND_CODE_EQ,
@@ -64,13 +62,14 @@ arch_mode_barf_to_capstone_mapper = {
     ARCH_ARM_MODE_THUMB : CS_MODE_THUMB,
 }
 
+
 class ArmDisassembler(Disassembler):
     """ARM Disassembler.
     """
 
     def __init__(self, architecture_mode=ARCH_ARM_MODE_32):
         super(ArmDisassembler, self).__init__()
-        
+
         self._architecture_mode = architecture_mode
         self._arch_info = ArmArchitectureInformation(architecture_mode)
 
@@ -80,18 +79,18 @@ class ArmDisassembler(Disassembler):
         }
 
         self._parser = ArmParser(architecture_mode)
-        
+
         self._avaliable_disassemblers = [None] * ARCH_ARM_MODES_MAX
         self._avaliable_disassemblers[ARCH_ARM_MODE_ARM] = Cs(CS_ARCH_ARM, arch_mode_barf_to_capstone_mapper[ARCH_ARM_MODE_ARM])
         self._avaliable_disassemblers[ARCH_ARM_MODE_THUMB] = Cs(CS_ARCH_ARM, arch_mode_barf_to_capstone_mapper[ARCH_ARM_MODE_THUMB])
         # TODO: DECOUPLE: detail true vs false
         self._avaliable_disassemblers[ARCH_ARM_MODE_ARM].detail = True
         self._avaliable_disassemblers[ARCH_ARM_MODE_THUMB].detail = True
-        
-        self._disassembler = self._avaliable_disassemblers[0]
+
+        self._disassembler = self._avaliable_disassemblers[1]
 
     def _cs_translate_operand(self, cs_op, cs_insn):
-        
+
         if cs_op.type == ARM_OP_REG:
             name = cs_insn.reg_name(cs_op.value.reg)
             if name in self._arch_info.registers_size:
@@ -112,13 +111,13 @@ class ArmDisassembler(Disassembler):
             pass
             # TODO other operands
 #             raise Exception("Unknown Capstone operand type.")
-        
+
         return oprnd
 
     def _cs_translate_insn(self, cs_insn):
 
         operands = [self._cs_translate_operand(op, cs_insn) for op in cs_insn.operands]
-        
+
         # Special case: register list "{rX - rX}", stored as a series of registers has
         # to be converted to ArmRegisterListOperand.
         if "{" in cs_insn.op_str:
@@ -129,14 +128,14 @@ class ArmDisassembler(Disassembler):
                 # First operand is the base (in push/pop, the base register, sp,  is omitted)
                 op_translated.append(operands[0])
                 operands = operands[1:]
-                 
+
             for r in operands:
                 reg_list.append([r])
-    
+
             op_translated.append(ArmRegisterListOperand(reg_list, reg_list[0][0].size))
-            
+
             operands = op_translated
-            
+
         # TODO: Temporary hack to accommodate THUMB short notation:
         # "add r0, r1" -> "add r0, r0, r1"
         if len(operands) == 2 and (cs_insn.mnemonic == "add" or
@@ -146,61 +145,70 @@ class ArmDisassembler(Disassembler):
             operands = [operands[0],operands[0],operands[1]]
 
         # TODO: Remove suffixes of the mnemonic (cs_insn.mnemonic[:-2])
-    
+
         instr = ArmInstruction(
             cs_insn.mnemonic + " " + cs_insn.op_str,
             cs_insn.mnemonic,
             operands,
             self._architecture_mode
         )
-        
+
         #DEBUG
 #         import binascii
 #         print "ORIG INSN: " + instr.orig_instr + "   ADD: " + hex(cs_insn.address) + "   SIZE: " + str(cs_insn.size)
 #         import pprint
 #         pprint.pprint(cs_insn.bytes)
-    
+
         if cs_insn.cc is not ARM_CC_INVALID:
             instr.condition_code = cc_capstone_barf_mapper[cs_insn.cc]
-    
+
         if cs_insn.update_flags:
             instr.update_flags = True
-    
-        # TODO: LOAD/STORE MODE (it may be necessary to parse the mnemonic).    
+
+        # TODO: LOAD/STORE MODE (it may be necessary to parse the mnemonic).
 #         if "ldm_stm_addr_mode" in mnemonic:
 #             instr.ldm_stm_addr_mode = ldm_stm_am_mapper[mnemonic["ldm_stm_addr_mode"]]
-    
+
         return instr
 
-    def disassemble(self, data, address, used_disassembler = 0):
+    def disassemble(self, data, address, used_disassembler=1):
         """Disassemble the data into an instruction.
         """
-        
+
         self._disassembler = self._avaliable_disassemblers[used_disassembler]
-        
+
         # TODO: DECOUPLE: parser vs capstone translation
         disasm = self._cs_disassemble_one(data, address)
-        
-        instr =  self._cs_translate_insn(disasm)
 
-        if instr:
-            instr.address = address
-            instr.size = disasm.size
-            instr.bytes = data[0:disasm.size]
- 
+        if disasm:
+            instr =  self._cs_translate_insn(disasm)
+
+            if instr:
+                instr.address = address
+                instr.size = disasm.size
+                instr.bytes = data[0:disasm.size]
+        else:
+            asm = "mov r0, r0" # Preferred ARM no-operation code
+            size = 4
+
+            instr = self._parser.parse(asm)
+
+            if instr:
+                instr.address = address
+                instr.size = size
+                instr.bytes = data[0:size]
+
         return instr
-        
-        
 
 #         asm, size = self._cs_disassemble_one(data, address)
-# 
+#
 #         instr = self._parser.parse(asm) if asm else None
-# 
+#
 #         if instr:
 #             instr.address = address
 #             instr.size = size
 #             instr.bytes = data[0:size]
-# 
+#
 #         return instr
 
     def disassemble_all(self, data, address):
@@ -213,7 +221,7 @@ class ArmDisassembler(Disassembler):
         """
         # TODO: DECOUPLE: disasm_lite vs disasm
         disasm = list(self._disassembler.disasm(data, address))
-    
+
         if len(disasm) > 0:
             return disasm[0]
         else:
@@ -222,21 +230,23 @@ class ArmDisassembler(Disassembler):
             if len(disasm) > 0:
                 return disasm[0]
             else:
-                raise Exception("CAPSTONE: Unknown instruction (Addr: {:s}).".format(hex(address)))
-            
+                # raise Exception("CAPSTONE: Unknown instruction (Addr: {:s}).".format(hex(address)))
+
+                return None
+
 
 #         asm, size = "", 0
-# 
+#
 #         disasm = list(self._disassembler.disasm(data, address))
-# 
+#
 #         if len(disasm) > 0:
 #             address, size, mnemonic, op_str = disasm[0]
-# 
+#
 #             asm = str(mnemonic + " " + op_str).strip()
 #         else:
 #             # FIXME: Hack to bypass immediate constants embedded in the
 #             # text section that do not conform to any valid instruction.
 #             asm = "mov r0, r0" # Preferred ARM no-operation code
 #             size = 4
-# 
+#
 #         return asm, size

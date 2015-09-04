@@ -399,6 +399,10 @@ class ArmInstruction(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    @property
+    def prefix(self):
+        return ""
+
 
 class ArmOperand(object):
     """Representation of ARM operand."""
