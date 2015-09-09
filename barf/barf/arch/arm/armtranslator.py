@@ -414,7 +414,8 @@ class ArmTranslator(object):
 
         # TODO: Improve this.
         if instruction.mnemonic in ["b", "bl", "bx", "blx", "bne", "beq", "bpl",
-                                    "ble", "bcs", "bhs", "blt"]:
+                                    "ble", "bcs", "bhs", "blt", "bge", "bhi",
+                                    "blo", "bls"]:
             translator_fn(tb, instruction)
         else:
             # Pre-processing: evaluate flags
