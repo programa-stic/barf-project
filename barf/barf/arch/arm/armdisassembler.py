@@ -36,7 +36,7 @@ from barf.arch import ARCH_ARM_MODE_ARM
 from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch.arm.armbase import *
 from barf.arch.arm.armbase import ArmInstruction
-from barf.arch.arm.armparser import ArmParser
+from barf.arch.arm.armparser import ArmParser, displacement
 from barf.core.disassembler import Disassembler
 
 cc_capstone_barf_mapper = {
@@ -158,7 +158,12 @@ class ArmDisassembler(Disassembler):
             index_type = ARM_MEMORY_INDEX_OFFSET
             
             # TODO: displacement
-            displacement = None
+            if cs_op.mem.index > 0:
+                displacement = self._cs_reg_idx_to_arm_op_reg(cs_op.mem.index, cs_insn)
+                if cs_op.mem.disp > 0:
+                    raise Exception("ARM_OP_MEM: Both index and disp > 0, only one can be.")
+            else:
+                displacement = ArmImmediateOperand(cs_op.mem.disp, self._arch_info.operand_size)
             
             disp_minus = True if cs_op.mem.index == -1 else False
             
