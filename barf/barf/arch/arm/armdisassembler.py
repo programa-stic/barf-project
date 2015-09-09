@@ -196,6 +196,10 @@ class ArmDisassembler(Disassembler):
 
             operands = op_translated
 
+        # Remove narrow/wide compiler suffixes (.w/.n), they are of no interest for tranlation purpouses
+        if mnemonic[-2:] == ".w" or mnemonic[-2:] == ".n":
+            mnemonic = mnemonic[:-2]
+        
         # Remove update flags suffix (s)
         if cs_insn.update_flags and mnemonic[-1] == 's':
             mnemonic = mnemonic[:-1]
