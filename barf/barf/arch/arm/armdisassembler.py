@@ -176,13 +176,15 @@ class ArmDisassembler(Disassembler):
     def _cs_translate_insn(self, cs_insn):
 
         operands = [self._cs_translate_operand(op, cs_insn) for op in cs_insn.operands]
+        
+        mnemonic = cs_insn.mnemonic
 
         # Special case: register list "{rX - rX}", stored as a series of registers has
         # to be converted to ArmRegisterListOperand.
         if "{" in cs_insn.op_str:
             reg_list = []
             op_translated = []
-            if not("push" in cs_insn.mnemonic or "pop" in cs_insn.mnemonic):
+            if not("push" in mnemonic or "pop" in mnemonic):
                 # First operand is the base (in push/pop, the base register, sp,  is omitted)
                 op_translated.append(operands[0])
                 operands = operands[1:]
@@ -194,19 +196,21 @@ class ArmDisassembler(Disassembler):
 
             operands = op_translated
 
+        # Remove update flags suffix (s)
+        if cs_insn.update_flags and mnemonic[-1] == 's':
+            mnemonic = mnemonic[:-1]
+
         # TODO: Temporary hack to accommodate THUMB short notation:
         # "add r0, r1" -> "add r0, r0, r1"
-        if len(operands) == 2 and (cs_insn.mnemonic == "add" or
-                                   cs_insn.mnemonic == "eor" or
-                                   cs_insn.mnemonic == "orr" or
-                                   cs_insn.mnemonic == "sub"):
+        if len(operands) == 2 and (mnemonic == "add" or
+                                   mnemonic == "eor" or
+                                   mnemonic == "orr" or
+                                   mnemonic == "sub"):
             operands = [operands[0],operands[0],operands[1]]
 
-        # TODO: Remove suffixes of the mnemonic (cs_insn.mnemonic[:-2])
-
         instr = ArmInstruction(
-            cs_insn.mnemonic + " " + cs_insn.op_str,
-            cs_insn.mnemonic,
+            mnemonic + " " + cs_insn.op_str,
+            mnemonic,
             operands,
             self._architecture_mode
         )
