@@ -218,7 +218,7 @@ class ArmDisassembler(Disassembler):
             if len(disasm) > 0:
                 return disasm[0]
             else:
-                raise Exception("CAPSTONE: Unknown instruction (Addr: {:s}).".format(hex(address)))
+                raise InvalidDisassemblerData("CAPSTONE: Unknown instruction (Addr: {:s}).".format(hex(address)))
 
 #         asm, size = "", 0
 #

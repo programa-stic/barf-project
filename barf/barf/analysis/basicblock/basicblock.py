@@ -35,6 +35,7 @@ from pydot import Node
 from barf.core.reil import DualInstruction
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilImmediateOperand
+from barf.arch.arm.armdisassembler import InvalidDisassemblerData
 
 # CFG recovery mode
 BARF_DISASM_LINEAR = 0       # Linear Sweep
@@ -589,7 +590,7 @@ class BasicBlockBuilder(object):
 
             try:
                 asm = self._disasm.disassemble(data_chunk, addr)
-            except:
+            except InvalidDisassemblerData:
                 break
 
             if not asm:

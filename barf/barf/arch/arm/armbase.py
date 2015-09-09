@@ -725,3 +725,7 @@ class ArmMemoryOperand(ArmOperand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+#TODO: generalize for all disassemblers, not just ARM
+class InvalidDisassemblerData(Exception):
+    pass
