@@ -62,7 +62,6 @@ arch_mode_barf_to_capstone_mapper = {
     ARCH_ARM_MODE_THUMB : CS_MODE_THUMB,
 }
 
-
 class ArmDisassembler(Disassembler):
     """ARM Disassembler.
     """
@@ -86,30 +85,90 @@ class ArmDisassembler(Disassembler):
         # TODO: DECOUPLE: detail true vs false
         self._avaliable_disassemblers[ARCH_ARM_MODE_ARM].detail = True
         self._avaliable_disassemblers[ARCH_ARM_MODE_THUMB].detail = True
-
+        
+        # TODO: define default disassembler externally
         self._disassembler = self._avaliable_disassemblers[1]
 
+    def _cs_reg_idx_to_arm_op_reg(self, cs_reg_idx, cs_insn):
+        name = cs_insn.reg_name(cs_reg_idx)
+        if name in self._arch_info.registers_size:
+            size = self._arch_info.registers_size[name]
+        else:
+            size = self._arch_info.architecture_size
+        return ArmRegisterOperand(name, size)
+    
     def _cs_translate_operand(self, cs_op, cs_insn):
 
         if cs_op.type == ARM_OP_REG:
-            name = cs_insn.reg_name(cs_op.value.reg)
-            if name in self._arch_info.registers_size:
-                size = self._arch_info.registers_size[name]
-            else:
-                size = self._arch_info.architecture_size
-            oprnd = ArmRegisterOperand(name, size)
+            oprnd = self._cs_reg_idx_to_arm_op_reg(cs_op.value.reg, cs_insn)
 
         elif cs_op.type == ARM_OP_IMM:
             size = self._arch_info.operand_size
             oprnd = ArmImmediateOperand(cs_op.value.imm, size)
 
         elif cs_op.type == ARM_OP_MEM:
-            oprnd = None
-            pass
+#             print(dir(cs_op))
+            import pprint
+             
+#             if cs_op.mem.index > 0:
+#                 pprint.pprint(cs_op.mem)
+#                 print cs_insn.mnemonic
+#                 print cs_insn.op_str
+#                 print type(cs_op.mem.base)
+#                 print cs_op.mem.index
+#                 print cs_op.mem.disp
+#                 print hex(cs_insn.address)
+#         
+#             if "memory_operand" in tokens:
+#                 mem_oprnd = tokens["memory_operand"]
+#         
+#                 if "offset" in mem_oprnd:
+#                     index_type = ARM_MEMORY_INDEX_OFFSET
+#                     mem_oprnd = mem_oprnd["offset"]
+#                 elif "pre" in mem_oprnd:
+#                     index_type = ARM_MEMORY_INDEX_PRE
+#                     mem_oprnd = mem_oprnd["pre"]
+#                 elif "post" in mem_oprnd:
+#                     index_type = ARM_MEMORY_INDEX_POST
+#                     mem_oprnd = mem_oprnd["post"]
+#                 else:
+#                     raise Exception("Unknown index type.")
+#         
+#                 reg_base = process_register(mem_oprnd["base"])
+#                 displacement = mem_oprnd.get("disp", None)
+#                 disp_minus = True if mem_oprnd.get("minus") else False
+#         
+#                 if displacement:
+#                     if "shift" in displacement:
+#                         displacement = process_shifted_register(displacement["shift"])
+#                     elif "reg" in displacement:
+#                         displacement = process_register(displacement["reg"])
+#                     elif "imm" in displacement:
+#                         displacement = ArmImmediateOperand("".join(displacement["imm"]), arch_info.operand_size)
+#                     else:
+#                         raise Exception("Unknown displacement type.")
+#         
+#                 size = arch_info.operand_size
+#                 # TODO: Add sizes for LDR/STR variations (half word, byte, double word)
+#                 oprnd = ArmMemoryOperand(reg_base, index_type, displacement, disp_minus, size)        
+        
+            reg_base = self._cs_reg_idx_to_arm_op_reg(cs_op.mem.base, cs_insn)
+            
+            # TODO: memory index type
+            index_type = ARM_MEMORY_INDEX_OFFSET
+            
+            # TODO: displacement
+            displacement = None
+            
+            disp_minus = True if cs_op.mem.index == -1 else False
+            
+            size = self._arch_info.operand_size
+            oprnd = ArmMemoryOperand(reg_base, index_type, displacement, disp_minus, size)
+#             print "ArmMemoryOperand: " + str(oprnd)
         else:
             oprnd = None
-            pass
-            # TODO other operands
+            print "Unkown operand type: " + str(cs_op.type)
+            # TODO: other operands
 #             raise Exception("Unknown Capstone operand type.")
 
         return oprnd
@@ -121,7 +180,6 @@ class ArmDisassembler(Disassembler):
         # Special case: register list "{rX - rX}", stored as a series of registers has
         # to be converted to ArmRegisterListOperand.
         if "{" in cs_insn.op_str:
-            # print "REGLIST"
             reg_list = []
             op_translated = []
             if not("push" in cs_insn.mnemonic or "pop" in cs_insn.mnemonic):
