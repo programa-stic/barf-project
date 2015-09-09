@@ -97,6 +97,39 @@ class ArmDisassembler(Disassembler):
             size = self._arch_info.architecture_size
         return ArmRegisterOperand(name, size)
     
+    def _cs_shift_to_arm_op(self, cs_op, cs_insn, arm_base):
+    
+        if cs_op.shift.type == 0:
+            raise Exception("_cs_shift_to_arm_op: Invalid shift type")
+        
+        cs_shift_mapper = {
+            ARM_SFT_ASR : "asr",
+            ARM_SFT_LSL : "lsl",
+            ARM_SFT_LSR : "lsr",
+            ARM_SFT_ROR : "ror",
+            ARM_SFT_RRX : "rrx",
+            ARM_SFT_ASR_REG : "asr",
+            ARM_SFT_LSL_REG : "lsl",
+            ARM_SFT_LSR_REG : "lsr",
+            ARM_SFT_ROR_REG : "ror",
+            ARM_SFT_RRX_REG : "rrx",
+        }
+        # The base register (arm_base) is not included in the shift struct in Capstone, so it's provided separately
+        sh_type = cs_shift_mapper[cs_op.shift.type]
+    
+        if cs_op.shift.type <= ARM_SFT_RRX:
+            amount = ArmImmediateOperand(cs_op.shift.value, self._arch_info.operand_size)
+            # TODO: check if this is a valid case
+            if cs_op.shift.value == 0:
+                raise Exception("_cs_shift_to_arm_op: shift value == 0")
+        elif cs_op.shift.type <= ARM_SFT_RRX_REG:
+            amount = self._cs_reg_idx_to_arm_op_reg(cs_op.shift.value, cs_insn)
+        else:
+            raise Exception("_cs_shift_to_arm_op: Unknown shift type.")
+
+        return ArmShiftedRegisterOperand(arm_base, sh_type, amount, arm_base.size)
+
+
     def _cs_translate_operand(self, cs_op, cs_insn):
 
         if cs_op.type == ARM_OP_REG:
@@ -157,19 +190,37 @@ class ArmDisassembler(Disassembler):
             # TODO: memory index type
             index_type = ARM_MEMORY_INDEX_OFFSET
             
-            # TODO: displacement
             if cs_op.mem.index > 0:
-                displacement = self._cs_reg_idx_to_arm_op_reg(cs_op.mem.index, cs_insn)
+
                 if cs_op.mem.disp > 0:
                     raise Exception("ARM_OP_MEM: Both index and disp > 0, only one can be.")
+
+                displacement = self._cs_reg_idx_to_arm_op_reg(cs_op.mem.index, cs_insn)
+
+                # NOTE: In the case of a memory operand, in the second position (slot [1]),
+                # the information regarding wheter or not the displacement of the operand has
+                # a shifted register is encoded in the first operand (slot [0]), that doesn't
+                # have a direct relation with the other.
+                # TODO: Check if this has to be reported to CS.
+                
+                if cs_insn.operands[0].shift.type > 0:
+                    # There's a shift operation, the displacement extracted earlier was just the
+                    # base register of the shifted register that is generating the disaplacement.
+                    displacement = self._cs_shift_to_arm_op(cs_insn.operands[0], cs_insn, displacement)
+
             else:
                 displacement = ArmImmediateOperand(cs_op.mem.disp, self._arch_info.operand_size)
-            
+                
             disp_minus = True if cs_op.mem.index == -1 else False
             
-            size = self._arch_info.operand_size
-            oprnd = ArmMemoryOperand(reg_base, index_type, displacement, disp_minus, size)
-#             print "ArmMemoryOperand: " + str(oprnd)
+            oprnd = ArmMemoryOperand(reg_base, index_type, displacement, disp_minus, self._arch_info.operand_size)
+            
+#             # DEBUG:
+#             if cs_insn.operands[0].shift.type > 0:
+#                 print cs_insn.op_str
+#                 print "ArmShiftedRegisterOperand: " + str(displacement)
+#                 print "ArmMemoryOperand: " + str(oprnd)
+
         else:
             oprnd = None
             print "Unkown operand type: " + str(cs_op.type)
