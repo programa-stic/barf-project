@@ -1350,10 +1350,6 @@ class X86Translator(object):
 
         oprnd0 = tb.read(instruction.operands[0])
 
-        print(str(oprnd0), oprnd0.size)
-
-        # oprnd0 == divisor
-
         if oprnd0.size == 8:
             oprnd1 = ReilRegisterOperand("ah", 8)
             oprnd2 = ReilRegisterOperand("al", 8)
