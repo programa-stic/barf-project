@@ -633,6 +633,11 @@ class BasicBlockBuilder(object):
                 "pc" in str(asm.operands[1]):
                 break
 
+            # Process ARM instrs: ldr pc, *
+            if  asm.mnemonic == "ldr" and \
+                "pc" in str(asm.operands[0]):
+                break
+
             # Update instruction pointer and iterate.
             addr += asm.size
 
