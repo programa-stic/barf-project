@@ -623,6 +623,7 @@ class BasicBlockBuilder(object):
             if  ir[-1].mnemonic == ReilMnemonic.JCC and \
                 not asm.mnemonic == "call" and \
                 not asm.mnemonic == "blx" and \
+                not asm.mnemonic == "bl" and \
                 not asm.prefix in ["rep", "repe", "repne", "repz"]:
                 taken, not_taken, direct = self._extract_branches(asm, ir)
                 break
