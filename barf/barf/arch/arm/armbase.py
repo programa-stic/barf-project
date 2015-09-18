@@ -729,3 +729,7 @@ class ArmMemoryOperand(ArmOperand):
 #TODO: generalize for all disassemblers, not just ARM
 class InvalidDisassemblerData(Exception):
     pass
+
+class CapstoneOperandNotSupported(Exception):
+    pass
+

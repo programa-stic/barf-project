@@ -228,11 +228,11 @@ class ArmDisassembler(Disassembler):
 
         else:
             oprnd = None
-            error_msg =  "Instruction: " + cs_insn.mnemonic + ". Unkown operand type: " + str(cs_op.type)
+            error_msg =  "Instruction: " + cs_insn.mnemonic  + " " + cs_insn.op_str + ". Unkown operand type: " + str(cs_op.type)
             
             logger.error(error_msg)
 
-#             raise Exception(error_msg)
+            raise CapstoneOperandNotSupported(error_msg)
 
 
         return oprnd
