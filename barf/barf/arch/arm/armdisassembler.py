@@ -240,7 +240,7 @@ class ArmDisassembler(Disassembler):
     def _cs_translate_insn(self, cs_insn):
 
         operands = [self._cs_translate_operand(op, cs_insn) for op in cs_insn.operands]
-        
+            
         mnemonic = cs_insn.mnemonic
 
         # Special case: register list "{rX - rX}", stored as a series of registers has
@@ -266,8 +266,10 @@ class ArmDisassembler(Disassembler):
             
         # Remove condition code from the mnemonic, this goes first than the removal of the update flags suffix,
         # because according to UAL syntax the this suffix goes after the update flags suffix in the mnemonic.
-        if cs_insn.cc is not ARM_CC_INVALID and cs_insn.cc is not ARM_CC_AL:
-            mnemonic = mnemonic[:-2]
+        if cs_insn.cc != ARM_CC_INVALID and cs_insn.cc != ARM_CC_AL:
+            cc_suffix_str = cc_inverse_mapper[cc_capstone_barf_mapper[cs_insn.cc]]
+            if cc_suffix_str == mnemonic[-2:]:
+                mnemonic = mnemonic[:-2]
         
         # Remove update flags suffix (s)
         if cs_insn.update_flags and mnemonic[-1] == 's':
@@ -294,7 +296,7 @@ class ArmDisassembler(Disassembler):
 #         import pprint
 #         pprint.pprint(cs_insn.bytes)
 
-        if cs_insn.cc is not ARM_CC_INVALID:
+        if cs_insn.cc != ARM_CC_INVALID:
             instr.condition_code = cc_capstone_barf_mapper[cs_insn.cc]
 
         if cs_insn.update_flags:
