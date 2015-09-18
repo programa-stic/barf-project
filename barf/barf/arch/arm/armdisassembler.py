@@ -27,6 +27,8 @@ This modules contains a ARM disassembler based on the Capstone
 disassembly framework.
 
 """
+import logging
+
 from capstone import *
 from capstone.arm import *
 
@@ -61,6 +63,9 @@ arch_mode_barf_to_capstone_mapper = {
     ARCH_ARM_MODE_ARM : CS_MODE_ARM,
     ARCH_ARM_MODE_THUMB : CS_MODE_THUMB,
 }
+
+logger = logging.getLogger(__name__)
+
 
 class ArmDisassembler(Disassembler):
     """ARM Disassembler.
@@ -223,9 +228,12 @@ class ArmDisassembler(Disassembler):
 
         else:
             oprnd = None
-            print "Unkown operand type: " + str(cs_op.type)
-            # TODO: other operands
-#             raise Exception("Unknown Capstone operand type.")
+            error_msg =  "Instruction: " + cs_insn.mnemonic + ". Unkown operand type: " + str(cs_op.type)
+            
+            logger.error(error_msg)
+
+#             raise Exception(error_msg)
+
 
         return oprnd
 
@@ -254,6 +262,11 @@ class ArmDisassembler(Disassembler):
 
         # Remove narrow/wide compiler suffixes (.w/.n), they are of no interest for tranlation purpouses
         if mnemonic[-2:] == ".w" or mnemonic[-2:] == ".n":
+            mnemonic = mnemonic[:-2]
+            
+        # Remove condition code from the mnemonic, this goes first than the removal of the update flags suffix,
+        # because according to UAL syntax the this suffix goes after the update flags suffix in the mnemonic.
+        if cs_insn.cc is not ARM_CC_INVALID and cs_insn.cc is not ARM_CC_AL:
             mnemonic = mnemonic[:-2]
         
         # Remove update flags suffix (s)
