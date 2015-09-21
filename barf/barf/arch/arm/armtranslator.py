@@ -723,6 +723,22 @@ class ArmTranslator(object):
         if instruction.update_flags:
             self._update_flags_data_proc_other(tb, instruction.operands[1], oprnd1, None, oprnd1)
 
+    def _translate_movw(self, tb, instruction):
+        
+        reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
+        word_mask = ReilImmediateOperand(0x0000FFFF, reil_operand.size)
+        and_temp = tb.temporal(reil_operand.size)
+
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tb.write(instruction.operands[0], oprnd1)
+
+        tb.add(self._builder.gen_and(reil_operand, word_mask, and_temp))  # filter bits [7:0] part of result
+        
+        tb.add(self._builder.gen_str(and_temp, reil_operand))
+        
+        # It doesn't update flags
+
     def _translate_and(self, tb, instruction):
         oprnd1 = tb.read(instruction.operands[1])
         oprnd2 = tb.read(instruction.operands[2])
