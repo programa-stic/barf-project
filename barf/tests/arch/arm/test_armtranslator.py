@@ -387,69 +387,56 @@ class ArmTranslationTests(unittest.TestCase):
         for instr in instr_samples:
             self.__test_asm_instruction_with_mem(instr, 'r12')
 
-    # def test_branch_instructions(self):
-    #     untouched_value = 0x45454545
-    #     touched_value = 0x31313131
+    def test_branch_instructions(self):
+        untouched_value = 0x45454545
+        touched_value = 0x31313131
 
-    #     # R11 is used as a dirty register to check if the branch was
-    #     # taken or not.
-    #     instr_samples = [
-    #         [
-    #             "mov r11, #0x{:x}".format(untouched_value),
-    #             "b #0x800c",
-    #             "mov r11, #0x{:x}".format(touched_value),
-    #             "mov r0, r0",
-    #         ],
+        # R11 is used as a dirty register to check if the branch was
+        # taken or not.
+        instr_samples = [
+            ["mov r11, #0x{:x}".format(untouched_value),
+             "b #0x800c",
+             "mov r11, #0x{:x}".format(touched_value),
+             "mov r0, r0",
+            ],
+            ["mov r11, #0x{:x}".format(untouched_value),
+             "bx #0x800c",
+             "mov r11, #0x{:x}".format(touched_value),
+             "mov r0, r0",
+            ],
+            ["mov r11, #0x{:x}".format(untouched_value),
+             "bl #0x800c",
+             "mov r11, #0x{:x}".format(touched_value),
+             "mov r0, r0",
+            ],
+            ["mov r11, #0x{:x}".format(untouched_value),
+             "blx #0x800c",
+             "mov r11, #0x{:x}".format(touched_value),
+             "mov r0, r0",
+            ],
+            ["movs r11, #0x{:x}".format(untouched_value),
+             "bne #0x800c",
+             "mov r11, #0x{:x}".format(touched_value),
+             "mov r0, r0",
+            ],
+            ["mov r11, #0x{:x}".format(untouched_value),
+             "mov r1, #0x8010",
+             "bx r1",
+             "mov r11, #0x{:x}".format(touched_value),
+             "mov r0, r0",
+            ],
+            ["mov r11, #0x{:x}".format(untouched_value),
+             "mov r1, #0x8010",
+             "blx r1",
+             "mov r11, #0x{:x}".format(touched_value),
+             "mov r0, r0",
+            ],
+        ]
 
-    #         [
-    #             "mov r11, #0x{:x}".format(untouched_value),
-    #             "bx #0x800c",
-    #             "mov r11, #0x{:x}".format(touched_value),
-    #             "mov r0, r0",
-    #         ],
+        for instr in instr_samples:
+            reil_ctx_out = self.__execute_asm(instr, 0x8000)
 
-    #         [
-    #             "mov r11, #0x{:x}".format(untouched_value),
-    #             "bl #0x800c",
-    #             "mov r11, #0x{:x}".format(touched_value),
-    #             "mov r0, r0",
-    #         ],
-
-    #         [
-    #             "mov r11, #0x{:x}".format(untouched_value),
-    #             "blx #0x800c",
-    #             "mov r11, #0x{:x}".format(touched_value),
-    #             "mov r0, r0",
-    #         ],
-
-    #         [
-    #             "movs r11, #0x{:x}".format(untouched_value),
-    #             "bne #0x800c",
-    #             "mov r11, #0x{:x}".format(touched_value),
-    #             "mov r0, r0",
-    #         ],
-
-    #         [
-    #             "mov r11, #0x{:x}".format(untouched_value),
-    #             "mov r1, #0x8010",
-    #             "bx r1",
-    #             "mov r11, #0x{:x}".format(touched_value),
-    #             "mov r0, r0",
-    #         ],
-
-    #         [
-    #             "mov r11, #0x{:x}".format(untouched_value),
-    #             "mov r1, #0x8010",
-    #             "blx r1",
-    #             "mov r11, #0x{:x}".format(touched_value),
-    #             "mov r0, r0",
-    #         ],
-    #     ]
-
-    #     for instr in instr_samples:
-    #         reil_ctx_out = self.__execute_asm(instr, 0x8000)
-
-    #         self.assertTrue(reil_ctx_out['r11'] == untouched_value)
+            self.assertTrue(reil_ctx_out['r11'] == untouched_value)
 
 
 def main():
