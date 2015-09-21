@@ -813,6 +813,11 @@ class ArmTranslator(object):
         if instruction.update_flags:
             self._update_flags_data_proc_sub(tb, oprnd1, oprnd2, result)
 
+    def _translate_rsb(self, tb, instruction):
+        instruction.operands[1], instruction.operands[2] = instruction.operands[2], instruction.operands[1]
+        
+        self._translate_sub(tb, instruction)
+
     def _translate_mul(self, tb, instruction):
         oprnd1 = tb.read(instruction.operands[1])
         oprnd2 = tb.read(instruction.operands[2])
