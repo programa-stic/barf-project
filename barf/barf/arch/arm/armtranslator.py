@@ -723,6 +723,15 @@ class ArmTranslator(object):
         if instruction.update_flags:
             self._update_flags_data_proc_other(tb, instruction.operands[1], oprnd1, None, oprnd1)
 
+    def _translate_mvn(self, tb, instruction):
+        
+        oprnd1 = tb.read(instruction.operands[1])
+        
+        tb.write(instruction.operands[0], tb._negate_reg(oprnd1))
+
+        if instruction.update_flags:
+            self._update_flags_data_proc_other(tb, instruction.operands[1], oprnd1, None, oprnd1)
+
     def _translate_movw(self, tb, instruction):
         
         reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
