@@ -2036,11 +2036,8 @@ class X86TranslationTests(unittest.TestCase):
     def __run_code(self, asm_list, address, ctx_init):
         reil_instrs = self.__asm_to_reil(asm_list, address)
 
-        for reil_instr in reil_instrs:
-            print(reil_instr)
-
         _, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm_list), ctx_init)
-        reil_ctx_out, _ = self.reil_emulator.execute(reil_instrs, start=0xdeadbeef << 8, registers=ctx_init)
+        reil_ctx_out, _ = self.reil_emulator.execute(reil_instrs, start=address << 8, registers=ctx_init)
 
         # Fix AF and PF.
         reil_ctx_out = self.__fix_reil_flags(reil_ctx_out, x86_ctx_out)
