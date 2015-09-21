@@ -940,6 +940,50 @@ class ArmTranslator(object):
 
         tb.add(self._builder.gen_stm(byte_reg, addr))
 
+    def _translate_ldrd(self, tb, instruction):
+
+        if len(instruction.operands) > 2: # Rd2 has been specified (UAL syntax)
+            addr_reg = tb._compute_memory_address(instruction.operands[2])
+        else:
+            addr_reg = tb._compute_memory_address(instruction.operands[1])
+        
+        reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
+        
+        tb.add(tb._builder.gen_ldm(addr_reg, reil_operand))
+
+        addr_reg = tb._add_to_reg(addr_reg, ReilImmediateOperand(4, reil_operand.size))
+        
+        if len(instruction.operands) > 2: # Rd2 has been specified (UAL syntax)
+            reil_operand = ReilRegisterOperand(instruction.operands[1].name, instruction.operands[0].size)
+        else:
+            # TODO: Assuming the register is written in its number format
+            # (no alias like lr or pc).
+            reil_operand = ReilRegisterOperand('r' + str(int(reil_operand.name[1:]) + 1), reil_operand.size)
+        
+        tb.add(tb._builder.gen_ldm(addr_reg, reil_operand))
+         
+    def _translate_strd(self, tb, instruction):
+        
+        if len(instruction.operands) > 2: # Rd2 has been specified (UAL syntax)
+            addr_reg = tb._compute_memory_address(instruction.operands[2])
+        else:
+            addr_reg = tb._compute_memory_address(instruction.operands[1])
+        
+        reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
+        
+        tb.add(tb._builder.gen_stm(reil_operand, addr_reg))
+
+        addr_reg = tb._add_to_reg(addr_reg, ReilImmediateOperand(4, reil_operand.size))
+        
+        if len(instruction.operands) > 2: # Rd2 has been specified (UAL syntax)
+            reil_operand = ReilRegisterOperand(instruction.operands[1].name, instruction.operands[0].size)
+        else:
+            # TODO: Assuming the register is written in its number format
+            # (no alias like lr or pc).
+            reil_operand = ReilRegisterOperand('r' + str(int(reil_operand.name[1:]) + 1), reil_operand.size)
+        
+        tb.add(tb._builder.gen_stm(reil_operand, addr_reg))
+
 
 # "Load/store multiple Instructions"
 # ============================================================================ #
