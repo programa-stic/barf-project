@@ -366,12 +366,12 @@ class ArmTranslator(object):
         """
         try:
             trans_instrs = self._translate(instruction)
-        except NotImplementedError:
+        except NotImplementedError as e:
             unkn_instr = self._builder.gen_unkn()
             unkn_instr.address = instruction.address << 8 | (0x0 & 0xff)
             trans_instrs = [unkn_instr]
 
-            self._log_not_supported_instruction(instruction)
+            self._log_not_supported_instruction(instruction, str(e))
         except Exception:
             self._log_translation_exception(instruction)
 
@@ -443,14 +443,15 @@ class ArmTranslator(object):
         """
         self._translation_mode = value
 
-    def _log_not_supported_instruction(self, instruction):
+    def _log_not_supported_instruction(self, instruction, reason = "unknown"):
         bytes_str = " ".join("%02x" % ord(b) for b in instruction.bytes)
-
+        
         logger.info(
-            "Instruction not supported: %s (%s [%s])",
+            "Instruction not supported: %s (%s [%s]). Reason: %s",
             instruction.mnemonic,
             instruction,
-            bytes_str
+            bytes_str,
+            reason
         )
 
     def _log_translation_exception(self, instruction):
@@ -880,6 +881,34 @@ class ArmTranslator(object):
         oprnd0 = tb.read(instruction.operands[0])
 
         tb.write(instruction.operands[1], oprnd0)
+
+    # TODO: Check if the byte suffix ('b') should be coded as extra information
+    # and removed from the mnemonic (handling all ldr/str translations in only
+    # two functions).
+    def _translate_ldrb(self, tb, instruction):
+        
+        reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
+        byte_mask = ReilImmediateOperand(0x000000FF, reil_operand.size)
+        and_temp = tb.temporal(reil_operand.size)
+
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tb.write(instruction.operands[0], oprnd1)
+        
+        tb.add(self._builder.gen_and(reil_operand, byte_mask, and_temp))  # filter bits [7:0] part of result
+        
+        tb.add(self._builder.gen_str(and_temp, reil_operand))
+
+    def _translate_strb(self, tb, instruction):
+
+        reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
+        byte_reg = tb.temporal(8)
+        
+        tb.add(self._builder.gen_str(reil_operand, byte_reg))  # filter bits [7:0] part of result
+        
+        addr = tb._compute_memory_address(instruction.operands[1])
+
+        tb.add(self._builder.gen_stm(byte_reg, addr))
 
 
 # "Load/store multiple Instructions"
