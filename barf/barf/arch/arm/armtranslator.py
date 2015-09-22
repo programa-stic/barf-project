@@ -897,7 +897,34 @@ class ArmTranslator(object):
         neg_oprnd = tb._negate_reg(oprnd0)
 
         tb._jump_if_zero(neg_oprnd, target)
+        
+    # TODO: LSL (2): LSL <Rd>, <Rs> (provides the value of
+    # a register multiplied by a variable power of two.)
+    def _translate_lsl(self, tb, instruction):
 
+        if len(instruction.operands) == 2:
+            raise NotImplementedError("LSL (2): LSL <Rd>, <Rs> Not supported.")
+        
+        oprnd1 = tb.read(instruction.operands[1])
+        oprnd2 = tb.read(instruction.operands[2])
+        result = tb.temporal(oprnd1.size)
+
+        # TODO: Encapsulate this new kind of flag update (different from the data proc instructions like add, and, orr)
+        if oprnd2.immediate == 0:
+            return
+        else:
+            # carry_out = Rm[32 - shift_imm]
+            shift_carry_out = tb._extract_bit(oprnd1, 32 - oprnd2.immediate)
+            tb.add(self._builder.gen_str(shift_carry_out, self._flags["cf"]))
+
+        tb.add(self._builder.gen_bsh(oprnd1, oprnd2, result))
+        tb.write(instruction.operands[0], result)
+        
+        self._update_zf(tb, oprnd1, oprnd2, result)
+        self._update_nf(tb, oprnd1, oprnd2, result)
+
+
+            
 # "Load/store word and unsigned byte Instructions"
 # ============================================================================ #
     def _translate_ldr(self, tb, instruction):
