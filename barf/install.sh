@@ -4,16 +4,16 @@
 # ---------------------------------------------------------------------------- #
 if [ "$#" -eq 1 ] && [ "$1" == "local" ];
 then
-    echo "[+] Local installation..."
+    echo "[+] BARF: Local installation..."
     # Install solvers
     # ------------------------------------------------------------------------ #
     ./install-solvers.sh local
 
     # Install BARF
     # ------------------------------------------------------------------------ #
-    sudo python setup.py install --user
+    python setup.py install --user
 else
-    echo "[+] System installation..."
+    echo "[+] BARF: System installation..."
     # Install solvers
     # ------------------------------------------------------------------------ #
     ./install-solvers.sh

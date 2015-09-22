@@ -6,11 +6,11 @@ temp_dir=dependencies
 # ---------------------------------------------------------------------------- #
 if [ "$#" -eq 1 ] && [ "$1" == "local" ];
 then
-    echo "[+] Local installation..."
+    echo "[+] SMT Solvers: Local installation..."
     SUDO=
     PREFIX=$(echo ~/.local/usr)
 else
-    echo "[+] System installation..."
+    echo "[+] SMT Solvers: System installation..."
     SUDO=sudo
     PREFIX=$(echo /usr)
 fi
@@ -21,39 +21,47 @@ rm -rf $temp_dir
 mkdir $temp_dir
 cd $temp_dir
 
-# Install z3
+# Install z3 (if it is not installed...)
 # ---------------------------------------------------------------------------- #
-sudo apt-get install -y g++
+if ! type "z3" > /dev/null; then
+    echo "[+] Installing z3..."
 
-Z3_DOWNLOAD_URL="https://github.com/Z3Prover/z3/archive/z3-4.4.0.tar.gz"
+    sudo apt-get install -y g++
 
-wget $Z3_DOWNLOAD_URL
-tar xvfz z3-4.4.0.tar.gz
-rm -f z3-4.4.0.tar.gz
+    Z3_DOWNLOAD_URL="https://github.com/Z3Prover/z3/archive/z3-4.4.0.tar.gz"
 
-cd z3-z3-4.4.0/
-./configure --prefix=$PREFIX
-python scripts/mk_make.py
-cd build/
-make
-$SUDO make install
-cd ../..
+    wget $Z3_DOWNLOAD_URL
+    tar xvfz z3-4.4.0.tar.gz
+    rm -f z3-4.4.0.tar.gz
 
-# Install CVC4
+    cd z3-z3-4.4.0/
+    ./configure --prefix=$PREFIX
+    python scripts/mk_make.py
+    cd build/
+    make -j 4
+    $SUDO make install
+    cd ../..
+fi
+
+# Install CVC4 (if it is not installed...)
 # ---------------------------------------------------------------------------- #
-sudo apt-get install -y g++ libtool libboost-all-dev libantlr3c-dev libgmp-dev
+if ! type "cvc4" > /dev/null; then
+    echo "[+] Installing cvc4..."
 
-CVC4_DOWNLOAD_URL="http://cvc4.cs.nyu.edu/builds/src/cvc4-1.4.tar.gz"
+    sudo apt-get install -y g++ libtool libboost-all-dev libantlr3c-dev libgmp-dev
 
-wget $CVC4_DOWNLOAD_URL
-tar xvfz cvc4-1.4.tar.gz
-rm -f cvc4-1.4.tar.gz
+    CVC4_DOWNLOAD_URL="http://cvc4.cs.nyu.edu/builds/src/cvc4-1.4.tar.gz"
 
-cd cvc4-1.4
-./configure --prefix=$PREFIX
-make
-$SUDO make install
-cd ..
+    wget $CVC4_DOWNLOAD_URL
+    tar xvfz cvc4-1.4.tar.gz
+    rm -f cvc4-1.4.tar.gz
+
+    cd cvc4-1.4
+    ./configure --prefix=$PREFIX
+    make -j 4
+    $SUDO make install
+    cd ..
+fi
 
 # Remove temp directory
 # ---------------------------------------------------------------------------- #
