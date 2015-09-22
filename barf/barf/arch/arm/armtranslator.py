@@ -416,6 +416,8 @@ class ArmTranslator(object):
         if instruction.mnemonic in ["b", "bl", "bx", "blx", "bne", "beq", "bpl",
                                     "ble", "bcs", "bhs", "blt", "bge", "bhi",
                                     "blo", "bls"]:
+            if instruction.condition_code == None:
+                instruction.condition_code = ARM_COND_CODE_AL  # TODO: unify translations
             translator_fn(tb, instruction)
         else:
             # Pre-processing: evaluate flags
