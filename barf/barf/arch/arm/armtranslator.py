@@ -940,6 +940,32 @@ class ArmTranslator(object):
 
         tb.add(self._builder.gen_stm(byte_reg, addr))
 
+    # TODO: Generalize LDR to handle byte and half word in a single function
+    def _translate_ldrh(self, tb, instruction):
+        
+        reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
+        byte_mask = ReilImmediateOperand(0x0000FFFF, reil_operand.size)
+        and_temp = tb.temporal(reil_operand.size)
+
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tb.write(instruction.operands[0], oprnd1)
+        
+        tb.add(self._builder.gen_and(reil_operand, byte_mask, and_temp))  # filter bits [15:0] part of result
+        
+        tb.add(self._builder.gen_str(and_temp, reil_operand))
+
+    def _translate_strh(self, tb, instruction):
+
+        reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
+        half_word_reg = tb.temporal(16)
+        
+        tb.add(self._builder.gen_str(reil_operand, half_word_reg))  # filter bits [15:0] part of result
+        
+        addr = tb._compute_memory_address(instruction.operands[1])
+
+        tb.add(self._builder.gen_stm(half_word_reg, addr))
+
     def _translate_ldrd(self, tb, instruction):
 
         if len(instruction.operands) > 2: # Rd2 has been specified (UAL syntax)
