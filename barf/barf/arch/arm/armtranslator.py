@@ -946,17 +946,13 @@ class ArmTranslator(object):
     # two functions).
     def _translate_ldrb(self, tb, instruction):
         
-        reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
-        byte_mask = ReilImmediateOperand(0x000000FF, reil_operand.size)
-        and_temp = tb.temporal(reil_operand.size)
+        op0_reil = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
+        addr_reg = tb._compute_memory_address(instruction.operands[1])
+        byte_reg = tb.temporal(8)
 
-        oprnd1 = tb.read(instruction.operands[1])
+        tb.add(tb._builder.gen_ldm(addr_reg, byte_reg))
 
-        tb.write(instruction.operands[0], oprnd1)
-        
-        tb.add(self._builder.gen_and(reil_operand, byte_mask, and_temp))  # filter bits [7:0] part of result
-        
-        tb.add(self._builder.gen_str(and_temp, reil_operand))
+        tb.add(self._builder.gen_str(byte_reg, op0_reil))
 
     def _translate_strb(self, tb, instruction):
 
@@ -972,17 +968,13 @@ class ArmTranslator(object):
     # TODO: Generalize LDR to handle byte and half word in a single function
     def _translate_ldrh(self, tb, instruction):
         
-        reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
-        byte_mask = ReilImmediateOperand(0x0000FFFF, reil_operand.size)
-        and_temp = tb.temporal(reil_operand.size)
+        op0_reil = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
+        addr_reg = tb._compute_memory_address(instruction.operands[1])
+        byte_reg = tb.temporal(16)
 
-        oprnd1 = tb.read(instruction.operands[1])
+        tb.add(tb._builder.gen_ldm(addr_reg, byte_reg))
 
-        tb.write(instruction.operands[0], oprnd1)
-        
-        tb.add(self._builder.gen_and(reil_operand, byte_mask, and_temp))  # filter bits [15:0] part of result
-        
-        tb.add(self._builder.gen_str(and_temp, reil_operand))
+        tb.add(self._builder.gen_str(byte_reg, op0_reil))
 
     def _translate_strh(self, tb, instruction):
 

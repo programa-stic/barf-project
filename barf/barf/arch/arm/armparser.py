@@ -342,6 +342,12 @@ mnemonic = Group(Or([
 
     Combine(Literal("ldr")("ins") + condition_code),
     Combine(Literal("str")("ins") + condition_code),
+    Combine(Literal("ldrb")("ins") + condition_code),
+    Combine(Literal("strb")("ins") + condition_code),
+    Combine(Literal("ldrh")("ins") + condition_code),
+    Combine(Literal("strh")("ins") + condition_code),
+    Combine(Literal("ldrd")("ins") + condition_code),
+    Combine(Literal("strd")("ins") + condition_code),
 
     Combine(Literal("ldm")("ins") + condition_code + ldm_stm_addr_mode),
     Combine(Literal("stm")("ins") + condition_code + ldm_stm_addr_mode),
