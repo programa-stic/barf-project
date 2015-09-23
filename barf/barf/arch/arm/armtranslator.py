@@ -421,7 +421,7 @@ class ArmTranslator(object):
             translator_fn(tb, instruction)
         else:
             # Pre-processing: evaluate flags
-            if instruction.condition_code:
+            if instruction.condition_code != None:
                 self._evaluate_condition_code(tb, instruction)
 
             translator_fn(tb, instruction)
@@ -705,6 +705,7 @@ class ArmTranslator(object):
             ARM_COND_CODE_LE : self._evaluate_le,
         }
 
+
         neg_cond = tb._negate_reg(eval_cc_fn[instruction.condition_code](tb))
 
         end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
@@ -911,20 +912,19 @@ class ArmTranslator(object):
         oprnd2 = tb.read(instruction.operands[2])
         result = tb.temporal(oprnd1.size)
 
-        # TODO: Encapsulate this new kind of flag update (different from the data proc instructions like add, and, orr)
-        if oprnd2.immediate == 0:
-            return
-        else:
-            # carry_out = Rm[32 - shift_imm]
-            shift_carry_out = tb._extract_bit(oprnd1, 32 - oprnd2.immediate)
-            tb.add(self._builder.gen_str(shift_carry_out, self._flags["cf"]))
-
         tb.add(self._builder.gen_bsh(oprnd1, oprnd2, result))
         tb.write(instruction.operands[0], result)
-        
-        self._update_zf(tb, oprnd1, oprnd2, result)
-        self._update_nf(tb, oprnd1, oprnd2, result)
 
+        if instruction.update_flags:
+            self._update_zf(tb, oprnd1, oprnd2, result)
+            self._update_nf(tb, oprnd1, oprnd2, result)
+            # TODO: Encapsulate this new kind of flag update (different from the data proc instructions like add, and, orr)
+            if oprnd2.immediate == 0:
+                return
+            else:
+                # carry_out = Rm[32 - shift_imm]
+                shift_carry_out = tb._extract_bit(oprnd1, 32 - oprnd2.immediate)
+                tb.add(self._builder.gen_str(shift_carry_out, self._flags["cf"]))
 
             
 # "Load/store word and unsigned byte Instructions"
