@@ -939,6 +939,7 @@ class ArmTranslator(object):
     # and removed from the mnemonic (handling all ldr/str translations in only
     # two functions).
     def _translate_ldrb(self, tb, instruction):
+
         op0_reil = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
         addr_reg = tb._compute_memory_address(instruction.operands[1])
         byte_reg = tb.temporal(8)
@@ -960,6 +961,7 @@ class ArmTranslator(object):
 
     # TODO: Generalize LDR to handle byte and half word in a single function
     def _translate_ldrh(self, tb, instruction):
+
         op0_reil = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
         addr_reg = tb._compute_memory_address(instruction.operands[1])
         byte_reg = tb.temporal(16)
