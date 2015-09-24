@@ -273,6 +273,9 @@ class ArmArchitectureInformation(ArchitectureInformation):
 
         self._registers_flags = [name for name, _ in self.regs_flags]
 
+    def registers(self):
+        return []
+
 
 class ArmInstruction(object):
     """Representation of ARM instruction."""
@@ -576,7 +579,7 @@ class ArmRegisterListOperand(ArmOperand):
         return string
 
     def __eq__(self, other):
-        return  self._list == other._list and \
+        return  self._reg_list == other._reg_list and \
                 self.size == other.size
 
     def __ne__(self, other):

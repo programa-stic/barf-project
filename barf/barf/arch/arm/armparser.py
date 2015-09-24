@@ -28,12 +28,9 @@ ARM Instruction Parser.
 
 import copy
 import logging
-import os
 
 from pyparsing import alphanums
-from pyparsing import alphas
 from pyparsing import Combine
-from pyparsing import Forward
 from pyparsing import Literal
 from pyparsing import nums
 from pyparsing import Optional
@@ -122,16 +119,16 @@ def parse_operand(string, location, tokens):
             raise Exception("Unknown index type.")
 
         reg_base = process_register(mem_oprnd["base"])
-        displacement = mem_oprnd.get("disp", None)
+        disp = mem_oprnd.get("disp", None)
         disp_minus = True if mem_oprnd.get("minus") else False
 
-        if displacement:
-            if "shift" in displacement:
-                displacement = process_shifted_register(displacement["shift"])
-            elif "reg" in displacement:
-                displacement = process_register(displacement["reg"])
-            elif "imm" in displacement:
-                displacement = ArmImmediateOperand("".join(displacement["imm"]), arch_info.operand_size)
+        if disp:
+            if "shift" in disp:
+                displacement = process_shifted_register(disp["shift"])
+            elif "reg" in disp:
+                displacement = process_register(disp["reg"])
+            elif "imm" in disp:
+                displacement = ArmImmediateOperand("".join(disp["imm"]), arch_info.operand_size)
             else:
                 raise Exception("Unknown displacement type.")
 
@@ -380,7 +377,7 @@ class ArmParser(object):
     """
 
     def __init__(self, architecture_mode=ARCH_ARM_MODE_32):
-        global arch_info, modifier_size
+        global arch_info
 
         arch_info = ArmArchitectureInformation(architecture_mode)
 
@@ -401,7 +398,7 @@ class ArmParser(object):
             instr_asm = copy.deepcopy(self._cache[instr_lower])
 
             # self._check_instruction(instr_asm)
-        except Exception as e:
+        except Exception:
             instr_asm = None
             error_msg = "Failed to parse instruction: %s"
             logger.error(error_msg, instr, exc_info=True)

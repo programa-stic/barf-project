@@ -400,14 +400,8 @@ class ArmTranslator(object):
         """
 
         # Retrieve translation function.
-        # TODO: Improve this.
-        if not "." in instruction.mnemonic:
-            translator_name = "_translate_" + instruction.mnemonic
-            translator_fn = getattr(self, translator_name, self._not_implemented)
-        else:
-            mnemonic = instruction.mnemonic.split(".")[0]
-            translator_name = "_translate_" + mnemonic
-            translator_fn = getattr(self, translator_name, self._not_implemented)
+        translator_name = "_translate_" + instruction.mnemonic
+        translator_fn = getattr(self, translator_name, self._not_implemented)
 
         # Translate instruction.
         tb = ArmTranslationBuilder(self._ir_name_generator, self._arch_mode)
@@ -447,7 +441,7 @@ class ArmTranslator(object):
 
     def _log_not_supported_instruction(self, instruction, reason = "unknown"):
         bytes_str = " ".join("%02x" % ord(b) for b in instruction.bytes)
-        
+
         logger.info(
             "Instruction not supported: %s (%s [%s]). Reason: %s",
             instruction.mnemonic,
@@ -727,16 +721,16 @@ class ArmTranslator(object):
             self._update_flags_data_proc_other(tb, instruction.operands[1], oprnd1, None, oprnd1)
 
     def _translate_mvn(self, tb, instruction):
-        
+
         oprnd1 = tb.read(instruction.operands[1])
-        
+
         tb.write(instruction.operands[0], tb._negate_reg(oprnd1))
 
         if instruction.update_flags:
             self._update_flags_data_proc_other(tb, instruction.operands[1], oprnd1, None, oprnd1)
 
     def _translate_movw(self, tb, instruction):
-        
+
         reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
         word_mask = ReilImmediateOperand(0x0000FFFF, reil_operand.size)
         and_temp = tb.temporal(reil_operand.size)
@@ -746,9 +740,9 @@ class ArmTranslator(object):
         tb.write(instruction.operands[0], oprnd1)
 
         tb.add(self._builder.gen_and(reil_operand, word_mask, and_temp))  # filter bits [7:0] part of result
-        
+
         tb.add(self._builder.gen_str(and_temp, reil_operand))
-        
+
         # It doesn't update flags
 
     def _translate_and(self, tb, instruction):
@@ -818,7 +812,7 @@ class ArmTranslator(object):
 
     def _translate_rsb(self, tb, instruction):
         instruction.operands[1], instruction.operands[2] = instruction.operands[2], instruction.operands[1]
-        
+
         self._translate_sub(tb, instruction)
 
     def _translate_mul(self, tb, instruction):
@@ -900,14 +894,14 @@ class ArmTranslator(object):
         neg_oprnd = tb._negate_reg(oprnd0)
 
         tb._jump_if_zero(neg_oprnd, target)
-        
+
     # TODO: LSL (2): LSL <Rd>, <Rs> (provides the value of
     # a register multiplied by a variable power of two.)
     def _translate_lsl(self, tb, instruction):
 
         if len(instruction.operands) == 2:
             raise NotImplementedError("LSL (2): LSL <Rd>, <Rs> Not supported.")
-        
+
         oprnd1 = tb.read(instruction.operands[1])
         oprnd2 = tb.read(instruction.operands[2])
         result = tb.temporal(oprnd1.size)
@@ -926,7 +920,7 @@ class ArmTranslator(object):
                 shift_carry_out = tb._extract_bit(oprnd1, 32 - oprnd2.immediate)
                 tb.add(self._builder.gen_str(shift_carry_out, self._flags["cf"]))
 
-            
+
 # "Load/store word and unsigned byte Instructions"
 # ============================================================================ #
     def _translate_ldr(self, tb, instruction):
@@ -945,7 +939,6 @@ class ArmTranslator(object):
     # and removed from the mnemonic (handling all ldr/str translations in only
     # two functions).
     def _translate_ldrb(self, tb, instruction):
-        
         op0_reil = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
         addr_reg = tb._compute_memory_address(instruction.operands[1])
         byte_reg = tb.temporal(8)
@@ -958,16 +951,15 @@ class ArmTranslator(object):
 
         reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
         byte_reg = tb.temporal(8)
-        
+
         tb.add(self._builder.gen_str(reil_operand, byte_reg))  # filter bits [7:0] part of result
-        
+
         addr = tb._compute_memory_address(instruction.operands[1])
 
         tb.add(self._builder.gen_stm(byte_reg, addr))
 
     # TODO: Generalize LDR to handle byte and half word in a single function
     def _translate_ldrh(self, tb, instruction):
-        
         op0_reil = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
         addr_reg = tb._compute_memory_address(instruction.operands[1])
         byte_reg = tb.temporal(16)
@@ -980,9 +972,9 @@ class ArmTranslator(object):
 
         reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
         half_word_reg = tb.temporal(16)
-        
+
         tb.add(self._builder.gen_str(reil_operand, half_word_reg))  # filter bits [15:0] part of result
-        
+
         addr = tb._compute_memory_address(instruction.operands[1])
 
         tb.add(self._builder.gen_stm(half_word_reg, addr))
@@ -993,42 +985,42 @@ class ArmTranslator(object):
             addr_reg = tb._compute_memory_address(instruction.operands[2])
         else:
             addr_reg = tb._compute_memory_address(instruction.operands[1])
-        
+
         reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
-        
+
         tb.add(tb._builder.gen_ldm(addr_reg, reil_operand))
 
         addr_reg = tb._add_to_reg(addr_reg, ReilImmediateOperand(4, reil_operand.size))
-        
+
         if len(instruction.operands) > 2: # Rd2 has been specified (UAL syntax)
             reil_operand = ReilRegisterOperand(instruction.operands[1].name, instruction.operands[0].size)
         else:
             # TODO: Assuming the register is written in its number format
             # (no alias like lr or pc).
             reil_operand = ReilRegisterOperand('r' + str(int(reil_operand.name[1:]) + 1), reil_operand.size)
-        
+
         tb.add(tb._builder.gen_ldm(addr_reg, reil_operand))
-         
+
     def _translate_strd(self, tb, instruction):
-        
+
         if len(instruction.operands) > 2: # Rd2 has been specified (UAL syntax)
             addr_reg = tb._compute_memory_address(instruction.operands[2])
         else:
             addr_reg = tb._compute_memory_address(instruction.operands[1])
-        
+
         reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
-        
+
         tb.add(tb._builder.gen_stm(reil_operand, addr_reg))
 
         addr_reg = tb._add_to_reg(addr_reg, ReilImmediateOperand(4, reil_operand.size))
-        
+
         if len(instruction.operands) > 2: # Rd2 has been specified (UAL syntax)
             reil_operand = ReilRegisterOperand(instruction.operands[1].name, instruction.operands[0].size)
         else:
             # TODO: Assuming the register is written in its number format
             # (no alias like lr or pc).
             reil_operand = ReilRegisterOperand('r' + str(int(reil_operand.name[1:]) + 1), reil_operand.size)
-        
+
         tb.add(tb._builder.gen_stm(reil_operand, addr_reg))
 
 

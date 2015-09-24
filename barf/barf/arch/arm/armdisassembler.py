@@ -29,16 +29,72 @@ disassembly framework.
 """
 import logging
 
-from capstone import *
-from capstone.arm import *
+from capstone import CS_MODE_ARM
+from capstone import CS_MODE_THUMB
+from capstone import Cs
+from capstone import CS_ARCH_ARM
+from capstone.arm import ARM_CC_EQ
+from capstone.arm import ARM_CC_NE
+from capstone.arm import ARM_CC_MI
+from capstone.arm import ARM_CC_PL
+from capstone.arm import ARM_CC_VS
+from capstone.arm import ARM_CC_VC
+from capstone.arm import ARM_CC_HI
+from capstone.arm import ARM_CC_LS
+from capstone.arm import ARM_CC_GE
+from capstone.arm import ARM_CC_LT
+from capstone.arm import ARM_CC_GT
+from capstone.arm import ARM_CC_LE
+from capstone.arm import ARM_CC_AL
+from capstone.arm import ARM_CC_HS
+from capstone.arm import ARM_CC_LO
+from capstone.arm import ARM_SFT_ASR
+from capstone.arm import ARM_SFT_LSL
+from capstone.arm import ARM_SFT_LSR
+from capstone.arm import ARM_SFT_ROR
+from capstone.arm import ARM_SFT_RRX
+from capstone.arm import ARM_SFT_ASR_REG
+from capstone.arm import ARM_SFT_LSL_REG
+from capstone.arm import ARM_SFT_LSR_REG
+from capstone.arm import ARM_SFT_ROR_REG
+from capstone.arm import ARM_SFT_RRX_REG
+from capstone.arm import ARM_OP_REG
+from capstone.arm import ARM_OP_IMM
+from capstone.arm import ARM_OP_MEM
+from capstone.arm import ARM_CC_INVALID
+
 
 from barf.arch import ARCH_ARM_MODES_MAX
 from barf.arch import ARCH_ARM_MODE_32
 from barf.arch import ARCH_ARM_MODE_ARM
 from barf.arch import ARCH_ARM_MODE_THUMB
-from barf.arch.arm.armbase import *
+from barf.arch.arm.armbase import ARM_COND_CODE_EQ
+from barf.arch.arm.armbase import ARM_COND_CODE_NE
+from barf.arch.arm.armbase import ARM_COND_CODE_MI
+from barf.arch.arm.armbase import ARM_COND_CODE_PL
+from barf.arch.arm.armbase import ARM_COND_CODE_VS
+from barf.arch.arm.armbase import ARM_COND_CODE_VC
+from barf.arch.arm.armbase import ARM_COND_CODE_HI
+from barf.arch.arm.armbase import ARM_COND_CODE_LS
+from barf.arch.arm.armbase import ARM_COND_CODE_GE
+from barf.arch.arm.armbase import ARM_COND_CODE_LT
+from barf.arch.arm.armbase import ARM_COND_CODE_GT
+from barf.arch.arm.armbase import ARM_COND_CODE_LE
+from barf.arch.arm.armbase import ARM_COND_CODE_AL
+from barf.arch.arm.armbase import ARM_COND_CODE_HS
+from barf.arch.arm.armbase import ARM_COND_CODE_LO
 from barf.arch.arm.armbase import ArmInstruction
-from barf.arch.arm.armparser import ArmParser, displacement
+from barf.arch.arm.armbase import ArmRegisterListOperand
+from barf.arch.arm.armbase import ArmImmediateOperand
+from barf.arch.arm.armbase import ArmMemoryOperand
+from barf.arch.arm.armbase import CapstoneOperandNotSupported
+from barf.arch.arm.armbase import InvalidDisassemblerData
+from barf.arch.arm.armbase import ArmRegisterOperand
+from barf.arch.arm.armbase import ArmShiftedRegisterOperand
+from barf.arch.arm.armbase import ArmArchitectureInformation
+from barf.arch.arm.armbase import ARM_MEMORY_INDEX_OFFSET
+from barf.arch.arm.armbase import cc_inverse_mapper
+from barf.arch.arm.armparser import ArmParser
 from barf.core.disassembler import Disassembler
 
 cc_capstone_barf_mapper = {
@@ -77,10 +133,10 @@ class ArmDisassembler(Disassembler):
         self._architecture_mode = architecture_mode
         self._arch_info = ArmArchitectureInformation(architecture_mode)
 
-        arch_mode_map = {
-            # TODO: ARM vs CS_MODE_THUMB
-            ARCH_ARM_MODE_32 : CS_MODE_THUMB,
-        }
+#         arch_mode_map = {
+#             # TODO: ARM vs CS_MODE_THUMB
+#             ARCH_ARM_MODE_32 : CS_MODE_THUMB,
+#         }
 
         self._parser = ArmParser(architecture_mode)
 
@@ -90,7 +146,7 @@ class ArmDisassembler(Disassembler):
         # TODO: DECOUPLE: detail true vs false
         self._avaliable_disassemblers[ARCH_ARM_MODE_ARM].detail = True
         self._avaliable_disassemblers[ARCH_ARM_MODE_THUMB].detail = True
-        
+
         # TODO: define default disassembler externally
         self._disassembler = self._avaliable_disassemblers[1]
 
@@ -101,12 +157,12 @@ class ArmDisassembler(Disassembler):
         else:
             size = self._arch_info.architecture_size
         return ArmRegisterOperand(name, size)
-    
+
     def _cs_shift_to_arm_op(self, cs_op, cs_insn, arm_base):
-    
+
         if cs_op.shift.type == 0:
             raise Exception("_cs_shift_to_arm_op: Invalid shift type")
-        
+
         cs_shift_mapper = {
             ARM_SFT_ASR : "asr",
             ARM_SFT_LSL : "lsl",
@@ -121,7 +177,7 @@ class ArmDisassembler(Disassembler):
         }
         # The base register (arm_base) is not included in the shift struct in Capstone, so it's provided separately
         sh_type = cs_shift_mapper[cs_op.shift.type]
-    
+
         if cs_op.shift.type <= ARM_SFT_RRX:
             amount = ArmImmediateOperand(cs_op.shift.value, self._arch_info.operand_size)
             # TODO: check if this is a valid case
@@ -145,56 +201,11 @@ class ArmDisassembler(Disassembler):
             oprnd = ArmImmediateOperand(cs_op.value.imm, size)
 
         elif cs_op.type == ARM_OP_MEM:
-#             print(dir(cs_op))
-            import pprint
-             
-#             if cs_op.mem.index > 0:
-#                 pprint.pprint(cs_op.mem)
-#                 print cs_insn.mnemonic
-#                 print cs_insn.op_str
-#                 print type(cs_op.mem.base)
-#                 print cs_op.mem.index
-#                 print cs_op.mem.disp
-#                 print hex(cs_insn.address)
-#         
-#             if "memory_operand" in tokens:
-#                 mem_oprnd = tokens["memory_operand"]
-#         
-#                 if "offset" in mem_oprnd:
-#                     index_type = ARM_MEMORY_INDEX_OFFSET
-#                     mem_oprnd = mem_oprnd["offset"]
-#                 elif "pre" in mem_oprnd:
-#                     index_type = ARM_MEMORY_INDEX_PRE
-#                     mem_oprnd = mem_oprnd["pre"]
-#                 elif "post" in mem_oprnd:
-#                     index_type = ARM_MEMORY_INDEX_POST
-#                     mem_oprnd = mem_oprnd["post"]
-#                 else:
-#                     raise Exception("Unknown index type.")
-#         
-#                 reg_base = process_register(mem_oprnd["base"])
-#                 displacement = mem_oprnd.get("disp", None)
-#                 disp_minus = True if mem_oprnd.get("minus") else False
-#         
-#                 if displacement:
-#                     if "shift" in displacement:
-#                         displacement = process_shifted_register(displacement["shift"])
-#                     elif "reg" in displacement:
-#                         displacement = process_register(displacement["reg"])
-#                     elif "imm" in displacement:
-#                         displacement = ArmImmediateOperand("".join(displacement["imm"]), arch_info.operand_size)
-#                     else:
-#                         raise Exception("Unknown displacement type.")
-#         
-#                 size = arch_info.operand_size
-#                 # TODO: Add sizes for LDR/STR variations (half word, byte, double word)
-#                 oprnd = ArmMemoryOperand(reg_base, index_type, displacement, disp_minus, size)        
-        
             reg_base = self._cs_reg_idx_to_arm_op_reg(cs_op.mem.base, cs_insn)
-            
+
             # TODO: memory index type
             index_type = ARM_MEMORY_INDEX_OFFSET
-            
+
             if cs_op.mem.index > 0:
 
                 if cs_op.mem.disp > 0:
@@ -207,7 +218,7 @@ class ArmDisassembler(Disassembler):
                 # a shifted register is encoded in the first operand (slot [0]), that doesn't
                 # have a direct relation with the other.
                 # TODO: Check if this has to be reported to CS.
-                
+
                 if cs_insn.operands[0].shift.type > 0:
                     # There's a shift operation, the displacement extracted earlier was just the
                     # base register of the shifted register that is generating the disaplacement.
@@ -215,11 +226,11 @@ class ArmDisassembler(Disassembler):
 
             else:
                 displacement = ArmImmediateOperand(cs_op.mem.disp, self._arch_info.operand_size)
-                
+
             disp_minus = True if cs_op.mem.index == -1 else False
-            
+
             oprnd = ArmMemoryOperand(reg_base, index_type, displacement, disp_minus, self._arch_info.operand_size)
-            
+
 #             # DEBUG:
 #             if cs_insn.operands[0].shift.type > 0:
 #                 print cs_insn.op_str
@@ -229,7 +240,7 @@ class ArmDisassembler(Disassembler):
         else:
             oprnd = None
             error_msg =  "Instruction: " + cs_insn.mnemonic  + " " + cs_insn.op_str + ". Unkown operand type: " + str(cs_op.type)
-            
+
             logger.error(error_msg)
 
             raise CapstoneOperandNotSupported(error_msg)
@@ -240,7 +251,7 @@ class ArmDisassembler(Disassembler):
     def _cs_translate_insn(self, cs_insn):
 
         operands = [self._cs_translate_operand(op, cs_insn) for op in cs_insn.operands]
-            
+
         mnemonic = cs_insn.mnemonic
 
         # Special case: register list "{rX - rX}", stored as a series of registers has
@@ -263,14 +274,14 @@ class ArmDisassembler(Disassembler):
         # Remove narrow/wide compiler suffixes (.w/.n), they are of no interest for tranlation purpouses
         if mnemonic[-2:] == ".w" or mnemonic[-2:] == ".n":
             mnemonic = mnemonic[:-2]
-            
+
         # Remove condition code from the mnemonic, this goes first than the removal of the update flags suffix,
         # because according to UAL syntax the this suffix goes after the update flags suffix in the mnemonic.
         if cs_insn.cc != ARM_CC_INVALID and cs_insn.cc != ARM_CC_AL:
             cc_suffix_str = cc_inverse_mapper[cc_capstone_barf_mapper[cs_insn.cc]]
             if cc_suffix_str == mnemonic[-2:]:
                 mnemonic = mnemonic[:-2]
-        
+
         # Remove update flags suffix (s)
         if cs_insn.update_flags and mnemonic[-1] == 's':
             mnemonic = mnemonic[:-1]
@@ -290,12 +301,6 @@ class ArmDisassembler(Disassembler):
             self._architecture_mode
         )
 
-        #DEBUG
-#         import binascii
-#         print "ORIG INSN: " + instr.orig_instr + "   ADD: " + hex(cs_insn.address) + "   SIZE: " + str(cs_insn.size)
-#         import pprint
-#         pprint.pprint(cs_insn.bytes)
-
         if cs_insn.cc != ARM_CC_INVALID:
             instr.condition_code = cc_capstone_barf_mapper[cs_insn.cc]
 
@@ -303,8 +308,6 @@ class ArmDisassembler(Disassembler):
             instr.update_flags = True
 
         # TODO: LOAD/STORE MODE (it may be necessary to parse the mnemonic).
-#         if "ldm_stm_addr_mode" in mnemonic:
-#             instr.ldm_stm_addr_mode = ldm_stm_am_mapper[mnemonic["ldm_stm_addr_mode"]]
 
         return instr
 
