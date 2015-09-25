@@ -27,6 +27,9 @@ import platform
 import random
 import unittest
 import struct
+import tempfile
+import os
+import subprocess
 
 import pyasmjit
 
@@ -38,6 +41,7 @@ from barf.arch.arm.armtranslator import FULL_TRANSLATION
 from barf.core.reil import ReilContainer
 from barf.core.reil import ReilEmulator
 from barf.core.reil import ReilSequence
+from barf.arch.arm.armdisassembler import ArmDisassembler
 
 
 @unittest.skipUnless(platform.machine().lower() == 'armv6l',
@@ -196,13 +200,88 @@ class ArmTranslationTests(unittest.TestCase):
         return instr_container
 
     def __asm_to_reil(self, asm_list, address):
-        arm_instrs = [self.arm_parser.parse(asm) for asm in asm_list]
 
-        self.__set_address(address, arm_instrs)
+        asm = "\n".join(asm_list)
 
-        reil_instrs = self.__translate(arm_instrs)
+        print asm  # TODO: REMOVE PRINT
+
+        bytes = self._arm_compile(asm)
+
+        curr_addr = 0
+        end_addr = len(bytes)
+
+        dis = ArmDisassembler();
+
+        arm_instr_list = []
+
+        while curr_addr < end_addr:
+            # disassemble instruction
+            start, end = curr_addr, min(curr_addr + 16, end_addr)
+
+            USE_ARM = 0
+            arm_instr = dis.disassemble(bytes[start:end], 0x8000, USE_ARM)
+
+            if not arm_instr:
+                raise Exception("Error in capstone disassembly")
+
+            arm_instr_list.append(arm_instr)
+
+            # update instruction pointer
+            curr_addr += arm_instr.size
+
+
+        # TODO: Separate parser tests vs CS->BARF translator
+#         arm_instrs = [self.arm_parser.parse(asm) for asm in asm_list]
+
+        self.__set_address(address, arm_instr_list)
+
+        reil_instrs = self.__translate(arm_instr_list)
 
         return reil_instrs
+
+    def _arm_compile(self, assembly):
+        # TODO: This is a copy of the pyasmjit
+
+        print assembly  # TODO: REMOVE PRIN
+
+        # Initialize return values
+        rc = 0
+        ctx = {}
+
+        # Create temporary files for compilation.
+        f_asm = tempfile.NamedTemporaryFile(delete=False)
+        f_obj = tempfile.NamedTemporaryFile(delete=False)
+        f_bin = tempfile.NamedTemporaryFile(delete=False)
+
+        # Write assembly to a file.
+        f_asm.write(assembly + '\n')  # TODO: -mthumb is not working (so the "code" directive is added)
+        f_asm.close()
+
+        # Run nasm.
+        cmd_fmt = "gcc -c -x assembler {asm} -o {obj} -mthumb -march=armv7-a; objcopy -O binary {obj} {bin};"
+        cmd = cmd_fmt.format(asm=f_asm.name, obj=f_obj.name, bin=f_bin.name)
+        return_code = subprocess.call(cmd, shell=True)
+
+        # Check for assembler errors.
+        if return_code == 0:
+            # Read binary code.
+            binary = ""
+            byte = f_bin.read(1)
+            while byte:
+                binary += byte
+                byte = f_bin.read(1)
+            f_bin.close()
+
+        else:
+            raise Exception("gcc error")
+
+        # Remove temporary files.
+        os.remove(f_asm.name)
+        os.remove(f_obj.name)
+        os.remove(f_bin.name)
+
+        return binary
+
 
     def __run_code(self, asm_list, address, ctx_init):
         reil_instrs = self.__asm_to_reil(asm_list, address)
