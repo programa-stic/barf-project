@@ -194,7 +194,13 @@ class ArmDisassembler(Disassembler):
     def _cs_translate_operand(self, cs_op, cs_insn):
 
         if cs_op.type == ARM_OP_REG:
-            oprnd = self._cs_reg_idx_to_arm_op_reg(cs_op.value.reg, cs_insn)
+            reg = self._cs_reg_idx_to_arm_op_reg(cs_op.value.reg, cs_insn)
+            if cs_op.shift.type > 0:
+                displacement = self._cs_shift_to_arm_op(cs_op, cs_insn, reg)
+                oprnd = displacement
+            else:
+                oprnd = reg
+
 
         elif cs_op.type == ARM_OP_IMM:
             size = self._arch_info.operand_size
