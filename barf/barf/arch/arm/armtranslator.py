@@ -24,8 +24,8 @@
 
 import logging
 
-from barf.arch import ARCH_ARM_MODE_32
-from barf.arch import ARCH_ARM_MODE_64
+from barf.arch import ARCH_ARM_MODE_ARM
+from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch.arm.armbase import ARM_COND_CODE_AL
 from barf.arch.arm.armbase import ARM_COND_CODE_CC
 from barf.arch.arm.armbase import ARM_COND_CODE_CS
@@ -323,7 +323,7 @@ class ArmTranslator(object):
 
     """ARM to IR Translator."""
 
-    def __init__(self, architecture_mode=ARCH_ARM_MODE_32, translation_mode=FULL_TRANSLATION):
+    def __init__(self, architecture_mode=ARCH_ARM_MODE_THUMB, translation_mode=FULL_TRANSLATION):
 
         # Set *Architecture Mode*. The translation of each instruction
         # into the REIL language is based on this.
@@ -348,18 +348,20 @@ class ArmTranslator(object):
             "vf" : ReilRegisterOperand("vf", 1),
         }
 
-        if self._arch_mode == ARCH_ARM_MODE_32:
+        if self._arch_mode in [ARCH_ARM_MODE_ARM, ARCH_ARM_MODE_THUMB]:
             self._sp = ReilRegisterOperand("r13", 32) # TODO: Implement alias
             self._pc = ReilRegisterOperand("r15", 32)
             self._lr = ReilRegisterOperand("r14", 32)
 
             self._ws = ReilImmediateOperand(4, 32) # word size
-        elif self._arch_mode == ARCH_ARM_MODE_64:
-            self._sp = ReilRegisterOperand("r13", 64)
-            self._pc = ReilRegisterOperand("r15", 64)
-            self._lr = ReilRegisterOperand("r14", 64)
 
-            self._ws = ReilImmediateOperand(8, 64) # word size
+        # TODO: Remove this code?
+        # elif self._arch_mode == ARCH_ARM_MODE_64:
+        #     self._sp = ReilRegisterOperand("r13", 64)
+        #     self._pc = ReilRegisterOperand("r15", 64)
+        #     self._lr = ReilRegisterOperand("r14", 64)
+
+        #     self._ws = ReilImmediateOperand(8, 64) # word size
 
     def translate(self, instruction):
         """Return IR representation of an instruction.

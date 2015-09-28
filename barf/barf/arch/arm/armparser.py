@@ -41,7 +41,7 @@ from pyparsing import ZeroOrMore
 from pyparsing import Group
 from pyparsing import LineEnd
 
-from barf.arch import ARCH_ARM_MODE_32
+from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch.arm.armbase import ArmArchitectureInformation
 from barf.arch.arm.armbase import ArmRegisterListOperand
 from barf.arch.arm.armbase import ArmImmediateOperand
@@ -376,7 +376,7 @@ class ArmParser(object):
     """ARM Instruction Parser.
     """
 
-    def __init__(self, architecture_mode=ARCH_ARM_MODE_32):
+    def __init__(self, architecture_mode=ARCH_ARM_MODE_THUMB):
         global arch_info
 
         arch_info = ArmArchitectureInformation(architecture_mode)

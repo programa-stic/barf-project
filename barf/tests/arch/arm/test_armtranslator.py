@@ -33,7 +33,7 @@ import subprocess
 
 import pyasmjit
 
-from barf.arch import ARCH_ARM_MODE_32
+from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch.arm.armbase import ArmArchitectureInformation
 from barf.arch.arm.armparser import ArmParser
 from barf.arch.arm.armtranslator import ArmTranslator
@@ -50,7 +50,7 @@ class ArmTranslationTests(unittest.TestCase):
 
     def setUp(self):
         self.trans_mode = FULL_TRANSLATION
-        self.arch_mode = ARCH_ARM_MODE_32
+        self.arch_mode = ARCH_ARM_MODE_THUMB
         self.arch_info = ArmArchitectureInformation(self.arch_mode)
         self.arm_parser = ArmParser(self.arch_mode)
         self.arm_translator = ArmTranslator(self.arch_mode, self.trans_mode)

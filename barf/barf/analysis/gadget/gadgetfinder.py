@@ -37,7 +37,6 @@ import re
 from barf.analysis.gadget import GadgetType
 from barf.analysis.gadget import RawGadget
 from barf.arch import ARCH_ARM
-from barf.arch import ARCH_ARM_MODE_32
 from barf.arch import ARCH_X86
 from barf.arch.x86.x86translator import FULL_TRANSLATION
 from barf.arch.x86.x86translator import LITE_TRANSLATION
@@ -84,7 +83,7 @@ class GadgetFinder(object):
 
         if self._architecture == ARCH_X86:
             candidates = self._find_x86_candidates(start_address, end_address)
-        elif self._architecture == ARCH_ARM and self._architecture_mode == ARCH_ARM_MODE_32:
+        elif self._architecture == ARCH_ARM:
             candidates = self._find_arm_candidates(start_address, end_address)
         else:
             raise Exception("Architecture not supported.")

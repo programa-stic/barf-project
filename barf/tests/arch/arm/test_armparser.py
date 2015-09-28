@@ -24,14 +24,14 @@
 
 import unittest
 
-from barf.arch import ARCH_ARM_MODE_32
+from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch.arm.armparser import ArmParser
 
 
 class ArmParser32BitsTests(unittest.TestCase):
 
     def setUp(self):
-        self._parser = ArmParser(ARCH_ARM_MODE_32)
+        self._parser = ArmParser(ARCH_ARM_MODE_THUMB)
 
     def test_data_processing_instructions(self):
 

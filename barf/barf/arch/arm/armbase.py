@@ -27,8 +27,8 @@ This module contains all the classes that handle the ARM instruction
 representation.
 
 """
-from barf.arch import ARCH_ARM_MODE_32
-from barf.arch import ARCH_ARM_MODE_64
+from barf.arch import ARCH_ARM_MODE_ARM
+from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch import ArchitectureInformation
 
 
@@ -172,8 +172,8 @@ class ArmArchitectureInformation(ArchitectureInformation):
     @property
     def architecture_size(self):
         arch_size_map = {
-            ARCH_ARM_MODE_32 : 32,
-            ARCH_ARM_MODE_64 : 64,
+            ARCH_ARM_MODE_ARM : 32,
+            ARCH_ARM_MODE_THUMB : 32,
         }
 
         return arch_size_map[self._arch_mode]
@@ -181,8 +181,8 @@ class ArmArchitectureInformation(ArchitectureInformation):
     @property
     def operand_size(self):
         operand_size_map = {
-            ARCH_ARM_MODE_32 : 32,
-            ARCH_ARM_MODE_64 : 64,
+            ARCH_ARM_MODE_ARM : 32,
+            ARCH_ARM_MODE_THUMB : 32,
         }
 
         return operand_size_map[self._arch_mode]
@@ -190,8 +190,8 @@ class ArmArchitectureInformation(ArchitectureInformation):
     @property
     def address_size(self):
         address_size_map = {
-            ARCH_ARM_MODE_32 : 32,
-            ARCH_ARM_MODE_64 : 64,
+            ARCH_ARM_MODE_ARM : 32,
+            ARCH_ARM_MODE_THUMB : 32,
         }
 
         return address_size_map[self._arch_mode]
@@ -728,11 +728,3 @@ class ArmMemoryOperand(ArmOperand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
-#TODO: generalize for all disassemblers, not just ARM
-class InvalidDisassemblerData(Exception):
-    pass
-
-class CapstoneOperandNotSupported(Exception):
-    pass
-

@@ -38,7 +38,6 @@ from analysis.codeanalyzer import CodeAnalyzer
 from analysis.gadget import GadgetClassifier
 from analysis.gadget import GadgetFinder
 from analysis.gadget import GadgetVerifier
-from arch.arm.armbase import ARCH_ARM_MODE_32
 from arch.arm.armbase import ArmArchitectureInformation
 from arch.arm.armdisassembler import ArmDisassembler
 from arch.arm.armtranslator import ArmTranslator
@@ -105,9 +104,11 @@ class BARF(object):
     def _setup_arm_arch(self):
         """Set up ARM architecture.
         """
-        self.arch_info = ArmArchitectureInformation(ARCH_ARM_MODE_32)
-        self.disassembler = ArmDisassembler(architecture_mode=ARCH_ARM_MODE_32)
-        self.ir_translator = ArmTranslator(architecture_mode=ARCH_ARM_MODE_32)
+        arch_mode = arch.ARCH_ARM_MODE_THUMB
+
+        self.arch_info = ArmArchitectureInformation(arch_mode)
+        self.disassembler = ArmDisassembler(architecture_mode=arch_mode)
+        self.ir_translator = ArmTranslator(architecture_mode=arch_mode)
 
     def _setup_x86_arch(self):
         """Set up x86 architecture.
