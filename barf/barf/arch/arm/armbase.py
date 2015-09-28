@@ -31,6 +31,31 @@ from barf.arch import ARCH_ARM_MODE_ARM
 from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch import ArchitectureInformation
 
+# Used in CS->BARF translator
+arm_alias_reg_map = {
+     "a1" : "r0",
+     "a2" : "r1",
+     "a3" : "r2",
+     "a4" : "r3",
+
+     "v1" : "r4",
+     "v2" : "r5",
+     "v3" : "r6",
+     "v4" : "r7",
+     "v5" : "r8",
+     "v6" : "r9",
+     "v7" : "r10",
+     "v8" : "r11",
+
+     "sb" : "r9",
+     "sl" : "r10",
+     "fp" : "r11",
+     "ip" : "r12",
+
+     "sp" : "r13",
+     "lr" : "r14",
+     "pc" : "r15",
+}
 
 ARM_COND_CODE_EQ = 0
 ARM_COND_CODE_NE = 1

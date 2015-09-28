@@ -90,6 +90,7 @@ from barf.arch.arm.armbase import ArmRegisterListOperand
 from barf.arch.arm.armbase import ArmRegisterOperand
 from barf.arch.arm.armbase import ArmShiftedRegisterOperand
 from barf.arch.arm.armbase import cc_inverse_mapper
+from barf.arch.arm.armbase import arm_alias_reg_map
 from barf.core.disassembler import Disassembler
 from barf.core.disassembler import InvalidDisassemblerData
 
@@ -191,6 +192,8 @@ class ArmDisassembler(Disassembler):
     # ======================================================================== #
     def __cs_reg_idx_to_arm_op_reg(self, cs_reg_idx, cs_insn):
         name = cs_insn.reg_name(cs_reg_idx)
+        if name in arm_alias_reg_map:
+            name = arm_alias_reg_map[name]
 
         if name in self._arch_info.registers_size:
             size = self._arch_info.registers_size[name]
