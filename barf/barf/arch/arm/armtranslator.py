@@ -729,7 +729,7 @@ class ArmTranslator(object):
         tb.write(instruction.operands[0], tb._negate_reg(oprnd1))
 
         if instruction.update_flags:
-            self._update_flags_data_proc_other(tb, instruction.operands[1], oprnd1, None, oprnd1)
+            self._update_flags_data_proc_other(tb, instruction.operands[1], oprnd1, None, tb._negate_reg(oprnd1))
 
     def _translate_movw(self, tb, instruction):
 
@@ -897,12 +897,18 @@ class ArmTranslator(object):
 
         tb._jump_if_zero(neg_oprnd, target)
 
-    # TODO: LSL (2): LSL <Rd>, <Rs> (provides the value of
-    # a register multiplied by a variable power of two.)
     def _translate_lsl(self, tb, instruction):
-
-        if len(instruction.operands) == 2:
-            raise NotImplementedError("LSL (2): LSL <Rd>, <Rs> Not supported.")
+        # LSL (register)
+        if len(instruction.operands) == 3 and isinstance(instruction.operands[1], ArmRegisterOperand):
+            sh_op = ArmShiftedRegisterOperand(instruction.operands[1], "lsl", instruction.operands[2], instruction.operands[1].size)
+            disp = tb._compute_shifted_register(sh_op)
+            tb.write(instruction.operands[0], disp)
+            return
+        
+        if len(instruction.operands) == 2 and isinstance(instruction.operands[1], ArmShiftedRegisterOperand):
+            # Capstone is incorrectly packing <Rm>, #<imm5> into a shifted register, unpack it
+            instruction.operands.append(instruction.operands[1]._shift_amount)
+            instruction.operands[1] = instruction.operands[1]._base_reg
 
         oprnd1 = tb.read(instruction.operands[1])
         oprnd2 = tb.read(instruction.operands[2])
