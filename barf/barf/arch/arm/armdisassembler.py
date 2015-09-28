@@ -91,6 +91,7 @@ from barf.arch.arm.armbase import ArmRegisterOperand
 from barf.arch.arm.armbase import ArmShiftedRegisterOperand
 from barf.arch.arm.armbase import cc_inverse_mapper
 from barf.arch.arm.armbase import arm_alias_reg_map
+from barf.arch.arm.armbase import ldm_stm_am_mapper
 from barf.core.disassembler import Disassembler
 from barf.core.disassembler import InvalidDisassemblerData
 
@@ -329,6 +330,13 @@ class ArmDisassembler(Disassembler):
         # Remove update flags suffix (s)
         if cs_insn.update_flags and mnemonic[-1] == 's':
             mnemonic = mnemonic[:-1]
+            
+        # Remove LDM/STM addressing modes from the mnemonic, later include it in the ArmInstruction
+        if mnemonic[0:3] == "ldm" or mnemonic[0:3] == "stm":
+            ldm_stm_am = None
+            if mnemonic[-2:] in ldm_stm_am_mapper:
+                ldm_stm_am = ldm_stm_am_mapper[mnemonic[-2:]]
+                mnemonic = mnemonic[:-2]
 
         # TODO: Temporary hack to accommodate THUMB short notation:
         # "add r0, r1" -> "add r0, r0, r1"
@@ -350,6 +358,11 @@ class ArmDisassembler(Disassembler):
 
         if cs_insn.update_flags:
             instr.update_flags = True
+
+        if mnemonic[0:3] == "ldm" or mnemonic[0:3] == "stm":
+            instr.ldm_stm_addr_mode = ldm_stm_am
+            if "!" in cs_insn.op_str:
+                instr.operands[0].wb = True
 
         # TODO: LOAD/STORE MODE (it may be necessary to parse the mnemonic).
 

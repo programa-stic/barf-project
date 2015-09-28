@@ -199,11 +199,21 @@ class ArmTranslationTests(unittest.TestCase):
 
         return instr_container
 
+    def __asm_to_reil_use_parser(self, asm_list, address):
+        # Using the parser:
+
+        arm_instrs = [self.arm_parser.parse(asm) for asm in asm_list]
+
+        self.__set_address(address, arm_instrs)
+
+        reil_instrs = self.__translate(arm_instrs)
+
+        return reil_instrs
+
     def __asm_to_reil(self, asm_list, address):
+        # Using gcc:
 
         asm = "\n".join(asm_list)
-
-        print asm  # TODO: REMOVE PRINT
 
         bytes = self._arm_compile(asm)
 
@@ -237,12 +247,14 @@ class ArmTranslationTests(unittest.TestCase):
 
         reil_instrs = self.__translate(arm_instr_list)
 
+#         # DEBUG:
+#         for reil_instr in reil_instrs:
+#             print("  {}".format(reil_instr))
+
         return reil_instrs
 
     def _arm_compile(self, assembly):
         # TODO: This is a copy of the pyasmjit
-
-        print assembly  # TODO: REMOVE PRIN
 
         # Initialize return values
         rc = 0
@@ -342,7 +354,7 @@ class ArmTranslationTests(unittest.TestCase):
         pyasmjit.arm_free()
 
     def __execute_asm(self, asm_list, address=0x8000):
-        reil_instrs = self.__asm_to_reil(asm_list, address)
+        reil_instrs = self.__asm_to_reil_use_parser(asm_list, address)
 
         ctx_init = self.__init_context()
 
@@ -445,7 +457,7 @@ class ArmTranslationTests(unittest.TestCase):
         for instr in instr_samples:
             self.__test_asm_instruction(instr)
 
-    def test_mememory_instructions(self):
+    def test_memory_instructions(self):
         # R12 is loaded with the memory address
 
         instr_samples = [
@@ -486,12 +498,14 @@ class ArmTranslationTests(unittest.TestCase):
              "pop {r2 - r11}",
              "mov r13, r0",
              "mov r0, #0"],
-            ["mov r0, r13",
-             "mov r13, r12",
-             "push {r2 - r11}",
-             "pop {r1 - r10}",
-             "mov r13, r0",
-             "mov r0, #0"],
+
+            # TODO: Investigate sporadic seg fault in RPi
+#             ["mov r0, r13",
+#              "add r13, r12",
+#              "push {r2 - r11}",
+#              "pop {r1 - r10}",
+#              "mov r13, r0",
+#              "mov r0, #0"],
         ]
 
         for instr in instr_samples:
