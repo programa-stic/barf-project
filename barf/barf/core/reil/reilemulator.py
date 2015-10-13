@@ -596,8 +596,6 @@ class ReilCpu(object):
         op1_sign = op1_val >> oprnd1.size-1
         result_sign = op0_sign ^ op1_sign
 
-        print(oprnd0.size, oprnd1.size, hex)
-
         if op0_sign == 0x1:
             op0_tmp = twos_complement(op0_val, oprnd0.size)
         else:
@@ -614,8 +612,6 @@ class ReilCpu(object):
             result = twos_complement(result_tmp, result_size)
         else:
             result = result_tmp
-
-        print(hex(op0_val), hex(op0_tmp), hex(op1_val), hex(op1_tmp), hex(result_sign), hex(result_tmp), hex(result))
 
         return result & (2**result_size-1)
 
