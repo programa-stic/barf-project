@@ -27,10 +27,35 @@ This module contains all the classes that handle the ARM instruction
 representation.
 
 """
-from barf.arch import ARCH_ARM_MODE_32
-from barf.arch import ARCH_ARM_MODE_64
+from barf.arch import ARCH_ARM_MODE_ARM
+from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch import ArchitectureInformation
 
+# Used in CS->BARF translator
+arm_alias_reg_map = {
+     "a1" : "r0",
+     "a2" : "r1",
+     "a3" : "r2",
+     "a4" : "r3",
+
+     "v1" : "r4",
+     "v2" : "r5",
+     "v3" : "r6",
+     "v4" : "r7",
+     "v5" : "r8",
+     "v6" : "r9",
+     "v7" : "r10",
+     "v8" : "r11",
+
+     "sb" : "r9",
+     "sl" : "r10",
+     "fp" : "r11",
+     "ip" : "r12",
+
+     "sp" : "r13",
+     "lr" : "r14",
+     "pc" : "r15",
+}
 
 ARM_COND_CODE_EQ = 0
 ARM_COND_CODE_NE = 1
@@ -172,8 +197,8 @@ class ArmArchitectureInformation(ArchitectureInformation):
     @property
     def architecture_size(self):
         arch_size_map = {
-            ARCH_ARM_MODE_32 : 32,
-            ARCH_ARM_MODE_64 : 64,
+            ARCH_ARM_MODE_ARM : 32,
+            ARCH_ARM_MODE_THUMB : 32,
         }
 
         return arch_size_map[self._arch_mode]
@@ -181,8 +206,8 @@ class ArmArchitectureInformation(ArchitectureInformation):
     @property
     def operand_size(self):
         operand_size_map = {
-            ARCH_ARM_MODE_32 : 32,
-            ARCH_ARM_MODE_64 : 64,
+            ARCH_ARM_MODE_ARM : 32,
+            ARCH_ARM_MODE_THUMB : 32,
         }
 
         return operand_size_map[self._arch_mode]
@@ -190,8 +215,8 @@ class ArmArchitectureInformation(ArchitectureInformation):
     @property
     def address_size(self):
         address_size_map = {
-            ARCH_ARM_MODE_32 : 32,
-            ARCH_ARM_MODE_64 : 64,
+            ARCH_ARM_MODE_ARM : 32,
+            ARCH_ARM_MODE_THUMB : 32,
         }
 
         return address_size_map[self._arch_mode]
@@ -272,6 +297,9 @@ class ArmArchitectureInformation(ArchitectureInformation):
             self._registers_size[name] = size
 
         self._registers_flags = [name for name, _ in self.regs_flags]
+
+    def registers(self):
+        return []
 
 
 class ArmInstruction(object):
@@ -398,6 +426,10 @@ class ArmInstruction(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    @property
+    def prefix(self):
+        return ""
 
 
 class ArmOperand(object):
@@ -572,7 +604,7 @@ class ArmRegisterListOperand(ArmOperand):
         return string
 
     def __eq__(self, other):
-        return  self._list == other._list and \
+        return  self._reg_list == other._reg_list and \
                 self.size == other.size
 
     def __ne__(self, other):

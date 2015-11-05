@@ -227,9 +227,9 @@ class BinaryFile(object):
                 32 : arch.ARCH_X86_MODE_32,
                 64 : arch.ARCH_X86_MODE_64
             },
+            # TODO: Distinguish between ARM or THUMB state.
             "ARM" : {
-                32 : arch.ARCH_ARM_MODE_32,
-                64 : arch.ARCH_ARM_MODE_64
+                32 : None,
             },
         }
 

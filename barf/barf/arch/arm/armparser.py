@@ -28,12 +28,9 @@ ARM Instruction Parser.
 
 import copy
 import logging
-import os
 
 from pyparsing import alphanums
-from pyparsing import alphas
 from pyparsing import Combine
-from pyparsing import Forward
 from pyparsing import Literal
 from pyparsing import nums
 from pyparsing import Optional
@@ -44,7 +41,7 @@ from pyparsing import ZeroOrMore
 from pyparsing import Group
 from pyparsing import LineEnd
 
-from barf.arch import ARCH_ARM_MODE_32
+from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch.arm.armbase import ArmArchitectureInformation
 from barf.arch.arm.armbase import ArmRegisterListOperand
 from barf.arch.arm.armbase import ArmImmediateOperand
@@ -122,16 +119,16 @@ def parse_operand(string, location, tokens):
             raise Exception("Unknown index type.")
 
         reg_base = process_register(mem_oprnd["base"])
-        displacement = mem_oprnd.get("disp", None)
+        disp = mem_oprnd.get("disp", None)
         disp_minus = True if mem_oprnd.get("minus") else False
 
-        if displacement:
-            if "shift" in displacement:
-                displacement = process_shifted_register(displacement["shift"])
-            elif "reg" in displacement:
-                displacement = process_register(displacement["reg"])
-            elif "imm" in displacement:
-                displacement = ArmImmediateOperand("".join(displacement["imm"]), arch_info.operand_size)
+        if disp:
+            if "shift" in disp:
+                displacement = process_shifted_register(disp["shift"])
+            elif "reg" in disp:
+                displacement = process_register(disp["reg"])
+            elif "imm" in disp:
+                displacement = ArmImmediateOperand("".join(disp["imm"]), arch_info.operand_size)
             else:
                 raise Exception("Unknown displacement type.")
 
@@ -342,14 +339,23 @@ mnemonic = Group(Or([
 
     Combine(Literal("ldr")("ins") + condition_code),
     Combine(Literal("str")("ins") + condition_code),
+    Combine(Literal("ldrb")("ins") + condition_code),
+    Combine(Literal("strb")("ins") + condition_code),
+    Combine(Literal("ldrh")("ins") + condition_code),
+    Combine(Literal("strh")("ins") + condition_code),
+    Combine(Literal("ldrd")("ins") + condition_code),
+    Combine(Literal("strd")("ins") + condition_code),
 
     Combine(Literal("ldm")("ins") + condition_code + ldm_stm_addr_mode),
     Combine(Literal("stm")("ins") + condition_code + ldm_stm_addr_mode),
 
     Combine(Literal("add")("ins") + cc_plus_uf),
     Combine(Literal("sub")("ins") + cc_plus_uf),
+    Combine(Literal("rsb")("ins") + cc_plus_uf),
     Combine(Literal("cmp")("ins") + condition_code),
     Combine(Literal("cmn")("ins") + condition_code),
+
+    Combine(Literal("lsl")("ins") + cc_plus_uf),
 
     Combine(Literal("mul")("ins") + cc_plus_uf),
 
@@ -370,8 +376,8 @@ class ArmParser(object):
     """ARM Instruction Parser.
     """
 
-    def __init__(self, architecture_mode=ARCH_ARM_MODE_32):
-        global arch_info, modifier_size
+    def __init__(self, architecture_mode=ARCH_ARM_MODE_THUMB):
+        global arch_info
 
         arch_info = ArmArchitectureInformation(architecture_mode)
 
@@ -392,7 +398,7 @@ class ArmParser(object):
             instr_asm = copy.deepcopy(self._cache[instr_lower])
 
             # self._check_instruction(instr_asm)
-        except Exception as e:
+        except Exception:
             instr_asm = None
             error_msg = "Failed to parse instruction: %s"
             logger.error(error_msg, instr, exc_info=True)

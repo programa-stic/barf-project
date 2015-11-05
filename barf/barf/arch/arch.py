@@ -31,8 +31,9 @@ ARCH_X86_MODE_64 = 1
 
 # ARM architecture definition
 ARCH_ARM = 1
-ARCH_ARM_MODE_32 = 0
-ARCH_ARM_MODE_64 = 1
+ARCH_ARM_MODE_ARM = 0
+ARCH_ARM_MODE_THUMB = 1
+
 
 class ArchitectureInformation(object):
 

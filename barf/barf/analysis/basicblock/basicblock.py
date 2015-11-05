@@ -35,6 +35,7 @@ from pydot import Node
 from barf.core.reil import DualInstruction
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilImmediateOperand
+from barf.arch.arm.armdisassembler import InvalidDisassemblerData, CapstoneOperandNotSupported
 
 # CFG recovery mode
 BARF_DISASM_LINEAR = 0       # Linear Sweep
@@ -587,7 +588,10 @@ class BasicBlockBuilder(object):
                 # TODO: Log error.
                 break
 
-            asm = self._disasm.disassemble(data_chunk, addr)
+            try:
+                asm = self._disasm.disassemble(data_chunk, addr)
+            except (InvalidDisassemblerData, CapstoneOperandNotSupported):
+                break
 
             if not asm:
                 break
@@ -618,8 +622,20 @@ class BasicBlockBuilder(object):
             # If it is a JCC instruction, process it and break.
             if  ir[-1].mnemonic == ReilMnemonic.JCC and \
                 not asm.mnemonic == "call" and \
+                not asm.mnemonic == "blx" and \
+                not asm.mnemonic == "bl" and \
                 not asm.prefix in ["rep", "repe", "repne", "repz"]:
                 taken, not_taken, direct = self._extract_branches(asm, ir)
+                break
+
+            # Process ARM instrs: pop reg, {reg*, pc}
+            if  asm.mnemonic == "pop" and \
+                "pc" in str(asm.operands[1]):
+                break
+
+            # Process ARM instrs: ldr pc, *
+            if  asm.mnemonic == "ldr" and \
+                "pc" in str(asm.operands[0]):
                 break
 
             # Update instruction pointer and iterate.
