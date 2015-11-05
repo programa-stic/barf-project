@@ -95,6 +95,8 @@ from barf.arch.arm.armbase import ldm_stm_am_mapper
 from barf.core.disassembler import Disassembler
 from barf.core.disassembler import InvalidDisassemblerData
 
+# from barf.arch.arm.armparser import ArmParser
+
 cc_capstone_barf_mapper = {
     ARM_CC_EQ : ARM_COND_CODE_EQ,
     ARM_CC_NE : ARM_COND_CODE_NE,
@@ -118,6 +120,60 @@ logger = logging.getLogger(__name__)
 
 class CapstoneOperandNotSupported(Exception):
     pass
+
+
+# class ArmDisassembler(Disassembler):
+#     """ARM Disassembler.
+#     """
+
+#     def __init__(self, architecture_mode=ARCH_ARM_MODE_THUMB):
+#         super(ArmDisassembler, self).__init__()
+
+#         arch_map = {
+#             ARCH_ARM_MODE_ARM : CS_MODE_ARM,
+#             ARCH_ARM_MODE_THUMB : CS_MODE_THUMB,
+#         }
+
+#         self._parser = ArmParser(architecture_mode)
+#         self._disassembler = Cs(CS_ARCH_ARM, arch_map[architecture_mode])
+
+#     def disassemble(self, data, address):
+#         """Disassemble the data into an instruction.
+#         """
+#         asm, size = self._cs_disassemble_one(data, address)
+
+#         instr = self._parser.parse(asm) if asm else None
+
+#         if instr:
+#             instr.address = address
+#             instr.size = size
+#             instr.bytes = data[0:size]
+
+#         return instr
+
+#     def disassemble_all(self, data, address):
+#         """Disassemble the data into multiple instructions.
+#         """
+#         raise NotImplementedError()
+
+#     def _cs_disassemble_one(self, data, address):
+#         """Disassemble the data into an instruction in string form.
+#         """
+#         asm, size = "", 0
+
+#         disasm = list(self._disassembler.disasm_lite(data, address))
+
+#         if len(disasm) > 0:
+#             address, size, mnemonic, op_str = disasm[0]
+
+#             asm = str(mnemonic + " " + op_str).strip()
+#         else:
+#             # FIXME: Hack to bypass immediate constants embedded in the
+#             # text section that do not conform to any valid instruction.
+#             asm = "mov r0, r0" # Preferred ARM no-operation code
+#             size = 4
+
+#         return asm, size
 
 
 class ArmDisassembler(Disassembler):
