@@ -487,16 +487,16 @@ class SmtTranslator(object):
             op2_var_neg = (-op2_var)
             op2_var_neg_sx = smtlibv2.SEXTEND(op2_var_neg, oprnd2.size, oprnd3.size)
 
-            shl = smtlibv2.EXTRACT(op1_var_zx >> op2_var_neg_sx, 0, op3_var.size)
-            shr = smtlibv2.EXTRACT(op1_var_zx << op2_var_zx, 0, op3_var.size)
+            shr = smtlibv2.EXTRACT(op1_var_zx >> op2_var_neg_sx, 0, op3_var.size)
+            shl = smtlibv2.EXTRACT(op1_var_zx << op2_var_zx, 0, op3_var.size)
         elif oprnd3.size < oprnd1.size:
-            shl = smtlibv2.EXTRACT(op1_var >> (-op2_var), 0, op3_var.size)
-            shr = smtlibv2.EXTRACT(op1_var << op2_var, 0, op3_var.size)
+            shr = smtlibv2.EXTRACT(op1_var >> (-op2_var), 0, op3_var.size)
+            shl = smtlibv2.EXTRACT(op1_var << op2_var, 0, op3_var.size)
         else:
-            shl = op1_var >> (-op2_var)
-            shr = op1_var << op2_var
+            shr = op1_var >> (-op2_var)
+            shl = op1_var << op2_var
 
-        return [(op3_var == smtlibv2.ITEBV(oprnd3.size, op2_var >= 0, shr, shl))]
+        return [(op3_var == smtlibv2.ITEBV(oprnd3.size, op2_var >= 0, shl, shr))]
 
     # Bitwise Instructions
     # ======================================================================== #
