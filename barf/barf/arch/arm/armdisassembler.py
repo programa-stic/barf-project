@@ -248,7 +248,7 @@ class ArmDisassembler(Disassembler):
     # Casptone to BARF translation
     # ======================================================================== #
     def __cs_reg_idx_to_arm_op_reg(self, cs_reg_idx, cs_insn):
-        name = cs_insn.reg_name(cs_reg_idx)
+        name = str(cs_insn.reg_name(cs_reg_idx))
         if name in arm_alias_reg_map:
             name = arm_alias_reg_map[name]
 
@@ -386,7 +386,7 @@ class ArmDisassembler(Disassembler):
         # Remove update flags suffix (s)
         if cs_insn.update_flags and mnemonic[-1] == 's':
             mnemonic = mnemonic[:-1]
-            
+
         # Remove LDM/STM addressing modes from the mnemonic, later include it in the ArmInstruction
         if mnemonic[0:3] == "ldm" or mnemonic[0:3] == "stm":
             ldm_stm_am = None

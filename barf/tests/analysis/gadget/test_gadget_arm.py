@@ -30,7 +30,7 @@ from barf.analysis.gadget.gadgetclassifier import GadgetClassifier
 from barf.analysis.gadget.gadgetfinder import GadgetFinder
 from barf.analysis.gadget.gadgetverifier import GadgetVerifier
 from barf.arch import ARCH_ARM
-from barf.arch import ARCH_ARM_MODE_32
+from barf.arch import ARCH_ARM_MODE_ARM
 from barf.arch.arm.armbase import ArmArchitectureInformation
 from barf.arch.arm.armdisassembler import ArmDisassembler
 from barf.arch.arm.armtranslator import ArmTranslator
@@ -46,7 +46,7 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def setUp(self):
 
-        self._arch_info = ArmArchitectureInformation(ARCH_ARM_MODE_32)
+        self._arch_info = ArmArchitectureInformation(ARCH_ARM_MODE_ARM)
         self._smt_solver = SmtSolver()
         self._smt_translator = SmtTranslator(self._smt_solver, self._arch_info.address_size)
 
@@ -61,7 +61,7 @@ class ArmGadgetClassifierTests(unittest.TestCase):
         self._g_verifier = GadgetVerifier(self._code_analyzer, self._arch_info)
 
     def _find_and_classify_gadgets(self, binary):
-        g_finder = GadgetFinder(ArmDisassembler(), binary, ArmTranslator(translation_mode=LITE_TRANSLATION), ARCH_ARM, ARCH_ARM_MODE_32)
+        g_finder = GadgetFinder(ArmDisassembler(architecture_mode=ARCH_ARM_MODE_ARM), binary, ArmTranslator(translation_mode=LITE_TRANSLATION), ARCH_ARM, ARCH_ARM_MODE_ARM)
 
         g_candidates = g_finder.find(0x00000000, len(binary), instrs_depth=4)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -95,7 +95,6 @@ class ArmGadgetClassifierTests(unittest.TestCase):
         # testing : dst_reg <- src_reg
         binary  = "\x00\x00\x84\xe2"                     # 0x00 : (4)  add    r0, r4, #0
         binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
-
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
