@@ -150,7 +150,7 @@ class BARF(object):
         """Set up analysis modules.
         """
         ## basic block
-        self.bb_builder = BasicBlockBuilder(self.disassembler, self.text_section, self.ir_translator)
+        self.bb_builder = BasicBlockBuilder(self.disassembler, self.text_section, self.ir_translator, self.arch_info)
 
         ## code analyzer
         self.code_analyzer = CodeAnalyzer(self.smt_solver, self.smt_translator, self.arch_info)

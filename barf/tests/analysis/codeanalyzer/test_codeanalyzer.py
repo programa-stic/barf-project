@@ -75,7 +75,7 @@ class CodeAnalyzerTests(unittest.TestCase):
         self._smt_translator.set_arch_registers_size(self._arch_info.registers_size)
         self._disasm = X86Disassembler()
         self._ir_translator = X86Translator()
-        self._bb_builder = BasicBlockBuilder(self._disasm, self._memory, self._ir_translator)
+        self._bb_builder = BasicBlockBuilder(self._disasm, self._memory, self._ir_translator, self._arch_info)
 
     def test_check_path_satisfiability(self):
         if VERBOSE:
