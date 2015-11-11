@@ -131,6 +131,8 @@ def parse_operand(string, location, tokens):
                 displacement = ArmImmediateOperand("".join(disp["imm"]), arch_info.operand_size)
             else:
                 raise Exception("Unknown displacement type.")
+        else:
+            displacement = None
 
         size = arch_info.operand_size
         # TODO: Add sizes for LDR/STR variations (half word, byte, double word)
