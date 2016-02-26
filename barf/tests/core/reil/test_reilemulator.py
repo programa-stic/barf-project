@@ -257,6 +257,8 @@ class ReilEmulatorTests(unittest.TestCase):
 
         reil_instrs = self._reil_parser.parse(instrs)
 
+        reil_instrs[0].address = 0xdeadbeef00
+
         regs_initial = {
             "eax" : 0x2,
             "ebx" : 0x0,
