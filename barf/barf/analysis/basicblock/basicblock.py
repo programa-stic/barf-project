@@ -363,14 +363,14 @@ class BasicBlockGraph(object):
         lines = []
 
         asm_fmt = "{:#08x} [{:02d}] {}\\l"
-        reil_fmt = " {}\\l"
+        reil_fmt = " {:02x} {}\\l"
 
         for dinstr in basic_block:
             lines += [asm_fmt.format(dinstr.address, dinstr.asm_instr.size, dinstr.asm_instr)]
 
             if print_ir:
                 for ir_instr in dinstr.ir_instrs:
-                    lines += [reil_fmt.format(ir_instr)]
+                    lines += [reil_fmt.format(ir_instr.address & 0xff, ir_instr)]
 
         return "".join(lines)
 

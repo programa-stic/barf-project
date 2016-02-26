@@ -318,8 +318,6 @@ class BARF(object):
                 instr_seq_prev.next_sequence_address = (asm_instr_last.address + asm_instr_last.size) << 8
         # ==================================================================== #
 
-        instr_container.dump()
-
         self.ir_emulator.execute(instr_container, start_addr << 8, end=end_addr << 8)
 
         context_out = {}
