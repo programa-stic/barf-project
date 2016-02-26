@@ -2465,10 +2465,10 @@ class X86Translator(object):
 
             imm0 = tb.immediate(oprnd0.immediate & (2**self._sp.size -1), self._sp.size)
 
-            tmp2 = tb.temporal(self._sp.size)
+            tmp3 = tb.temporal(self._sp.size)
 
-            tb.add(self._builder.gen_add(self._sp, imm0, tmp2))
-            tb.add(self._builder.gen_str(tmp2, self._sp))
+            tb.add(self._builder.gen_add(self._sp, imm0, tmp3))
+            tb.add(self._builder.gen_str(tmp3, self._sp))
 
         tb.add(self._builder.gen_bsh(tmp1, imm8, tmp2))
         tb.add(self._builder.gen_jcc(imm1, tmp2))
