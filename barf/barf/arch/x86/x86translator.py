@@ -2437,18 +2437,23 @@ class X86Translator(object):
         tmp0 = tb.temporal(self._sp.size)
         tmp1 = tb.temporal(self._sp.size)
 
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size), self._arch_info.address_size)
+
         tb.add(self._builder.gen_sub(self._sp, self._ws, tmp0))
         tb.add(self._builder.gen_str(tmp0, self._sp))
-        tb.add(self._builder.gen_add(self._ip, size, tmp1))
-        tb.add(self._builder.gen_stm(tmp1, self._sp))
+        tb.add(self._builder.gen_stm(end_addr, self._sp))
         tb.add(self._builder.gen_jcc(imm1, addr_oprnd))
 
     def _translate_ret(self, tb, instruction):
         # Flags Affected
         # None.
 
+        imm1 = tb.immediate(1, 1)
+        imm8 = tb.immediate(8, self._sp.size)
+
         tmp0 = tb.temporal(self._sp.size)
         tmp1 = tb.temporal(self._sp.size)
+        tmp2 = tb.temporal(self._sp.size + 8)
 
         tb.add(self._builder.gen_ldm(self._sp, tmp1))
         tb.add(self._builder.gen_add(self._sp, self._ws, tmp0))
@@ -2465,8 +2470,8 @@ class X86Translator(object):
             tb.add(self._builder.gen_add(self._sp, imm0, tmp2))
             tb.add(self._builder.gen_str(tmp2, self._sp))
 
-        # TODO: Replace RET instruction with JCC [BYTE 0x1, EMPTY, {D,Q}WORD %0]
-        tb.add(self._builder.gen_ret())
+        tb.add(self._builder.gen_bsh(tmp1, imm8, tmp2))
+        tb.add(self._builder.gen_jcc(imm1, tmp2))
 
     def _translate_loop(self, tb, instruction):
         # Flags Affected
@@ -2492,11 +2497,7 @@ class X86Translator(object):
 
         tb.add(self._builder.gen_str(counter, tmp0))
         tb.add(self._builder.gen_sub(tmp0, imm0, counter))
-        tb.add(self._builder.gen_bisz(counter, exit_cond))
-        tb.add(self._builder.gen_jcc(exit_cond, stop_looping_lbl))
-        tb.add(self._builder.gen_jcc(imm0, addr_oprnd)) # keep looping
-        tb.add(stop_looping_lbl)
-        tb.add(self._builder.gen_jcc(imm0, end_addr))
+        tb.add(self._builder.gen_jcc(counter, addr_oprnd)) # keep looping
 
     def _translate_loopne(self, tb, instruction):
         # Flags Affected
@@ -2584,17 +2585,19 @@ class X86Translator(object):
 
 # "String Instructions"
 # ============================================================================ #
-    def _update_strings_src(self, tb, src, size):
-        self._update_strings_dst(tb, src, size)
+    def _update_strings_src(self, tb, src, size, instruction):
+        self._update_strings_dst(tb, src, size, instruction)
 
     def _update_strings_srcs(self, tb, src1, src2, size):
         self._update_strings_src_and_dst(tb, src1, src2, size)
 
-    def _update_strings_dst(self, tb, dst, size):
+    def _update_strings_dst(self, tb, dst, size, instruction):
         # Create labels.
         forward_lbl = Label('forward')
         backward_lbl = Label('backward')
         continue_lbl = Label('continue')
+
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
 
         # Define immediate registers.
         imm_one = tb.immediate(1, 1)
@@ -2614,15 +2617,12 @@ class X86Translator(object):
         tb.add(self._builder.gen_str(dst_tmp, dst))
 
         # Jump to next instruction.
-        tb.add(self._builder.gen_jcc(imm_one, continue_lbl))
+        tb.add(self._builder.gen_jcc(imm_one, end_addr))
 
         # Update forwards.
         tb.add(forward_lbl)
         tb.add(self._builder.gen_add(dst, imm_tmp, dst_tmp))
         tb.add(self._builder.gen_str(dst_tmp, dst))
-
-        # Continuation label.
-        tb.add(continue_lbl)
 
     def _update_strings_src_and_dst(self, tb, src, dst, size):
         # Create labels.
@@ -2815,7 +2815,7 @@ class X86Translator(object):
         tb.add(self._builder.gen_ldm(src, dst))
 
         # Update destination pointer.
-        self._update_strings_src(tb, src, dst.size)
+        self._update_strings_src(tb, src, dst.size, instruction)
         # -------------------------------------------------------------------- #
 
         if instruction.prefix:
@@ -2969,7 +2969,7 @@ class X86Translator(object):
         self._update_pf(tb, src1_data, src2_data, tmp0)
 
         # Update source pointers.
-        self._update_strings_dst(tb, src2, data_size)
+        self._update_strings_dst(tb, src2, data_size, instruction)
         # -------------------------------------------------------------------- #
 
         if instruction.prefix:
@@ -3029,7 +3029,7 @@ class X86Translator(object):
         tb.add(self._builder.gen_stm(src, dst))
 
         # Update destination pointer.
-        self._update_strings_dst(tb, dst, src.size)
+        self._update_strings_dst(tb, dst, src.size, instruction)
         # -------------------------------------------------------------------- #
 
         if instruction.prefix:
@@ -3137,6 +3137,126 @@ class X86Translator(object):
         # unaffected.
 
         self._set_flag(tb, self._flags["df"])
+
+    def _translate_sahf(self, tb, instruction):
+        # Flags Affected
+        # The SF, ZF, AF, PF, and CF flags are loaded with values from
+        # the AH register. Bits 1, 3, and 5 of the EFLAGS register are
+        # unaffected, with the values remaining 1, 0, and 0,
+        # respectively.
+
+        oprnd0 = ReilRegisterOperand("ah", 8)
+
+        tmp0 = tb.temporal(oprnd0.size)
+        tmp1 = tb.temporal(oprnd0.size)
+        tmp2 = tb.temporal(oprnd0.size)
+        tmp3 = tb.temporal(oprnd0.size)
+
+        shl_two = tb.immediate(-2, 8)
+        shl_one = tb.immediate(-1, 8)
+
+        tb.add(self._builder.gen_str(oprnd0, self._flags["cf"]))
+        tb.add(self._builder.gen_bsh(oprnd0, shl_two, tmp0))
+
+        tb.add(self._builder.gen_str(tmp0, self._flags["pf"]))
+        tb.add(self._builder.gen_bsh(tmp0, shl_two, tmp1))
+
+        tb.add(self._builder.gen_str(tmp1, self._flags["af"]))
+        tb.add(self._builder.gen_bsh(tmp1, shl_two, tmp2))
+
+        tb.add(self._builder.gen_str(tmp2, self._flags["zf"]))
+        tb.add(self._builder.gen_bsh(tmp2, shl_one, tmp3))
+
+        tb.add(self._builder.gen_str(tmp3, self._flags["sf"]))
+
+    def _translate_pushf(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        tmp0 = tb.temporal(self._sp.size)
+        tmp1 = tb.temporal(self._sp.size)
+
+        shr_one = tb.immediate(1, self._sp.size)
+        shr_two = tb.immediate(2, self._sp.size)
+        shr_three = tb.immediate(3, self._sp.size)
+
+        tb.add(self._builder.gen_str(self._flags["of"], tmp1))
+        tb.add(self._builder.gen_bsh(tmp1, shr_one, tmp1))
+        tb.add(self._builder.gen_str(self._flags["df"], tmp1))
+        tb.add(self._builder.gen_bsh(tmp1, shr_three, tmp1))
+        tb.add(self._builder.gen_str(self._flags["sf"], tmp1))
+        tb.add(self._builder.gen_bsh(tmp1, shr_one, tmp1))
+        tb.add(self._builder.gen_str(self._flags["zf"], tmp1))
+        tb.add(self._builder.gen_bsh(tmp1, shr_two, tmp1))
+        tb.add(self._builder.gen_str(self._flags["af"], tmp1))
+        tb.add(self._builder.gen_bsh(tmp1, shr_two, tmp1))
+        tb.add(self._builder.gen_str(self._flags["pf"], tmp1))
+        tb.add(self._builder.gen_bsh(tmp1, shr_two, tmp1))
+        tb.add(self._builder.gen_str(self._flags["cf"], tmp1))
+
+        tb.add(self._builder.gen_sub(self._sp, self._ws, tmp0))
+        tb.add(self._builder.gen_str(tmp0, self._sp))
+        tb.add(self._builder.gen_stm(tmp1, self._sp))
+
+    def _translate_pushfd(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        self._translate_pushf(tb, instruction)
+
+    def _translate_pushfq(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        self._translate_pushf(tb, instruction)
+
+    def _translate_popf(self, tb, instruction):
+        # Flags Affected
+        # All flags may be affected; see the Operation section for
+        # details.
+
+        tmp0 = tb.temporal(self._sp.size)
+        tmp1 = tb.temporal(self._sp.size)
+
+        shl_one = tb.immediate(-1, self._sp.size)
+        shl_two = tb.immediate(-2, self._sp.size)
+        shl_three = tb.immediate(-3, self._sp.size)
+
+        tmp0 = tb.temporal(self._sp.size)
+
+        tb.add(self._builder.gen_ldm(self._sp, tmp1))
+        tb.add(self._builder.gen_add(self._sp, self._ws, tmp0))
+        tb.add(self._builder.gen_str(tmp0, self._sp))
+
+        tb.add(self._builder.gen_str(tmp1, self._flags["cf"]))
+        tb.add(self._builder.gen_bsh(tmp1, shl_two, tmp1))
+        tb.add(self._builder.gen_str(tmp1, self._flags["pf"]))
+        tb.add(self._builder.gen_bsh(tmp1, shl_two, tmp1))
+        tb.add(self._builder.gen_str(tmp1, self._flags["af"]))
+        tb.add(self._builder.gen_bsh(tmp1, shl_two, tmp1))
+        tb.add(self._builder.gen_str(tmp1, self._flags["zf"]))
+        tb.add(self._builder.gen_bsh(tmp1, shl_one, tmp1))
+        tb.add(self._builder.gen_str(tmp1, self._flags["sf"]))
+        tb.add(self._builder.gen_bsh(tmp1, shl_three, tmp1))
+        tb.add(self._builder.gen_str(tmp1, self._flags["df"]))
+        tb.add(self._builder.gen_bsh(tmp1, shl_one, tmp1))
+        tb.add(self._builder.gen_str(tmp1, self._flags["of"]))
+
+        # tb.add(self._builder.gen_sub(self._sp, self._ws, tmp0))
+        # tb.add(self._builder.gen_str(tmp0, self._sp))
+        # tb.add(self._builder.gen_stm(tmp1, self._sp))
+
+    def _translate_popfd(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        self._translate_popf(tb, instruction)
+
+    def _translate_popfq(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        self._translate_popf(tb, instruction)
 
 # "Segment Register Instructions"
 # ============================================================================ #

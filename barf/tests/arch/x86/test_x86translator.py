@@ -1814,6 +1814,35 @@ class X86TranslationTests(unittest.TestCase):
 
         self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
+    def test_sahf(self):
+        asm = ["sahf"]
+
+        ctx_init = self.__init_context()
+
+        # Set all flags in AH
+        ctx_init['rax'] = 0xff00
+
+        # Clear all flags in RFLAGS
+        flags_mapper = {
+             0 : "cf",  # bit 0
+             2 : "pf",  # bit 2
+             4 : "af",  # bit 4
+             6 : "zf",  # bit 6
+             7 : "sf",  # bit 7
+        }
+
+        for bit, _ in flags_mapper.items():
+            ctx_init['rflags'] = ctx_init['rflags'] & ((~2**bit) & 2**64-1)
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
     # Auxiliary methods
     # ======================================================================== #
     def __init_context(self):
