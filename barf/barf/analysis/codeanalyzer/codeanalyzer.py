@@ -471,10 +471,10 @@ class CodeAnalyzer(object):
 
         return mem
 
-    def add_constraint(self, contraint):
-        self._solver.add(contraint)
+    def add_constraint(self, contraint, comment=None):
+        self._solver.add(contraint, comment)
 
-    def add_instruction(self, reil_instruction):
+    def add_instruction(self, reil_instruction, comment=None):
         """Add an instruction for analysis.
         """
         if reil_instruction.mnemonic == ReilMnemonic.LDM:
@@ -489,9 +489,11 @@ class CodeAnalyzer(object):
 
         smt_exprs = self._translator.translate(reil_instruction)
 
-        #if not smt_form is None:
-        for smt_expr in smt_exprs:
-            self._solver.add(smt_expr)
+        for idx, smt_expr in enumerate(smt_exprs):
+            if idx == 0:
+                self._solver.add(smt_expr, comment)
+            else:
+                self._solver.add(smt_expr)
 
     def check(self):
         """Check if the instruction and restrictions added so far are

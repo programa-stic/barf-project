@@ -524,9 +524,9 @@ class Z3Solver(object):
         self._sid = 0
         self._stack = []
         self._declarations = {} #weakref.WeakValueDictionary()
-        self._constraints = set()
+        self._constraints = list()
         self.input_symbols = list()
-        self._proc = Popen('z3 -t:120 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)
+        self._proc = Popen('z3 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)
 
         # Fix z3 declaration scopes
         self._send("(set-option :global-decls false)")
@@ -549,7 +549,7 @@ class Z3Solver(object):
         self._constraints = state['constraints']
         self._stack = state['stack']
         self.input_symbols = state['input_symbols']
-        self._proc = Popen('z3 -t:120 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)
+        self._proc = Popen('z3 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)
 
     def reset(self, full=False):
         self._send("(reset)")
@@ -564,9 +564,9 @@ class Z3Solver(object):
             self._sid = 0
             self._stack = []
             self._declarations = {}
-            self._constraints = set()
+            self._constraints = list()
             self.input_symbols = list()
-            self._proc = Popen('z3 -t:120 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)
+            self._proc = Popen('z3 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)
 
             # Fix z3 declaration scopes
             self._send("(set-option :global-decls false)")
@@ -853,22 +853,28 @@ class Z3Solver(object):
         return declarations
 
     #assertions
-    def add(self, constraint):
+    def add(self, constraint, comment=None):
         if isinstance(constraint, bool):
             if not constraint:
                 self._status = 'unsat'
             return
         assert isinstance(constraint, Bool)
-        self._send('(assert %s)'%constraint)
-        self._constraints.add(constraint)
+        if comment:
+            self._send('(assert %s) ; %s'%(constraint, comment))
+        else:
+            self._send('(assert %s)'%constraint)
+        self._constraints.append((constraint, comment))
         self._status = 'unknown'
         #assert self.check() != 'unsat', "Impossible constraint asserted"
 
     @property
     def constraints(self):
         constraints = []
-        for c in self._constraints:
-            constraints.append('(assert %s)'%c)
+        for c, comment in self._constraints:
+            if comment:
+                constraints.append('(assert %s) ; %s'%(c, comment))
+            else:
+                constraints.append('(assert %s)'%c)
         return constraints
 
 # -------------------------------------------------------------------------------
@@ -887,7 +893,7 @@ class CVC4Solver(object):
         self._sid = 0
         self._stack = []
         self._declarations = {} #weakref.WeakValueDictionary()
-        self._constraints = set()
+        self._constraints = list()
         self.input_symbols = list()
         self._proc = Popen('cvc4 --incremental --lang=smt2', shell=True, stdin=PIPE, stdout=PIPE)
 
@@ -928,7 +934,7 @@ class CVC4Solver(object):
             self._sid = 0
             self._stack = []
             self._declarations = {}
-            self._constraints = set()
+            self._constraints = list()
             self.input_symbols = list()
 
         # Fix CVC4 declaration scopes
@@ -1242,7 +1248,7 @@ class CVC4Solver(object):
             return
         assert isinstance(constraint, Bool)
         self._send('(assert %s)'%constraint)
-        self._constraints.add(constraint)
+        self._constraints.append(constraint)
         self._status = 'unknown'
         #assert self.check() != 'unsat', "Impossible constraint asserted"
 
