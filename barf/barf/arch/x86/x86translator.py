@@ -3242,10 +3242,6 @@ class X86Translator(object):
         tb.add(self._builder.gen_bsh(tmp1, shl_one, tmp1))
         tb.add(self._builder.gen_str(tmp1, self._flags["of"]))
 
-        # tb.add(self._builder.gen_sub(self._sp, self._ws, tmp0))
-        # tb.add(self._builder.gen_str(tmp0, self._sp))
-        # tb.add(self._builder.gen_stm(tmp1, self._sp))
-
     def _translate_popfd(self, tb, instruction):
         # Flags Affected
         # None.
