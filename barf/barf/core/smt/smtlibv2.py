@@ -25,11 +25,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from functools import wraps
-from subprocess import PIPE, Popen
 import copy
 import logging
 import weakref
+
+from functools import wraps
+from subprocess import PIPE, Popen
 
 logger = logging.getLogger("smtlibv2")
 
@@ -39,9 +40,6 @@ def goaux_bv(old_method):
     def new_method(self, *args, **kw_args):
         bv = old_method(self, *args, **kw_args)
         # try:
-        #     # print "[D] bv : %s" % bv, type(bv)
-        #     # print "[D] bv.solver : %s" % bv.solver, type(bv.solver)
-        #     print old_method
         #     bv = self.solver.simplify(bv)
         # except Exception,e:
         #     print "EXCEPTION", e
@@ -52,7 +50,7 @@ def goaux_bv(old_method):
         #     sys.stdin.readline()
         #     pass
 
-        # if isinstance(bv, Symbol) and len(str(bv.value))>200 and self.solver is not None:
+        # if isinstance(bv, Symbol) and len(str(bv.value)) > 200 and self.solver is not None:
         #     aux = self.solver.mkBitVec(bv.size)
         #     self.solver.add(aux == bv)
         #     return aux
@@ -444,10 +442,9 @@ class Array_(Symbol):
     def select(self, key):
         return BitVec(8, 'select', self, self.cast_key(key), solver=self.solver)
 
+    @goaux_bv
     def store(self, key, value):
-        key_cast = self.cast_key(key)
-
-        return Array_(self.size, '(store %s %s %s)'%(self, key_cast, self.cast_value(value)), solver=self.solver)
+        return Array_(self.size, '(store %s %s %s)'%(self, self.cast_key(key), self.cast_value(value)), solver=self.solver)
 
     def __eq__(self, other):
         assert isinstance(other, Array_) and other.size == self.size
@@ -489,16 +486,17 @@ class Array(object):
         return self.cache[key]
 
     def __setitem__(self, key, value):
-        new_arr = self.array.store(key, value)
         self.cache = {}
-        self.array = new_arr
+        self.array = self.array.store(key, value)
 
     def __eq__(self, other):
         assert isinstance(other.array, Array_) and other.array.size == self.array.size
+
         return Bool('=', self.array, other.array, solver=self.array.solver)
 
     def __neq__(self, other):
         assert isinstance(other.array, Array_) and other.array.size == self.array.size
+
         return Bool('not', self.__eq__(other), solver=self.array.solver)
 
 
