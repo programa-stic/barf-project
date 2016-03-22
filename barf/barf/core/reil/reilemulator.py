@@ -653,6 +653,8 @@ class ReilCpu(object):
 
         self.write_operand(instr.operands[2], op2_val)
 
+        return None
+
     # Data transfer instructions
     # ======================================================================== #
     def __execute_ldm(self, instr):
