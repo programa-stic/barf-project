@@ -969,6 +969,8 @@ class ReilEmulator(object):
             try:
                 instr = container.fetch(ip)
             except ReilContainerInvalidAddressError:
+                logger.info("Invalid address: {:#010x}:{:#02x}".format(ip >> 8, ip & 0xff))
+
                 raise ReilCpuInvalidAddressError()
 
             next_ip = self.__cpu.execute(instr)
