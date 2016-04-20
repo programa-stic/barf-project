@@ -644,6 +644,17 @@ class X86Translator(object):
 
 # "Data Transfer Instructions"
 # ============================================================================ #
+    def _translate_cdqe(self, tb, instruction):
+        # Flags Affected
+        # None.
+        oprnd1 = ReilRegisterOperand("eax", 32)
+        oprnd2 = ReilRegisterOperand("rax", 64)
+
+        tmp0 = tb.temporal(oprnd1.size)
+
+        tb.add(self._builder.gen_sext(oprnd1, tmp0))
+        tb.add(self._builder.gen_sext(tmp0, oprnd2))
+
     def _translate_mov(self, tb, instruction):
         # Flags Affected
         # None.
