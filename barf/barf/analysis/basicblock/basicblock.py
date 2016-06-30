@@ -39,6 +39,10 @@ from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilImmediateOperand
 from barf.arch.arm.armdisassembler import InvalidDisassemblerData, CapstoneOperandNotSupported
 
+from pygments import highlight
+from pygments.formatters import HtmlFormatter
+from pygments.lexers.asm import NasmLexer
+
 # CFG recovery mode
 BARF_DISASM_LINEAR = 0       # Linear Sweep
 BARF_DISASM_RECURSIVE = 1    # Recursive Descent
@@ -74,6 +78,34 @@ class BasicBlock(object):
         # different from a conditional jump, this fields holds the
         # address of the jump or next instruction.
         self._direct_branch = None
+
+        self._label = None
+
+        self._is_entry = False
+
+    @property
+    def label(self):
+        """Get basic block label.
+        """
+        return self._label
+
+    @label.setter
+    def label(self, value):
+        """Set basic block label.
+        """
+        self._label = value
+
+    @property
+    def is_entry(self):
+        """Get basic block is_entry.
+        """
+        return self._is_entry
+
+    @is_entry.setter
+    def is_entry(self, value):
+        """Set basic block is_entry.
+        """
+        self._is_entry = value
 
     @property
     def instrs(self):
@@ -244,11 +276,11 @@ class BasicBlockGraph(object):
         # Basic block graph
         self._graph = self._build_graph()
 
-		# List of entry basic blocks
+        # List of entry basic blocks
         self._entry_blocks = [bb.address for bb in basic_blocks
                                 if len(self._graph.in_edges(bb.address)) == 0]
 
-		# List of exit basic blocks
+        # List of exit basic blocks
         self._exit_blocks = [bb.address for bb in basic_blocks
                                 if len(self._graph.out_edges(bb.address)) == 0]
 
@@ -333,6 +365,104 @@ class BasicBlockGraph(object):
                 exc_info=True
             )
 
+    def save_ex(self, filename, print_ir=False, format='dot'):
+        """Save basic block graph into a file.
+        """
+
+        fontname = 'Ubuntu Mono'
+        # fontname = 'DejaVu Sans Mono'
+        # fontname = 'DejaVu Sans Condensed'
+        # fontname = 'DejaVu Sans Light'
+        # fontname = 'Liberation Mono'
+        # fontname = 'DejaVu Serif Condensed'
+        # fontname = 'Ubuntu Condensed'
+
+        node_format = {
+            'shape'     : 'plaintext',
+            'rankdir'   : 'LR',
+            'fontname'  : fontname,
+            'fontsize'  : 9.0,
+            'penwidth'  : 0.5,
+            # 'style'     : 'filled',
+            # 'fillcolor' : 'orange',
+        }
+
+        edge_format = {
+            'fontname'  : fontname,
+            'fontsize'  : 8.0,
+            'penwidth'  : 0.5,
+            'arrowsize' : 0.6,
+            'arrowhead' : 'vee',
+        }
+
+        edge_colors = {
+            'taken'     : 'darkgreen',
+            'not-taken' : 'red',
+            'direct'    : 'blue',
+        }
+
+        try:
+            # for each conneted component
+            for idx, gr in enumerate(networkx.connected_component_subgraphs(self._graph.to_undirected())):
+                graph = Dot(graph_type="digraph", rankdir="TB", splines="ortho", nodesep=1.2)
+
+                # add nodes
+                nodes = {}
+                for bb_addr in gr.node.keys():
+                    # Skip jmp/jcc to sub routines.
+                    if not bb_addr in self._bb_by_addr:
+                        continue
+
+                    dump = self._dump_bb_ex(self._bb_by_addr[bb_addr], print_ir)
+
+                    label  = '<'
+                    label += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
+                    label += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
+                    if self._bb_by_addr[bb_addr].label:
+                        label += '  <tr><td align="left" cellspacing="1">{}</td></tr>'.format(self._bb_by_addr[bb_addr].label)
+                    else:
+                        label += '  <tr><td align="left" cellspacing="1">loc_{address:x}</td></tr>'
+                    label += '  {assembly}'
+                    label += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
+                    label += '</table>'
+                    label += '>'
+
+                    if self._bb_by_addr[bb_addr].is_entry:
+                        node_format['style'] = 'filled'
+                        node_format['fillcolor'] = 'orange'
+
+                    label = label.format(address=bb_addr, assembly=dump)
+
+                    nodes[bb_addr] = Node(bb_addr, label=label, **node_format)
+
+                    graph.add_node(nodes[bb_addr])
+
+                # add edges
+                for bb_src_addr in gr.node.keys():
+                    # Skip jmp/jcc to sub routines.
+                    if not bb_src_addr in self._bb_by_addr:
+                        continue
+
+                    for bb_dst_addr, branch_type in self._bb_by_addr[bb_src_addr].branches:
+                        # Skip jmp/jcc to sub routines.
+                        if not bb_dst_addr in self._bb_by_addr:
+                            continue
+
+                        graph.add_edge(
+                            Edge(nodes[bb_src_addr],
+                            nodes[bb_dst_addr],
+                            color=edge_colors[branch_type],
+                            **edge_format))
+
+                graph.write("%s_%03d.%s" % (filename, idx, format), format=format)
+        except Exception as err:
+           logger.error(
+                "Failed to save basic block graph: %s (%s)",
+                filename,
+                format,
+                exc_info=True
+            )
+
     # Auxiliary functions
     # ======================================================================== #
     def _build_graph(self):
@@ -388,6 +518,30 @@ class BasicBlockGraph(object):
             if print_ir:
                 for ir_instr in dinstr.ir_instrs:
                     lines += [reil_fmt.format(ir_instr.address & 0xff, ir_instr)]
+
+        return "".join(lines)
+
+    def _dump_bb_ex(self, basic_block, print_ir=False):
+        lines = []
+
+        base_addr = basic_block.instrs[0].address
+
+        formatter = HtmlFormatter()
+        formatter.noclasses = True
+        formatter.nowrap = True
+
+        for instr in basic_block.instrs:
+            asm_instr = highlight(str(instr.asm_instr), NasmLexer(), formatter)
+            # asm_instr = str(instr.asm_instr)
+
+            asm_instr = asm_instr.replace("span", "font")
+            asm_instr = asm_instr.replace('style="color: ', 'color="')
+
+            lines += ["<tr><td align='left'>    %08x [%02d] %s </td></tr>" % (instr.address, instr.asm_instr.size, asm_instr)]
+
+            if print_ir:
+                for ir_instr in instr.ir_instrs:
+                    lines += ["              " + str(ir_instr) + "\\l"]
 
         return "".join(lines)
 
