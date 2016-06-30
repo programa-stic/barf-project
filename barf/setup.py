@@ -35,6 +35,7 @@ setup(
         'pefile',
         'pybfd',
         'pydot',
+        'pyelftools',
         'pygments',
         'pyparsing',
         'sphinx',
@@ -44,7 +45,8 @@ setup(
     packages         = find_packages(),
     url              = 'http://github.com/programa-stic/barf-project',
     scripts          = [
-        'tools/gadgets/BARFgadgets'
+        'tools/cfg/BARFcfg',
+        'tools/gadgets/BARFgadgets',
     ],
     version          = '0.2',
     zip_safe         = False
