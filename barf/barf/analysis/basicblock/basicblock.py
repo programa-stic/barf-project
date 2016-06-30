@@ -303,7 +303,7 @@ class BasicBlockGraph(object):
                 for char, encoding in html_entities.items():
                     bb_dump = bb_dump.replace(char, encoding)
 
-                label = "{{<f0> {:#08x} | {}}}".format(bb_addr, bb_dump)
+                label = "{{<f0> {:#010x} | {}}}".format(bb_addr, bb_dump)
 
                 nodes[bb_addr] = Node(bb_addr, label=label, **node_format)
 
@@ -359,14 +359,31 @@ class BasicBlockGraph(object):
 
         return bb_rv
 
+    def _dump_instr(self, instr, mnemonic_width):
+        operands_str = ", ".join([str(oprnd) for oprnd in instr.operands])
+
+        string  = instr.prefix + " " if instr.prefix else ""
+        string += instr.mnemonic + "\\ " * (mnemonic_width - len(instr.mnemonic))
+        string += " " + operands_str if operands_str else ""
+
+        return string
+
     def _dump_bb(self, basic_block, print_ir=False):
         lines = []
 
-        asm_fmt = "{:#08x} [{:02d}] {}\\l"
+        asm_fmt = "{:08x} [{:02d}] {}\\l"
         reil_fmt = " {:02x} {}\\l"
 
+        asm_mnemonic_max_width = 0
+
         for dinstr in basic_block:
-            lines += [asm_fmt.format(dinstr.address, dinstr.asm_instr.size, dinstr.asm_instr)]
+            if len(dinstr.asm_instr.mnemonic) > asm_mnemonic_max_width:
+                asm_mnemonic_max_width = len(dinstr.asm_instr.mnemonic)
+
+        for dinstr in basic_block:
+            asm_instr_str = self._dump_instr(dinstr.asm_instr, asm_mnemonic_max_width + 1)
+
+            lines += [asm_fmt.format(dinstr.address, dinstr.asm_instr.size, asm_instr_str)]
 
             if print_ir:
                 for ir_instr in dinstr.ir_instrs:

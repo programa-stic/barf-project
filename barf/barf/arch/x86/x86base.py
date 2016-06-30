@@ -727,10 +727,13 @@ class X86MemoryOperand(X86Operand):
             string += sep + "*" + sep + str(self._scale)
 
         if self._displacement != 0:
-            if self._base or self._index:
-                string += sep + "+" + sep
+            imm_hex = hex(self._displacement)
 
-            imm_hex = hex(self._displacement & 2**32-1)
+            if self._base or self._index:
+                if imm_hex[0] == "-":
+                    string += sep + sep
+                else:
+                    string += sep + "+" + sep
 
             string += imm_hex[:-1] if imm_hex[-1] == 'L' else imm_hex
 
