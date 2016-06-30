@@ -331,3 +331,40 @@ class BARF(object):
         context_out['memory'] = {}
 
         return context_out
+
+    def emulate_full_ex(self, context, instr_container, ea_start=None, ea_end=None):
+        """Emulate REIL instructions from an instruction container.
+
+        :param context: processor context
+        :type context: dict
+
+        :returns: a context
+        :rtype: dict
+
+        """
+        start_addr = ea_start if ea_start else self.binary.ea_start
+        end_addr = ea_end if ea_end else self.binary.ea_end
+
+        # load registers
+        if 'registers' in context:
+            for reg, val in context['registers'].items():
+                self.ir_emulator.registers[reg] = val
+
+        # load memory
+        if 'memory' in context:
+            for addr, val in context['memory'].items():
+                self.ir_emulator.memory.write(addr, 32 / 8, val)
+
+        self.ir_emulator.execute(instr_container, start_addr << 8, end=end_addr << 8)
+
+        context_out = {}
+
+        # save registers
+        context_out['registers'] = {}
+        for reg, val in self.ir_emulator.registers.items():
+            context_out['registers'][reg] = val
+
+        # save memory
+        context_out['memory'] = {}
+
+        return context_out
