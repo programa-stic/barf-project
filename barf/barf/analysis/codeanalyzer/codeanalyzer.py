@@ -507,13 +507,9 @@ class CodeAnalyzer(object):
         satisfiable.
 
         """
-        self._solver.push()
-
         self._solver.add(constraint)
 
         is_sat = self._solver.check()
-
-        self._solver.pop()
 
         return is_sat
 
@@ -522,14 +518,10 @@ class CodeAnalyzer(object):
         satisfiable.
 
         """
-        self._solver.push()
-
         for constraint in constraints:
             self._solver.add(constraint)
 
         is_sat = self._solver.check()
-
-        self._solver.pop()
 
         return is_sat
 
