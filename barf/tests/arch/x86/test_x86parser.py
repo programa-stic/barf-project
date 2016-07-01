@@ -79,7 +79,8 @@ class X86Parser32BitsTests(unittest.TestCase):
     def test_misc_1(self):
         asm = self._parser.parse("mov dword ptr [-0x21524111], ecx")
 
-        self.assertEqual(str(asm), "mov dword ptr [0xdeadbeef], ecx")
+        self.assertEqual(str(asm), "mov dword ptr [-0x21524111], ecx")
+        self.assertNotEqual(str(asm), "mov dword ptr [0xdeadbeef], ecx")
 
     def test_misc_2(self):
         asm = self._parser.parse("fucompi st(1)")
