@@ -99,6 +99,9 @@ class BinaryFile(object):
         # Architecture mode.
         self._arch_mode = None
 
+        # Entry Point.
+        self._entry_point = None
+
         # Open file
         if filename:
             self._open(filename)
@@ -147,6 +150,12 @@ class BinaryFile(object):
         """
         return self._section_text_memory
 
+    @property
+    def entry_point(self):
+        """Get entry point.
+        """
+        return self._entry_point
+
     def _open(self, filename):
         # FIXME: Ugly hack to support PE files. Remove when pybfd
         # support PEs.
@@ -172,6 +181,9 @@ class BinaryFile(object):
 
             self._arch = self._map_architecture(arch_name)
             self._arch_mode = self._map_architecture_mode(arch_name, arch_size)
+
+            # get entry point
+            self._entry_point = bfd.start_address
         except:
             logger.error("BFD could not open the file.", exc_info=True)
 
@@ -192,6 +204,9 @@ class BinaryFile(object):
                 self._section_text_start = pe.OPTIONAL_HEADER.ImageBase + pe.sections[section_idx].VirtualAddress
                 self._section_text_end = self._section_text_start + len(self._section_text) - 1
                 self._section_text_memory = Memory(self._text_section_reader, self._text_section_writer)
+
+                # get entry point
+                self._entry_point = pe.OPTIONAL_HEADER.ImageBase + pe.OPTIONAL_HEADER.AddressOfEntryPoint
 
                 # get arch and arch mode
                 IMAGE_FILE_MACHINE_I386 = 0x014c
