@@ -239,10 +239,53 @@ class BARF(object):
         start_addr = ea_start if ea_start else self.binary.ea_start
         end_addr = ea_end if ea_end else self.binary.ea_end
 
-        bb_list = self.bb_builder.build(start_addr, end_addr, symbols)
+        bb_list, explore = self.bb_builder.build(start_addr, end_addr, symbols)
         bb_graph = BasicBlockGraph(bb_list)
 
-        return bb_graph
+        return bb_graph, explore
+
+    def recover_cfg_all(self, start, callback=None):
+        """Recover CFG for all functions
+
+        :param start: start address
+
+        :returns: a list of graphs
+        :rtype: List of BasicBlockGraph
+
+        """
+        cfgs = []
+
+        addrs_processed = set()
+
+        # print("[+] Processing {:#010x}...".format(start))
+        if callback:
+            callback(start)
+
+        cfg, explore = self.recover_cfg(ea_start=start)
+
+        addrs_processed.add(start)
+
+        cfgs.append((start, cfg))
+
+        while len(explore) > 0:
+            start, explore = explore[0], explore[1:]
+
+            # print("[+] Processing {:#010x}...".format(start))
+
+            if callback:
+                callback(start)
+
+            cfg, explore_tmp = self.recover_cfg(ea_start=start)
+
+            cfgs.append((start, cfg))
+
+            addrs_processed.add(start)
+
+            for addr in explore_tmp:
+                if not addr in addrs_processed and not addr in explore:
+                    explore.append(addr)
+
+        return cfgs
 
     def recover_bbs(self, ea_start=None, ea_end=None):
         """Recover basic blocks.

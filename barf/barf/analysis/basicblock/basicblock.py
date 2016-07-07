@@ -562,6 +562,20 @@ class BasicBlockGraph(object):
         for bb_addr in self._entry_blocks:
             yield self._bb_by_addr[bb_addr]
 
+    @property
+    def start_address(self):
+        # TODO: Test.
+        starts = [self._bb_by_addr[bb_addr].start_address for bb_addr in self._entry_blocks]
+
+        return min(starts)
+
+    @property
+    def end_address(self):
+        # TODO: Test.
+        ends = [self._bb_by_addr[bb_addr].end_address for bb_addr in self._exit_blocks]
+
+        return max(ends)
+
     def __getstate__(self):
         state = {}
 
@@ -631,7 +645,7 @@ class BasicBlockBuilder(object):
         # bbs = self._refine_bbs(bbs, symbols)
 
         # 2.
-        bbs = self._find_candidate_bbs(start_address, end_address, symbols=symbols)
+        bbs, explore = self._find_candidate_bbs(start_address, end_address, symbols=symbols)
         bbs = self._refine_bbs(bbs, symbols)
 
         # Collect subroutine address
@@ -645,15 +659,26 @@ class BasicBlockBuilder(object):
         # Process subrutines
         bbs_new = []
         for addr in addrs:
-            bbs_new += self._find_candidate_bbs(addr, end_address, symbols=symbols)
+            bbs_tmp, explore_tmp = self._find_candidate_bbs(addr, end_address, symbols=symbols)
+
+            bbs_new += bbs_tmp
+            explore += explore_tmp
 
         bbs = self._refine_bbs(bbs_new + bbs, symbols)
 
-        return bbs
+        explore_addrs = []
+
+        for oprnd in explore:
+            if isinstance(oprnd, ReilImmediateOperand):
+                explore_addrs.append(oprnd.immediate >> 8)
+
+        return bbs, explore_addrs
 
     def _find_candidate_bbs(self, start_address, end_address, mode=BARF_DISASM_RECURSIVE, symbols=None):
         if not symbols:
             symbols = {}
+
+        explore = []
 
         bbs = []
 
@@ -672,7 +697,7 @@ class BasicBlockBuilder(object):
                 not (addr_curr >= start_address and addr_curr <= end_address):
                 continue
 
-            bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols)
+            bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols, explore)
 
             if bb.empty():
                 continue
@@ -698,7 +723,7 @@ class BasicBlockBuilder(object):
                     if not addr in addrs_processed:
                         addrs_to_process.put(addr)
 
-        return bbs
+        return bbs, explore
 
     def _bb_ends_in_direct_jmp(self, bb):
         last_instr = bb.instrs[-1].ir_instrs[-1]
@@ -744,14 +769,14 @@ class BasicBlockBuilder(object):
         return bbs_new
 
     def _split_bb(self, bb, address, symbols):
-        bb_upper_half = self._disassemble_bb(bb.start_address, address, symbols)
-        bb_lower_half = self._disassemble_bb(address, bb.end_address, symbols)
+        bb_upper_half = self._disassemble_bb(bb.start_address, address, symbols, [])
+        bb_lower_half = self._disassemble_bb(address, bb.end_address, symbols, [])
 
         bb_upper_half.direct_branch = address
 
         return bb_lower_half, bb_upper_half
 
-    def _disassemble_bb(self, start_address, end_address, symbols):
+    def _disassemble_bb(self, start_address, end_address, symbols, explore):
         bb = BasicBlock()
         addr = start_address
         taken, not_taken, direct = None, None, None
@@ -786,6 +811,12 @@ class BasicBlockBuilder(object):
             # If it is a x86 hlt instruction, break.
             if asm.mnemonic == "hlt":
                 break
+
+            # Add target address to the explore list.
+            # TODO: Support ARM.
+            if ir[-1].mnemonic == ReilMnemonic.JCC and \
+                asm.mnemonic == "call":
+                explore.append(ir[-1].operands[2])
 
             # If callee does not return, break.
             if  ir[-1].mnemonic == ReilMnemonic.JCC and \
