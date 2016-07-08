@@ -1,4 +1,5 @@
 import logging
+import pefile
 
 from elftools.elf.elffile import ELFFile
 
@@ -11,9 +12,21 @@ from elftools.elf.descriptions import (
 logger = logging.getLogger(__name__)
 
 
-def load_symbol_tables(f):
+def load_symbols_pe(filename):
+    # TODO: Implement this
+    pe = pefile.PE(filename)
+
+    pe.parse_data_directories()
+
+    pe.close()
+
+    return {}
+
+def load_symbols_elf(filename):
     """ Load the symbol tables contained in the file
     """
+    f = open(filename, 'rb')
+
     elffile = ELFFile(f)
 
     symbols = []
@@ -33,5 +46,24 @@ def load_symbol_tables(f):
             if describe_symbol_shndx(symbol['st_shndx']) != "UND" and \
                 describe_symbol_type(symbol['st_info']['type']) == "FUNC":
                 symbols.append((symbol['st_value'], symbol['st_size'], symbol.name))
+
+    f.close()
+
+    return symbols
+
+def load_symbols(filename):
+    try:
+        fd = open(filename, 'rb')
+        signature = fd.read(4)
+        fd.close()
+    except:
+        raise Exception("Error loading file.")
+
+    if signature[:4] == "\x7f\x45\x4c\x46":
+        symbols = load_symbols_elf(filename)
+    elif signature[:2] == b'\x4d\x5a':
+        symbols = load_symbols_pe(filename)
+    else:
+        raise Exception("Unkown file format.")
 
     return symbols

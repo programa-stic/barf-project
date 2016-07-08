@@ -32,16 +32,7 @@ import sys
 import time
 
 from barf.barf import BARF
-from barf.core.symbols import load_symbol_tables
 
-
-def load_symbols_from_binary(filename):
-    with open(filename, "rb") as f:
-        symbols = load_symbol_tables(f)
-
-    symbols = {addr : (name, size, True) for addr, size, name in symbols}
-
-    return symbols
 
 def load_symbols_from_file(filename):
     symbols = {}
@@ -74,7 +65,7 @@ def recover_function_graph(barf, address, symbols, output_dir, show_reil):
 
     cfg = barf.recover_cfg(ea_start=fn_start, ea_end=fn_end - 1, symbols=symbols)
 
-    cfg.save(output_dir + os.path.sep + fn_name, print_ir=show_reil, format='dot')
+    cfg.save_ex(output_dir + os.path.sep + fn_name, print_ir=show_reil, format='dot')
 
 def recover_function_graph_all(barf, output_dir, show_reil):
     def print_status(address):
@@ -87,7 +78,7 @@ def recover_function_graph_all(barf, output_dir, show_reil):
     cfgs = barf.recover_cfg_all(start, callback=print_status)
 
     for addr, cfg in cfgs:
-        cfg.save(output_dir + os.path.sep + "sub_{:08x}".format(addr), print_ir=show_reil, format='dot')
+        cfg.save_ex(output_dir + os.path.sep + "sub_{:08x}".format(addr), print_ir=show_reil, format='dot')
 
 def recover_function_text(barf, address, symbols, output_dir, brief, show_reil):
     fn_name, fn_size, _ = symbols[address]
@@ -248,17 +239,20 @@ def main():
     # Load symbols.
     print("[+] Parsing symbol table...")
 
-    # if args.symbol_file:
-    #     symbols_by_addr = load_symbols_from_file(args.symbol_file)
-    # else:
-    #     symbols_by_addr = load_symbols_from_binary(filename)
+    if args.symbol_file:
+        symbols_by_addr = load_symbols_from_file(args.symbol_file)
+    else:
+        symbols = load_symbols(filename)
 
-    # symbols_by_name = {
-    #     name : (addr, size, returns)
-    #         for addr, (name, size, returns) in symbols_by_addr.items()
-    # }
+        symbols_by_addr = {
+            addr : (name, size, True)
+                for addr, size, name in symbols
+        }
 
-    symbols = {}
+    symbols_by_name = {
+        name : (addr, size, returns)
+            for addr, (name, size, returns) in symbols_by_addr.items()
+    }
 
     # Recover CFG.
     print("[+] Recovering program CFG...")
@@ -266,7 +260,7 @@ def main():
     output_dir = create_output_dir(output_dir + os.path.sep + filename.split('/')[-1] + "_cfg")
 
     if args.recover_all:
-        if len(symbols) > 0:
+        if len(symbols_by_name) > 0:
             for addr in sorted(symbols_by_addr.keys()):
                 name, size, _ = symbols_by_addr[addr]
 
@@ -285,16 +279,19 @@ def main():
                 recover_function_text_all(barf, output_dir, args.brief, args.show_reil)
 
     if args.recover_one:
-        name = args.recover_one
-        addr, size, _ = symbols_by_name[name]
+        if len(symbols_by_name) > 0:
+            name = args.recover_one
+            addr, size, _ = symbols_by_name[name]
 
-        print("    Processing {} @ {:#x} ({})...".format(name, addr, size))
+            print("    Processing {} @ {:#x} ({})...".format(name, addr, size))
 
-        if args.format == "graph":
-            recover_function_graph(barf, addr, symbols_by_addr, output_dir, args.show_reil)
+            if args.format == "graph":
+                recover_function_graph(barf, addr, symbols_by_addr, output_dir, args.show_reil)
 
-        if args.format == "text":
-            recover_function_text(barf, addr, symbols_by_addr, output_dir, args.brief, args.show_reil)
+            if args.format == "text":
+                recover_function_text(barf, addr, symbols_by_addr, output_dir, args.brief, args.show_reil)
+        else:
+            print("[-] No symbols available.")
 
     process_end = time.time()
 
