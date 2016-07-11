@@ -565,14 +565,14 @@ class BasicBlockGraph(object):
     @property
     def start_address(self):
         # TODO: Test.
-        starts = [self._bb_by_addr[bb_addr].start_address for bb_addr in self._entry_blocks]
+        starts = [self._bb_by_addr[bb_addr].start_address for bb_addr in self._bb_by_addr.keys()]
 
         return min(starts)
 
     @property
     def end_address(self):
         # TODO: Test.
-        ends = [self._bb_by_addr[bb_addr].end_address for bb_addr in self._exit_blocks]
+        ends = [self._bb_by_addr[bb_addr].end_address for bb_addr in self._bb_by_addr.keys()]
 
         return max(ends)
 

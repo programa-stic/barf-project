@@ -285,7 +285,12 @@ class BARF(object):
                 if not addr in addrs_processed and not addr in explore:
                     explore.append(addr)
 
-        return cfgs
+        cfgs_final = []
+        for addr, cfg in cfgs:
+            if len(cfg.basic_blocks) > 0:
+                cfgs_final.append((addr, cfg))
+
+        return cfgs_final
 
     def recover_bbs(self, ea_start=None, ea_end=None):
         """Recover basic blocks.
