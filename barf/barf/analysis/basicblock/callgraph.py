@@ -151,67 +151,58 @@ class CallGraph(object):
             'taken'     : 'darkgreen',
             'not-taken' : 'red',
             'direct'    : 'blue',
+            'indirect'  : 'cyan',
         }
 
         try:
-            # for each conneted component
-            for idx, gr in enumerate(networkx.connected_component_subgraphs(self._graph.to_undirected())):
-                graph = Dot(graph_type="digraph", rankdir="TB", splines="ortho", nodesep=1.2)
+            graph = Dot(graph_type="digraph", rankdir="TB", splines="ortho", nodesep=1.2)
 
-                # add nodes
-                nodes = {}
-                for bb_addr in gr.node.keys():
-                    # # Skip jmp/jcc to sub routines.
-                    # if not bb_addr in self._bb_by_addr:
-                    #     continue
+            print("Number of Nodes: {}".format(len(self._graph.node.keys())))
 
-                    # dump = self._dump_bb_ex(self._bb_by_addr[bb_addr], print_ir)
-                    dump = ""
+            # add nodes
+            nodes = {}
+            for bb_addr in self._graph.node.keys():
+                if bb_addr != "unknown":
+                    # label  = '<'
+                    # label += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
+                    # label += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
+                    # label += '  <tr><td align="left" cellspacing="1">sub_{address:x}</td></tr>'
+                    # label += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
+                    # label += '</table>'
+                    # label += '>'
 
-                    label  = '<'
-                    label += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
-                    label += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
-                    if False:
-                        label += '  <tr><td align="left" cellspacing="1">{}</td></tr>'.format(self._bb_by_addr[bb_addr].label)
-                    else:
-                        label += '  <tr><td align="left" cellspacing="1">loc_{address:x}</td></tr>'
-                    label += '  {assembly}'
-                    label += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
-                    label += '</table>'
-                    label += '>'
+                    # label = label.format(address=bb_addr)
 
-                    # if self._bb_by_addr[bb_addr].is_entry:
-                    #     node_format['style'] = 'filled'
-                    #     node_format['fillcolor'] = 'orange'
+                    label = "sub_{address:x}".format(address=bb_addr)
 
-                    label = label.format(address=bb_addr, assembly=dump)
+                    nodes[bb_addr] = Node(bb_addr, label=label, **node_format)
+                else:
+                    label = "unknown".format()
 
                     nodes[bb_addr] = Node(bb_addr, label=label, **node_format)
 
-                    graph.add_node(nodes[bb_addr])
+                graph.add_node(nodes[bb_addr])
 
-                # add edges
-                for bb_src_addr in gr.node.keys():
-                    # # Skip jmp/jcc to sub routines.
-                    # if not bb_src_addr in self._bb_by_addr:
-                    #     continue
+            # add edges
+            for bb_src_addr in self._graph.node.keys():
+                branch_type = "direct"
 
-                    # for bb_dst_addr, branch_type in self._bb_by_addr[bb_src_addr].branches:
-                    #     # Skip jmp/jcc to sub routines.
-                    #     if not bb_dst_addr in self._bb_by_addr:
-                    #         continue
+                for bb_dst_addr in self._edges.get(bb_src_addr, []):
+                    if bb_dst_addr == "unknown":
+                        graph.add_edge(
+                            Edge(nodes[bb_src_addr],
+                            nodes[bb_dst_addr],
+                            color=edge_colors["indirect"],
+                            **edge_format))
 
-                    branch_type = "direct"
-
-                    for bb_dst_addr in self._edges.get(bb_src_addr, []):
-
+                    else:
                         graph.add_edge(
                             Edge(nodes[bb_src_addr],
                             nodes[bb_dst_addr],
                             color=edge_colors[branch_type],
                             **edge_format))
 
-                graph.write("%s_%03d.%s" % (filename, idx, format), format=format)
+            graph.write("%s.%s" % (filename, format), format=format)
         except Exception as err:
            logger.error(
                 "Failed to save basic block graph: %s (%s)",
@@ -229,6 +220,8 @@ class CallGraph(object):
         for cfg in self._cfgs:
             graph.add_node(cfg.start_address, address=cfg.start_address)
 
+        graph.add_node("unknown", address="unknown")
+
         # add edges
         for cfg in self._cfgs:
             edges = self._edges.get(cfg.start_address, [])
@@ -244,12 +237,12 @@ class CallGraph(object):
                             edges.append(target_addr)
 
                             graph.add_edge(cfg.start_address, target_addr, branch_type="direct")
+                        else:
+                            edges.append("unknown")
+
+                            graph.add_edge(cfg.start_address, "unknown", branch_type="indirect")
 
             self._edges[cfg.start_address] = edges
-
-        # for bb_src_addr in self._bb_by_addr.keys():
-        #     for bb_dst_addr, branch_type in self._bb_by_addr[bb_src_addr].branches:
-        #         graph.add_edge(bb_src_addr, bb_dst_addr, branch_type=branch_type)
 
         return graph
 
