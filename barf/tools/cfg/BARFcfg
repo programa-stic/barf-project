@@ -32,6 +32,7 @@ import sys
 import time
 
 from barf.barf import BARF
+from barf.core.symbols import load_symbols
 
 
 def load_symbols_from_file(filename):
