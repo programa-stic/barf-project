@@ -175,7 +175,7 @@ class BARF(object):
 
             self._load()
 
-    def translate(self, ea_start=None, ea_end=None):
+    def translate(self, ea_start=None, ea_end=None, arch_mode=None):
         """Translate to REIL instructions.
 
         :param ea_start: start address
@@ -192,10 +192,10 @@ class BARF(object):
 
         self.ir_translator.reset()
 
-        for addr, asm, _ in self.disassemble(start_addr, end_addr):
+        for addr, asm, _ in self.disassemble(start_addr, end_addr, arch_mode=arch_mode):
             yield addr, asm, self.ir_translator.translate(asm)
 
-    def disassemble(self, ea_start=None, ea_end=None):
+    def disassemble(self, ea_start=None, ea_end=None, arch_mode=None):
         """Disassemble assembler instructions.
 
         :param ea_start: start address
@@ -214,7 +214,7 @@ class BARF(object):
             # disassemble instruction
             start, end = curr_addr, min(curr_addr + 16, self.binary.ea_end + 1)
 
-            asm = self.disassembler.disassemble(self.text_section[start:end], curr_addr)
+            asm = self.disassembler.disassemble(self.text_section[start:end], curr_addr, architecture_mode=arch_mode)
 
             if not asm:
                 return
