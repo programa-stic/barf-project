@@ -64,7 +64,7 @@ def recover_function_graph(barf, address, symbols, output_dir, show_reil):
     fn_start = address
     fn_end = address + fn_size
 
-    cfg = barf.recover_cfg(ea_start=fn_start, ea_end=fn_end - 1, symbols=symbols)
+    cfg, _ = barf.recover_cfg(ea_start=fn_start, ea_end=fn_end - 1, symbols=symbols)
 
     cfg.save_ex(output_dir + os.path.sep + fn_name, print_ir=show_reil, format='dot')
 
@@ -89,7 +89,7 @@ def recover_function_text(barf, address, symbols, output_dir, brief, show_reil):
     with open(output_dir + os.path.sep + fn_name + ".txt", "w") as f:
         print("Function : {} [{:#x} - {:#x}]".format(fn_name, fn_start, fn_end), file=f)
 
-        cfg = barf.recover_cfg(ea_start=fn_start, ea_end=fn_end - 1, symbols=symbols)
+        cfg, _ = barf.recover_cfg(ea_start=fn_start, ea_end=fn_end - 1, symbols=symbols)
 
         for bb in cfg.basic_blocks:
             # Check bb is within bounds of current function.
