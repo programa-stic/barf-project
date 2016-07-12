@@ -284,6 +284,8 @@ class BasicBlockGraph(object):
         self._exit_blocks = [bb.address for bb in basic_blocks
                                 if len(self._graph.out_edges(bb.address)) == 0]
 
+        self._label = None
+
     def all_simple_bb_paths(self, start_address, end_address):
         """Return a list of path between start and end address.
         """
@@ -544,6 +546,14 @@ class BasicBlockGraph(object):
                     lines += ["              " + str(ir_instr) + "\\l"]
 
         return "".join(lines)
+
+    @property
+    def label(self):
+        return self._label
+
+    @label.setter
+    def label(self, value):
+        self._label = value
 
     @property
     def basic_blocks(self):
