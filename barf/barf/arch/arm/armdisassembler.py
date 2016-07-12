@@ -224,6 +224,7 @@ class ArmDisassembler(Disassembler):
             return disasm[0]
         else:
             cs_arm = Cs(CS_ARCH_ARM, CS_MODE_ARM)
+            cs_arm.detail = True
             disasm = list(cs_arm.disasm(data, address))
 
             if len(disasm) > 0:
