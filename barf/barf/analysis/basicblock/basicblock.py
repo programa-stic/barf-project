@@ -260,7 +260,7 @@ class BasicBlock(object):
         self._direct_branch = state['_direct_branch']
 
 
-class BasicBlockGraph(object):
+class ControlFlowGraph(object):
 
     """Basic block graph representation.
     """

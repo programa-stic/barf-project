@@ -33,7 +33,7 @@ import time
 import arch
 
 from analysis.basicblock import BasicBlockBuilder
-from analysis.basicblock import BasicBlockGraph
+from analysis.basicblock import ControlFlowGraph
 from analysis.codeanalyzer import CodeAnalyzer
 from analysis.gadget import GadgetClassifier
 from analysis.gadget import GadgetFinder
@@ -233,14 +233,14 @@ class BARF(object):
         :type ea_end: int
 
         :returns: a graph where each node is a basic block
-        :rtype: BasicBlockGraph
+        :rtype: ControlFlowGraph
 
         """
         start_addr = ea_start if ea_start else self.binary.ea_start
         end_addr = ea_end if ea_end else self.binary.ea_end
 
         bb_list, explore = self.bb_builder.build(start_addr, end_addr, symbols)
-        bb_graph = BasicBlockGraph(bb_list)
+        bb_graph = ControlFlowGraph(bb_list)
 
         return bb_graph, explore
 
@@ -250,7 +250,7 @@ class BARF(object):
         :param start: start address
 
         :returns: a list of graphs
-        :rtype: List of BasicBlockGraph
+        :rtype: List of ControlFlowGraph
 
         """
         cfgs = []

@@ -23,7 +23,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from barf.analysis.basicblock import BasicBlockBuilder
-from barf.analysis.basicblock import BasicBlockGraph
+from barf.analysis.basicblock import ControlFlowGraph
 from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86disassembler import X86Disassembler
 from barf.arch.x86.x86translator import X86Translator
@@ -46,7 +46,7 @@ class ReilContainerBuilder(object):
         reil_container = ReilContainer()
 
         for _, start, end in functions:
-            cfg = BasicBlockGraph(self.__bb_builder.build(start, end))
+            cfg = ControlFlowGraph(self.__bb_builder.build(start, end))
 
             reil_container = self.__translate_cfg(cfg, reil_container=reil_container)
 
@@ -203,6 +203,6 @@ class ReilContainerEx(object):
 
         # print("Resolving {:s} @ {:#010x}".format(name, address))
 
-        cfg = BasicBlockGraph(self.__bb_builder.build(address, end))
+        cfg = ControlFlowGraph(self.__bb_builder.build(address, end))
 
         _ = self.__translate_cfg(cfg, reil_container=self)
