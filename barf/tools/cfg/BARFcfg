@@ -35,6 +35,11 @@ from barf.barf import BARF
 from barf.core.symbols import load_symbols
 
 
+def print_status(address):
+    name = "sub_{:x}".format(address)
+
+    print("    Processing {} @ {:#x}...".format(name, address))
+
 def load_symbols_from_file(filename):
     symbols = {}
 
@@ -72,11 +77,6 @@ def recover_function_graph(barf, address, symbols, output_dir, show_reil):
     cfg.save_ex(output_dir + os.path.sep + fn_name, print_ir=show_reil, format='dot')
 
 def recover_function_graph_all(barf, output_dir, show_reil):
-    def print_status(address):
-        name = "sub_{:x}".format(address)
-
-        print("    Processing {} @ {:#x}...".format(name, address))
-
     start = barf.binary.entry_point
 
     cfgs = barf.recover_cfg_all(start, callback=print_status)
@@ -84,23 +84,14 @@ def recover_function_graph_all(barf, output_dir, show_reil):
     for addr, cfg in cfgs:
         cfg.save_ex(output_dir + os.path.sep + "sub_{:08x}".format(addr), print_ir=show_reil, format='dot')
 
-def recover_function_text(barf, address, symbols, output_dir, brief, show_reil):
-    fn_name, fn_size, _ = symbols[address]
-    fn_start = address
-    fn_end = fn_start + fn_size
-
+def save_cfg_text(cfg, fn_name, fn_start, fn_end, output_dir, brief, show_reil):
     with open(output_dir + os.path.sep + fn_name + ".txt", "w") as f:
         print("Function : {} [{:#x} - {:#x}]".format(fn_name, fn_start, fn_end), file=f)
 
-        if fn_size > 0:
-            cfg, _ = barf.recover_cfg(ea_start=fn_start, ea_end=fn_end - 1, symbols=symbols)
-        else:
-            cfg, _ = barf.recover_cfg(ea_start=fn_start, symbols=symbols)
-
         for bb in cfg.basic_blocks:
-            # Check bb is within bounds of current function.
-            if not (fn_start <= bb.address and bb.address <= fn_end):
-                continue
+            # # Check bb is within bounds of current function.
+            # if not (fn_start <= bb.address and bb.address <= fn_end):
+            #     continue
 
             branches = ", ".join(sorted(["{:#x}".format(a) for a, _ in bb.branches]))
 
@@ -116,12 +107,20 @@ def recover_function_text(barf, address, symbols, output_dir, brief, show_reil):
                         for reil_instr in dinstr.ir_instrs:
                             print("  {:#x}:{:02x}   {}".format(reil_instr.address >> 0x8, reil_instr.address & 0xFF, reil_instr), file=f)
 
+
+def recover_function_text(barf, address, symbols, output_dir, brief, show_reil):
+    fn_name, fn_size, _ = symbols[address]
+    fn_start = address
+    fn_end = fn_start + fn_size
+
+    if fn_size > 0:
+        cfg, _ = barf.recover_cfg(ea_start=fn_start, ea_end=fn_end - 1, symbols=symbols)
+    else:
+        cfg, _ = barf.recover_cfg(ea_start=fn_start, symbols=symbols)
+
+    save_cfg_text(cfg, fn_name, fn_start, fn_end, output_dir, brief, show_reil)
+
 def recover_function_text_all(barf, output_dir, brief, show_reil):
-    def print_status(address):
-        name = "sub_{:x}".format(address)
-
-        print("    Processing {} @ {:#x}...".format(name, address))
-
     start = barf.binary.entry_point
 
     cfgs = barf.recover_cfg_all(start, callback=print_status)
@@ -131,27 +130,7 @@ def recover_function_text_all(barf, output_dir, brief, show_reil):
         fn_start = addr
         fn_end = 0
 
-        with open(output_dir + os.path.sep + fn_name + ".txt", "w") as f:
-            print("Function : {} [{:#x} - {:#x}]".format(fn_name, fn_start, fn_end), file=f)
-
-            for bb in cfg.basic_blocks:
-                # # Check bb is within bounds of current function.
-                # if not (fn_start <= bb.address and bb.address <= fn_end):
-                #     continue
-
-                branches = ", ".join(sorted(["{:#x}".format(a) for a, _ in bb.branches]))
-
-                print("[basic block] {:#x}:{:#x} -> {}".format(bb.start_address, bb.end_address + 1, branches), file=f)
-
-                if not brief:
-                    for dinstr in bb:
-                        asm_instr = dinstr.asm_instr
-
-                        print("  {:#x}    {}".format(asm_instr.address, asm_instr), file=f)
-
-                        if show_reil:
-                            for reil_instr in dinstr.ir_instrs:
-                                print("  {:#x}:{:02x}   {}".format(reil_instr.address >> 0x8, reil_instr.address & 0xFF, reil_instr), file=f)
+        save_cfg_text(cfg, fn_name, fn_start, fn_end, output_dir, brief, show_reil)
 
 def create_output_dir(name):
     if not os.path.exists(name):
@@ -202,6 +181,7 @@ def init_parser():
     parser.add_argument(
         "-d", "--output-dir",
         type=str,
+        default=".",
         help="Ouput directory.")
 
     parser.add_argument(
@@ -241,33 +221,21 @@ def main():
 
         sys.exit(1)
 
-    output_dir = args.output_dir if args.output_dir else "."
-
     # Load symbols.
     print("[+] Parsing symbol table...")
 
     if args.symbol_file:
         symbols_by_addr = load_symbols_from_file(args.symbol_file)
     else:
-        symbols = load_symbols(filename)
-
-        symbols_by_addr = {
-            addr : (name, size, True)
-                for addr, size, name in symbols
-        }
-
-    symbols_by_name = {
-        name : (addr, size, returns)
-            for addr, (name, size, returns) in symbols_by_addr.items()
-    }
+        symbols_by_addr = load_symbols(filename)
 
     # Recover CFG.
     print("[+] Recovering program CFG...")
 
-    output_dir = create_output_dir(output_dir + os.path.sep + filename.split('/')[-1] + "_cfg")
+    output_dir = create_output_dir(args.output_dir + os.path.sep + filename.split('/')[-1] + "_cfg")
 
     if args.recover_all:
-        if len(symbols_by_name) > 0:
+        if len(symbols_by_addr) > 0:
             for addr in sorted(symbols_by_addr.keys()):
                 name, size, _ = symbols_by_addr[addr]
 
@@ -286,6 +254,11 @@ def main():
                 recover_function_text_all(barf, output_dir, args.brief, args.show_reil)
 
     if args.recover_one:
+        symbols_by_name = {
+            name : (addr, size, returns)
+                for addr, (name, size, returns) in symbols_by_addr.items()
+        }
+
         if len(symbols_by_name) > 0:
             name = args.recover_one
             addr, size, _ = symbols_by_name[name]
