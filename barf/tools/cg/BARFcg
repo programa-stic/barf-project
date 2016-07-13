@@ -65,7 +65,10 @@ def recover_function_graph(barf, address, symbols):
     fn_start = address
     fn_end = address + fn_size
 
-    cfg, _ = barf.recover_cfg(ea_start=fn_start, ea_end=fn_end - 1, symbols=symbols)
+    if fn_size > 0:
+        cfg, _ = barf.recover_cfg(ea_start=fn_start, ea_end=fn_end - 1, symbols=symbols)
+    else:
+        cfg, _ = barf.recover_cfg(ea_start=fn_start, symbols=symbols)
 
     if len(cfg.basic_blocks) > 0:
         return cfg
@@ -183,6 +186,8 @@ def main():
                 cfg = recover_function_graph(barf, addr, symbols_by_addr)
 
                 if cfg:
+                    cfg.label = name
+
                     cfgs.append(cfg)
         else:
             cfgs = recover_function_graph_all(barf)
