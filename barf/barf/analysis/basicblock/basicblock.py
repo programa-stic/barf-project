@@ -286,6 +286,45 @@ class ControlFlowGraph(object):
 
         self._label = None
 
+    @property
+    def label(self):
+        return self._label
+
+    @label.setter
+    def label(self, value):
+        self._label = value
+
+    @property
+    def basic_blocks(self):
+        return self._basic_blocks
+
+    def get_basic_block(self, address):
+        return self._bb_by_addr[address]
+
+    @property
+    def exit_basic_blocks(self):
+        for bb_addr in self._exit_blocks:
+            yield self._bb_by_addr[bb_addr]
+
+    @property
+    def entry_basic_blocks(self):
+        for bb_addr in self._entry_blocks:
+            yield self._bb_by_addr[bb_addr]
+
+    @property
+    def start_address(self):
+        # TODO: Test.
+        starts = [self._bb_by_addr[bb_addr].start_address for bb_addr in self._bb_by_addr.keys()]
+
+        return min(starts)
+
+    @property
+    def end_address(self):
+        # TODO: Test.
+        ends = [self._bb_by_addr[bb_addr].end_address for bb_addr in self._bb_by_addr.keys()]
+
+        return max(ends)
+
     def all_simple_bb_paths(self, start_address, end_address):
         """Return a list of path between start and end address.
         """
@@ -547,45 +586,6 @@ class ControlFlowGraph(object):
 
         return "".join(lines)
 
-    @property
-    def label(self):
-        return self._label
-
-    @label.setter
-    def label(self, value):
-        self._label = value
-
-    @property
-    def basic_blocks(self):
-        return self._basic_blocks
-
-    def get_basic_block(self, address):
-        return self._bb_by_addr[address]
-
-    @property
-    def exit_basic_blocks(self):
-        for bb_addr in self._exit_blocks:
-            yield self._bb_by_addr[bb_addr]
-
-    @property
-    def entry_basic_blocks(self):
-        for bb_addr in self._entry_blocks:
-            yield self._bb_by_addr[bb_addr]
-
-    @property
-    def start_address(self):
-        # TODO: Test.
-        starts = [self._bb_by_addr[bb_addr].start_address for bb_addr in self._bb_by_addr.keys()]
-
-        return min(starts)
-
-    @property
-    def end_address(self):
-        # TODO: Test.
-        ends = [self._bb_by_addr[bb_addr].end_address for bb_addr in self._bb_by_addr.keys()]
-
-        return max(ends)
-
     def __getstate__(self):
         state = {}
 
@@ -651,10 +651,6 @@ class BasicBlockBuilder(object):
             symbols = {}
 
         # 1.
-        # bbs = self._find_candidate_bbs(start_address, end_address, symbols=symbols)
-        # bbs = self._refine_bbs(bbs, symbols)
-
-        # 2.
         bbs, explore = self._find_candidate_bbs(start_address, end_address, symbols=symbols)
         bbs = self._refine_bbs(bbs, symbols)
 
