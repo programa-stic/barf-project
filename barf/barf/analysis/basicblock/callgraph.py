@@ -68,7 +68,7 @@ class CallGraph(object):
         try:
             graph = Dot(graph_type="digraph", rankdir="TB", splines="ortho", nodesep=1.2)
 
-            print("Number of Nodes: {}".format(len(self._graph.node.keys())))
+            # print("Number of Nodes: {}".format(len(self._graph.node.keys())))
 
             # add nodes
             nodes = {}
@@ -142,7 +142,7 @@ class CallGraph(object):
                         if isinstance(dinstr.asm_instr.operands[0], X86ImmediateOperand):
                             target_addr = dinstr.asm_instr.operands[0].immediate
 
-                            print("call : {:#010x}".format(target_addr))
+                            # print("call : {:#010x}".format(target_addr))
 
                             edges.append(target_addr)
 
