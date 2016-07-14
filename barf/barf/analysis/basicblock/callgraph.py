@@ -31,7 +31,6 @@ class CallGraph(object):
     def save_ex(self, filename, format='dot'):
         """Save basic block graph into a file.
         """
-
         fontname = 'Ubuntu Mono'
         # fontname = 'DejaVu Sans Mono'
         # fontname = 'DejaVu Sans Condensed'
@@ -59,60 +58,53 @@ class CallGraph(object):
         }
 
         edge_colors = {
-            'taken'     : 'darkgreen',
-            'not-taken' : 'red',
-            'direct'    : 'blue',
-            'indirect'  : 'cyan',
+            'direct'   : 'blue',
+            'indirect' : 'red',
         }
 
         try:
-            graph = Dot(graph_type="digraph", rankdir="TB", splines="ortho", nodesep=1.2)
-
-            # print("Number of Nodes: {}".format(len(self._graph.node.keys())))
+            dot_graph = Dot(graph_type="digraph", rankdir="TB", splines="ortho", nodesep=1.2)
 
             # add nodes
             nodes = {}
-            for bb_addr in self._graph.node.keys():
-                if bb_addr != "unknown":
+            for cfg_addr in self._graph.node.keys():
+                if cfg_addr != "unknown":
+                    if cfg_addr in self._cfg_by_addr and not isinstance(self._cfg_by_addr[cfg_addr], str) and self._cfg_by_addr[cfg_addr].name:
+                        cfg_label = self._cfg_by_addr[cfg_addr].name
+                    else:
+                        cfg_label = "sub_{:x}".format(cfg_addr)
+
                     label  = '<'
                     label += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
                     label += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
-                    if bb_addr in self._cfg_by_addr and not isinstance(self._cfg_by_addr[bb_addr], str) and self._cfg_by_addr[bb_addr].name:
-                        label += '  <tr><td align="left" cellspacing="1">{}</td></tr>'.format(self._cfg_by_addr[bb_addr].name)
-                    else:
-                        label += '  <tr><td align="left" cellspacing="1">sub_{address:x}</td></tr>'
+                    label += '  <tr><td align="left" cellspacing="1">{label}</td></tr>'
                     label += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
                     label += '</table>'
                     label += '>'
 
-                    label = label.format(address=bb_addr)
-
-                    # label = "sub_{address:x}".format(address=bb_addr)
-
-                    nodes[bb_addr] = Node(bb_addr, label=label, **node_format)
+                    label = label.format(label=cfg_label)
                 else:
                     label = "unknown".format()
 
-                    nodes[bb_addr] = Node(bb_addr, label=label, **node_format)
+                nodes[cfg_addr] = Node(cfg_addr, label=label, **node_format)
 
-                graph.add_node(nodes[bb_addr])
+                dot_graph.add_node(nodes[cfg_addr])
 
             # add edges
-            for bb_src_addr in self._graph.node.keys():
-
-                for bb_dst_addr in self._edges.get(bb_src_addr, []):
-                    if bb_dst_addr == "unknown":
+            for cfg_src_addr in self._graph.node.keys():
+                for cfg_dst_addr in self._edges.get(cfg_src_addr, []):
+                    if cfg_dst_addr == "unknown":
                         branch_type = "indirect"
                     else:
                         branch_type = "direct"
 
-                    graph.add_edge(
-                        Edge(nodes[bb_src_addr],
-                        nodes[bb_dst_addr],
+                    dot_graph.add_edge(
+                        Edge(nodes[cfg_src_addr],
+                        nodes[cfg_dst_addr],
                         color=edge_colors[branch_type],
                         **edge_format))
 
-            graph.write("%s.%s" % (filename, format), format=format)
+            dot_graph.write("{}.{}".format(filename, format), format=format)
         except Exception as err:
            logger.error(
                 "Failed to save basic block graph: %s (%s)",
@@ -141,8 +133,6 @@ class CallGraph(object):
                     if dinstr.asm_instr.mnemonic == "call":
                         if isinstance(dinstr.asm_instr.operands[0], X86ImmediateOperand):
                             target_addr = dinstr.asm_instr.operands[0].immediate
-
-                            # print("call : {:#010x}".format(target_addr))
 
                             edges.append(target_addr)
 
