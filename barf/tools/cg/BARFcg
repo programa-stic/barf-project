@@ -36,8 +36,13 @@ from barf.barf import BARF
 from barf.core.symbols import load_symbols
 
 
+def print_recovery_status(address, name, size):
+    size = size if size != 0 else "?"
+
+    print("    Processing {} @ {:#x} ({})".format(name, address, size))
+
 def load_symbols_from_file(filename):
-    symbols = {}
+    symbols_by_addr = {}
 
     with open(filename, "r") as f:
         for line in f.readlines():
@@ -45,7 +50,7 @@ def load_symbols_from_file(filename):
             line = line[:-1]
 
             # Skip blank lines and comments.
-            if (line == "" or line[0] == "#"):
+            if line == "" or line[0] == "#":
                 continue
 
             # Process line.
@@ -56,40 +61,42 @@ def load_symbols_from_file(filename):
             except:
                 raise Exception("Error processing symbol file.")
 
-            symbols[int(addr, 16)] = (name, int(size), returns == "True")
+            symbols_by_addr[int(addr, 16)] = (name, int(size), returns == "True")
 
-    return symbols
+    return symbols_by_addr
 
-def recover_function_graph(barf, address, symbols):
-    fn_name, fn_size, _ = symbols[address]
-    fn_start = address
-    fn_end = address + fn_size
+def recover_cfg(barf, address, symbols_by_addr):
+    cfg, _ = barf.recover_cfg(ea_start=address, symbols=symbols_by_addr, callback=print_recovery_status)
 
-    if fn_size > 0:
-        cfg, _ = barf.recover_cfg(ea_start=fn_start, ea_end=fn_end - 1, symbols=symbols)
+    return cfg
+
+def recover_cfg_some(barf, addresses, symbols_by_addr):
+    cfgs = []
+
+    for addr in sorted(addresses):
+        cfgs.append(recover_cfg(barf, addr, symbols_by_addr))
+
+    return cfgs
+
+def recover_cfg_all(barf, symbols_by_addr):
+    if len(symbols_by_addr) > 0:
+        cfgs = recover_cfg_all_from_symbols(barf, symbols_by_addr)
     else:
-        cfg, _ = barf.recover_cfg(ea_start=fn_start, symbols=symbols)
+        cfgs = recover_cfg_all_from_entry_point(barf)
 
-    if len(cfg.basic_blocks) > 0:
-        return cfg
-    else:
-        return None
+    return cfgs
 
-def recover_function_graph_all(barf):
-    def print_status(address):
-        name = "sub_{:x}".format(address)
-
-        print("    Processing {} @ {:#x}...".format(name, address))
-
+def recover_cfg_all_from_entry_point(barf):
     start = barf.binary.entry_point
+    cfgs = barf.recover_cfg_all(start, callback=print_recovery_status)
 
-    cfgs = barf.recover_cfg_all(start, callback=print_status)
+    return cfgs
 
-    cfgs_final = []
-    for addr, cfg in cfgs:
-        if len(cfg.basic_blocks) > 0:
-            cfgs_final.append(cfg)
-    cfgs = cfgs_final
+def recover_cfg_all_from_symbols(barf, symbols_by_addr):
+    cfgs = []
+
+    for addr in sorted(symbols_by_addr.keys()):
+        cfgs.append(recover_cfg(barf, addr, symbols_by_addr))
 
     return cfgs
 
@@ -123,6 +130,11 @@ def init_parser():
         help="Recover all functions.")
 
     parser.add_argument(
+        "-r", "--recover",
+        type=str,
+        help="Recover specified functions by address (comma separated).")
+
+    parser.add_argument(
         "-t", "--time",
         action="store_true",
         help="Print process time.")
@@ -140,7 +152,7 @@ def main():
     filename = os.path.abspath(args.filename)
 
     if not os.path.isfile(filename):
-        print("[-] Error opening file : {}".format(filename))
+        print("[-] File not found : {}".format(filename))
 
         sys.exit(1)
 
@@ -152,52 +164,41 @@ def main():
 
         sys.exit(1)
 
-    output_dir = "."
-
     # Load symbols.
     print("[+] Parsing symbol table...")
 
     if args.symbol_file:
         symbols_by_addr = load_symbols_from_file(args.symbol_file)
     else:
-        symbols = load_symbols(filename)
-
-        symbols_by_addr = {
-            addr : (name, size, True)
-                for addr, size, name in symbols
-        }
-
-    symbols_by_name = {
-        name : (addr, size, returns)
-            for addr, (name, size, returns) in symbols_by_addr.items()
-    }
+        symbols_by_addr = load_symbols(filename)
 
     # Recover CFGs.
-    print("[+] Recovering program CFGs...")
+    print("[+] Recovering CFGs...")
 
     if args.recover_all:
-        if len(symbols_by_name) > 0:
-            cfgs = []
-            for addr in sorted(symbols_by_addr.keys()):
-                name, size, _ = symbols_by_addr[addr]
+        cfgs = recover_cfg_all(barf, symbols_by_addr)
 
-                print("    Processing {} @ {:#x} ({})...".format(name, addr, size))
+    if args.recover:
+        addresses = [int(addr, 16) for addr in args.recover.split(",")]
 
-                cfg = recover_function_graph(barf, addr, symbols_by_addr)
+        cfgs = recover_cfg_some(barf, addresses, symbols_by_addr)
 
-                if cfg:
-                    cfg.label = name
-
-                    cfgs.append(cfg)
-        else:
-            cfgs = recover_function_graph_all(barf)
+    print("[+] Number of CFGs recovered: {:d}".format(len(cfgs)))
 
     # Recover CG.
     print("[+] Recovering program CG...")
 
-    cg = CallGraph(cfgs)
+    cfgs_filtered = []
+    for cfg in cfgs:
+        if len(cfg.basic_blocks) == 0:
+            print("[*] Ignoring empty CFG: {}".format(cfg.name))
+            continue
 
-    cg.save_ex(output_dir + os.path.sep + filename.split('/')[-1] + "_callgraph")
+        cfgs_filtered.append(cfg)
+
+    cg = CallGraph(cfgs_filtered)
+
+    cg.save_ex(filename.split(os.path.sep)[-1] + "_callgraph")
 
     process_end = time.time()
 
@@ -205,6 +206,7 @@ def main():
         process_time = process_end - process_start
 
         print("[+] Process time: {:.3f}s".format(process_time))
+
 
 if __name__ == "__main__":
 

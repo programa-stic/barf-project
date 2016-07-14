@@ -77,8 +77,8 @@ class CallGraph(object):
                     label  = '<'
                     label += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
                     label += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
-                    if bb_addr in self._cfg_by_addr and not isinstance(self._cfg_by_addr[bb_addr], str) and self._cfg_by_addr[bb_addr].label:
-                        label += '  <tr><td align="left" cellspacing="1">{}</td></tr>'.format(self._cfg_by_addr[bb_addr].label)
+                    if bb_addr in self._cfg_by_addr and not isinstance(self._cfg_by_addr[bb_addr], str) and self._cfg_by_addr[bb_addr].name:
+                        label += '  <tr><td align="left" cellspacing="1">{}</td></tr>'.format(self._cfg_by_addr[bb_addr].name)
                     else:
                         label += '  <tr><td align="left" cellspacing="1">sub_{address:x}</td></tr>'
                     label += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'

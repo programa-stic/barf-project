@@ -247,12 +247,12 @@ def main():
 
         cfgs = recover_cfg_some(barf, addresses, symbols_by_addr)
 
+    print("[+] Number of CFGs recovered: {:d}".format(len(cfgs)))
+
     # Saving CFGs to files.
     print("[+] Saving CFGs...")
 
     save_cfgs(cfgs, output_dir, args.format, args.show_reil, args.brief)
-
-    print("[+] Number of CFGs recovered: {:d}".format(len(cfgs)))
 
     process_end = time.time()
 
