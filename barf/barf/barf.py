@@ -236,16 +236,28 @@ class BARF(object):
         :rtype: ControlFlowGraph
 
         """
+        if symbols and ea_start in symbols:
+            size = symbols[ea_start][1]
+        else:
+            size = 0
+
+        if symbols and ea_start in symbols:
+            name = symbols[ea_start][0]
+        else:
+            name = "sub_{:x}".format(ea_start)
+
         start_addr = ea_start if ea_start else self.binary.ea_start
         end_addr = ea_end if ea_end else self.binary.ea_end
 
         if callback:
-            callback(start)
+            callback(name, ea_start, size)
 
         bb_list, explore = self.bb_builder.build(start_addr, end_addr, symbols)
-        bb_graph = ControlFlowGraph(bb_list)
+        cfg = ControlFlowGraph(bb_list)
 
-        return bb_graph, explore
+        cfg.label = name
+
+        return cfg, explore
 
     def recover_cfg_all(self, start, callback=None):
         """Recover CFG for all functions
@@ -260,9 +272,11 @@ class BARF(object):
 
         addrs_processed = set()
 
-        # print("[+] Processing {:#010x}...".format(start))
+        name = "sub_{:x}".format(start)
+        size = 0
+
         if callback:
-            callback(start)
+            callback(name, start, size)
 
         cfg, explore = self.recover_cfg(ea_start=start)
 
@@ -273,10 +287,8 @@ class BARF(object):
         while len(explore) > 0:
             start, explore = explore[0], explore[1:]
 
-            # print("[+] Processing {:#010x}...".format(start))
-
             if callback:
-                callback(start)
+                callback(name, start, size)
 
             cfg, explore_tmp = self.recover_cfg(ea_start=start)
 
