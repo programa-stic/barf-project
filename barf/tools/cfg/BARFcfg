@@ -35,14 +35,13 @@ from barf.barf import BARF
 from barf.core.symbols import load_symbols
 
 
-def print_recovery_status(name, address, size):
-    name = name if name else "sub_{:x}".format(address)
+def print_recovery_status(address, name, size):
     size = size if size != 0 else "?"
 
-    print("    Processing {} @ {:#x} ({})...".format(name, address, size))
+    print("    Processing {} @ {:#x} ({})".format(name, address, size))
 
 def load_symbols_from_file(filename):
-    symbols = {}
+    symbols_by_addr = {}
 
     with open(filename, "r") as f:
         for line in f.readlines():
@@ -61,33 +60,20 @@ def load_symbols_from_file(filename):
             except:
                 raise Exception("Error processing symbol file.")
 
-            symbols[int(addr, 16)] = (name, int(size), returns == "True")
+            symbols_by_addr[int(addr, 16)] = (name, int(size), returns == "True")
 
-    return symbols
+    return symbols_by_addr
 
-def recover_cfg(barf, address, symbols):
-    if len(symbols) > 0:
-        fn_name, fn_size, _ = symbols[address]
-        fn_start = address
-        fn_end = address + fn_size
-    else:
-        fn_name = "sub_{:x}".format(address)
-        fn_size = 0
-        fn_start = address
-        fn_end = address + fn_size
-
-    if fn_size > 0:
-        cfg, _ = barf.recover_cfg(ea_start=fn_start, ea_end=fn_end - 1, symbols=symbols, callback=print_recovery_status)
-    else:
-        cfg, _ = barf.recover_cfg(ea_start=fn_start, symbols=symbols, callback=print_recovery_status)
+def recover_cfg(barf, address, symbols_by_addr):
+    cfg, _ = barf.recover_cfg(ea_start=address, symbols=symbols_by_addr, callback=print_recovery_status)
 
     return cfg
 
 def recover_cfg_some(barf, addresses, symbols_by_addr):
     cfgs = []
 
-    for address in addresses:
-        cfgs.append(recover_cfg(barf, address, symbols_by_addr))
+    for addr in sorted(addresses):
+        cfgs.append(recover_cfg(barf, addr, symbols_by_addr))
 
     return cfgs
 
@@ -101,10 +87,9 @@ def recover_cfg_all(barf, symbols_by_addr):
 
 def recover_cfg_all_from_entry_point(barf):
     start = barf.binary.entry_point
-
     cfgs = barf.recover_cfg_all(start, callback=print_recovery_status)
 
-    return [p[1] for p in cfgs]
+    return cfgs
 
 def recover_cfg_all_from_symbols(barf, symbols_by_addr):
     cfgs = []
@@ -114,10 +99,14 @@ def recover_cfg_all_from_symbols(barf, symbols_by_addr):
 
     return cfgs
 
-def save_cfg_graph(cfg, fn_name, output_dir, show_reil):
-    cfg.save_ex(output_dir + os.path.sep + fn_name, print_ir=show_reil, format='dot')
+def save_cfg_graph(cfg, output_dir, show_reil):
+    cfg.save_ex(output_dir + os.path.sep + cfg.name, print_ir=show_reil, format='dot')
 
-def save_cfg_text(cfg, fn_name, fn_start, fn_end, output_dir, brief, show_reil):
+def save_cfg_text(cfg, output_dir, show_reil, brief):
+    fn_name = cfg.name
+    fn_start = cfg.start_address
+    fn_end = cfg.end_address
+
     with open(output_dir + os.path.sep + fn_name + ".txt", "w") as f:
         print("Function : {} [{:#x} - {:#x}]".format(fn_name, fn_start, fn_end), file=f)
 
@@ -136,21 +125,17 @@ def save_cfg_text(cfg, fn_name, fn_start, fn_end, output_dir, brief, show_reil):
                         for reil_instr in dinstr.ir_instrs:
                             print("  {:#x}:{:02x}   {}".format(reil_instr.address >> 0x8, reil_instr.address & 0xFF, reil_instr), file=f)
 
-def save_cfgs(cfgs, output_dir, output_format, brief, show_reil):
+def save_cfgs(cfgs, output_dir, output_format, show_reil, brief):
     for cfg in cfgs:
         if len(cfg.basic_blocks) == 0:
-            print("[-] Empty CFG ({}), ignoring it...".format(cfg.label))
+            print("[*] Ignoring empty CFG: {}".format(cfg.name))
             continue
 
-        fn_name = cfg.label if cfg.label else "sub_{:x}".format(cfg.start_address)
-        fn_start = cfg.start_address
-        fn_end = 0
-
         if output_format == "graph":
-            save_cfg_graph(cfg, fn_name, output_dir, show_reil)
+            save_cfg_graph(cfg, output_dir, show_reil)
 
         if output_format == "text":
-            save_cfg_text(cfg, fn_name, fn_start, fn_end, output_dir, brief, show_reil)
+            save_cfg_text(cfg, output_dir, show_reil, brief)
 
 def create_output_dir(name):
     if not os.path.exists(name):
@@ -252,7 +237,7 @@ def main():
     # Recover CFGs.
     print("[+] Recovering CFGs...")
 
-    output_dir = create_output_dir(args.output_dir + os.path.sep + filename.split('/')[-1] + "_cfg")
+    output_dir = create_output_dir(args.output_dir + os.path.sep + filename.split(os.path.sep)[-1] + "_cfg")
 
     if args.recover_all:
         cfgs = recover_cfg_all(barf, symbols_by_addr)
@@ -265,7 +250,7 @@ def main():
     # Saving CFGs to files.
     print("[+] Saving CFGs...")
 
-    save_cfgs(cfgs, output_dir, args.format, args.brief, args.show_reil)
+    save_cfgs(cfgs, output_dir, args.format, args.show_reil, args.brief)
 
     print("[+] Number of CFGs recovered: {:d}".format(len(cfgs)))
 

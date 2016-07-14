@@ -265,7 +265,7 @@ class ControlFlowGraph(object):
     """Basic block graph representation.
     """
 
-    def __init__(self, basic_blocks):
+    def __init__(self, basic_blocks, name=None):
 
         # List of basic blocks sorted by address.
         self._basic_blocks = sorted(basic_blocks, key=lambda bb: bb.address)
@@ -284,15 +284,15 @@ class ControlFlowGraph(object):
         self._exit_blocks = [bb.address for bb in basic_blocks
                                 if len(self._graph.out_edges(bb.address)) == 0]
 
-        self._label = None
+        self._name = name
 
     @property
-    def label(self):
-        return self._label
+    def name(self):
+        return self._name
 
-    @label.setter
-    def label(self, value):
-        self._label = value
+    @name.setter
+    def name(self, value):
+        self._name = value
 
     @property
     def basic_blocks(self):
@@ -443,59 +443,60 @@ class ControlFlowGraph(object):
         }
 
         try:
-            # for each conneted component
-            for idx, gr in enumerate(networkx.connected_component_subgraphs(self._graph.to_undirected())):
-                graph = Dot(graph_type="digraph", rankdir="TB", splines="ortho", nodesep=1.2)
+            dot_graph = Dot(graph_type="digraph", rankdir="TB", splines="ortho", nodesep=1.2)
 
-                # add nodes
-                nodes = {}
-                for bb_addr in gr.node.keys():
+            # add nodes
+            nodes = {}
+            for bb_addr in self._graph.node.keys():
+                # Skip jmp/jcc to sub routines.
+                if not bb_addr in self._bb_by_addr:
+                    continue
+
+                bb_dump = self._dump_bb_ex(self._bb_by_addr[bb_addr], print_ir)
+
+                if self._bb_by_addr[bb_addr].label:
+                    bb_label = self._bb_by_addr[bb_addr].label
+                else:
+                    bb_label = "loc_{:x}".format(bb_addr)
+
+                label  = '<'
+                label += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
+                label += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
+                label += '  <tr><td align="left" cellspacing="1">{label}</td></tr>'
+                label += '  {assembly}'
+                label += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
+                label += '</table>'
+                label += '>'
+
+                if self._bb_by_addr[bb_addr].is_entry:
+                    node_format['style'] = 'filled'
+                    node_format['fillcolor'] = 'orange'
+
+                label = label.format(label=bb_label, assembly=bb_dump)
+
+                nodes[bb_addr] = Node(bb_addr, label=label, **node_format)
+
+                dot_graph.add_node(nodes[bb_addr])
+
+            # add edges
+            for bb_src_addr in self._graph.node.keys():
+                # Skip jmp/jcc to sub routines.
+                if not bb_src_addr in self._bb_by_addr:
+                    continue
+
+                for bb_dst_addr, branch_type in self._bb_by_addr[bb_src_addr].branches:
                     # Skip jmp/jcc to sub routines.
-                    if not bb_addr in self._bb_by_addr:
+                    if not bb_dst_addr in self._bb_by_addr:
                         continue
 
-                    dump = self._dump_bb_ex(self._bb_by_addr[bb_addr], print_ir)
+                    dot_graph.add_edge(
+                        Edge(nodes[bb_src_addr],
+                        nodes[bb_dst_addr],
+                        color=edge_colors[branch_type],
+                        **edge_format))
 
-                    label  = '<'
-                    label += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
-                    label += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
-                    if self._bb_by_addr[bb_addr].label:
-                        label += '  <tr><td align="left" cellspacing="1">{}</td></tr>'.format(self._bb_by_addr[bb_addr].label)
-                    else:
-                        label += '  <tr><td align="left" cellspacing="1">loc_{address:x}</td></tr>'
-                    label += '  {assembly}'
-                    label += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
-                    label += '</table>'
-                    label += '>'
-
-                    if self._bb_by_addr[bb_addr].is_entry:
-                        node_format['style'] = 'filled'
-                        node_format['fillcolor'] = 'orange'
-
-                    label = label.format(address=bb_addr, assembly=dump)
-
-                    nodes[bb_addr] = Node(bb_addr, label=label, **node_format)
-
-                    graph.add_node(nodes[bb_addr])
-
-                # add edges
-                for bb_src_addr in gr.node.keys():
-                    # Skip jmp/jcc to sub routines.
-                    if not bb_src_addr in self._bb_by_addr:
-                        continue
-
-                    for bb_dst_addr, branch_type in self._bb_by_addr[bb_src_addr].branches:
-                        # Skip jmp/jcc to sub routines.
-                        if not bb_dst_addr in self._bb_by_addr:
-                            continue
-
-                        graph.add_edge(
-                            Edge(nodes[bb_src_addr],
-                            nodes[bb_dst_addr],
-                            color=edge_colors[branch_type],
-                            **edge_format))
-
-                graph.write("%s_%03d.%s" % (filename, idx, format), format=format)
+            # Save graph.
+            dot_graph.write("{}.{}".format(filename, format), format=format)
         except Exception as err:
            logger.error(
                 "Failed to save basic block graph: %s (%s)",

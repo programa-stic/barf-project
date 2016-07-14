@@ -237,27 +237,23 @@ class BARF(object):
 
         """
         if symbols and ea_start in symbols:
-            size = symbols[ea_start][1]
-        else:
-            size = 0
-
-        if symbols and ea_start in symbols:
             name = symbols[ea_start][0]
+            size = symbols[ea_start][1] - 1 if symbols[ea_start][1] != 0 else 0
         else:
             name = "sub_{:x}".format(ea_start)
+            size = 0
 
         start_addr = ea_start if ea_start else self.binary.ea_start
         end_addr = ea_end if ea_end else self.binary.ea_end
 
         if callback:
-            callback(name, ea_start, size)
+            callback(ea_start, name, size)
 
-        bb_list, explore = self.bb_builder.build(start_addr, end_addr, symbols)
-        cfg = ControlFlowGraph(bb_list)
+        bbs, calls = self.bb_builder.build(start_addr, end_addr, symbols)
 
-        cfg.label = name
+        cfg = ControlFlowGraph(bbs, name=name)
 
-        return cfg, explore
+        return cfg, calls
 
     def recover_cfg_all(self, start, callback=None):
         """Recover CFG for all functions
@@ -269,43 +265,23 @@ class BARF(object):
 
         """
         cfgs = []
-
         addrs_processed = set()
+        calls = [start]
 
-        name = "sub_{:x}".format(start)
-        size = 0
+        while len(calls) > 0:
+            start, calls = calls[0], calls[1:]
 
-        if callback:
-            callback(name, start, size)
-
-        cfg, explore = self.recover_cfg(ea_start=start)
-
-        addrs_processed.add(start)
-
-        cfgs.append((start, cfg))
-
-        while len(explore) > 0:
-            start, explore = explore[0], explore[1:]
-
-            if callback:
-                callback(name, start, size)
-
-            cfg, explore_tmp = self.recover_cfg(ea_start=start)
-
-            cfgs.append((start, cfg))
+            cfg, calls_tmp = self.recover_cfg(ea_start=start, callback=callback)
 
             addrs_processed.add(start)
 
-            for addr in explore_tmp:
-                if not addr in addrs_processed and not addr in explore:
-                    explore.append(addr)
+            cfgs.append(cfg)
 
-        cfgs_final = []
-        for addr, cfg in cfgs:
-            if len(cfg.basic_blocks) > 0:
-                cfgs_final.append((addr, cfg))
+            for addr in sorted(calls_tmp):
+                if not addr in addrs_processed and not addr in calls:
+                    calls.append(addr)
 
-        return cfgs_final
+        return cfgs
 
     def recover_bbs(self, ea_start=None, ea_end=None):
         """Recover basic blocks.
