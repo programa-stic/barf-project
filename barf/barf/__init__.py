@@ -34,5 +34,6 @@ import arch
 logging.basicConfig(
     filename="barf.log",
     format="%(asctime)s: %(name)s:%(levelname)s: %(message)s",
+    filemode='w',
     level=logging.DEBUG
 )
