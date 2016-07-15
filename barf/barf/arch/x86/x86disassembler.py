@@ -49,7 +49,7 @@ class X86Disassembler(Disassembler):
         self._parser = X86Parser(architecture_mode)
         self._disassembler = Cs(CS_ARCH_X86, arch_mode_map[architecture_mode])
 
-    def disassemble(self, data, address):
+    def disassemble(self, data, address, architecture_mode=ARCH_X86_MODE_32):
         """Disassemble the data into an instruction.
         """
         asm, size = self._cs_disassemble_one(data, address)

@@ -4,6 +4,7 @@ import os
 import sys
 
 from barf.barf import BARF
+from barf.arch import ARCH_ARM_MODE_ARM
 
 if __name__ == "__main__":
     #
@@ -24,7 +25,7 @@ if __name__ == "__main__":
     #
     print("[+] Translating: x86 -> REIL -> SMT...")
 
-    for addr, asm_instr, reil_instrs in barf.translate():
+    for addr, asm_instr, reil_instrs in barf.translate(ea_start=0x000083c8, ea_end=0x00008404, arch_mode=ARCH_ARM_MODE_ARM):
         print("0x{0:08x} : {1}".format(addr, asm_instr))
 
         for reil_instr in reil_instrs:

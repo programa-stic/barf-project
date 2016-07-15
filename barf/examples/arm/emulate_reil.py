@@ -4,6 +4,7 @@ import os
 import sys
 
 from barf.barf import BARF
+from barf.arch import ARCH_ARM_MODE_ARM
 
 if __name__ == "__main__":
     #
@@ -45,7 +46,7 @@ if __name__ == "__main__":
     # REIL emulation
     #
     context_in = {}
-    context_out = barf.emulate_full(context_in, 0x8390, 0x83e0)
+    context_out = barf.emulate_full(context_in, 0x8390, 0x83e0, arch_mode=ARCH_ARM_MODE_ARM)
 
     print "%s : %s" % ("r3", hex(context_out['registers']["r3"]))
 

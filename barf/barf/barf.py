@@ -192,7 +192,7 @@ class BARF(object):
 
         self.ir_translator.reset()
 
-        for addr, asm, _ in self.disassemble(start_addr, end_addr, arch_mode=arch_mode):
+        for addr, asm, _ in self.disassemble(ea_start=start_addr, ea_end=end_addr, arch_mode=arch_mode):
             yield addr, asm, self.ir_translator.translate(asm)
 
     def disassemble(self, ea_start=None, ea_end=None, arch_mode=None):
@@ -207,6 +207,9 @@ class BARF(object):
         :rtype: (int, Instruction, int)
 
         """
+        if arch_mode == None:
+            arch_mode = self.binary.architecture_mode
+
         curr_addr = ea_start if ea_start else self.binary.ea_start
         end_addr = ea_end if ea_end else self.binary.ea_end
 
@@ -318,7 +321,7 @@ class BARF(object):
 
         return bb_list
 
-    def emulate_full(self, context, ea_start=None, ea_end=None):
+    def emulate_full(self, context, ea_start=None, ea_end=None, arch_mode=None):
         """Emulate REIL instructions.
 
         :param context: processor context
@@ -328,6 +331,9 @@ class BARF(object):
         :rtype: dict
 
         """
+        if arch_mode == None:
+            arch_mode = self.binary.architecture_mode
+
         start_addr = ea_start if ea_start else self.binary.ea_start
         end_addr = ea_end if ea_end else self.binary.ea_end
 
@@ -355,7 +361,7 @@ class BARF(object):
         asm_instr_last = None
         instr_seq_prev = None
 
-        for asm_addr, asm_instr, asm_size in self.disassemble(ea_start, ea_end):
+        for asm_addr, asm_instr, asm_size in self.disassemble(ea_start=ea_start, ea_end=ea_end, arch_mode=arch_mode):
             instr_seq = ReilSequence()
 
             for reil_instr in self.ir_translator.translate(asm_instr):
