@@ -65,7 +65,7 @@ def load_symbols_from_file(filename):
     return symbols_by_addr
 
 def recover_cfg(barf, address, symbols_by_addr):
-    cfg, _ = barf.recover_cfg(ea_start=address, symbols=symbols_by_addr, callback=print_recovery_status)
+    cfg = barf.recover_cfg(ea_start=address, symbols=symbols_by_addr, callback=print_recovery_status)
 
     return cfg
 

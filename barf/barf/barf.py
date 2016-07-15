@@ -236,6 +236,22 @@ class BARF(object):
         :rtype: ControlFlowGraph
 
         """
+        cfg, _ = self._recover_cfg(ea_start=ea_start, ea_end=ea_end, symbols=symbols, callback=callback)
+
+        return cfg
+
+    def _recover_cfg(self, ea_start=None, ea_end=None, symbols=None, callback=None):
+        """Recover CFG
+
+        :param ea_start: start address
+        :type ea_start: int
+        :param ea_end: end address
+        :type ea_end: int
+
+        :returns: a graph where each node is a basic block
+        :rtype: ControlFlowGraph
+
+        """
         if symbols and ea_start in symbols:
             name = symbols[ea_start][0]
             size = symbols[ea_start][1] - 1 if symbols[ea_start][1] != 0 else 0
@@ -271,7 +287,7 @@ class BARF(object):
         while len(calls) > 0:
             start, calls = calls[0], calls[1:]
 
-            cfg, calls_tmp = self.recover_cfg(ea_start=start, callback=callback)
+            cfg, calls_tmp = self._recover_cfg(ea_start=start, callback=callback)
 
             addrs_processed.add(start)
 
