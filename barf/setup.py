@@ -46,6 +46,7 @@ setup(
     url              = 'http://github.com/programa-stic/barf-project',
     scripts          = [
         'tools/cfg/BARFcfg',
+        'tools/cg/BARFcg',
         'tools/gadgets/BARFgadgets',
     ],
     version          = '0.2',

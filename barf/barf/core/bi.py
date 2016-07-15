@@ -63,7 +63,7 @@ class Memory(object):
                 for addr in range(key.start, key.stop, step):
                     val += self.read_function(addr, 0x1)[0]
             except IndexError as reason:
-                print "[-] Index out of range : %s" % hex(addr)
+                logger.warn("[-] Index out of range : %s" % hex(addr))
                 raise IndexError(reason)
         elif isinstance(key, int):
             val += self.read_function(key, 0x1)[0]

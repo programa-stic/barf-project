@@ -113,7 +113,7 @@ Este *componente* está formado por el siguientes *subpaquetes*:
 
         * ``BasicBlock``
         * ``BasicBlockBuilder``
-        * ``BasicBlockGraph``
+        * ``ControlFlowGraph``
 
 * **codeanalyzer**
 

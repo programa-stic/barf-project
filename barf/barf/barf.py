@@ -33,7 +33,7 @@ import time
 import arch
 
 from analysis.basicblock import BasicBlockBuilder
-from analysis.basicblock import BasicBlockGraph
+from analysis.basicblock import ControlFlowGraph
 from analysis.codeanalyzer import CodeAnalyzer
 from analysis.gadget import GadgetClassifier
 from analysis.gadget import GadgetFinder
@@ -224,7 +224,7 @@ class BARF(object):
             # update instruction pointer
             curr_addr += asm.size
 
-    def recover_cfg(self, ea_start=None, ea_end=None, symbols=None):
+    def recover_cfg(self, ea_start=None, ea_end=None, symbols=None, callback=None):
         """Recover CFG
 
         :param ea_start: start address
@@ -233,16 +233,71 @@ class BARF(object):
         :type ea_end: int
 
         :returns: a graph where each node is a basic block
-        :rtype: BasicBlockGraph
+        :rtype: ControlFlowGraph
 
         """
+        cfg, _ = self._recover_cfg(ea_start=ea_start, ea_end=ea_end, symbols=symbols, callback=callback)
+
+        return cfg
+
+    def _recover_cfg(self, ea_start=None, ea_end=None, symbols=None, callback=None):
+        """Recover CFG
+
+        :param ea_start: start address
+        :type ea_start: int
+        :param ea_end: end address
+        :type ea_end: int
+
+        :returns: a graph where each node is a basic block
+        :rtype: ControlFlowGraph
+
+        """
+        if symbols and ea_start in symbols:
+            name = symbols[ea_start][0]
+            size = symbols[ea_start][1] - 1 if symbols[ea_start][1] != 0 else 0
+        else:
+            name = "sub_{:x}".format(ea_start)
+            size = 0
+
         start_addr = ea_start if ea_start else self.binary.ea_start
         end_addr = ea_end if ea_end else self.binary.ea_end
 
-        bb_list = self.bb_builder.build(start_addr, end_addr, symbols)
-        bb_graph = BasicBlockGraph(bb_list)
+        if callback:
+            callback(ea_start, name, size)
 
-        return bb_graph
+        bbs, calls = self.bb_builder.build(start_addr, end_addr, symbols)
+
+        cfg = ControlFlowGraph(bbs, name=name)
+
+        return cfg, calls
+
+    def recover_cfg_all(self, start, callback=None):
+        """Recover CFG for all functions
+
+        :param start: start address
+
+        :returns: a list of graphs
+        :rtype: List of ControlFlowGraph
+
+        """
+        cfgs = []
+        addrs_processed = set()
+        calls = [start]
+
+        while len(calls) > 0:
+            start, calls = calls[0], calls[1:]
+
+            cfg, calls_tmp = self._recover_cfg(ea_start=start, callback=callback)
+
+            addrs_processed.add(start)
+
+            cfgs.append(cfg)
+
+            for addr in sorted(calls_tmp):
+                if not addr in addrs_processed and not addr in calls:
+                    calls.append(addr)
+
+        return cfgs
 
     def recover_bbs(self, ea_start=None, ea_end=None):
         """Recover basic blocks.
