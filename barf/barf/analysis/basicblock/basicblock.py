@@ -526,9 +526,9 @@ class ControlFlowGraph(object):
 
                     dot_graph.add_edge(
                         Edge(nodes[bb_src_addr],
-                        nodes[bb_dst_addr],
-                        color=edge_colors[branch_type],
-                        **edge_format))
+                             nodes[bb_dst_addr],
+                             color=edge_colors[branch_type],
+                             **edge_format))
 
             # Save graph.
             dot_graph.write("{}.{}".format(filename, format), format=format)
@@ -566,11 +566,11 @@ class ControlFlowGraph(object):
 
         return bb_rv
 
-    def _dump_instr(self, instr, mnemonic_width):
+    def _dump_instr(self, instr, mnemonic_width, fill_char=""):
         operands_str = ", ".join([str(oprnd) for oprnd in instr.operands])
 
         string  = instr.prefix + " " if instr.prefix else ""
-        string += instr.mnemonic + "\\ " * (mnemonic_width - len(instr.mnemonic))
+        string += instr.mnemonic + fill_char * (mnemonic_width - len(instr.mnemonic))
         string += " " + operands_str if operands_str else ""
 
         return string
@@ -588,7 +588,7 @@ class ControlFlowGraph(object):
                 asm_mnemonic_max_width = len(dinstr.asm_instr.mnemonic)
 
         for dinstr in basic_block:
-            asm_instr_str = self._dump_instr(dinstr.asm_instr, asm_mnemonic_max_width + 1)
+            asm_instr_str = self._dump_instr(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char="\\ ")
 
             lines += [asm_fmt.format(dinstr.address, dinstr.asm_instr.size, asm_instr_str)]
 
@@ -607,8 +607,15 @@ class ControlFlowGraph(object):
         formatter.noclasses = True
         formatter.nowrap = True
 
+        asm_mnemonic_max_width = 0
+
+        for dinstr in basic_block:
+            if len(dinstr.asm_instr.mnemonic) > asm_mnemonic_max_width:
+                asm_mnemonic_max_width = len(dinstr.asm_instr.mnemonic)
+
         for instr in basic_block.instrs:
-            asm_instr = highlight(str(instr.asm_instr), NasmLexer(), formatter)
+            asm_instr = self._dump_instr(instr.asm_instr, asm_mnemonic_max_width + 1, fill_char=" ")
+            asm_instr = highlight(asm_instr, NasmLexer(), formatter)
             asm_instr = asm_instr.replace("span", "font")
             asm_instr = asm_instr.replace('style="color: ', 'color="')
 
