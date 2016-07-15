@@ -83,6 +83,8 @@ class BasicBlock(object):
 
         self._is_entry = False
 
+        self._is_exit = False
+
     @property
     def label(self):
         """Get basic block label.
@@ -106,6 +108,18 @@ class BasicBlock(object):
         """Set basic block is_entry.
         """
         self._is_entry = value
+
+    @property
+    def is_exit(self):
+        """Get basic block is_exit.
+        """
+        return self._is_exit
+
+    @is_exit.setter
+    def is_exit(self, value):
+        """Set basic block is_exit.
+        """
+        self._is_exit = value
 
     @property
     def instrs(self):
@@ -409,7 +423,6 @@ class ControlFlowGraph(object):
     def save_ex(self, filename, print_ir=False, format='dot'):
         """Save basic block graph into a file.
         """
-
         fontname = 'Ubuntu Mono'
         # fontname = 'DejaVu Sans Mono'
         # fontname = 'DejaVu Sans Condensed'
@@ -418,32 +431,49 @@ class ControlFlowGraph(object):
         # fontname = 'DejaVu Serif Condensed'
         # fontname = 'Ubuntu Condensed'
 
-        node_format = {
-            'shape'     : 'plaintext',
-            'rankdir'   : 'LR',
+        graph_format = {
+            'graph_type' : 'digraph',
+            'nodesep'    : 1.2,
+            'rankdir'    : 'TB',
+            'splines'    : 'ortho',
+        }
+
+        node_format_base = {
             'fontname'  : fontname,
             'fontsize'  : 9.0,
             'penwidth'  : 0.5,
-            # 'style'     : 'filled',
-            # 'fillcolor' : 'orange',
+            'rankdir'   : 'LR',
+            'shape'     : 'plaintext',
+        }
+
+        node_format_entry = {
+            'pencolor' : 'orange',
+        }
+
+        node_format_exit = {
+            'pencolor' : 'gray',
+        }
+
+        node_format_entry_exit = {
+            'pencolor' : 'gray',
         }
 
         edge_format = {
+            'arrowhead' : 'vee',
+            'arrowsize' : 0.6,
             'fontname'  : fontname,
             'fontsize'  : 8.0,
             'penwidth'  : 0.5,
-            'arrowsize' : 0.6,
-            'arrowhead' : 'vee',
         }
 
         edge_colors = {
-            'taken'     : 'darkgreen',
-            'not-taken' : 'red',
             'direct'    : 'blue',
+            'not-taken' : 'red',
+            'taken'     : 'darkgreen',
         }
 
         try:
-            dot_graph = Dot(graph_type="digraph", rankdir="TB", splines="ortho", nodesep=1.2)
+            dot_graph = Dot(**graph_format)
 
             # add nodes
             nodes = {}
@@ -454,8 +484,17 @@ class ControlFlowGraph(object):
 
                 bb_dump = self._dump_bb_ex(self._bb_by_addr[bb_addr], print_ir)
 
-                if self._bb_by_addr[bb_addr].label:
-                    bb_label = self._bb_by_addr[bb_addr].label
+                if self._bb_by_addr[bb_addr].is_entry and not self._bb_by_addr[bb_addr].is_exit:
+                    node_format = dict(node_format_base, **node_format_entry)
+                elif self._bb_by_addr[bb_addr].is_exit and not self._bb_by_addr[bb_addr].is_entry:
+                    node_format = dict(node_format_base, **node_format_exit)
+                elif self._bb_by_addr[bb_addr].is_entry and self._bb_by_addr[bb_addr].is_exit:
+                    node_format = dict(node_format_base, **node_format_entry_exit)
+                else:
+                    node_format = dict(node_format_base)
+
+                if self._bb_by_addr[bb_addr].is_entry:
+                    bb_label = "{} @ {:x}".format(self._name, bb_addr)
                 else:
                     bb_label = "loc_{:x}".format(bb_addr)
 
@@ -467,10 +506,6 @@ class ControlFlowGraph(object):
                 label += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
                 label += '</table>'
                 label += '>'
-
-                if self._bb_by_addr[bb_addr].is_entry:
-                    node_format['style'] = 'filled'
-                    node_format['fillcolor'] = 'orange'
 
                 label = label.format(label=bb_label, assembly=bb_dump)
 
@@ -574,8 +609,6 @@ class ControlFlowGraph(object):
 
         for instr in basic_block.instrs:
             asm_instr = highlight(str(instr.asm_instr), NasmLexer(), formatter)
-            # asm_instr = str(instr.asm_instr)
-
             asm_instr = asm_instr.replace("span", "font")
             asm_instr = asm_instr.replace('style="color: ', 'color="')
 
@@ -666,10 +699,12 @@ class BasicBlockBuilder(object):
         # Process subrutines
         bbs_new = []
         for addr in addrs:
-            bbs_tmp, explore_tmp = self._find_candidate_bbs(addr, end_address, symbols=symbols)
+            # Do not process other functions.
+            if not addr in symbols:
+                bbs_tmp, explore_tmp = self._find_candidate_bbs(addr, end_address, symbols=symbols)
 
-            bbs_new += bbs_tmp
-            explore += explore_tmp
+                bbs_new += bbs_tmp
+                explore += explore_tmp
 
         bbs = self._refine_bbs(bbs_new + bbs, symbols)
 
@@ -709,6 +744,9 @@ class BasicBlockBuilder(object):
             if bb.empty():
                 continue
 
+            if bb.address == start_address:
+                bb.is_entry = True
+
             # Add new basic block to the list.
             bbs += [bb]
 
@@ -728,7 +766,9 @@ class BasicBlockBuilder(object):
             if mode == BARF_DISASM_RECURSIVE:
                 for addr, _ in bb.branches:
                     if not addr in addrs_processed:
-                        addrs_to_process.put(addr)
+                        # Do not process other functions.
+                        if not addr in symbols:
+                            addrs_to_process.put(addr)
 
         return bbs, explore
 
@@ -811,12 +851,18 @@ class BasicBlockBuilder(object):
             # TODO: Process instructions without resorting to
             # asm.mnemonic or asm.prefix.
 
+            if asm.mnemonic == "ret":
+                bb.is_exit = True
+                break
+
             # If it is a RET instruction, break.
             if ir[-1].mnemonic == ReilMnemonic.RET:
+                bb.is_exit = True
                 break
 
             # If it is a x86 hlt instruction, break.
             if asm.mnemonic == "hlt":
+                bb.is_exit = True
                 break
 
             # Add target address to the explore list.
@@ -831,6 +877,7 @@ class BasicBlockBuilder(object):
                 isinstance(ir[-1].operands[2], ReilImmediateOperand) and \
                 (ir[-1].operands[2].immediate >> 0x8) in symbols and \
                 not symbols[ir[-1].operands[2].immediate >> 0x8][2]:
+                bb.is_exit = True
                 break
 
             # If it is a JCC instruction, process it and break.
@@ -840,18 +887,24 @@ class BasicBlockBuilder(object):
                 not asm.mnemonic == "bl" and \
                 not asm.prefix in ["rep", "repe", "repne", "repz"]:
                 taken, not_taken, direct = self._extract_branches(asm, ir)
+
+                # jump to a function, take it as an exit bb
+                if direct in symbols:
+                    bb.is_exit = True
                 break
 
             # Process ARM instrs: pop reg, {reg*, pc}
             if  self._arch_info == ARCH_ARM and \
                 asm.mnemonic == "pop" and \
                 "pc" in str(asm.operands[1]):
+                bb.is_exit = True
                 break
 
             # Process ARM instrs: ldr pc, *
             if  self._arch_info == ARCH_ARM and \
                 asm.mnemonic == "ldr" and \
                 "pc" in str(asm.operands[0]):
+                bb.is_exit = True
                 break
 
             # Update instruction pointer and iterate.
