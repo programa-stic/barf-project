@@ -136,11 +136,8 @@ class CodeAnalyzerTests(unittest.TestCase):
         memory = {
         }
 
-        bb_list = self._bb_builder.build(bin_start_address, bin_end_address)
-
+        bb_list, calls = self._bb_builder.build(bin_start_address, bin_end_address)
         bb_graph = ControlFlowGraph(bb_list)
-        # bb_graph.save("bb_graph.png")
-        # bb_graph.save("bb_graph_ir.png", print_ir=True)
 
         codeAnalyzer = CodeAnalyzer(self._smt_solver, self._smt_translator, self._arch_info)
 
