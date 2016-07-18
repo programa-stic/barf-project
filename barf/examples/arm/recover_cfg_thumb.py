@@ -28,6 +28,4 @@ if __name__ == "__main__":
 
     cfg = barf.recover_cfg(ea_start=0x00010434, ea_end=0x0001046a, arch_mode=ARCH_ARM_MODE_THUMB)
 
-    print("End")
-
     cfg.save(filename + "_cfg", print_ir=True)
