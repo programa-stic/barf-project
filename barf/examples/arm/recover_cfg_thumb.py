@@ -11,7 +11,7 @@ if __name__ == "__main__":
     # Open file
     #
     try:
-        # ARM MODE
+        # ARM THUMB
         filename = os.path.abspath("../../samples/toy/arm/branch4-thumb")
         barf = BARF(filename)
     except Exception as err:
@@ -30,4 +30,4 @@ if __name__ == "__main__":
 
     print("End")
 
-    cfg.save(filename + "_cfg", print_ir=False)
+    cfg.save(filename + "_cfg", print_ir=True)

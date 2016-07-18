@@ -30,4 +30,4 @@ if __name__ == "__main__":
 
     print("End")
 
-    cfg.save(filename + "_cfg", print_ir=False)
+    cfg.save(filename + "_cfg", print_ir=True)
