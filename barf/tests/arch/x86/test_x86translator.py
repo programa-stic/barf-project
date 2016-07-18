@@ -1574,7 +1574,7 @@ class X86TranslationTests(unittest.TestCase):
 
         ctx_init = self.__init_context()
 
-        _, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm_pyasmjit), ctx_init)
+        _, x86_ctx_out = pyasmjit.x86_64_execute("\n".join(asm_pyasmjit), ctx_init)
         reil_ctx_out, _ = self.reil_emulator.execute(
             reil_instrs,
             start=0xdeadbeef << 8,
@@ -1798,7 +1798,7 @@ class X86TranslationTests(unittest.TestCase):
 
         ctx_init = self.__init_context()
 
-        _, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm), ctx_init)
+        _, x86_ctx_out = pyasmjit.x86_64_execute("\n".join(asm), ctx_init)
         reil_ctx_out, _ = self.reil_emulator.execute(
             self.__asm_to_reil(asm, 0xdeadbeef),
             start=0xdeadbeef << 8,
@@ -2079,7 +2079,7 @@ class X86TranslationTests(unittest.TestCase):
     def __run_code(self, asm_list, address, ctx_init):
         reil_instrs = self.__asm_to_reil(asm_list, address)
 
-        _, x86_ctx_out = pyasmjit.x86_execute("\n".join(asm_list), ctx_init)
+        _, x86_ctx_out = pyasmjit.x86_64_execute("\n".join(asm_list), ctx_init)
         reil_ctx_out, _ = self.reil_emulator.execute(reil_instrs, start=address << 8, registers=ctx_init)
 
         # Fix AF and PF.
