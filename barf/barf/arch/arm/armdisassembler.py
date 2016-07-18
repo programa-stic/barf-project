@@ -193,9 +193,16 @@ class ArmDisassembler(Disassembler):
         # TODO: define default disassembler externally
         self._disassembler = self._avaliable_disassemblers[architecture_mode]
 
-    def disassemble(self, data, address, architecture_mode=ARCH_ARM_MODE_THUMB):
+    def disassemble(self, data, address, architecture_mode=None):
         """Disassemble the data into an instruction.
         """
+        # TODO: Improve this code!
+        if architecture_mode == None:
+            if self._arch_mode == None:
+                architecture_mode = ARCH_ARM_MODE_THUMB
+            else:
+                architecture_mode = self._arch_mode
+
         self._disassembler = self._avaliable_disassemblers[architecture_mode]
 
         disasm = self._cs_disassemble_one(data, address)

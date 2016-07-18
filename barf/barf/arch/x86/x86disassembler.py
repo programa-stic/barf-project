@@ -31,6 +31,7 @@ from capstone import *
 
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
+from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86parser import X86Parser
 from barf.core.disassembler import Disassembler
 
@@ -45,6 +46,9 @@ class X86Disassembler(Disassembler):
             ARCH_X86_MODE_32 : CS_MODE_32,
             ARCH_X86_MODE_64 : CS_MODE_64
         }
+
+        self._arch_mode = architecture_mode
+        self._arch_info = X86ArchitectureInformation(architecture_mode)
 
         self._parser = X86Parser(architecture_mode)
         self._disassembler = Cs(CS_ARCH_X86, arch_mode_map[architecture_mode])

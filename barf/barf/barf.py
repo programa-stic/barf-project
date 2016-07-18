@@ -79,9 +79,9 @@ class BARF(object):
 
         self.open(filename)
 
-    def _load(self):
+    def _load(self, arch_mode=None):
         # setup architecture
-        self._setup_arch()
+        self._setup_arch(arch_mode=arch_mode)
 
         # set up core modules
         self._setup_core_modules()
@@ -89,31 +89,33 @@ class BARF(object):
         # setup analysis modules
         self._setup_analysis_modules()
 
-    def _setup_arch(self):
+    def _setup_arch(self, arch_mode=None):
         """Set up architecture.
         """
         # set up architecture information
         self.arch_info = None
 
         if self.binary.architecture == arch.ARCH_X86:
-            self._setup_x86_arch()
+            self._setup_x86_arch(arch_mode)
         else:
             # TODO: add arch in the binary file class
-            self._setup_arm_arch()
+            self._setup_arm_arch(arch_mode)
 
-    def _setup_arm_arch(self):
+    def _setup_arm_arch(self, arch_mode=None):
         """Set up ARM architecture.
         """
-        arch_mode = arch.ARCH_ARM_MODE_THUMB
+        if arch_mode == None:
+            arch_mode = arch.ARCH_ARM_MODE_THUMB
 
         self.arch_info = ArmArchitectureInformation(arch_mode)
         self.disassembler = ArmDisassembler(architecture_mode=arch_mode)
         self.ir_translator = ArmTranslator(architecture_mode=arch_mode)
 
-    def _setup_x86_arch(self):
+    def _setup_x86_arch(self, arch_mode=None):
         """Set up x86 architecture.
         """
-        arch_mode = self.binary.architecture_mode
+        if arch_mode == None:
+            arch_mode = self.binary.architecture_mode
 
         # Set up architecture information
         self.arch_info = X86ArchitectureInformation(arch_mode)
@@ -227,7 +229,7 @@ class BARF(object):
             # update instruction pointer
             curr_addr += asm.size
 
-    def recover_cfg(self, ea_start=None, ea_end=None, symbols=None, callback=None):
+    def recover_cfg(self, ea_start=None, ea_end=None, symbols=None, callback=None, arch_mode=None):
         """Recover CFG
 
         :param ea_start: start address
@@ -239,6 +241,12 @@ class BARF(object):
         :rtype: ControlFlowGraph
 
         """
+        if arch_mode == None:
+            arch_mode = self.binary.architecture_mode
+	
+        # Reload modules.
+        self._load(arch_mode=arch_mode)
+
         cfg, _ = self._recover_cfg(ea_start=ea_start, ea_end=ea_end, symbols=symbols, callback=callback)
 
         return cfg
@@ -274,7 +282,7 @@ class BARF(object):
 
         return cfg, calls
 
-    def recover_cfg_all(self, start, callback=None):
+    def recover_cfg_all(self, start, callback=None, arch_mode=None):
         """Recover CFG for all functions
 
         :param start: start address
@@ -283,6 +291,12 @@ class BARF(object):
         :rtype: List of ControlFlowGraph
 
         """
+        if arch_mode == None:
+            arch_mode = self.binary.architecture_mode
+
+        # Reload modules.
+        self._load(arch_mode=arch_mode)
+
         cfgs = []
         addrs_processed = set()
         calls = [start]
@@ -333,6 +347,9 @@ class BARF(object):
         """
         if arch_mode == None:
             arch_mode = self.binary.architecture_mode
+
+        # Reload modules.
+        self._load(arch_mode=arch_mode)
 
         start_addr = ea_start if ea_start else self.binary.ea_start
         end_addr = ea_end if ea_end else self.binary.ea_end
