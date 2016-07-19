@@ -1,20 +1,6 @@
 # BARF : Binary Analysis and reverse Engineering Framework
 
-The analysis of binary code is a crucial activity in many areas of the
-computer sciences and software engineering disciplines ranging from software
-security and program analysis to reverse engineering. Manual binary analysis
-is a difficult and time-consuming task and there are software tools that seek
-to automate or assist human analysts. However, most of these tools have
-several technical and commercial restrictions that limit access and use by a
-large portion of the academic and practitioner communities. *BARF* is an open
-source binary analysis framework that aims to support a wide range of binary
-code analysis tasks that are common in the information security discipline.
-It is a scriptable platform that supports instruction lifting from
-multiple architectures, binary translation to an intermediate representation,
-an extensible framework for code analysis plugins and interoperation with
-external tools such as debuggers, SMT solvers and instrumentation tools. The
-framework is designed primarily for human-assisted analysis but it can be
-fully automated.
+The analysis of binary code is a crucial activity in many areas of the computer sciences and software engineering disciplines ranging from software security and program analysis to reverse engineering. Manual binary analysis is a difficult and time-consuming task and there are software tools that seek to automate or assist human analysts. However, most of these tools have several technical and commercial restrictions that limit access and use by a large portion of the academic and practitioner communities. *BARF* is an open source binary analysis framework that aims to support a wide range of binary code analysis tasks that are common in the information security discipline. It is a scriptable platform that supports instruction lifting from multiple architectures, binary translation to an intermediate representation, an extensible framework for code analysis plugins and interoperation with external tools such as debuggers, SMT solvers and instrumentation tools. The framework is designed primarily for human-assisted analysis but it can be fully automated.
 
 The *BARF project* includes *BARF* and related tools and packages. So far the
 project is composed of the following items:
@@ -26,8 +12,8 @@ project is composed of the following items:
 
 For more information, see:
 
-* *BARF: A multiplatform open source Binary Analysis and Reverse engineering Framework* (Whitepaper) [[en](./documentation/papers/barf.pdf)]
-* *BARFing Gadgets* (ekoparty2014 presentation) [[es](./documentation/presentations/barfing-gadgets.ekoparty2014.es.pdf)]
+* *BARF: A multiplatform open source Binary Analysis and Reverse engineering Framework* (Whitepaper) [[en](./doc/papers/barf.pdf)]
+* *BARFing Gadgets* (ekoparty2014 presentation) [[es](./doc/presentations/barfing-gadgets.ekoparty2014.es.pdf)]
 
 Current status:
 
@@ -36,7 +22,7 @@ Current status:
 |            **URL** | https://github.com/programa-stic/barf-project/releases/tag/v0.2.1      |
 |     **Change Log** | https://github.com/programa-stic/barf-project/blob/v0.2.1/CHANGELOG.md |
 
-> All packages were tested on Ubuntu 12.04 and 14.04 (x86_64).
+> All packages were tested on Ubuntu 16.04 (x86_64).
 
 ## BARF
 
@@ -65,8 +51,7 @@ The following command installs *BARF* on your system:
 $ sudo python setup.py install
 ```
 
-For Debian-based system, you can use an installation script that first downloads
-and installs all dependencies and then installs *BARF*:
+For Debian-based system, you can use an installation script that first downloads and installs all dependencies and then installs *BARF*:
 
 ```bash
 $ sudo install.sh
@@ -81,8 +66,7 @@ $ sudo install.sh
 
 ## Quickstart
 
-This is a very simple example which shows how to open a binary file and print
-each instruction with its translation to the intermediate language (*REIL*).
+This is a very simple example which shows how to open a binary file and print each instruction with its translation to the intermediate language (*REIL*).
 
 ```python
 from barf import BARF
@@ -109,8 +93,7 @@ cfg = barf.recover_cfg()
 cfg.save("branch1_cfg")
 ```
 
-We can check restrictions on code using a SMT solver. For instance, suppose you
-have the following code:
+We can check restrictions on code using a SMT solver. For instance, suppose you have the following code:
 
 ```objdump
  80483ed:       55                      push   ebp
@@ -126,9 +109,7 @@ have the following code:
  8048405:       c3                      ret
 ```
 
-And you want to know what values you have to assign to memory locations
-``ebp-0x4``, ``ebp-0x8`` and ``ebp-0xc`` in order to obtain a specific value
-in ``eax`` register after executing the code.
+And you want to know what values you have to assign to memory locations ``ebp-0x4``, ``ebp-0x8`` and ``ebp-0xc`` in order to obtain a specific value in ``eax`` register after executing the code.
 
 First, we add the instructions to the analyzer component.
 
@@ -195,8 +176,7 @@ You can see these and more examples in the ``examples`` directory.
 
 ## Overview
 
-The framework is divided in three main components: **core**, **arch** and
-**analysis**.
+The framework is divided in three main components: **core**, **arch** and **analysis**.
 
 ### Core
 
@@ -210,8 +190,7 @@ This component contains essential modules:
 
 ### Arch
 
-Each supported architecture is provided as a subcomponent which contains the
-following modules.
+Each supported architecture is provided as a subcomponent which contains the following modules.
 
 * ``Architecture`` : Describes the architecture, i.e., registers, memory address size.
 
@@ -223,17 +202,17 @@ following modules.
 
 ### Analysis
 
-So far this component consists of two modules: *Basic Block* and *Code Analyzer*.
-The first, provides functionality for CFG recovery. The other, its a high-level
-interface to the SMT-solver-related functionalities.
+So far this component consists of two modules: *Basic Block* and *Code Analyzer*. The first, provides functionality for CFG recovery. The other, its a high-level interface to the SMT-solver-related functionalities.
 
 ## Directory Structure
 
 ```
 barf/       Framework's main directory.
 doc/        Documentation.
-samples/    Binaries samples for testing.
 examples/   Example scripts that show various functionalities.
+samples/    Binaries samples for testing.
+scripts/    Installation scripts.
+tests/      BARF package tests.
 tools/      Tools build upon BARF.
 ```
 
@@ -241,11 +220,7 @@ tools/      Tools build upon BARF.
 
 ### BARFgadgets
 
-``BARFgadgets`` is a Python script built upon BARF that lets you *search*,
-*classifiy* and *verify* ROP gadgets inside a binary program. The *search*
-stage finds all ``ret``-, ``jmp``- and ``call``-ended gadgets inside the
-binary. The *classification* stage classifies previously found gadgets
-according to the following types:
+``BARFgadgets`` is a Python script built upon BARF that lets you *search*, *classifiy* and *verify* ROP gadgets inside a binary program. The *search* stage finds all ``ret``-, ``jmp``- and ``call``-ended gadgets inside the binary. The *classification* stage classifies previously found gadgets according to the following types:
 
 * No-Operation,
 * Move Register,
@@ -257,9 +232,7 @@ according to the following types:
 * Arithmetic/Logical Store and
 * Undefined.
 
-This is done through instruction emulation. Finally, the
-*verification* stage consists of using a SMT solver to verify the semantic
-assigned to each gadget in the second stage.
+This is done through instruction emulation. Finally, the *verification* stage consists of using a SMT solver to verify the semantic assigned to each gadget in the second stage.
 
 ```
 usage: BARFgadgets [-h] [--version] [--bdepth BDEPTH] [--idepth IDEPTH] [-u]
@@ -292,33 +265,28 @@ optional arguments:
                         Show classification for each gadget.
 ```
 
-For more information, see [README](./barf/tools/gadgets/README.md).
+For more information, see [README](./tools/gadgets/README.md).
 
 ### PyAsmJIT
 
-*PyAsmJIT* is a Python package for x86_64/ARM assembly code generation and
-execution.
+*PyAsmJIT* is a Python package for x86_64/ARM assembly code generation and execution.
 
-This package was developed in order to test BARF instruction translation from
-x86_64/ARM to REIL. The main idea is to be able to run fragments of code
-natively. Then, the same fragment is translated to REIL and executed in a REIL
-VM. Finally, both final contexts (the one obtained through native execution
-and the one from emulation) are compare for differences.
+This package was developed in order to test BARF instruction translation from x86_64/ARM to REIL. The main idea is to be able to run fragments of code natively. Then, the same fragment is translated to REIL and executed in a REIL VM. Finally, both final contexts (the one obtained through native execution and the one from emulation) are compare for differences.
 
-For more information, see [README](./pyasmjit/README.md).
+For more information, see [PyAsmJit].
 
 ## Notes
 
-SMT solver interfacing is provided by the file ``core/smt/smtlibv2.py`` taken
-from [PySymEmu].
+SMT solver interfacing is provided by the file ``core/smt/smtlibv2.py`` taken from [PySymEmu].
 
 # License
 
 The BSD 2-Clause License. For more information, see [LICENSE](./LICENSE).
 
-[Capstone]: http://www.capstone-engine.org
-[Z3]: http://z3.codeplex.com
 [CVC4]: http://cvc4.cs.nyu.edu/web/
-[PyBFD]: http://github.com/Groundworkstech/pybfd
-[PySymEmu]: http://github.com/feliam/pysymemu
+[Capstone]: http://www.capstone-engine.org
+[PyAsmJIT]: https://github.com/programa-stic/pyasmjit
+[PyBFD]: https://github.com/Groundworkstech/pybfd
+[PySymEmu]: https://github.com/feliam/pysymemu
 [REIL]: http://www.usenix.org/legacy/event/woot10/tech/full_papers/Dullien.pdf
+[Z3]: http://z3.codeplex.com
