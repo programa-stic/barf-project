@@ -289,4 +289,4 @@ The BSD 2-Clause License. For more information, see [LICENSE](./LICENSE).
 [PyBFD]: https://github.com/Groundworkstech/pybfd
 [PySymEmu]: https://github.com/feliam/pysymemu
 [REIL]: http://www.usenix.org/legacy/event/woot10/tech/full_papers/Dullien.pdf
-[Z3]: http://z3.codeplex.com
+[Z3]: https://github.com/Z3Prover/z3
