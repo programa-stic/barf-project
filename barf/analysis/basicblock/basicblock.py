@@ -34,10 +34,11 @@ from pydot import Node
 
 from barf.arch import ARCH_ARM
 from barf.arch import ARCH_X86
-from barf.core.reil import DualInstruction
-from barf.core.reil import ReilMnemonic
-from barf.core.reil import ReilImmediateOperand
+from barf.arch.arm.armbase import ArmArchitectureInformation
 from barf.arch.arm.armdisassembler import InvalidDisassemblerData, CapstoneOperandNotSupported
+from barf.core.reil import DualInstruction
+from barf.core.reil import ReilImmediateOperand
+from barf.core.reil import ReilMnemonic
 
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
@@ -873,14 +874,13 @@ class BasicBlockBuilder(object):
                 break
 
             # Add target address to the explore list.
-            # TODO: Support ARM.
             if ir[-1].mnemonic == ReilMnemonic.JCC and \
-                asm.mnemonic == "call":
+                (asm.mnemonic == "call" or asm.mnemonic == "bl"):
                 explore.append(ir[-1].operands[2])
 
             # If callee does not return, break.
             if  ir[-1].mnemonic == ReilMnemonic.JCC and \
-                asm.mnemonic == "call" and \
+                (asm.mnemonic == "call" or asm.mnemonic == "bl") and \
                 isinstance(ir[-1].operands[2], ReilImmediateOperand) and \
                 (ir[-1].operands[2].immediate >> 0x8) in symbols and \
                 not symbols[ir[-1].operands[2].immediate >> 0x8][2]:
@@ -901,16 +901,16 @@ class BasicBlockBuilder(object):
                 break
 
             # Process ARM instrs: pop reg, {reg*, pc}
-            if  self._arch_info == ARCH_ARM and \
+            if  isinstance(self._arch_info, ArmArchitectureInformation) and \
                 asm.mnemonic == "pop" and \
-                "pc" in str(asm.operands[1]):
+                ("pc" in str(asm.operands[1]) or "r15" in str(asm.operands[1])):
                 bb.is_exit = True
                 break
 
             # Process ARM instrs: ldr pc, *
-            if  self._arch_info == ARCH_ARM and \
+            if  isinstance(self._arch_info, ArmArchitectureInformation) and \
                 asm.mnemonic == "ldr" and \
-                "pc" in str(asm.operands[0]):
+                ("pc" in str(asm.operands[0]) or "r15" in str(asm.operands[0])):
                 bb.is_exit = True
                 break
 
