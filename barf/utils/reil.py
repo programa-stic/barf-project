@@ -46,7 +46,9 @@ class ReilContainerBuilder(object):
         reil_container = ReilContainer()
 
         for _, start, end in functions:
-            cfg = ControlFlowGraph(self.__bb_builder.build(start, end))
+            bbs, _ = self.__bb_builder.build(start, end)
+
+            cfg = ControlFlowGraph(bbs)
 
             reil_container = self.__translate_cfg(cfg, reil_container=reil_container)
 
