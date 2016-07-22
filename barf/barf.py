@@ -243,7 +243,7 @@ class BARF(object):
         """
         if arch_mode == None:
             arch_mode = self.binary.architecture_mode
-	
+
         # Reload modules.
         self._load(arch_mode=arch_mode)
 
@@ -345,11 +345,9 @@ class BARF(object):
         :rtype: dict
 
         """
-        if arch_mode == None:
-            arch_mode = self.binary.architecture_mode
-
-        # Reload modules.
-        self._load(arch_mode=arch_mode)
+        if not arch_mode == None:
+            # Reload modules.
+            self._load(arch_mode=arch_mode)
 
         start_addr = ea_start if ea_start else self.binary.ea_start
         end_addr = ea_end if ea_end else self.binary.ea_end
