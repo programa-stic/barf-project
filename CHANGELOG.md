@@ -2,7 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased][unreleased]
+## [0.3][unreleased]
+### Added
+- Add new BARF tool, BARFcg, for CG recovery.
+- Add support for CG recovery (x86 and ARM).
+- Add new BARF tool, BARFcfg, for CFG recovery.
+- Add support for ARM CFG recovery.
+- Add support for more ARM instructions.
+- Add support for data tainting in ReilEmulator.
+- Add support for pre/post instruction execution callback function in ReilEmulator.
+- Add support for REIL extension instruction (SEXT, SDIV, SMOD).
+- Add support for more x86 instructions.
+
+### Changed
+- Overall directory restructure.
+- Improve ARM disassembly integration to Capstone Engine.
+- Overall improvements to CFG recovery and rendering.
+- Refactor reilemulator module.
+- Overall improvements to package's tests.
+
+### Fixed
+- Multiple bug fixes.
+
+### Removed
+- Remove PyAsmJIT package from the repository (move to its own repo).
 
 ## [0.2.1] - 2015-04-07
 ### Fixed
