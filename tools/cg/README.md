@@ -5,7 +5,7 @@ call graph of a binary program.
 
 # Usage
 
-```bash
+```
 usage: BARFcg [-h] [-s SYMBOL_FILE] [-a] [-t] filename
 
 Tool for recovering CG of a binary.

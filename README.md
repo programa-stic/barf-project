@@ -1,4 +1,4 @@
-# BARF : Binary Analysis and reverse Engineering Framework
+# BARF : Binary Analysis and Reverse engineering Framework
 
 The analysis of binary code is a crucial activity in many areas of the computer sciences and software engineering disciplines ranging from software security and program analysis to reverse engineering. Manual binary analysis is a difficult and time-consuming task and there are software tools that seek to automate or assist human analysts. However, most of these tools have several technical and commercial restrictions that limit access and use by a large portion of the academic and practitioner communities. *BARF* is an open source binary analysis framework that aims to support a wide range of binary code analysis tasks that are common in the information security discipline. It is a scriptable platform that supports instruction lifting from multiple architectures, binary translation to an intermediate representation, an extensible framework for code analysis plugins and interoperation with external tools such as debuggers, SMT solvers and instrumentation tools. The framework is designed primarily for human-assisted analysis but it can be fully automated.
 
@@ -7,8 +7,10 @@ project is composed of the following items:
 
 * **BARF** : A multiplatform open source Binary Analysis and Reverse engineering Framework
 * **PyAsmJIT** : A JIT for the Intel x86_64 and ARM architecture.
-* Tools:
-    * **BARFgadgets** : A tool built upon BARF that lets you *search*, *classifiy* and *verify* ROP gadgets inside a binary program.
+* Tools built upon *BARF*:
+    * **BARFgadgets** : Lets you *search*, *classifiy* and *verify* ROP gadgets inside a binary program.
+    * **BARFcfg** : Lets you recover the control-flow graph of the functions of a binary program.
+    * **BARFcg** : Lets you recover the call graph of the functions of a binary program.
 
 For more information, see:
 
@@ -36,14 +38,12 @@ Current status:
 
 It is currently *under development*.
 
-## Installation
+### Installation
 
-*BARF* depends on the following:
+*BARF* depends on the following SMT solvers:
 
-* [Capstone] : A lightweight multi-platform, multi-architecture disassembly framework.
 * [Z3] : A high-performance theorem prover being developed at Microsoft Research.
 * [CVC4] : An efficient open-source automatic theorem prover for satisfiability modulo theories (SMT) problems.
-* [PyBFD] : A Python interface to the GNU Binary File Descriptor (BFD) library.
 
 The following command installs *BARF* on your system:
 
@@ -51,20 +51,12 @@ The following command installs *BARF* on your system:
 $ sudo python setup.py install
 ```
 
-For Debian-based system, you can use an installation script that first downloads and installs all dependencies and then installs *BARF*:
+#### Notes
 
-```bash
-$ sudo install.sh
-```
-
-### Notes
-
-* The installer compiles both Z3 and CVC4 so it can take some time to finish (specially, CVC4).
 * Only one SMT solver is needed in order to work. You may choose between Z3 and CVC4 or install both.
-* The installer was tested on Ubuntu 12.04 and 14.04 (x86_64).
 * To run some tests you need to install PyAsmJIT first.
 
-## Quickstart
+### Quickstart
 
 This is a very simple example which shows how to open a binary file and print each instruction with its translation to the intermediate language (*REIL*).
 
@@ -72,7 +64,7 @@ This is a very simple example which shows how to open a binary file and print ea
 from barf import BARF
 
 # Open binary file.
-barf = BARF("samples/toy/x86/branch1")
+barf = BARF("examples/bin/x86/branch1")
 
 # Print assembly instruction.
 for addr, asm_instr, reil_instrs in barf.translate():
@@ -117,7 +109,7 @@ First, we add the instructions to the analyzer component.
 from barf import BARF
 
 # Open ELF file
-barf = BARF("samples/toy/x86/constraint1")
+barf = BARF("examples/bin/x86/constraint1")
 
 # Add instructions to analyze.
 for addr, asm_instr, reil_instrs in barf.translate(0x80483ed, 0x8048401):
@@ -172,49 +164,47 @@ else:
     print("UNSAT!")
 ```
 
-You can see these and more examples in the ``examples`` directory.
+You can see these and more examples in the [examples](./examples) directory.
 
-## Overview
+### Overview
 
 The framework is divided in three main components: **core**, **arch** and **analysis**.
 
-### Core
+#### Core
 
 This component contains essential modules:
 
 * ``REIL`` : Provides definitions for the REIL language. It, also, implements an *emulator* and a *parser*.
-
 * ``SMT`` : Provides means to interface with *Z3* SMT solver. Also, it provides functionality to translate REIL instructions to SMT expressions.
-
 * ``BI`` : The *Binary Interface* module is responsible for loading binary files for processing (it uses PyBFD.)
 
-### Arch
+#### Arch
 
 Each supported architecture is provided as a subcomponent which contains the following modules.
 
 * ``Architecture`` : Describes the architecture, i.e., registers, memory address size.
-
 * ``Translator`` : Provides translators to REIL for each supported instruction.
-
 * ``Disassembler`` : Provides disassembling functionalities (it uses Capstone.)
-
 * ``Parser`` : Transforms instruction in string to object form (provided by the *Instruction* module.)
 
-### Analysis
+#### Analysis
 
-So far this component consists of two modules: *Basic Block* and *Code Analyzer*. The first, provides functionality for CFG recovery. The other, its a high-level interface to the SMT-solver-related functionalities.
+So far this component consists of two modules: *Control-Flow Graph*, *Call Graph* and *Code Analyzer*. The first two, provides functionality for CFG and CG recovery, respectively. The latter, its a high-level interface to the SMT-solver-related functionalities.
 
-## Directory Structure
+### Directory Structure
 
 ```
 barf/       Framework's main directory.
 doc/        Documentation.
-examples/   Example scripts that show various functionalities.
-samples/    Binaries samples for testing.
+examples/   Basic example scripts that show various functionalities.
 scripts/    Installation scripts.
 tests/      BARF package tests.
 tools/      Tools build upon BARF.
 ```
+
+### Notes
+
+SMT solver interfacing is provided by the file ``core/smt/smtlibv2.py`` taken from [PySymEmu].
 
 ## Tools
 
@@ -267,7 +257,64 @@ optional arguments:
 
 For more information, see [README](./tools/gadgets/README.md).
 
-### PyAsmJIT
+### BARFcfg
+
+``BARFcfg`` is a Python script built upon BARF that lets you recover the
+control-flow graph of a binary program.
+
+```
+usage: BARFcfg [-h] [-s SYMBOL_FILE] [-a] [-o RECOVER_ONE] [-f {graph,text}]
+               [-t] [-d OUTPUT_DIR] [-b] [-r]
+               filename
+
+Tool for recovering CFG of a binary.
+
+positional arguments:
+  filename              Binary file name.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s SYMBOL_FILE, --symbol-file SYMBOL_FILE
+                        Load symbols from file.
+  -a, --recover-all     Recover all functions.
+  -o RECOVER_ONE, --recover-one RECOVER_ONE
+                        Recover specified function.
+  -f {graph,text}, --format {graph,text}
+                        Output format.
+  -t, --time            Print process time.
+  -d OUTPUT_DIR, --output-dir OUTPUT_DIR
+                        Ouput directory.
+  -b, --brief           Brief output.
+  -r, --show-reil       Show REIL translation.
+```
+
+For more information, see [README](./tools/cfg/README.md).
+
+### BARFcg
+
+``BARFcg`` is a Python script built upon BARF that lets you recover the
+call graph of a binary program.
+
+```
+usage: BARFcg [-h] [-s SYMBOL_FILE] [-a] [-t] filename
+
+Tool for recovering CG of a binary.
+
+positional arguments:
+  filename              Binary file name.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s SYMBOL_FILE, --symbol-file SYMBOL_FILE
+                        Load symbols from file.
+  -a, --recover-all     Recover all functions.
+  -t, --time            Print process time.
+
+```
+
+For more information, see [README](./tools/cg/README.md).
+
+## PyAsmJIT
 
 *PyAsmJIT* is a Python package for x86_64/ARM assembly code generation and execution.
 
@@ -275,11 +322,7 @@ This package was developed in order to test BARF instruction translation from x8
 
 For more information, see [PyAsmJit].
 
-## Notes
-
-SMT solver interfacing is provided by the file ``core/smt/smtlibv2.py`` taken from [PySymEmu].
-
-# License
+## License
 
 The BSD 2-Clause License. For more information, see [LICENSE](./LICENSE).
 

@@ -5,7 +5,7 @@ control-flow graph of a binary program.
 
 # Usage
 
-```bash
+```
 usage: BARFcfg [-h] [-s SYMBOL_FILE] [-a] [-o RECOVER_ONE] [-f {graph,text}]
                [-t] [-d OUTPUT_DIR] [-b] [-r]
                filename

@@ -25,7 +25,7 @@ and ARM (32 bits).
 
 # Usage
 
-```bash
+```
 usage: BARFgadgets [-h] [--version] [--bdepth BDEPTH] [--idepth IDEPTH] [-u]
                    [-c] [-v] [-o OUTPUT] [-t] [--sort {addr,depth}] [--color]
                    [--show-binary] [--show-classification]
