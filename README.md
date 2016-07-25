@@ -51,9 +51,15 @@ The following command installs *BARF* on your system:
 $ sudo python setup.py install
 ```
 
+You can also install it locally:
+
+```bash
+$ sudo python setup.py install --user
+```
+
 #### Notes
 
-* Only one SMT solver is needed in order to work. You may choose between Z3 and CVC4 or install both.
+* Only one SMT solver is needed in order to work. You may choose between Z3 and CVC4 or install both. You can use the [``barf-install-solver.sh``](./scripts) script which downloads and install both solver.
 * To run some tests you need to install PyAsmJIT first.
 
 ### Quickstart
