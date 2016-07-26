@@ -1,0 +1,6 @@
+include CHANGELOG.md
+include LICENSE
+include README.md
+include tools/cfg/README.md
+include tools/cg/README.md
+include tools/gadgets/README.md
