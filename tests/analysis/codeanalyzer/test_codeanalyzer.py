@@ -41,34 +41,12 @@ from barf.core.smt.smttranslator import SmtTranslator
 VERBOSE = False
 
 
-class MemoryMock(Memory):
-
-    def __init__(self):
-        super(MemoryMock, self).__init__(self._read_function, \
-            self._write_function)
-
-    def set_base_address(self, address):
-        self._base_address = address
-
-    def set_content(self, content):
-        self._content = content
-
-    def _read_function(self, address, size):
-        start = address - self._base_address
-        end = (address + size) - self._base_address
-
-        return self._content[start:end]
-
-    def _write_function(self, address, size):
-        pass
-
-
 class CodeAnalyzerTests(unittest.TestCase):
 
     def setUp(self):
         self._arch_info = X86ArchitectureInformation(ARCH_X86_MODE_32)
         self._operand_size = self._arch_info.operand_size
-        self._memory = MemoryMock()
+        self._memory = Memory()
         self._smt_solver = SmtSolver()
         self._smt_translator = SmtTranslator(self._smt_solver, self._operand_size)
         self._smt_translator.set_arch_alias_mapper(self._arch_info.alias_mapper)
@@ -104,8 +82,7 @@ class CodeAnalyzerTests(unittest.TestCase):
         binary += "\xc9"                          # 0x08048f01 : leave
         binary += "\xc3"                          # 0x08048f02 : ret
 
-        self._memory.set_base_address(bin_start_address)
-        self._memory.set_content(binary)
+        self._memory.add_vma(bin_start_address, bytearray(binary))
 
         start = 0x08048ec0
         # start = 0x08048ec6

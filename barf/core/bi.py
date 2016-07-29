@@ -28,8 +28,8 @@ Binary Interface Module.
 
 import logging
 
+from elftools.elf.elffile import ELFFile
 from pefile import PE
-from pybfd.bfd import Bfd
 
 import barf.arch as arch
 
@@ -38,39 +38,53 @@ logger = logging.getLogger(__name__)
 
 class Memory(object):
 
-    """Generic Memory Interface.
-    """
+    def __init__(self):
+        # List of virtual memory areas, tuple of (address, data)
+        self.__vma = []
 
-    def __init__(self, read_function, write_function):
+    def add_vma(self, address, data):
+        self.__vma.append((address, data))
 
-        # Memory read function. It is implemented this way so it can be
-        # used to read memory from GDB as well as a python array.
-        self.read_function = read_function
-
-        # Memory write function.
-        self.write_function = write_function
+    def __iter__(self):
+        for address, data in self.__vma:
+            for i in xrange(len(data)):
+                yield address + i
 
     def __getitem__(self, key):
-        """Get memory content by range or address.
-        """
-        val = ""
-
+        # TODO: Return bytearray or byte instead of str.
         if isinstance(key, slice):
+            chunck = bytearray()
+
             step = 1 if key.step is None else key.step
 
             try:
                 # Read memory one byte at a time.
                 for addr in range(key.start, key.stop, step):
-                    val += self.read_function(addr, 0x1)[0]
+                    chunck.append(self._read_byte(addr))
             except IndexError as reason:
                 logger.warn("[-] Index out of range : %s" % hex(addr))
                 raise IndexError(reason)
+
+            return str(chunck)
         elif isinstance(key, int):
-            val += self.read_function(key, 0x1)[0]
+            return str(self._read_byte(key))
         else:
             raise TypeError("Invalid argument type : %s" % type(key))
 
-        return val
+    def _read_byte(self, index):
+        for address, data in self.__vma:
+            if 0 <= index - address < len(data):
+                return data[index - address]
+
+        raise IndexError
+
+    @property
+    def start(self):
+        return min([address for address, _ in self.__vma])
+
+    @property
+    def end(self):
+        return max([address + len(data) for address, data in self.__vma])
 
 
 class BinaryFile(object):
@@ -157,76 +171,138 @@ class BinaryFile(object):
         return self._entry_point
 
     def _open(self, filename):
-        # FIXME: Ugly hack to support PE files. Remove when pybfd
-        # support PEs.
         try:
-            bfd = Bfd(filename)
-
-            # get text section
-            stext = bfd.sections.get(".text")
-
-            self._section_text = stext.content
-            self._section_text_start = stext.vma
-            self._section_text_end = stext.vma + stext.size - 1
-            self._section_text_memory = Memory(self._text_section_reader, self._text_section_writer)
-
-            # get arch and arch mode
-            arch_name = bfd.architecture_name
-            arch_size = bfd.arch_size
-
-            # FIXME: Ugly hack. If no architecture name is return,
-            # assume it ARM. Remove when pybfd gets fixed.
-            if not arch_name:
-                arch_name = "ARM"
-
-            self._arch = self._map_architecture(arch_name)
-            self._arch_mode = self._map_architecture_mode(arch_name, arch_size)
-
-            # get entry point
-            self._entry_point = bfd.start_address
+            fd = open(filename, 'rb')
+            signature = fd.read(4)
+            fd.close()
         except:
-            logger.error("BFD could not open the file.", exc_info=True)
+            raise Exception("Error loading file.")
 
-            pass
+        if signature[:4] == "\x7f\x45\x4c\x46":
+            self._open_elf(filename)
+        elif signature[:2] == b'\x4d\x5a':
+            self._open_pe(filename)
+        else:
+            raise Exception("Unkown file format.")
 
-        try:
-            pe = PE(filename)
+    def _open_elf(self, filename):
+        f = open(filename, 'rb')
 
-            section_idx = None
+        elffile = ELFFile(f)
 
-            for idx, section in enumerate(pe.sections):
-                if section.Name.replace("\x00", ' ').strip() == ".text":
-                    section_idx = idx
-                    break
+        self._entry_point = elffile.header['e_entry']
+        self._arch = self._get_arch_elf(elffile)
+        self._arch_mode = self._get_arch_mode_elf(elffile)
 
-            if section_idx != None:
-                self._section_text = pe.sections[section_idx].get_data()
-                self._section_text_start = pe.OPTIONAL_HEADER.ImageBase + pe.sections[section_idx].VirtualAddress
-                self._section_text_end = self._section_text_start + len(self._section_text) - 1
-                self._section_text_memory = Memory(self._text_section_reader, self._text_section_writer)
+        # TODO: Load all segments instead of just one section.
+        # Map binary to memory (only text section)
+        m = Memory()
 
-                # get entry point
-                self._entry_point = pe.OPTIONAL_HEADER.ImageBase + pe.OPTIONAL_HEADER.AddressOfEntryPoint
+        for nseg, section in enumerate(elffile.iter_sections()):
+            if section.name == ".text":
+                text_section_start = section.header.sh_addr
+                text_section_end = section.header.sh_addr + section.header.sh_size
 
-                # get arch and arch mode
-                IMAGE_FILE_MACHINE_I386 = 0x014c
-                IMAGE_FILE_MACHINE_AMD64 = 0x8664
+                m.add_vma(section.header.sh_addr, bytearray(section.data()))
 
-                if pe.FILE_HEADER.Machine == IMAGE_FILE_MACHINE_I386:
-                    self._arch = arch.ARCH_X86
-                    self._arch_mode = arch.ARCH_X86_MODE_32
-                elif pe.FILE_HEADER.Machine == IMAGE_FILE_MACHINE_AMD64:
-                    self._arch = arch.ARCH_X86
-                    self._arch_mode = arch.ARCH_X86_MODE_64
-                else:
-                    raise Exception("Machine not supported.")
-        except:
-            logger.error("PEFile could not open the file.", exc_info=True)
+        # for nseg, segment in enumerate(elffile.iter_segments()):
+        #     print("loading segment #{} - {} [{} bytes]".format(nseg, segment.header.p_vaddr, len(segment.data())))
 
-            pass
+        #     if len(segment.data()) > 0:
+        #         m.add_vma(segment.header.p_vaddr, bytearray(segment.data()))
 
-        if not self._section_text:
-            raise Exception("Could not open the file.")
+        f.close()
+
+        self._section_text_start = text_section_start
+        self._section_text_end = text_section_end - 1
+        self._section_text_memory = m
+
+    def _open_pe(self, filename):
+        pe = pefile.PE(filename)
+
+        pe.parse_data_directories()
+
+        self._entry_point = pe.OPTIONAL_HEADER.ImageBase + pe.OPTIONAL_HEADER.AddressOfEntryPoint
+        self._arch = self._get_arch_pe(elffile.get_machine_arch())
+        self._arch_mode = self._get_arch_mode_pe(elffile.get_machine_arch())
+
+        # Map binary to memory
+        # TODO: Load all sections instead of just one.
+        m = Memory()
+
+        section_idx = None
+
+        for idx, section in enumerate(pe.sections):
+            if section.Name.replace("\x00", ' ').strip() == ".text":
+                section_idx = idx
+                break
+
+        if section_idx != None:
+            section = pe.sections[section_idx]
+
+            section_text_start = pe.OPTIONAL_HEADER.ImageBase + section.VirtualAddress
+            section_text_end = self._section_text_start + len(section.get_data())
+
+            m.add_vma(pe.OPTIONAL_HEADER.ImageBase + section.VirtualAddress, bytearray(section.get_data()))
+        else:
+            raise Exception("Error loading PE file.")
+
+        # for idx, section in enumerate(pe.sections):
+        #     print(section.Name)
+
+        #     m.add_vma(pe.OPTIONAL_HEADER.ImageBase + section.VirtualAddress, bytearray(section.get_data()))
+
+        pe.close()
+
+        self._section_text_start = text_section_start
+        self._section_text_end = text_section_end - 1
+        self._section_text_memory = m
+
+    def _get_arch_elf(self, elf_file):
+        if elf_file.header['e_machine'] == 'EM_X86_64':
+            return arch.ARCH_X86
+        elif elf_file.header['e_machine'] in ('EM_386', 'EM_486'):
+            return arch.ARCH_X86
+        elif elf_file.header['e_machine'] == 'EM_ARM':
+            return arch.ARCH_ARM
+        else:
+            raise Exception("Machine not supported.")
+
+    def _get_arch_mode_elf(self, elf_file):
+        if elf_file.header['e_machine'] == 'EM_X86_64':
+            return arch.ARCH_X86_MODE_64
+        elif elf_file.header['e_machine'] in ('EM_386', 'EM_486'):
+            return arch.ARCH_X86_MODE_32
+        elif elf_file.header['e_machine'] == 'EM_ARM':
+            return arch.ARCH_ARM_MODE_ARM
+        else:
+            raise Exception("Machine not supported.")
+
+    def _get_arch_pe(self, pe_file):
+        # get arch
+        if pe_file.FILE_HEADER.Machine == pefile.MACHINE_TYPE['IMAGE_FILE_MACHINE_I386']:
+            return arch.ARCH_X86
+        elif pe_file.FILE_HEADER.Machine == pefile.MACHINE_TYPE['IMAGE_FILE_MACHINE_AMD64']:
+            return  arch.ARCH_X86
+        elif pe_file.FILE_HEADER.Machine == pefile.MACHINE_TYPE['IMAGE_FILE_MACHINE_ARM']:
+            return arch.ARCH_ARM
+        elif pe_file.FILE_HEADER.Machine == pefile.MACHINE_TYPE['IMAGE_FILE_MACHINE_THUMB']:
+            return arch.ARCH_ARM
+        else:
+            raise Exception("Machine not supported.")
+
+    def _get_arch_mode_pe(self, pe_file):
+        # get arch mode
+        if pe_file.FILE_HEADER.Machine == pefile.MACHINE_TYPE['IMAGE_FILE_MACHINE_I386']:
+            return arch.ARCH_X86_MODE_32
+        elif pe_file.FILE_HEADER.Machine == pefile.MACHINE_TYPE['IMAGE_FILE_MACHINE_AMD64']:
+            return arch.ARCH_X86_MODE_64
+        elif pe_file.FILE_HEADER.Machine == pefile.MACHINE_TYPE['IMAGE_FILE_MACHINE_ARM']:
+            return arch.ARCH_ARM_MODE_ARM
+        elif pe_file.FILE_HEADER.Machine == pefile.MACHINE_TYPE['IMAGE_FILE_MACHINE_THUMB']:
+            return arch.ARCH_ARM_MODE_THUMB
+        else:
+            raise Exception("Machine not supported.")
 
     def _map_architecture(self, bfd_arch_name):
         arch_map = {
