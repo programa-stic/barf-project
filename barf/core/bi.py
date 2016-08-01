@@ -29,9 +29,9 @@ Binary Interface Module.
 import logging
 
 from elftools.elf.elffile import ELFFile
-from pefile import PE
 
 import barf.arch as arch
+import pefile
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class Memory(object):
 
             return str(chunck)
         elif isinstance(key, int):
-            return str(self._read_byte(key))
+            return chr(self._read_byte(key))
         else:
             raise TypeError("Invalid argument type: {}".format(type(key)))
 
@@ -177,6 +177,8 @@ class BinaryFile(object):
             signature = fd.read(4)
             fd.close()
         except:
+            logger.error("Error loading file: %s", format(filename), exc_info=True)
+
             raise Exception("Error loading file: {}".format(filename))
 
         if signature[:4] == "\x7f\x45\x4c\x46":
@@ -199,12 +201,19 @@ class BinaryFile(object):
         # Map binary to memory (only text section)
         m = Memory()
 
+        found = False
+
         for nseg, section in enumerate(elffile.iter_sections()):
             if section.name == ".text":
+                found = True
+
                 text_section_start = section.header.sh_addr
                 text_section_end = section.header.sh_addr + section.header.sh_size
 
                 m.add_vma(section.header.sh_addr, bytearray(section.data()))
+
+        if not found:
+            raise Exception("Error loading ELF file.")
 
         # for nseg, segment in enumerate(elffile.iter_segments()):
         #     print("loading segment #{} - {} [{} bytes]".format(nseg, segment.header.p_vaddr, len(segment.data())))
@@ -224,28 +233,25 @@ class BinaryFile(object):
         pe.parse_data_directories()
 
         self._entry_point = pe.OPTIONAL_HEADER.ImageBase + pe.OPTIONAL_HEADER.AddressOfEntryPoint
-        self._arch = self._get_arch_pe(elffile.get_machine_arch())
-        self._arch_mode = self._get_arch_mode_pe(elffile.get_machine_arch())
+        self._arch = self._get_arch_pe(pe)
+        self._arch_mode = self._get_arch_mode_pe(pe)
 
         # TODO: Load all sections instead of just one.
         # Map binary to memory (only text section)
         m = Memory()
 
-        section_idx = None
+        found = False
 
         for idx, section in enumerate(pe.sections):
             if section.Name.replace("\x00", ' ').strip() == ".text":
-                section_idx = idx
-                break
+                found = True
 
-        if section_idx != None:
-            section = pe.sections[section_idx]
+                text_section_start = pe.OPTIONAL_HEADER.ImageBase + section.VirtualAddress
+                text_section_end = text_section_start + len(section.get_data())
 
-            section_text_start = pe.OPTIONAL_HEADER.ImageBase + section.VirtualAddress
-            section_text_end = self._section_text_start + len(section.get_data())
+                m.add_vma(pe.OPTIONAL_HEADER.ImageBase + section.VirtualAddress, bytearray(section.get_data()))
 
-            m.add_vma(pe.OPTIONAL_HEADER.ImageBase + section.VirtualAddress, bytearray(section.get_data()))
-        else:
+        if not found:
             raise Exception("Error loading PE file.")
 
         # for idx, section in enumerate(pe.sections):
