@@ -62,20 +62,21 @@ class Memory(object):
                 for addr in range(key.start, key.stop, step):
                     chunck.append(self._read_byte(addr))
             except IndexError as reason:
-                logger.warn("[-] Index out of range : %s" % hex(addr))
+                logger.warn("Address out of range: {:#x}".format(addr))
                 raise IndexError(reason)
 
             return str(chunck)
         elif isinstance(key, int):
             return str(self._read_byte(key))
         else:
-            raise TypeError("Invalid argument type : %s" % type(key))
+            raise TypeError("Invalid argument type: {}".format(type(key)))
 
     def _read_byte(self, index):
         for address, data in self.__vma:
             if 0 <= index - address < len(data):
                 return data[index - address]
 
+        # If not in range raise an exception.
         raise IndexError
 
     @property
@@ -176,14 +177,14 @@ class BinaryFile(object):
             signature = fd.read(4)
             fd.close()
         except:
-            raise Exception("Error loading file.")
+            raise Exception("Error loading file: {}".format(filename))
 
         if signature[:4] == "\x7f\x45\x4c\x46":
             self._open_elf(filename)
         elif signature[:2] == b'\x4d\x5a':
             self._open_pe(filename)
         else:
-            raise Exception("Unkown file format.")
+            raise Exception("Unkown file format: {}".format(filename))
 
     def _open_elf(self, filename):
         f = open(filename, 'rb')
@@ -226,8 +227,8 @@ class BinaryFile(object):
         self._arch = self._get_arch_pe(elffile.get_machine_arch())
         self._arch_mode = self._get_arch_mode_pe(elffile.get_machine_arch())
 
-        # Map binary to memory
         # TODO: Load all sections instead of just one.
+        # Map binary to memory (only text section)
         m = Memory()
 
         section_idx = None
