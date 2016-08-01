@@ -182,7 +182,7 @@ This component contains essential modules:
 
 * ``REIL`` : Provides definitions for the REIL language. It, also, implements an *emulator* and a *parser*.
 * ``SMT`` : Provides means to interface with *Z3* SMT solver. Also, it provides functionality to translate REIL instructions to SMT expressions.
-* ``BI`` : The *Binary Interface* module is responsible for loading binary files for processing (it uses PyBFD.)
+* ``BI`` : The *Binary Interface* module is responsible for loading binary files for processing (it uses [PEFile] and [PyELFTools].)
 
 #### Arch
 
@@ -335,7 +335,6 @@ The BSD 2-Clause License. For more information, see [LICENSE](./LICENSE).
 [CVC4]: http://cvc4.cs.nyu.edu/web/
 [Capstone]: http://www.capstone-engine.org
 [PyAsmJIT]: https://github.com/programa-stic/pyasmjit
-[PyBFD]: https://github.com/Groundworkstech/pybfd
 [PySymEmu]: https://github.com/feliam/pysymemu
 [REIL]: http://www.usenix.org/legacy/event/woot10/tech/full_papers/Dullien.pdf
 [Z3]: https://github.com/Z3Prover/z3
