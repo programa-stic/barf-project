@@ -39,7 +39,6 @@ setup(
         'pyelftools',
         'pygments',
         'pyparsing',
-        'sphinx',
     ],
     license          = 'BSD 2-Clause',
     name             = 'barf',
