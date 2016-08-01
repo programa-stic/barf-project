@@ -35,7 +35,6 @@ setup(
         'capstone',
         'networkx',
         'pefile',
-        'pybfd',
         'pydot',
         'pyelftools',
         'pygments',
