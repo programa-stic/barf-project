@@ -316,6 +316,51 @@ class BARF(object):
 
         return cfgs
 
+    def recover_cfg_all_ex(self, symbols, callback=None, arch_mode=None):
+        """Recover CFG for all functions
+
+        :param start: start address
+
+        :returns: a list of graphs
+        :rtype: List of ControlFlowGraph
+
+        """
+        if arch_mode == None:
+            arch_mode = self.binary.architecture_mode
+
+        # Reload modules.
+        self._load(arch_mode=arch_mode)
+
+        cfgs = []
+        addrs_processed = set()
+        calls = []
+
+        for addr in sorted(symbols.keys()):
+            cfg, calls_tmp = self._recover_cfg(ea_start=addr, symbols=symbols, callback=callback)
+
+            addrs_processed.add(addr)
+
+            cfgs.append(cfg)
+
+            for addr in sorted(calls_tmp):
+                if not addr in addrs_processed and not addr in calls:
+                    calls.append(addr)
+
+        while len(calls) > 0:
+            start, calls = calls[0], calls[1:]
+
+            cfg, calls_tmp = self._recover_cfg(ea_start=start, callback=callback)
+
+            addrs_processed.add(start)
+
+            cfgs.append(cfg)
+
+            for addr in sorted(calls_tmp):
+                if not addr in addrs_processed and not addr in calls:
+                    calls.append(addr)
+
+        return cfgs
+
     def recover_bbs(self, ea_start=None, ea_end=None):
         """Recover basic blocks.
 

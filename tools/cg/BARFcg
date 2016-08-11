@@ -80,8 +80,12 @@ def recover_cfg_some(barf, addresses, symbols_by_addr):
 
 def recover_cfg_all(barf, symbols_by_addr):
     if len(symbols_by_addr) > 0:
-        cfgs = recover_cfg_all_from_symbols(barf, symbols_by_addr)
+        print("[+] Recovering from symbols")
+
+        cfgs = recover_cfg_all_from_symbols_ex(barf, symbols_by_addr)
     else:
+        print("[+] Recovering from entry point")
+
         cfgs = recover_cfg_all_from_entry_point(barf)
 
     return cfgs
@@ -99,6 +103,9 @@ def recover_cfg_all_from_symbols(barf, symbols_by_addr):
         cfgs.append(recover_cfg(barf, addr, symbols_by_addr))
 
     return cfgs
+
+def recover_cfg_all_from_symbols_ex(barf, symbols_by_addr):
+    return barf.recover_cfg_all_ex(symbols_by_addr, callback=print_recovery_status)
 
 def create_output_dir(name):
     if not os.path.exists(name):
