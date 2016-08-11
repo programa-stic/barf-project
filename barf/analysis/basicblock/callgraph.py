@@ -62,6 +62,14 @@ class CallGraph(object):
             'indirect' : 'red',
         }
 
+        label_fmt  = '<'
+        label_fmt += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
+        label_fmt += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
+        label_fmt += '  <tr><td align="left" cellspacing="1">{label}</td></tr>'
+        label_fmt += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
+        label_fmt += '</table>'
+        label_fmt += '>'
+
         try:
             dot_graph = Dot(graph_type="digraph", rankdir="TB", splines="ortho", nodesep=1.2)
 
@@ -73,18 +81,10 @@ class CallGraph(object):
                         cfg_label = self._cfg_by_addr[cfg_addr].name
                     else:
                         cfg_label = "sub_{:x}".format(cfg_addr)
-
-                    label  = '<'
-                    label += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
-                    label += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
-                    label += '  <tr><td align="left" cellspacing="1">{label}</td></tr>'
-                    label += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
-                    label += '</table>'
-                    label += '>'
-
-                    label = label.format(label=cfg_label)
                 else:
-                    label = "unknown".format()
+                    cfg_label = "unknown"
+
+                label = label_fmt.format(label=cfg_label)
 
                 nodes[cfg_addr] = Node(cfg_addr, label=label, **node_format)
 
@@ -126,7 +126,7 @@ class CallGraph(object):
 
         # add edges
         for cfg in self._cfgs:
-            edges = self._edges.get(cfg.start_address, [])
+            edges = self._edges.get(cfg.start_address, set())
 
             for bb in cfg.basic_blocks:
                 for dinstr in bb:
@@ -134,11 +134,11 @@ class CallGraph(object):
                         if isinstance(dinstr.asm_instr.operands[0], X86ImmediateOperand):
                             target_addr = dinstr.asm_instr.operands[0].immediate
 
-                            edges.append(target_addr)
+                            edges.add(target_addr)
 
                             graph.add_edge(cfg.start_address, target_addr, branch_type="direct")
                         else:
-                            edges.append("unknown")
+                            edges.add("unknown")
 
                             graph.add_edge(cfg.start_address, "unknown", branch_type="indirect")
 
