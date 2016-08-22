@@ -99,9 +99,6 @@ class GadgetVerifier(object):
         self.analyzer.reset(full=True)
 
         for reil_instr in gadget.get_ir_instrs():
-            if reil_instr.mnemonic == ReilMnemonic.RET:
-                break
-
             self.analyzer.add_instruction(reil_instr)
 
         # Generate constraints for the gadget type.

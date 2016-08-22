@@ -132,8 +132,9 @@ class GadgetFinder(object):
                 continue
 
             # build gadget
-            if ins_ir[-1] and (ins_ir[-1].mnemonic == ReilMnemonic.RET \
-                or (ins_ir[-1].mnemonic == ReilMnemonic.JCC and isinstance(ins_ir[-1].operands[2], ReilRegisterOperand))):
+            if ins_ir[-1] and \
+                (ins_ir[-1].mnemonic == ReilMnemonic.JCC and \
+                    isinstance(ins_ir[-1].operands[2], ReilRegisterOperand)):
 
                 # add for REX.W + FF /3 call instruction
                 if ins_ir[-1].mnemonic == ReilMnemonic.JCC:
@@ -323,7 +324,6 @@ class GadgetFinder(object):
         """
         invalid_instrs = [
             ReilMnemonic.JCC,
-            ReilMnemonic.RET,
             ReilMnemonic.UNDEF,
             ReilMnemonic.UNKN,
         ]
