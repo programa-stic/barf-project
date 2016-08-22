@@ -788,9 +788,11 @@ class BasicBlockBuilder(object):
                 last_instr.operands[0].immediate == 0x1
 
     def _bb_ends_in_return(self, bb):
-        last_instr = bb.instrs[-1].ir_instrs[-1]
+        # TODO: Process instructions without resorting to
+        # asm.mnemonic or asm.prefix.
+        last_instr = bb.instrs[-1].asm_instr
 
-        return last_instr.mnemonic == ReilMnemonic.RET
+        return last_instr.mnemonic == "ret"
 
     def _refine_bbs(self, bbs, symbols):
         bbs.sort(key=lambda x: x.address)
@@ -864,7 +866,8 @@ class BasicBlockBuilder(object):
                 break
 
             # If it is a RET instruction, break.
-            if ir[-1].mnemonic == ReilMnemonic.RET:
+            if ir[-1].mnemonic == ReilMnemonic.JCC and \
+                asm.mnemonic == "ret":
                 bb.is_exit = True
                 break
 
