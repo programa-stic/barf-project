@@ -177,6 +177,15 @@ class BARF(object):
 
             self._load()
 
+    def load_architecture(self, name, arch_info, disassembler, translator):
+        # Set up architecture information
+        self.arch_info = arch_info
+        self.disassembler = disassembler
+        self.ir_translator = translator
+
+        # setup analysis modules
+        self._setup_analysis_modules()
+
     def translate(self, ea_start=None, ea_end=None, arch_mode=None):
         """Translate to REIL instructions.
 
