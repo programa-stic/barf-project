@@ -49,6 +49,17 @@ class Translator(object):
     def translator(self):
         raise NotImplementedError()
 
+    def reset(self):
+        raise NotImplementedError()
+
+    @property
+    def translation_mode(self):
+        raise NotImplementedError()
+
+    @translation_mode.setter
+    def translation_mode(self, value):
+        raise NotImplementedError()
+
 
 class TranslationBuilder(object):
 
