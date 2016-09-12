@@ -41,6 +41,15 @@ class Label(object):
         return string
 
 
+class Translator(object):
+
+    def __init__(self):
+        pass
+
+    def translator(self):
+        raise NotImplementedError()
+
+
 class TranslationBuilder(object):
 
     def __init__(self, ir_name_generator, architecture_mode):

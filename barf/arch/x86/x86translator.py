@@ -27,6 +27,7 @@ import logging
 import barf
 
 from barf.arch.translator import Label
+from barf.arch.translator import Translator
 from barf.arch.translator import TranslationBuilder
 
 from barf.arch import ARCH_X86_MODE_32
@@ -247,7 +248,7 @@ def check_operands_size(instr, arch_size):
         assert instr.operands[0].size <= instr.operands[2].size, \
             "Invalid operands size: %s" % instr
 
-class X86Translator(object):
+class X86Translator(Translator):
 
     """x86 to IR Translator."""
 

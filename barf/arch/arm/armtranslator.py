@@ -59,6 +59,7 @@ from barf.arch.arm.armbase import ArmRegisterOperand
 from barf.arch.arm.armbase import ArmShiftedRegisterOperand
 from barf.arch.arm.armbase import ldm_stack_am_to_non_stack_am
 from barf.arch.arm.armbase import stm_stack_am_to_non_stack_am
+from barf.arch.translator import Translator
 from barf.arch.translator import TranslationBuilder
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilInstructionBuilder
@@ -319,7 +320,7 @@ def check_operands_size(instr, arch_size):
         pass
 
 
-class ArmTranslator(object):
+class ArmTranslator(Translator):
 
     """ARM to IR Translator."""
 
@@ -904,7 +905,7 @@ class ArmTranslator(object):
             disp = tb._compute_shifted_register(sh_op)
             tb.write(instruction.operands[0], disp)
             return
-        
+
         if len(instruction.operands) == 2 and isinstance(instruction.operands[1], ArmShiftedRegisterOperand):
             # Capstone is incorrectly packing <Rm>, #<imm5> into a shifted register, unpack it
             instruction.operands.append(instruction.operands[1]._shift_amount)
