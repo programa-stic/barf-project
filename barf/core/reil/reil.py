@@ -808,3 +808,91 @@ class ReilContainer(object):
         for addr in sorted(self.__container.keys()):
             for instr in self.__container[addr]:
                 yield instr
+
+
+def check_operands_size(instr, arch_size):
+    """Enforce operands' size."""
+
+    if instr.mnemonic in [  ReilMnemonic.ADD, ReilMnemonic.SUB,
+                            ReilMnemonic.MUL, ReilMnemonic.DIV,
+                            ReilMnemonic.MOD, ReilMnemonic.BSH,
+                            ReilMnemonic.AND, ReilMnemonic.OR,
+                            ReilMnemonic.XOR]:
+        # operand0 : Source 1 (Literal or register)
+        # operand1 : Source 2 (Literal or register)
+        # operand2 : Destination resgister
+
+        # Check that source operands have the same size.
+        assert instr.operands[0].size == instr.operands[1].size, \
+            "Invalid operands size: %s" % instr
+
+    elif instr.mnemonic in [ReilMnemonic.LDM]:
+        # operand0 : Source address (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        assert instr.operands[0].size == arch_size, \
+            "Invalid operands size: %s" % instr
+
+    elif instr.mnemonic in [ReilMnemonic.STM]:
+        # operand0 : Value to store (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination address (Literal or register)
+
+        assert instr.operands[2].size == arch_size, \
+            "Invalid operands size: %s" % instr
+
+    elif instr.mnemonic in [ReilMnemonic.STR]:
+        # operand0 : Value to store (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.BISZ]:
+        # operand0 : Value to compare (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.JCC]:
+        # operand0 : Condition (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        # FIX: operand2.size should be arch_size + 1 byte
+
+        assert instr.operands[2].size == arch_size + 8, \
+            "Invalid operands size: %s" % instr
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.UNKN]:
+        # operand0 : Empty register
+        # operand1 : Empty register
+        # operand2 : Empty register
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.UNDEF]:
+        # operand0 : Empty register
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.NOP]:
+        # operand0 : Empty register
+        # operand1 : Empty register
+        # operand2 : Empty register
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.SEXT]:
+        # operand0 : Value to store (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        assert instr.operands[0].size <= instr.operands[2].size, \
+            "Invalid operands size: %s" % instr
