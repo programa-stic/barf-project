@@ -656,10 +656,7 @@ class ControlFlowGraph(object):
                                 if len(self._graph.out_edges(bb.address)) == 0]
 
 
-class BasicBlockBuilder(object):
-
-    """Basic block builder.
-    """
+class CFGRecover(object):
 
     def __init__(self, disassembler, memory, translator, arch_info):
 
@@ -677,6 +674,9 @@ class BasicBlockBuilder(object):
 
         # Architecture information of the binary.
         self._arch_info = arch_info
+
+    def _find_candidate_bbs():
+        raise NotImplementedError()
 
     def build(self, start_address, end_address, symbols=None):
         """Return the list of basic blocks.
@@ -723,62 +723,6 @@ class BasicBlockBuilder(object):
                 explore_addrs.append(oprnd.immediate >> 8)
 
         return bbs, explore_addrs
-
-    def _find_candidate_bbs(self, start_address, end_address, mode=BARF_DISASM_RECURSIVE, symbols=None):
-        if not symbols:
-            symbols = {}
-
-        explore = []
-
-        bbs = []
-
-        addrs_to_process = Queue()
-        addrs_processed = set()
-
-        addrs_to_process.put(start_address)
-
-        while not addrs_to_process.empty():
-            addr_curr = addrs_to_process.get()
-
-            # Skip current address if:
-            #   a. it has already been processed or
-            #   b. it is not within range ([start_address, end_address]) or
-            if  addr_curr in addrs_processed or \
-                not (addr_curr >= start_address and addr_curr <= end_address):
-                continue
-
-            bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols, explore)
-
-            if bb.empty():
-                continue
-
-            if bb.address == start_address:
-                bb.is_entry = True
-
-            # Add new basic block to the list.
-            bbs += [bb]
-
-            # Add current address to the list of processed addresses.
-            addrs_processed.add(addr_curr)
-
-            # Linear sweep mode: add next address to process queue.
-            if mode == BARF_DISASM_LINEAR:
-                next_addr = bb.address + bb.size
-
-                if  not self._bb_ends_in_direct_jmp(bb) and \
-                    not self._bb_ends_in_return(bb) and \
-                    not next_addr in addrs_processed:
-                    addrs_to_process.put(next_addr)
-
-            # Recursive descent mode: add branches to process queue.
-            if mode == BARF_DISASM_RECURSIVE:
-                for addr, _ in bb.branches:
-                    if not addr in addrs_processed:
-                        # Do not process other functions.
-                        if not addr in symbols:
-                            addrs_to_process.put(addr)
-
-        return bbs, explore
 
     def _bb_ends_in_direct_jmp(self, bb):
         last_instr = bb.instrs[-1].ir_instrs[-1]
@@ -969,3 +913,117 @@ class BasicBlockBuilder(object):
                 not_taken_branch = asm.address + asm.size
 
         return taken_branch, not_taken_branch, direct_branch
+
+
+class RecursiveDescent(CFGRecover):
+
+    def __init__(self, disassembler, memory, translator, arch_info):
+        super(RecursiveDescent, self).__init__(disassembler, memory, translator, arch_info)
+
+    def _find_candidate_bbs(self, start_address, end_address, mode=BARF_DISASM_RECURSIVE, symbols=None):
+        if not symbols:
+            symbols = {}
+
+        explore = []
+
+        bbs = []
+
+        addrs_to_process = Queue()
+        addrs_processed = set()
+
+        addrs_to_process.put(start_address)
+
+        while not addrs_to_process.empty():
+            addr_curr = addrs_to_process.get()
+
+            # Skip current address if:
+            #   a. it has already been processed or
+            #   b. it is not within range ([start_address, end_address]) or
+            if  addr_curr in addrs_processed or \
+                not (addr_curr >= start_address and addr_curr <= end_address):
+                continue
+
+            bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols, explore)
+
+            if bb.empty():
+                continue
+
+            if bb.address == start_address:
+                bb.is_entry = True
+
+            # Add new basic block to the list.
+            bbs += [bb]
+
+            # Add current address to the list of processed addresses.
+            addrs_processed.add(addr_curr)
+
+            # Recursive descent mode: add branches to process queue.
+            for addr, _ in bb.branches:
+                if not addr in addrs_processed:
+                    # Do not process other functions.
+                    if not addr in symbols:
+                        addrs_to_process.put(addr)
+
+        return bbs, explore
+
+
+class LinearSweep(CFGRecover):
+
+    def __init__(self, disassembler, memory, translator, arch_info):
+        super(LinearSweep, self).__init__(disassembler, memory, translator, arch_info)
+
+    def _find_candidate_bbs(self, start_address, end_address, mode=BARF_DISASM_LINEAR, symbols=None):
+        if not symbols:
+            symbols = {}
+
+        explore = []
+
+        bbs = []
+
+        addrs_to_process = Queue()
+        addrs_processed = set()
+
+        addrs_to_process.put(start_address)
+
+        while not addrs_to_process.empty():
+            addr_curr = addrs_to_process.get()
+
+            # Skip current address if:
+            #   a. it has already been processed or
+            #   b. it is not within range ([start_address, end_address]) or
+            if  addr_curr in addrs_processed or \
+                not (addr_curr >= start_address and addr_curr <= end_address):
+                continue
+
+            bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols, explore)
+
+            if bb.empty():
+                continue
+
+            if bb.address == start_address:
+                bb.is_entry = True
+
+            # Add new basic block to the list.
+            bbs += [bb]
+
+            # Add current address to the list of processed addresses.
+            addrs_processed.add(addr_curr)
+
+            # Linear sweep mode: add next address to process queue.
+            next_addr = bb.address + bb.size
+
+            if  not self._bb_ends_in_direct_jmp(bb) and \
+                not self._bb_ends_in_return(bb) and \
+                not next_addr in addrs_processed:
+                addrs_to_process.put(next_addr)
+
+        return bbs, explore
+
+
+class CFGRecoverer(object):
+
+    def __init__(self, strategy):
+        self.strategy = strategy
+
+    def build(self, start, end=None, symbols=None):
+        return self.strategy.build(start, end, symbols)
