@@ -32,8 +32,6 @@ from pydot import Dot
 from pydot import Edge
 from pydot import Node
 
-from barf.arch import ARCH_ARM
-from barf.arch import ARCH_X86
 from barf.arch.arm.armbase import ArmArchitectureInformation
 from barf.arch.arm.armdisassembler import InvalidDisassemblerData, CapstoneOperandNotSupported
 from barf.core.reil import DualInstruction
@@ -132,7 +130,7 @@ class BasicBlock(object):
     def address(self):
         """Get basic block start address.
         """
-        if self._instrs == []:
+        if len(self._instrs) == 0:
             return None
 
         return self._instrs[0].address
@@ -220,7 +218,7 @@ class BasicBlock(object):
     def contains(self, address):
         """Check if an address is within the range of a basic block.
         """
-        return self.address <= address and address <= self.end_address
+        return self.address <= address <= self.end_address
 
     def empty(self):
         """Check if a basic block is empty.
@@ -351,8 +349,8 @@ class ControlFlowGraph(object):
         return (map(lambda addr: self._bb_by_addr[addr], path) for path in paths)
 
     def save(self, filename, print_ir=False, format='dot'):
-        renderer = CFGSimpleRenderer()
-        # renderer = CFGSimpleRendererEx()
+        # renderer = CFGSimpleRenderer()
+        renderer = CFGSimpleRendererEx()
 
         renderer.save(self._graph, self._bb_by_addr, self._name, filename, print_ir, format)
 
@@ -376,7 +374,7 @@ class ControlFlowGraph(object):
         bb_rv = None
 
         for bb in self._basic_blocks:
-            if address >= bb.address and address <= bb.end_address:
+            if bb.address <= address <= bb.end_address:
                 bb_rv = bb
                 break
 
@@ -420,7 +418,7 @@ class CFGRecover(object):
         # An instance of a REIL translator.
         self._ir_trans = translator
 
-        # Maximun number of bytes that gets from memory to disassemble.
+        # Maximum number of bytes that gets from memory to disassemble.
         self._lookahead_max = 16
 
         # Memory of the program being analyze.
@@ -429,13 +427,11 @@ class CFGRecover(object):
         # Architecture information of the binary.
         self._arch_info = arch_info
 
-    def _find_candidate_bbs():
+    def _find_candidate_bbs(self):
         raise NotImplementedError()
 
     def build(self, start_address, end_address, symbols=None):
         """Return the list of basic blocks.
-
-        Linear Sweep Disassembly.
 
         @param start_address: Address of the first byte to start disassembling
         basic blocks.
@@ -454,11 +450,11 @@ class CFGRecover(object):
         addrs = []
         for bb in bbs:
             for addr, _ in bb.branches:
-                if not (start_address <= addr and addr <= end_address):
+                if not (start_address <= addr <= end_address):
                     addrs.append(addr)
         addrs = sorted(list(set(addrs)))
 
-        # Process subrutines
+        # Process subroutines
         bbs_new = []
         for addr in addrs:
             # Do not process other functions.
@@ -674,12 +670,11 @@ class RecursiveDescent(CFGRecover):
     def __init__(self, disassembler, memory, translator, arch_info):
         super(RecursiveDescent, self).__init__(disassembler, memory, translator, arch_info)
 
-    def _find_candidate_bbs(self, start_address, end_address, mode=BARF_DISASM_RECURSIVE, symbols=None):
+    def _find_candidate_bbs(self, start_address, end_address, symbols=None):
         if not symbols:
             symbols = {}
 
         explore = []
-
         bbs = []
 
         addrs_to_process = Queue()
@@ -692,9 +687,9 @@ class RecursiveDescent(CFGRecover):
 
             # Skip current address if:
             #   a. it has already been processed or
-            #   b. it is not within range ([start_address, end_address]) or
+            #   b. it is not within range ([start_address, end_address])
             if  addr_curr in addrs_processed or \
-                not (addr_curr >= start_address and addr_curr <= end_address):
+                not start_address <= addr_curr <= end_address:
                 continue
 
             bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols, explore)
@@ -726,12 +721,11 @@ class LinearSweep(CFGRecover):
     def __init__(self, disassembler, memory, translator, arch_info):
         super(LinearSweep, self).__init__(disassembler, memory, translator, arch_info)
 
-    def _find_candidate_bbs(self, start_address, end_address, mode=BARF_DISASM_LINEAR, symbols=None):
+    def _find_candidate_bbs(self, start_address, end_address, symbols=None):
         if not symbols:
             symbols = {}
 
         explore = []
-
         bbs = []
 
         addrs_to_process = Queue()
@@ -746,7 +740,7 @@ class LinearSweep(CFGRecover):
             #   a. it has already been processed or
             #   b. it is not within range ([start_address, end_address]) or
             if  addr_curr in addrs_processed or \
-                not (addr_curr >= start_address and addr_curr <= end_address):
+                not start_address <= addr_curr <= end_address:
                 continue
 
             bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols, explore)
@@ -791,76 +785,91 @@ class CFGRenderer(object):
 
 class CFGSimpleRenderer(CFGRenderer):
 
-    def save(self, _graph, _bb_by_addr, _name, filename, print_ir=False, format='dot'):
+    graph_format = {
+        'graph_type' : 'digraph',
+        'rankdir'    : 'TB',
+    }
+
+    node_format = {
+        'shape'    : 'Mrecord',
+        'rankdir'  : 'LR',
+        'fontname' : 'monospace',
+        'fontsize' : '9.0',
+    }
+
+    edge_format = {
+        'fontname' : 'monospace',
+        'fontsize' : '8.0',
+    }
+
+    edge_colors = {
+        'taken'     : 'green',
+        'not-taken' : 'red',
+        'direct'    : 'blue',
+    }
+
+    html_entities = {
+        "!" : "&#33;",
+        "#" : "&#35;",
+        ":" : "&#58;",
+        "{" : "&#123;",
+        "}" : "&#125;",
+    }
+
+    # Node label template.
+    node_label_tpl = "{{<f0> {label:#010x} | {assembly}}}"
+
+    def save(self, graph, bb_by_addr, name, filename, print_ir=False, format='dot'):
         """Save basic block graph into a file.
         """
-        node_format = {
-            'shape'    : 'Mrecord',
-            'rankdir'  : 'LR',
-            'fontname' : 'monospace',
-            'fontsize' : '9.0',
-        }
-
-        edge_format = {
-            'fontname' : 'monospace',
-            'fontsize' : '8.0',
-        }
-
-        edge_colors = {
-            'taken'     : 'green',
-            'not-taken' : 'red',
-            'direct'    : 'blue',
-        }
-
-        html_entities = {
-            "!" : "&#33;",
-            "#" : "&#35;",
-            ":" : "&#58;",
-            "{" : "&#123;",
-            "}" : "&#125;",
-        }
-
         try:
-            dot_graph = Dot(graph_type="digraph", rankdir="TB")
+            dot_graph = Dot(**self.graph_format)
 
             # Add nodes.
             nodes = {}
-            for bb_addr in _bb_by_addr:
-                bb_dump = self._dump_bb(_bb_by_addr[bb_addr], print_ir)
+            for bb_addr in bb_by_addr:
+                # Skip jmp/jcc to subroutines.
+                if not bb_addr in bb_by_addr:
+                    continue
 
-                # html-encode colon character
-                for char, encoding in html_entities.items():
-                    bb_dump = bb_dump.replace(char, encoding)
-
-                label = "{{<f0> {:#010x} | {}}}".format(bb_addr, bb_dump)
-
-                nodes[bb_addr] = Node(bb_addr, label=label, **node_format)
+                nodes[bb_addr] = self._create_node(bb_by_addr[bb_addr], name, print_ir)
 
                 dot_graph.add_node(nodes[bb_addr])
 
             # Add edges.
-            for bb_src_addr in _bb_by_addr:
-                for bb_dst_addr, branch_type in _bb_by_addr[bb_src_addr].branches:
+            for bb_src_addr in bb_by_addr:
+                # Skip jmp/jcc to subroutines.
+                if not bb_src_addr in bb_by_addr:
+                    continue
+
+                for bb_dst_addr, branch_type in bb_by_addr[bb_src_addr].branches:
                     # Skip jmp/jcc to sub routines.
-                    if not bb_dst_addr in _bb_by_addr:
+                    if not bb_dst_addr in bb_by_addr:
                         continue
 
-                    dot_graph.add_edge(
-                        Edge(
-                            nodes[bb_src_addr],
-                            nodes[bb_dst_addr],
-                            color=edge_colors[branch_type],
-                            **edge_format))
+                    edge = self._create_edge(nodes[bb_src_addr], nodes[bb_dst_addr], branch_type)
+
+                    dot_graph.add_edge(edge)
 
             # Save graph.
             dot_graph.write("{}.{}".format(filename, format), format=format)
         except Exception:
-            logger.error(
-                "Failed to save basic block graph: %s (%s)",
-                filename,
-                format,
-                exc_info=True
-            )
+            logger.error("Failed to save basic block graph: %s (%s)", filename, format, exc_info=True)
+
+    def _create_node(self, bb, name, print_ir):
+        bb_addr = bb.address
+        bb_dump = self._dump_bb(bb, print_ir)
+
+        # html-encode colon character
+        for char, encoding in self.html_entities.items():
+            bb_dump = bb_dump.replace(char, encoding)
+
+        node_label = self.node_label_tpl.format(label=bb_addr, assembly=bb_dump)
+
+        return Node(bb_addr, label=node_label, **self.node_format)
+
+    def _create_edge(self, src, dst, branch_type):
+        return Edge(src, dst, color=self.edge_colors[branch_type], **self.edge_format)
 
     def _dump_instr(self, instr, mnemonic_width, fill_char=""):
         operands_str = ", ".join([str(oprnd) for oprnd in instr.operands])
@@ -877,8 +886,8 @@ class CFGSimpleRenderer(CFGRenderer):
         asm_fmt = "{:08x} [{:02d}] {}\\l"
         reil_fmt = " {:02x} {}\\l"
 
+        # Get maximum instruction width
         asm_mnemonic_max_width = 0
-
         for dinstr in basic_block:
             if len(dinstr.asm_instr.mnemonic) > asm_mnemonic_max_width:
                 asm_mnemonic_max_width = len(dinstr.asm_instr.mnemonic)
@@ -897,125 +906,126 @@ class CFGSimpleRenderer(CFGRenderer):
 
 class CFGSimpleRendererEx(CFGRenderer):
 
-    def save(self, _graph, _bb_by_addr, _name, filename, print_ir=False, format='dot'):
+    fontname = 'Ubuntu Mono'
+    # fontname = 'DejaVu Sans Mono'
+    # fontname = 'DejaVu Sans Condensed'
+    # fontname = 'DejaVu Sans Light'
+    # fontname = 'Liberation Mono'
+    # fontname = 'DejaVu Serif Condensed'
+    # fontname = 'Ubuntu Condensed'
+
+    graph_format = {
+        'graph_type' : 'digraph',
+        'nodesep'    : 1.2,
+        'rankdir'    : 'TB',
+        'splines'    : 'ortho',
+    }
+
+    node_format_base = {
+        'fontname'  : fontname,
+        'fontsize'  : 9.0,
+        'penwidth'  : 0.5,
+        'rankdir'   : 'LR',
+        'shape'     : 'plaintext',
+    }
+
+    node_format_entry = {
+        'pencolor' : 'orange',
+    }
+
+    node_format_exit = {
+        'pencolor' : 'gray',
+    }
+
+    node_format_entry_exit = {
+        'pencolor' : 'gray',
+    }
+
+    edge_format = {
+        'arrowhead' : 'vee',
+        'arrowsize' : 0.6,
+        'fontname'  : fontname,
+        'fontsize'  : 8.0,
+        'penwidth'  : 0.5,
+    }
+
+    edge_colors = {
+        'direct'    : 'blue',
+        'not-taken' : 'red',
+        'taken'     : 'darkgreen',
+    }
+
+    # Node label template.
+    node_label_tpl  = '<'
+    node_label_tpl += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
+    node_label_tpl += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
+    node_label_tpl += '  <tr><td align="left" cellspacing="1">{label}</td></tr>'
+    node_label_tpl += '  {assembly}'
+    node_label_tpl += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
+    node_label_tpl += '</table>'
+    node_label_tpl += '>'
+
+    def save(self, graph, bb_by_addr, name, filename, print_ir=False, format='dot'):
         """Save basic block graph into a file.
         """
-        fontname = 'Ubuntu Mono'
-        # fontname = 'DejaVu Sans Mono'
-        # fontname = 'DejaVu Sans Condensed'
-        # fontname = 'DejaVu Sans Light'
-        # fontname = 'Liberation Mono'
-        # fontname = 'DejaVu Serif Condensed'
-        # fontname = 'Ubuntu Condensed'
-
-        graph_format = {
-            'graph_type' : 'digraph',
-            'nodesep'    : 1.2,
-            'rankdir'    : 'TB',
-            'splines'    : 'ortho',
-        }
-
-        node_format_base = {
-            'fontname'  : fontname,
-            'fontsize'  : 9.0,
-            'penwidth'  : 0.5,
-            'rankdir'   : 'LR',
-            'shape'     : 'plaintext',
-        }
-
-        node_format_entry = {
-            'pencolor' : 'orange',
-        }
-
-        node_format_exit = {
-            'pencolor' : 'gray',
-        }
-
-        node_format_entry_exit = {
-            'pencolor' : 'gray',
-        }
-
-        edge_format = {
-            'arrowhead' : 'vee',
-            'arrowsize' : 0.6,
-            'fontname'  : fontname,
-            'fontsize'  : 8.0,
-            'penwidth'  : 0.5,
-        }
-
-        edge_colors = {
-            'direct'    : 'blue',
-            'not-taken' : 'red',
-            'taken'     : 'darkgreen',
-        }
-
         try:
-            dot_graph = Dot(**graph_format)
+            dot_graph = Dot(**self.graph_format)
 
             # add nodes
             nodes = {}
-            for bb_addr in _graph.node.keys():
-                # Skip jmp/jcc to sub routines.
-                if not bb_addr in _bb_by_addr:
+            for bb_addr in graph.node.keys():
+                # Skip jmp/jcc to subroutines.
+                if not bb_addr in bb_by_addr:
                     continue
 
-                bb_dump = self._dump_bb_ex(_bb_by_addr[bb_addr], print_ir)
-
-                if _bb_by_addr[bb_addr].is_entry and not _bb_by_addr[bb_addr].is_exit:
-                    node_format = dict(node_format_base, **node_format_entry)
-                elif _bb_by_addr[bb_addr].is_exit and not _bb_by_addr[bb_addr].is_entry:
-                    node_format = dict(node_format_base, **node_format_exit)
-                elif _bb_by_addr[bb_addr].is_entry and _bb_by_addr[bb_addr].is_exit:
-                    node_format = dict(node_format_base, **node_format_entry_exit)
-                else:
-                    node_format = dict(node_format_base)
-
-                if _bb_by_addr[bb_addr].is_entry:
-                    bb_label = "{} @ {:x}".format(_name, bb_addr)
-                else:
-                    bb_label = "loc_{:x}".format(bb_addr)
-
-                label  = '<'
-                label += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
-                label += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
-                label += '  <tr><td align="left" cellspacing="1">{label}</td></tr>'
-                label += '  {assembly}'
-                label += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
-                label += '</table>'
-                label += '>'
-
-                label = label.format(label=bb_label, assembly=bb_dump)
-
-                nodes[bb_addr] = Node(bb_addr, label=label, **node_format)
+                nodes[bb_addr] = self._create_node(bb_by_addr[bb_addr], name, print_ir)
 
                 dot_graph.add_node(nodes[bb_addr])
 
             # add edges
-            for bb_src_addr in _graph.node.keys():
-                # Skip jmp/jcc to sub routines.
-                if not bb_src_addr in _bb_by_addr:
+            for bb_src_addr in graph.node.keys():
+                # Skip jmp/jcc to subroutines.
+                if not bb_src_addr in bb_by_addr:
                     continue
 
-                for bb_dst_addr, branch_type in _bb_by_addr[bb_src_addr].branches:
+                for bb_dst_addr, branch_type in bb_by_addr[bb_src_addr].branches:
                     # Skip jmp/jcc to sub routines.
-                    if not bb_dst_addr in _bb_by_addr:
+                    if not bb_dst_addr in bb_by_addr:
                         continue
 
-                    dot_graph.add_edge(
-                        Edge(nodes[bb_src_addr],
-                             nodes[bb_dst_addr],
-                             color=edge_colors[branch_type],
-                             **edge_format))
+                    edge = self._create_edge(nodes[bb_src_addr], nodes[bb_dst_addr], branch_type)
+
+                    dot_graph.add_edge(edge)
 
             # Save graph.
             dot_graph.write("{}.{}".format(filename, format), format=format)
-        except Exception as err:
-           logger.error(
-                "Failed to save basic block graph: %s (%s)",
-                filename,
-                format,
-                exc_info=True
-            )
+        except Exception:
+           logger.error("Failed to save basic block graph: %s (%s)", filename, format, exc_info=True)
+
+    def _create_node(self, bb, name, print_ir):
+        bb_addr = bb.address
+        bb_dump = self._dump_bb(bb, print_ir)
+
+        if bb.is_entry and not bb.is_exit:
+            node_format = dict(self.node_format_base, **self.node_format_entry)
+        elif bb.is_exit and not bb.is_entry:
+            node_format = dict(self.node_format_base, **self.node_format_exit)
+        elif bb.is_entry and bb.is_exit:
+            node_format = dict(self.node_format_base, **self.node_format_entry_exit)
+        else:
+            node_format = dict(self.node_format_base)
+
+        if bb.is_entry:
+            bb_label = "{} @ {:x}".format(name, bb_addr)
+        else:
+            bb_label = "loc_{:x}".format(bb_addr)
+
+        node_label = self.node_label_tpl.format(label=bb_label, assembly=bb_dump)
+
+        return Node(bb_addr, label=node_label, **node_format)
+
+    def _create_edge(self, src, dst, branch_type):
+        return Edge(src, dst, color=self.edge_colors[branch_type], **self.edge_format)
 
     def _dump_instr(self, instr, mnemonic_width, fill_char=""):
         operands_str = ", ".join([str(oprnd) for oprnd in instr.operands])
@@ -1026,17 +1036,15 @@ class CFGSimpleRendererEx(CFGRenderer):
 
         return string
 
-    def _dump_bb_ex(self, basic_block, print_ir=False):
+    def _dump_bb(self, basic_block, print_ir=False):
         lines = []
-
-        base_addr = basic_block.instrs[0].address
 
         formatter = HtmlFormatter()
         formatter.noclasses = True
         formatter.nowrap = True
 
+        # Get maximum instruction width
         asm_mnemonic_max_width = 0
-
         for dinstr in basic_block:
             if len(dinstr.asm_instr.mnemonic) > asm_mnemonic_max_width:
                 asm_mnemonic_max_width = len(dinstr.asm_instr.mnemonic)

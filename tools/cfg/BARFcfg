@@ -107,7 +107,7 @@ def recover_cfg_all_from_symbols_ex(barf, symbols_by_addr):
     return barf.recover_cfg_all_ex(symbols_by_addr, callback=print_recovery_status)
 
 def save_cfg_graph(cfg, output_dir, show_reil):
-    cfg.save_ex(output_dir + os.path.sep + cfg.name, print_ir=show_reil, format='dot')
+    cfg.save(output_dir + os.path.sep + cfg.name, print_ir=show_reil, format='dot')
 
 def save_cfg_text(cfg, output_dir, show_reil, brief):
     fn_name = cfg.name
