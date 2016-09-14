@@ -352,7 +352,7 @@ class ControlFlowGraph(object):
         # renderer = CFGSimpleRenderer()
         renderer = CFGSimpleRendererEx()
 
-        renderer.save(self._graph, self._bb_by_addr, self._name, filename, print_ir, format)
+        renderer.save(self, filename, print_ir, format)
 
     # Auxiliary functions
     # ======================================================================== #
@@ -785,6 +785,8 @@ class CFGRenderer(object):
 
 class CFGSimpleRenderer(CFGRenderer):
 
+    fontname = 'monospace'
+
     graph_format = {
         'graph_type' : 'digraph',
         'rankdir'    : 'TB',
@@ -793,7 +795,7 @@ class CFGSimpleRenderer(CFGRenderer):
     node_format = {
         'shape'    : 'Mrecord',
         'rankdir'  : 'LR',
-        'fontname' : 'monospace',
+        'fontname' : fontname,
         'fontsize' : '9.0',
     }
 
@@ -819,7 +821,7 @@ class CFGSimpleRenderer(CFGRenderer):
     # Node label template.
     node_label_tpl = "{{<f0> {label:#010x} | {assembly}}}"
 
-    def save(self, graph, bb_by_addr, name, filename, print_ir=False, format='dot'):
+    def save(self, cfg, filename, print_ir=False, format='dot'):
         """Save basic block graph into a file.
         """
         try:
@@ -827,27 +829,15 @@ class CFGSimpleRenderer(CFGRenderer):
 
             # Add nodes.
             nodes = {}
-            for bb_addr in bb_by_addr:
-                # Skip jmp/jcc to subroutines.
-                if not bb_addr in bb_by_addr:
-                    continue
+            for bb in cfg.basic_blocks:
+                nodes[bb.address] = self._create_node(bb, cfg.name, print_ir)
 
-                nodes[bb_addr] = self._create_node(bb_by_addr[bb_addr], name, print_ir)
-
-                dot_graph.add_node(nodes[bb_addr])
+                dot_graph.add_node(nodes[bb.address])
 
             # Add edges.
-            for bb_src_addr in bb_by_addr:
-                # Skip jmp/jcc to subroutines.
-                if not bb_src_addr in bb_by_addr:
-                    continue
-
-                for bb_dst_addr, branch_type in bb_by_addr[bb_src_addr].branches:
-                    # Skip jmp/jcc to sub routines.
-                    if not bb_dst_addr in bb_by_addr:
-                        continue
-
-                    edge = self._create_edge(nodes[bb_src_addr], nodes[bb_dst_addr], branch_type)
+            for bb_src in cfg.basic_blocks:
+                for bb_dst_addr, branch_type in bb_src.branches:
+                    edge = self._create_edge(nodes[bb_src.address], nodes[bb_dst_addr], branch_type)
 
                     dot_graph.add_edge(edge)
 
@@ -860,16 +850,23 @@ class CFGSimpleRenderer(CFGRenderer):
         bb_addr = bb.address
         bb_dump = self._dump_bb(bb, print_ir)
 
-        # html-encode colon character
-        for char, encoding in self.html_entities.items():
-            bb_dump = bb_dump.replace(char, encoding)
-
         node_label = self.node_label_tpl.format(label=bb_addr, assembly=bb_dump)
 
         return Node(bb_addr, label=node_label, **self.node_format)
 
     def _create_edge(self, src, dst, branch_type):
         return Edge(src, dst, color=self.edge_colors[branch_type], **self.edge_format)
+
+    def _get_bb_max_instr_width(self, basic_block):
+        """Get maximum instruction mnemonic width
+        """
+        asm_mnemonic_max_width = 0
+
+        for dinstr in basic_block:
+            if len(dinstr.asm_instr.mnemonic) > asm_mnemonic_max_width:
+                asm_mnemonic_max_width = len(dinstr.asm_instr.mnemonic)
+
+        return asm_mnemonic_max_width
 
     def _dump_instr(self, instr, mnemonic_width, fill_char=""):
         operands_str = ", ".join([str(oprnd) for oprnd in instr.operands])
@@ -878,28 +875,28 @@ class CFGSimpleRenderer(CFGRenderer):
         string += instr.mnemonic + fill_char * (mnemonic_width - len(instr.mnemonic))
         string += " " + operands_str if operands_str else ""
 
+        # html-encode colon character
+        for char, encoding in self.html_entities.items():
+            string = string.replace(char, encoding)
+
         return string
 
-    def _dump_bb(self, basic_block, print_ir=False):
+    def _dump_bb(self, basic_block, print_ir):
         lines = []
 
-        asm_fmt = "{:08x} [{:02d}] {}\\l"
-        reil_fmt = " {:02x} {}\\l"
+        asm_fmt = "{address:08x} [{size:02d}] {assembly}\\l"
+        reil_fmt = " {index:02x} {assembly}\\l"
 
-        # Get maximum instruction width
-        asm_mnemonic_max_width = 0
-        for dinstr in basic_block:
-            if len(dinstr.asm_instr.mnemonic) > asm_mnemonic_max_width:
-                asm_mnemonic_max_width = len(dinstr.asm_instr.mnemonic)
+        asm_mnemonic_max_width = self._get_bb_max_instr_width(basic_block)
 
         for dinstr in basic_block:
             asm_instr_str = self._dump_instr(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char="\\ ")
 
-            lines += [asm_fmt.format(dinstr.address, dinstr.asm_instr.size, asm_instr_str)]
+            lines.append(asm_fmt.format(address=dinstr.address, size=dinstr.asm_instr.size, assembly=asm_instr_str))
 
             if print_ir:
                 for ir_instr in dinstr.ir_instrs:
-                    lines += [reil_fmt.format(ir_instr.address & 0xff, ir_instr)]
+                    lines.append(reil_fmt.format(index=ir_instr.address & 0xff, assembly=ir_instr))
 
         return "".join(lines)
 
@@ -918,7 +915,7 @@ class CFGSimpleRendererEx(CFGRenderer):
         'graph_type' : 'digraph',
         'nodesep'    : 1.2,
         'rankdir'    : 'TB',
-        'splines'    : 'ortho',
+        # 'splines'    : 'ortho', # NOTE This option brings up performance issues.
     }
 
     node_format_base = {
@@ -965,35 +962,23 @@ class CFGSimpleRendererEx(CFGRenderer):
     node_label_tpl += '</table>'
     node_label_tpl += '>'
 
-    def save(self, graph, bb_by_addr, name, filename, print_ir=False, format='dot'):
+    def save(self, cfg, filename, print_ir=False, format='dot'):
         """Save basic block graph into a file.
         """
         try:
             dot_graph = Dot(**self.graph_format)
 
-            # add nodes
+            # Add nodes.
             nodes = {}
-            for bb_addr in graph.node.keys():
-                # Skip jmp/jcc to subroutines.
-                if not bb_addr in bb_by_addr:
-                    continue
+            for bb in cfg.basic_blocks:
+                nodes[bb.address] = self._create_node(bb, cfg.name, print_ir)
 
-                nodes[bb_addr] = self._create_node(bb_by_addr[bb_addr], name, print_ir)
+                dot_graph.add_node(nodes[bb.address])
 
-                dot_graph.add_node(nodes[bb_addr])
-
-            # add edges
-            for bb_src_addr in graph.node.keys():
-                # Skip jmp/jcc to subroutines.
-                if not bb_src_addr in bb_by_addr:
-                    continue
-
-                for bb_dst_addr, branch_type in bb_by_addr[bb_src_addr].branches:
-                    # Skip jmp/jcc to sub routines.
-                    if not bb_dst_addr in bb_by_addr:
-                        continue
-
-                    edge = self._create_edge(nodes[bb_src_addr], nodes[bb_dst_addr], branch_type)
+            # Add edges.
+            for bb_src in cfg.basic_blocks:
+                for bb_dst_addr, branch_type in bb_src.branches:
+                    edge = self._create_edge(nodes[bb_src.address], nodes[bb_dst_addr], branch_type)
 
                     dot_graph.add_edge(edge)
 
@@ -1027,38 +1012,49 @@ class CFGSimpleRendererEx(CFGRenderer):
     def _create_edge(self, src, dst, branch_type):
         return Edge(src, dst, color=self.edge_colors[branch_type], **self.edge_format)
 
-    def _dump_instr(self, instr, mnemonic_width, fill_char=""):
-        operands_str = ", ".join([str(oprnd) for oprnd in instr.operands])
-
-        string  = instr.prefix + " " if instr.prefix else ""
-        string += instr.mnemonic + fill_char * (mnemonic_width - len(instr.mnemonic))
-        string += " " + operands_str if operands_str else ""
-
-        return string
-
-    def _dump_bb(self, basic_block, print_ir=False):
-        lines = []
-
-        formatter = HtmlFormatter()
-        formatter.noclasses = True
-        formatter.nowrap = True
-
-        # Get maximum instruction width
+    def _get_bb_max_instr_width(self, basic_block):
+        """Get maximum instruction mnemonic width
+        """
         asm_mnemonic_max_width = 0
+
         for dinstr in basic_block:
             if len(dinstr.asm_instr.mnemonic) > asm_mnemonic_max_width:
                 asm_mnemonic_max_width = len(dinstr.asm_instr.mnemonic)
 
-        for instr in basic_block.instrs:
-            asm_instr = self._dump_instr(instr.asm_instr, asm_mnemonic_max_width + 1, fill_char=" ")
-            asm_instr = highlight(asm_instr, NasmLexer(), formatter)
-            asm_instr = asm_instr.replace("span", "font")
-            asm_instr = asm_instr.replace('style="color: ', 'color="')
+        return asm_mnemonic_max_width
 
-            lines += ["<tr><td align='left'>    %08x [%02d] %s </td></tr>" % (instr.address, instr.asm_instr.size, asm_instr)]
+    def _dump_instr(self, instr, mnemonic_width, fill_char=""):
+        formatter = HtmlFormatter()
+        formatter.noclasses = True
+        formatter.nowrap = True
+
+        operands_str = ", ".join([str(oprnd) for oprnd in instr.operands])
+
+        asm_instr  = instr.prefix + " " if instr.prefix else ""
+        asm_instr += instr.mnemonic + fill_char * (mnemonic_width - len(instr.mnemonic))
+        asm_instr += " " + operands_str if operands_str else ""
+
+        asm_instr = highlight(asm_instr, NasmLexer(), formatter)
+        asm_instr = asm_instr.replace("span", "font")
+        asm_instr = asm_instr.replace('style="color: ', 'color="')
+
+        return asm_instr
+
+    def _dump_bb(self, basic_block, print_ir):
+        lines = []
+
+        asm_fmt = "<tr><td align='left'>{address:08x} [{size:02d}] {assembly} </td></tr>"
+        reil_fmt = "<tr><td align='left'>              {assembly} </td></tr>"
+
+        asm_mnemonic_max_width = self._get_bb_max_instr_width(basic_block)
+
+        for dinstr in basic_block:
+            asm_instr = self._dump_instr(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char=" ")
+
+            lines.append(asm_fmt.format(address=dinstr.address, size=dinstr.asm_instr.size, assembly=asm_instr))
 
             if print_ir:
-                for ir_instr in instr.ir_instrs:
-                    lines += ["              " + str(ir_instr) + "\\l"]
+                for ir_instr in dinstr.ir_instrs:
+                    lines.append(reil_fmt.format(assembly=ir_instr))
 
         return "".join(lines)
