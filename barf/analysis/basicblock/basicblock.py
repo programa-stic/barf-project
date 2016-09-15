@@ -439,40 +439,36 @@ class CFGRecover(object):
         disassembling basic blocks.
 
         """
-        if not symbols:
-            symbols = {}
+        symbols = {} if not symbols else symbols
 
-        # 1.
-        bbs, explore = self._find_candidate_bbs(start_address, end_address, symbols=symbols)
+        # Find candidates for basic blocks.
+        bbs = self._find_candidate_bbs(start_address, end_address, symbols=symbols)
         bbs = self._refine_bbs(bbs, symbols)
 
-        # Collect subroutine address
+        # Collect subroutine addresses.
         addrs = []
         for bb in bbs:
             for addr, _ in bb.branches:
-                if not (start_address <= addr <= end_address):
+                if not start_address <= addr <= end_address:
                     addrs.append(addr)
         addrs = sorted(list(set(addrs)))
 
-        # Process subroutines
+        # Process subroutines.
         bbs_new = []
         for addr in addrs:
             # Do not process other functions.
             if not addr in symbols:
-                bbs_tmp, explore_tmp = self._find_candidate_bbs(addr, end_address, symbols=symbols)
-
-                bbs_new += bbs_tmp
-                explore += explore_tmp
-
+                bbs_new += self._find_candidate_bbs(addr, end_address, symbols=symbols)
         bbs = self._refine_bbs(bbs_new + bbs, symbols)
 
-        explore_addrs = []
+        # Extract call targets for further processing.
+        call_targets = []
+        for bb in bbs:
+            for target in self._extract_call_targets(bb):
+                if isinstance(target, ReilImmediateOperand):
+                    call_targets.append(target.immediate >> 8)
 
-        for oprnd in explore:
-            if isinstance(oprnd, ReilImmediateOperand):
-                explore_addrs.append(oprnd.immediate >> 8)
-
-        return bbs, explore_addrs
+        return bbs, call_targets
 
     def _bb_ends_in_direct_jmp(self, bb):
         last_instr = bb.instrs[-1].ir_instrs[-1]
@@ -520,14 +516,14 @@ class CFGRecover(object):
         return bbs_new
 
     def _split_bb(self, bb, address, symbols):
-        bb_upper_half = self._disassemble_bb(bb.start_address, address, symbols, [])
-        bb_lower_half = self._disassemble_bb(address, bb.end_address, symbols, [])
+        bb_upper_half = self._disassemble_bb(bb.start_address, address, symbols)
+        bb_lower_half = self._disassemble_bb(address, bb.end_address, symbols)
 
         bb_upper_half.direct_branch = address
 
         return bb_lower_half, bb_upper_half
 
-    def _disassemble_bb(self, start_address, end_address, symbols, explore):
+    def _disassemble_bb(self, start_address, end_address, symbols):
         bb = BasicBlock()
         addr = start_address
         taken, not_taken, direct = None, None, None
@@ -569,11 +565,6 @@ class CFGRecover(object):
             if asm.mnemonic == "hlt":
                 bb.is_exit = True
                 break
-
-            # Add target address to the explore list.
-            if ir[-1].mnemonic == ReilMnemonic.JCC and \
-                (asm.mnemonic == "call" or asm.mnemonic == "bl"):
-                explore.append(ir[-1].operands[2])
 
             # If callee does not return, break.
             if  ir[-1].mnemonic == ReilMnemonic.JCC and \
@@ -619,6 +610,17 @@ class CFGRecover(object):
         bb.direct_branch = direct
 
         return bb
+
+    def _extract_call_targets(self, bb):
+        targets = []
+
+        for dinstr in bb:
+            if dinstr.asm_instr.mnemonic in ["call", "bl"]:
+                assert dinstr.ir_instrs[-1].mnemonic == ReilMnemonic.JCC
+
+                targets.append(dinstr.ir_instrs[-1].operands[2])
+
+        return targets
 
     def _resolve_branch_address(self, branch_instr, instrs):
         target = branch_instr.operands[2]
@@ -671,10 +673,8 @@ class RecursiveDescent(CFGRecover):
         super(RecursiveDescent, self).__init__(disassembler, memory, translator, arch_info)
 
     def _find_candidate_bbs(self, start_address, end_address, symbols=None):
-        if not symbols:
-            symbols = {}
+        symbols = {} if not symbols else symbols
 
-        explore = []
         bbs = []
 
         addrs_to_process = Queue()
@@ -692,7 +692,7 @@ class RecursiveDescent(CFGRecover):
                 not start_address <= addr_curr <= end_address:
                 continue
 
-            bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols, explore)
+            bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols)
 
             if bb.empty():
                 continue
@@ -713,7 +713,7 @@ class RecursiveDescent(CFGRecover):
                     if not addr in symbols:
                         addrs_to_process.put(addr)
 
-        return bbs, explore
+        return bbs
 
 
 class LinearSweep(CFGRecover):
@@ -722,10 +722,8 @@ class LinearSweep(CFGRecover):
         super(LinearSweep, self).__init__(disassembler, memory, translator, arch_info)
 
     def _find_candidate_bbs(self, start_address, end_address, symbols=None):
-        if not symbols:
-            symbols = {}
+        symbols = {} if not symbols else symbols
 
-        explore = []
         bbs = []
 
         addrs_to_process = Queue()
@@ -743,7 +741,7 @@ class LinearSweep(CFGRecover):
                 not start_address <= addr_curr <= end_address:
                 continue
 
-            bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols, explore)
+            bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols)
 
             if bb.empty():
                 continue
@@ -765,7 +763,7 @@ class LinearSweep(CFGRecover):
                 not next_addr in addrs_processed:
                 addrs_to_process.put(next_addr)
 
-        return bbs, explore
+        return bbs
 
 
 class CFGRecoverer(object):
