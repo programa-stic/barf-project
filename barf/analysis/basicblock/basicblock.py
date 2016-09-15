@@ -43,9 +43,6 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers.asm import NasmLexer
 
-# CFG recovery mode
-BARF_DISASM_LINEAR = 0       # Linear Sweep
-BARF_DISASM_RECURSIVE = 1    # Recursive Descent
 
 logger = logging.getLogger(__name__)
 
@@ -452,7 +449,7 @@ class CFGRecover(object):
 
         return bbs, call_targets
 
-    def _recover_bbs(self):
+    def _recover_bbs(self, start_address, end_address, symbols=None):
         raise NotImplementedError()
 
     def _split_bbs(self, bbs, symbols):
@@ -501,20 +498,20 @@ class CFGRecover(object):
 
         # x86: "RET" instr.
         if ir[-1].mnemonic == ReilMnemonic.JCC and \
-            isinstance(self._arch_info, X86ArchitectureInformation) and \
-            asm.mnemonic == "ret":
+           isinstance(self._arch_info, X86ArchitectureInformation) and \
+           asm.mnemonic == "ret":
             is_ret = True
 
         # ARM: "POP reg, {reg*, pc}" instr.
-        if  isinstance(self._arch_info, ArmArchitectureInformation) and \
-            asm.mnemonic == "pop" and \
-            ("pc" in str(asm.operands[1]) or "r15" in str(asm.operands[1])):
+        if isinstance(self._arch_info, ArmArchitectureInformation) and \
+           asm.mnemonic == "pop" and \
+           ("pc" in str(asm.operands[1]) or "r15" in str(asm.operands[1])):
             is_ret = True
 
         # ARM: "LDR pc, *" instr.
-        if  isinstance(self._arch_info, ArmArchitectureInformation) and \
-            asm.mnemonic == "ldr" and \
-            ("pc" in str(asm.operands[0]) or "r15" in str(asm.operands[0])):
+        if isinstance(self._arch_info, ArmArchitectureInformation) and \
+           asm.mnemonic == "ldr" and \
+           ("pc" in str(asm.operands[0]) or "r15" in str(asm.operands[0])):
             is_ret = True
 
         return is_ret
@@ -526,14 +523,14 @@ class CFGRecover(object):
 
         # x86
         if ir[-1].mnemonic == ReilMnemonic.JCC and \
-            isinstance(self._arch_info, X86ArchitectureInformation) and \
-            asm.mnemonic == "call":
+           isinstance(self._arch_info, X86ArchitectureInformation) and \
+           asm.mnemonic == "call":
             is_call = True
 
         # ARM
         if ir[-1].mnemonic == ReilMnemonic.JCC and \
-            isinstance(self._arch_info, ArmArchitectureInformation) and \
-            asm.mnemonic == "bl":
+           isinstance(self._arch_info, ArmArchitectureInformation) and \
+           asm.mnemonic == "bl":
             is_call = True
 
         return is_call
@@ -543,7 +540,7 @@ class CFGRecover(object):
 
         # x86: "HALT" instr.
         if isinstance(self._arch_info, X86ArchitectureInformation) and \
-            asm.mnemonic == "hlt":
+           asm.mnemonic == "hlt":
             is_halt = True
 
         return is_halt
@@ -553,15 +550,15 @@ class CFGRecover(object):
 
         # x86
         if ir[-1].mnemonic == ReilMnemonic.JCC and \
-            isinstance(self._arch_info, X86ArchitectureInformation) and \
-            not asm.mnemonic == "call" and \
-            not asm.prefix in ["rep", "repe", "repne", "repz"]:
+           isinstance(self._arch_info, X86ArchitectureInformation) and \
+           not asm.mnemonic == "call" and \
+           not asm.prefix in ["rep", "repe", "repne", "repz"]:
             is_branch = True
 
         # ARM
         if ir[-1].mnemonic == ReilMnemonic.JCC and \
-            isinstance(self._arch_info, ArmArchitectureInformation) and \
-            not asm.mnemonic in ["blx", "bl"]:
+           isinstance(self._arch_info, ArmArchitectureInformation) and \
+           not asm.mnemonic in ["blx", "bl"]:
             is_branch = True
 
         return is_branch
@@ -636,8 +633,8 @@ class CFGRecover(object):
             # try to resolve branch address
             for instr in instrs[::-1]:
                 if instr.mnemonic == ReilMnemonic.STR and \
-                    isinstance(instr.operands[0], ReilImmediateOperand) and \
-                    instr.operands[2] == target:
+                   isinstance(instr.operands[0], ReilImmediateOperand) and \
+                   instr.operands[2] == target:
 
                     # Transform Reil address back to source arch address
                     return instr.operands[0].immediate >> 8
@@ -702,8 +699,8 @@ class RecursiveDescent(CFGRecover):
             # Skip current address if:
             #   a. it has already been processed or
             #   b. it is not within range ([start_address, end_address])
-            if  addr_curr in addrs_processed or \
-                not start_address <= addr_curr <= end_address:
+            if addr_curr in addrs_processed or \
+               not start_address <= addr_curr <= end_address:
                 continue
 
             bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols)
@@ -751,8 +748,8 @@ class LinearSweep(CFGRecover):
             # Skip current address if:
             #   a. it has already been processed or
             #   b. it is not within range ([start_address, end_address])
-            if  addr_curr in addrs_processed or \
-                not start_address <= addr_curr <= end_address:
+            if addr_curr in addrs_processed or \
+               not start_address <= addr_curr <= end_address:
                 continue
 
             bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols)
@@ -772,9 +769,9 @@ class LinearSweep(CFGRecover):
             # Linear sweep mode: add next address to process queue.
             next_addr = bb.address + bb.size
 
-            if  not self._bb_ends_in_direct_jmp(bb) and \
-                not self._bb_ends_in_return(bb) and \
-                not next_addr in addrs_processed:
+            if not self._bb_ends_in_direct_jmp(bb) and \
+               not self._bb_ends_in_return(bb) and \
+               not next_addr in addrs_processed:
                 addrs_to_process.put(next_addr)
 
         return bbs
@@ -782,9 +779,9 @@ class LinearSweep(CFGRecover):
     def _bb_ends_in_direct_jmp(self, bb):
         last_instr = bb.instrs[-1].ir_instrs[-1]
 
-        return  last_instr.mnemonic == ReilMnemonic.JCC and \
-                isinstance(last_instr.operands[0], ReilImmediateOperand) and \
-                last_instr.operands[0].immediate == 0x1
+        return last_instr.mnemonic == ReilMnemonic.JCC and \
+            isinstance(last_instr.operands[0], ReilImmediateOperand) and \
+            last_instr.operands[0].immediate == 0x1
 
     def _bb_ends_in_return(self, bb):
         # TODO: Process instructions without resorting to
@@ -1022,7 +1019,7 @@ class CFGSimpleRendererEx(CFGRenderer):
             # Save graph.
             dot_graph.write("{}.{}".format(filename, format), format=format)
         except Exception:
-           logger.error("Failed to save basic block graph: %s (%s)", filename, format, exc_info=True)
+            logger.error("Failed to save basic block graph: %s (%s)", filename, format, exc_info=True)
 
     def _create_node(self, bb, name, print_ir):
         bb_addr = bb.address

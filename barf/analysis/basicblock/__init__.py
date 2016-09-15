@@ -22,10 +22,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from basicblock import BARF_DISASM_LINEAR
-from basicblock import BARF_DISASM_RECURSIVE
 from basicblock import BasicBlock
-# from basicblock import BasicBlockBuilder
 from basicblock import CFGRecoverer
 from basicblock import RecursiveDescent
 from basicblock import ControlFlowGraph
