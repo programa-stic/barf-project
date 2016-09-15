@@ -427,9 +427,6 @@ class CFGRecover(object):
         # Architecture information of the binary.
         self._arch_info = arch_info
 
-    def _find_candidate_bbs(self):
-        raise NotImplementedError()
-
     def build(self, start_address, end_address, symbols=None):
         """Return the list of basic blocks.
 
@@ -445,22 +442,6 @@ class CFGRecover(object):
         bbs = self._find_candidate_bbs(start_address, end_address, symbols=symbols)
         bbs = self._refine_bbs(bbs, symbols)
 
-        # Collect subroutine addresses.
-        addrs = []
-        for bb in bbs:
-            for addr, _ in bb.branches:
-                if not start_address <= addr <= end_address:
-                    addrs.append(addr)
-        addrs = sorted(list(set(addrs)))
-
-        # Process subroutines.
-        bbs_new = []
-        for addr in addrs:
-            # Do not process other functions.
-            if not addr in symbols:
-                bbs_new += self._find_candidate_bbs(addr, end_address, symbols=symbols)
-        bbs = self._refine_bbs(bbs_new + bbs, symbols)
-
         # Extract call targets for further processing.
         call_targets = []
         for bb in bbs:
@@ -470,19 +451,8 @@ class CFGRecover(object):
 
         return bbs, call_targets
 
-    def _bb_ends_in_direct_jmp(self, bb):
-        last_instr = bb.instrs[-1].ir_instrs[-1]
-
-        return  last_instr.mnemonic == ReilMnemonic.JCC and \
-                isinstance(last_instr.operands[0], ReilImmediateOperand) and \
-                last_instr.operands[0].immediate == 0x1
-
-    def _bb_ends_in_return(self, bb):
-        # TODO: Process instructions without resorting to
-        # asm.mnemonic or asm.prefix.
-        last_instr = bb.instrs[-1].asm_instr
-
-        return last_instr.mnemonic == "ret"
+    def _find_candidate_bbs(self):
+        raise NotImplementedError()
 
     def _refine_bbs(self, bbs, symbols):
         bbs.sort(key=lambda x: x.address)
@@ -539,6 +509,7 @@ class CFGRecover(object):
             try:
                 asm = self._disasm.disassemble(data_chunk, addr)
             except (InvalidDisassemblerData, CapstoneOperandNotSupported):
+                # TODO: Log error.
                 break
 
             if not asm:
@@ -550,10 +521,6 @@ class CFGRecover(object):
 
             # TODO: Process instructions without resorting to
             # asm.mnemonic or asm.prefix.
-
-            if asm.mnemonic == "ret":
-                bb.is_exit = True
-                break
 
             # If it is a RET instruction, break.
             if ir[-1].mnemonic == ReilMnemonic.JCC and \
@@ -611,17 +578,6 @@ class CFGRecover(object):
 
         return bb
 
-    def _extract_call_targets(self, bb):
-        targets = []
-
-        for dinstr in bb:
-            if dinstr.asm_instr.mnemonic in ["call", "bl"]:
-                assert dinstr.ir_instrs[-1].mnemonic == ReilMnemonic.JCC
-
-                targets.append(dinstr.ir_instrs[-1].operands[2])
-
-        return targets
-
     def _resolve_branch_address(self, branch_instr, instrs):
         target = branch_instr.operands[2]
 
@@ -666,6 +622,17 @@ class CFGRecover(object):
 
         return taken_branch, not_taken_branch, direct_branch
 
+    def _extract_call_targets(self, bb):
+        targets = []
+
+        for dinstr in bb:
+            if dinstr.asm_instr.mnemonic in ["call", "bl"]:
+                assert dinstr.ir_instrs[-1].mnemonic == ReilMnemonic.JCC
+
+                targets.append(dinstr.ir_instrs[-1].operands[2])
+
+        return targets
+
 
 class RecursiveDescent(CFGRecover):
 
@@ -701,7 +668,7 @@ class RecursiveDescent(CFGRecover):
                 bb.is_entry = True
 
             # Add new basic block to the list.
-            bbs += [bb]
+            bbs.append(bb)
 
             # Add current address to the list of processed addresses.
             addrs_processed.add(addr_curr)
@@ -736,7 +703,7 @@ class LinearSweep(CFGRecover):
 
             # Skip current address if:
             #   a. it has already been processed or
-            #   b. it is not within range ([start_address, end_address]) or
+            #   b. it is not within range ([start_address, end_address])
             if  addr_curr in addrs_processed or \
                 not start_address <= addr_curr <= end_address:
                 continue
@@ -750,7 +717,7 @@ class LinearSweep(CFGRecover):
                 bb.is_entry = True
 
             # Add new basic block to the list.
-            bbs += [bb]
+            bbs.append(bb)
 
             # Add current address to the list of processed addresses.
             addrs_processed.add(addr_curr)
@@ -764,6 +731,20 @@ class LinearSweep(CFGRecover):
                 addrs_to_process.put(next_addr)
 
         return bbs
+
+    def _bb_ends_in_direct_jmp(self, bb):
+        last_instr = bb.instrs[-1].ir_instrs[-1]
+
+        return  last_instr.mnemonic == ReilMnemonic.JCC and \
+                isinstance(last_instr.operands[0], ReilImmediateOperand) and \
+                last_instr.operands[0].immediate == 0x1
+
+    def _bb_ends_in_return(self, bb):
+        # TODO: Process instructions without resorting to
+        # asm.mnemonic or asm.prefix.
+        last_instr = bb.instrs[-1].asm_instr
+
+        return last_instr.mnemonic == "ret"
 
 
 class CFGRecoverer(object):
