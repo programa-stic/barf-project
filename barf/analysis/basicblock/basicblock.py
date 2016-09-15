@@ -845,7 +845,11 @@ class CFGSimpleRenderer(CFGRenderer):
     }
 
     # Node label template.
-    node_label_tpl = "{{<f0> {label:#010x} | {assembly}}}"
+    node_label_tpl = "{{<f0> {label} | {assembly}}}"
+
+    asm_fmt_tpl = "{address:08x} [{size:02d}] {assembly}\\l"
+
+    reil_fmt_tpl = " {index:02x} {assembly}\\l"
 
     def save(self, cfg, filename, print_ir=False, format='dot'):
         """Save basic block graph into a file.
@@ -876,7 +880,13 @@ class CFGSimpleRenderer(CFGRenderer):
         bb_addr = bb.address
         bb_dump = self._dump_bb(bb, print_ir)
 
-        node_label = self.node_label_tpl.format(label=bb_addr, assembly=bb_dump)
+        # Set node label
+        if bb.is_entry:
+            bb_label = "{} @ {:x}".format(name, bb_addr)
+        else:
+            bb_label = "loc_{:x}".format(bb_addr)
+
+        node_label = self.node_label_tpl.format(label=bb_label, assembly=bb_dump)
 
         return Node(bb_addr, label=node_label, **self.node_format)
 
@@ -895,34 +905,31 @@ class CFGSimpleRenderer(CFGRenderer):
         return asm_mnemonic_max_width
 
     def _dump_instr(self, instr, mnemonic_width, fill_char=""):
-        operands_str = ", ".join([str(oprnd) for oprnd in instr.operands])
+        oprnds_str = ", ".join([str(oprnd) for oprnd in instr.operands])
 
-        string  = instr.prefix + " " if instr.prefix else ""
-        string += instr.mnemonic + fill_char * (mnemonic_width - len(instr.mnemonic))
-        string += " " + operands_str if operands_str else ""
+        asm_str  = instr.prefix + " " if instr.prefix else ""
+        asm_str += instr.mnemonic + fill_char * (mnemonic_width - len(instr.mnemonic))
+        asm_str += " " + oprnds_str if oprnds_str else ""
 
         # html-encode colon character
         for char, encoding in self.html_entities.items():
-            string = string.replace(char, encoding)
+            asm_str = asm_str.replace(char, encoding)
 
-        return string
+        return asm_str
 
     def _dump_bb(self, basic_block, print_ir):
         lines = []
 
-        asm_fmt = "{address:08x} [{size:02d}] {assembly}\\l"
-        reil_fmt = " {index:02x} {assembly}\\l"
-
         asm_mnemonic_max_width = self._get_bb_max_instr_width(basic_block)
 
         for dinstr in basic_block:
-            asm_instr_str = self._dump_instr(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char="\\ ")
+            asm_str = self._dump_instr(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char="\\ ")
 
-            lines.append(asm_fmt.format(address=dinstr.address, size=dinstr.asm_instr.size, assembly=asm_instr_str))
+            lines.append(self.asm_fmt_tpl.format(address=dinstr.address, size=dinstr.asm_instr.size, assembly=asm_str))
 
             if print_ir:
                 for ir_instr in dinstr.ir_instrs:
-                    lines.append(reil_fmt.format(index=ir_instr.address & 0xff, assembly=ir_instr))
+                    lines.append(self.reil_fmt_tpl.format(index=ir_instr.address & 0xff, assembly=ir_instr))
 
         return "".join(lines)
 
@@ -988,6 +995,10 @@ class CFGSimpleRendererEx(CFGRenderer):
     node_label_tpl += '</table>'
     node_label_tpl += '>'
 
+    asm_fmt_tpl = "<tr><td align='left'>{address:08x} [{size:02d}] {assembly} </td></tr>"
+
+    reil_fmt_tpl = "<tr><td align='left'>              {assembly} </td></tr>"
+
     def save(self, cfg, filename, print_ir=False, format='dot'):
         """Save basic block graph into a file.
         """
@@ -1017,6 +1028,7 @@ class CFGSimpleRendererEx(CFGRenderer):
         bb_addr = bb.address
         bb_dump = self._dump_bb(bb, print_ir)
 
+        # Select node format
         if bb.is_entry and not bb.is_exit:
             node_format = dict(self.node_format_base, **self.node_format_entry)
         elif bb.is_exit and not bb.is_entry:
@@ -1026,6 +1038,7 @@ class CFGSimpleRendererEx(CFGRenderer):
         else:
             node_format = dict(self.node_format_base)
 
+        # Set node label
         if bb.is_entry:
             bb_label = "{} @ {:x}".format(name, bb_addr)
         else:
@@ -1054,33 +1067,30 @@ class CFGSimpleRendererEx(CFGRenderer):
         formatter.noclasses = True
         formatter.nowrap = True
 
-        operands_str = ", ".join([str(oprnd) for oprnd in instr.operands])
+        oprnds_str = ", ".join([str(oprnd) for oprnd in instr.operands])
 
-        asm_instr  = instr.prefix + " " if instr.prefix else ""
-        asm_instr += instr.mnemonic + fill_char * (mnemonic_width - len(instr.mnemonic))
-        asm_instr += " " + operands_str if operands_str else ""
+        asm_str  = instr.prefix + " " if instr.prefix else ""
+        asm_str += instr.mnemonic + fill_char * (mnemonic_width - len(instr.mnemonic))
+        asm_str += " " + oprnds_str if oprnds_str else ""
 
-        asm_instr = highlight(asm_instr, NasmLexer(), formatter)
-        asm_instr = asm_instr.replace("span", "font")
-        asm_instr = asm_instr.replace('style="color: ', 'color="')
+        asm_str = highlight(asm_str, NasmLexer(), formatter)
+        asm_str = asm_str.replace("span", "font")
+        asm_str = asm_str.replace('style="color: ', 'color="')
 
-        return asm_instr
+        return asm_str
 
     def _dump_bb(self, basic_block, print_ir):
         lines = []
 
-        asm_fmt = "<tr><td align='left'>{address:08x} [{size:02d}] {assembly} </td></tr>"
-        reil_fmt = "<tr><td align='left'>              {assembly} </td></tr>"
-
         asm_mnemonic_max_width = self._get_bb_max_instr_width(basic_block)
 
         for dinstr in basic_block:
-            asm_instr = self._dump_instr(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char=" ")
+            asm_str = self._dump_instr(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char=" ")
 
-            lines.append(asm_fmt.format(address=dinstr.address, size=dinstr.asm_instr.size, assembly=asm_instr))
+            lines.append(self.asm_fmt_tpl.format(address=dinstr.address, size=dinstr.asm_instr.size, assembly=asm_str))
 
             if print_ir:
                 for ir_instr in dinstr.ir_instrs:
-                    lines.append(reil_fmt.format(assembly=ir_instr))
+                    lines.append(self.reil_fmt_tpl.format(assembly=ir_instr))
 
         return "".join(lines)
