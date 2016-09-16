@@ -720,6 +720,27 @@ class CFGRenderer(object):
     def save(self):
         raise NotImplementedError()
 
+    def _get_bb_max_instr_width(self, basic_block):
+        """Get maximum instruction mnemonic width
+        """
+        asm_mnemonic_max_width = 0
+
+        for dinstr in basic_block:
+            if len(dinstr.asm_instr.mnemonic) > asm_mnemonic_max_width:
+                asm_mnemonic_max_width = len(dinstr.asm_instr.mnemonic)
+
+        return asm_mnemonic_max_width
+
+    def _get_bb_type(self, bb):
+        if bb.is_entry:
+            bb_type = "entry"
+        elif bb.is_exit:
+            bb_type = "exit"
+        else:
+            bb_type = "other"
+
+        return bb_type
+
 
 class CFGSimpleRenderer(CFGRenderer):
 
@@ -737,31 +758,29 @@ class CFGSimpleRenderer(CFGRenderer):
         'fontsize' : '9.0',
     }
 
+    node_color = {
+        'entry' : 'black',
+        'exit'  : 'black',
+        'other' : 'black',
+    }
+
     edge_format = {
         'fontname' : 'monospace',
         'fontsize' : '8.0',
     }
 
-    edge_colors = {
+    edge_color = {
         'taken'     : 'green',
         'not-taken' : 'red',
         'direct'    : 'blue',
     }
 
-    html_entities = {
-        "!" : "&#33;",
-        "#" : "&#35;",
-        ":" : "&#58;",
-        "{" : "&#123;",
-        "}" : "&#125;",
-    }
+    # Templates.
+    bb_tpl = "{{<f0> {label} | {assembly}}}"
 
-    # Node label template.
-    node_label_tpl = "{{<f0> {label} | {assembly}}}"
+    asm_tpl = "{address:08x} [{size:02d}] {assembly}\\l"
 
-    asm_fmt_tpl = "{address:08x} [{size:02d}] {assembly}\\l"
-
-    reil_fmt_tpl = " {index:02x} {assembly}\\l"
+    reil_tpl = " {index:02x} {assembly}\\l"
 
     def save(self, cfg, filename, print_ir=False, format='dot'):
         """Save basic block graph into a file.
@@ -789,34 +808,15 @@ class CFGSimpleRenderer(CFGRenderer):
             logger.error("Failed to save basic block graph: %s (%s)", filename, format, exc_info=True)
 
     def _create_node(self, bb, name, print_ir):
-        bb_addr = bb.address
-        bb_dump = self._dump_bb(bb, print_ir)
+        bb_dump = self._render_bb(bb, name, print_ir)
+        bb_type = self._get_bb_type(bb)
 
-        # Set node label
-        if bb.is_entry:
-            bb_label = "{} @ {:x}".format(name, bb_addr)
-        else:
-            bb_label = "loc_{:x}".format(bb_addr)
-
-        node_label = self.node_label_tpl.format(label=bb_label, assembly=bb_dump)
-
-        return Node(bb_addr, label=node_label, **self.node_format)
+        return Node(bb.address, label=bb_dump, color=self.node_color[bb_type], **self.node_format)
 
     def _create_edge(self, src, dst, branch_type):
-        return Edge(src, dst, color=self.edge_colors[branch_type], **self.edge_format)
+        return Edge(src, dst, color=self.edge_color[branch_type], **self.edge_format)
 
-    def _get_bb_max_instr_width(self, basic_block):
-        """Get maximum instruction mnemonic width
-        """
-        asm_mnemonic_max_width = 0
-
-        for dinstr in basic_block:
-            if len(dinstr.asm_instr.mnemonic) > asm_mnemonic_max_width:
-                asm_mnemonic_max_width = len(dinstr.asm_instr.mnemonic)
-
-        return asm_mnemonic_max_width
-
-    def _dump_instr(self, instr, mnemonic_width, fill_char=""):
+    def _render_asm(self, instr, mnemonic_width, fill_char=""):
         oprnds_str = ", ".join([str(oprnd) for oprnd in instr.operands])
 
         asm_str  = instr.prefix + " " if instr.prefix else ""
@@ -824,26 +824,47 @@ class CFGSimpleRenderer(CFGRenderer):
         asm_str += " " + oprnds_str if oprnds_str else ""
 
         # html-encode colon character
-        for char, encoding in self.html_entities.items():
+        html_entities = {
+            "!" : "&#33;",
+            "#" : "&#35;",
+            ":" : "&#58;",
+            "{" : "&#123;",
+            "}" : "&#125;",
+        }
+
+        for char, encoding in html_entities.items():
             asm_str = asm_str.replace(char, encoding)
 
-        return asm_str
+        return self.asm_tpl.format(address=instr.address, size=instr.size, assembly=asm_str)
 
-    def _dump_bb(self, basic_block, print_ir):
+    def _render_reil(self, instr):
+        return self.reil_tpl.format(index=instr.address & 0xff, assembly=instr)
+
+    def _render_bb(self, basic_block, name, print_ir):
         lines = []
 
         asm_mnemonic_max_width = self._get_bb_max_instr_width(basic_block)
 
         for dinstr in basic_block:
-            asm_str = self._dump_instr(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char="\\ ")
-
-            lines.append(self.asm_fmt_tpl.format(address=dinstr.address, size=dinstr.asm_instr.size, assembly=asm_str))
+            asm_str = self._render_asm(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char="\\ ")
+            lines.append(asm_str)
 
             if print_ir:
                 for ir_instr in dinstr.ir_instrs:
-                    lines.append(self.reil_fmt_tpl.format(index=ir_instr.address & 0xff, assembly=ir_instr))
+                    reil_str = self._render_reil(ir_instr)
+                    lines.append(reil_str)
 
-        return "".join(lines)
+        bb_dump = "".join(lines)
+
+        # Set node label
+        bb_addr = basic_block.address
+
+        if basic_block.is_entry:
+            bb_label = "{} @ {:x}".format(name, bb_addr)
+        else:
+            bb_label = "loc_{:x}".format(bb_addr)
+
+        return self.bb_tpl.format(label=bb_label, assembly=bb_dump)
 
 
 class CFGSimpleRendererEx(CFGRenderer):
@@ -863,24 +884,12 @@ class CFGSimpleRendererEx(CFGRenderer):
         # 'splines'    : 'ortho', # NOTE This option brings up performance issues.
     }
 
-    node_format_base = {
+    node_format = {
         'fontname'  : fontname,
         'fontsize'  : 9.0,
         'penwidth'  : 0.5,
         'rankdir'   : 'LR',
         'shape'     : 'plaintext',
-    }
-
-    node_format_entry = {
-        'pencolor' : 'orange',
-    }
-
-    node_format_exit = {
-        'pencolor' : 'gray',
-    }
-
-    node_format_entry_exit = {
-        'pencolor' : 'gray',
     }
 
     edge_format = {
@@ -891,25 +900,31 @@ class CFGSimpleRendererEx(CFGRenderer):
         'penwidth'  : 0.5,
     }
 
-    edge_colors = {
+    node_color = {
+        'entry' : 'orange',
+        'exit'  : 'gray',
+        'other' : 'black',
+    }
+
+    edge_color = {
         'direct'    : 'blue',
         'not-taken' : 'red',
         'taken'     : 'darkgreen',
     }
 
-    # Node label template.
-    node_label_tpl  = '<'
-    node_label_tpl += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
-    node_label_tpl += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
-    node_label_tpl += '  <tr><td align="left" cellspacing="1">{label}</td></tr>'
-    node_label_tpl += '  {assembly}'
-    node_label_tpl += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
-    node_label_tpl += '</table>'
-    node_label_tpl += '>'
+    # Templates.
+    bb_tpl  = '<'
+    bb_tpl += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
+    bb_tpl += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
+    bb_tpl += '  <tr><td align="left" cellspacing="1">{label}</td></tr>'
+    bb_tpl += '  {assembly}'
+    bb_tpl += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
+    bb_tpl += '</table>'
+    bb_tpl += '>'
 
-    asm_fmt_tpl = "<tr><td align='left'>{address:08x} [{size:02d}] {assembly} </td></tr>"
+    asm_tpl = "<tr><td align='left'>{address:08x} [{size:02d}] {assembly} </td></tr>"
 
-    reil_fmt_tpl = "<tr><td align='left'>              {assembly} </td></tr>"
+    reil_tpl = "<tr><td align='left'>              {assembly} </td></tr>"
 
     def save(self, cfg, filename, print_ir=False, format='dot'):
         """Save basic block graph into a file.
@@ -937,44 +952,15 @@ class CFGSimpleRendererEx(CFGRenderer):
             logger.error("Failed to save basic block graph: %s (%s)", filename, format, exc_info=True)
 
     def _create_node(self, bb, name, print_ir):
-        bb_addr = bb.address
-        bb_dump = self._dump_bb(bb, print_ir)
+        bb_dump = self._render_bb(bb, name, print_ir)
+        bb_type = self._get_bb_type(bb)
 
-        # Select node format
-        if bb.is_entry and not bb.is_exit:
-            node_format = dict(self.node_format_base, **self.node_format_entry)
-        elif bb.is_exit and not bb.is_entry:
-            node_format = dict(self.node_format_base, **self.node_format_exit)
-        elif bb.is_entry and bb.is_exit:
-            node_format = dict(self.node_format_base, **self.node_format_entry_exit)
-        else:
-            node_format = dict(self.node_format_base)
-
-        # Set node label
-        if bb.is_entry:
-            bb_label = "{} @ {:x}".format(name, bb_addr)
-        else:
-            bb_label = "loc_{:x}".format(bb_addr)
-
-        node_label = self.node_label_tpl.format(label=bb_label, assembly=bb_dump)
-
-        return Node(bb_addr, label=node_label, **node_format)
+        return Node(bb.address, label=bb_dump, color=self.node_color[bb_type], **self.node_format)
 
     def _create_edge(self, src, dst, branch_type):
-        return Edge(src, dst, color=self.edge_colors[branch_type], **self.edge_format)
+        return Edge(src, dst, color=self.edge_color[branch_type], **self.edge_format)
 
-    def _get_bb_max_instr_width(self, basic_block):
-        """Get maximum instruction mnemonic width
-        """
-        asm_mnemonic_max_width = 0
-
-        for dinstr in basic_block:
-            if len(dinstr.asm_instr.mnemonic) > asm_mnemonic_max_width:
-                asm_mnemonic_max_width = len(dinstr.asm_instr.mnemonic)
-
-        return asm_mnemonic_max_width
-
-    def _dump_instr(self, instr, mnemonic_width, fill_char=""):
+    def _render_asm(self, instr, mnemonic_width, fill_char=""):
         formatter = HtmlFormatter()
         formatter.noclasses = True
         formatter.nowrap = True
@@ -989,20 +975,33 @@ class CFGSimpleRendererEx(CFGRenderer):
         asm_str = asm_str.replace("span", "font")
         asm_str = asm_str.replace('style="color: ', 'color="')
 
-        return asm_str
+        return self.asm_tpl.format(address=instr.address, size=instr.size, assembly=asm_str)
 
-    def _dump_bb(self, basic_block, print_ir):
+    def _render_reil(self, instr):
+        return self.reil_tpl.format(assembly=instr)
+
+    def _render_bb(self, basic_block, name, print_ir):
         lines = []
 
         asm_mnemonic_max_width = self._get_bb_max_instr_width(basic_block)
 
         for dinstr in basic_block:
-            asm_str = self._dump_instr(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char=" ")
-
-            lines.append(self.asm_fmt_tpl.format(address=dinstr.address, size=dinstr.asm_instr.size, assembly=asm_str))
+            asm_str = self._render_asm(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char=" ")
+            lines.append(asm_str)
 
             if print_ir:
                 for ir_instr in dinstr.ir_instrs:
-                    lines.append(self.reil_fmt_tpl.format(assembly=ir_instr))
+                    reil_str = self._render_reil(ir_instr)
+                    lines.append(reil_str)
 
-        return "".join(lines)
+        bb_dump = "".join(lines)
+
+        # Set node label
+        bb_addr = basic_block.address
+
+        if basic_block.is_entry:
+            bb_label = "{} @ {:x}".format(name, bb_addr)
+        else:
+            bb_label = "loc_{:x}".format(bb_addr)
+
+        return self.bb_tpl.format(label=bb_label, assembly=bb_dump)
