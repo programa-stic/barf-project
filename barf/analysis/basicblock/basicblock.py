@@ -415,10 +415,10 @@ class CFGRecover(object):
         self._disasm = disassembler
 
         # An instance of a REIL translator.
-        self._ir_trans = translator
+        self._translator = translator
 
         # Memory of the program being analyze.
-        self._mem = memory
+        self._memory = memory
 
         # Architecture information of the binary.
         self._arch_info = arch_info
@@ -489,78 +489,6 @@ class CFGRecover(object):
 
         return bb_lower_half, bb_upper_half
 
-    def _is_ret(self, asm, ir):
-        # TODO: Process instructions without resorting to
-        # asm.mnemonic or asm.prefix.
-        is_ret = False
-
-        # x86: "RET" instr.
-        if ir[-1].mnemonic == ReilMnemonic.JCC and \
-           isinstance(self._arch_info, X86ArchitectureInformation) and \
-           asm.mnemonic == "ret":
-            is_ret = True
-
-        # ARM: "POP reg, {reg*, pc}" instr.
-        if isinstance(self._arch_info, ArmArchitectureInformation) and \
-           asm.mnemonic == "pop" and \
-           ("pc" in str(asm.operands[1]) or "r15" in str(asm.operands[1])):
-            is_ret = True
-
-        # ARM: "LDR pc, *" instr.
-        if isinstance(self._arch_info, ArmArchitectureInformation) and \
-           asm.mnemonic == "ldr" and \
-           ("pc" in str(asm.operands[0]) or "r15" in str(asm.operands[0])):
-            is_ret = True
-
-        return is_ret
-
-    def _is_call(self, asm, ir):
-        # TODO: Process instructions without resorting to
-        # asm.mnemonic or asm.prefix.
-        is_call = False
-
-        # x86
-        if ir[-1].mnemonic == ReilMnemonic.JCC and \
-           isinstance(self._arch_info, X86ArchitectureInformation) and \
-           asm.mnemonic == "call":
-            is_call = True
-
-        # ARM
-        if ir[-1].mnemonic == ReilMnemonic.JCC and \
-           isinstance(self._arch_info, ArmArchitectureInformation) and \
-           asm.mnemonic == "bl":
-            is_call = True
-
-        return is_call
-
-    def _is_halt(self, asm, ir):
-        is_halt = False
-
-        # x86: "HALT" instr.
-        if isinstance(self._arch_info, X86ArchitectureInformation) and \
-           asm.mnemonic == "hlt":
-            is_halt = True
-
-        return is_halt
-
-    def _is_branch(self, asm, ir):
-        is_branch = False
-
-        # x86
-        if ir[-1].mnemonic == ReilMnemonic.JCC and \
-           isinstance(self._arch_info, X86ArchitectureInformation) and \
-           not asm.mnemonic == "call" and \
-           not asm.prefix in ["rep", "repe", "repne", "repz"]:
-            is_branch = True
-
-        # ARM
-        if ir[-1].mnemonic == ReilMnemonic.JCC and \
-           isinstance(self._arch_info, ArmArchitectureInformation) and \
-           not asm.mnemonic in ["blx", "bl"]:
-            is_branch = True
-
-        return is_branch
-
     def _is_function_nonreturn(self, address, symbols):
         return address in symbols and not symbols[address][2]
 
@@ -572,23 +500,23 @@ class CFGRecover(object):
         while addr < end:
             try:
                 data_end = addr + self._arch_info.max_instruction_size
-                data_chunk = self._mem[addr:min(data_end, end)]
+                data_chunk = self._memory[addr:min(data_end, end)]
                 asm = self._disasm.disassemble(data_chunk, addr)
             except (DisassemblerError, InvalidAddressError):
                 logger.warn("Error while disassembling @ {:#x}".format(addr))
                 break
 
-            ir = self._ir_trans.translate(asm)
+            ir = self._translator.translate(asm)
 
             bb.instrs.append(DualInstruction(addr, asm, ir))
 
             # If it is a RET or HALT instruction, break.
-            if self._is_ret(asm, ir) or self._is_halt(asm, ir):
+            if self._arch_info.instr_is_ret(asm) or self._arch_info.instr_is_halt(asm):
                 bb.is_exit = True
                 break
 
             # If it is a CALL instruction and the callee does not return, break.
-            if self._is_call(asm, ir):
+            if self._arch_info.instr_is_call(asm):
                 target_oprnd = ir[-1].operands[2]
 
                 if isinstance(target_oprnd, ReilImmediateOperand):
@@ -599,7 +527,7 @@ class CFGRecover(object):
                         break
 
             # If it is a BRANCH instruction, extract targets and break.
-            if self._is_branch(asm, ir):
+            if self._arch_info.instr_is_branch(asm):
                 taken, not_taken, direct = self._extract_branch_targets(asm, ir)
 
                 # Jump to a function?

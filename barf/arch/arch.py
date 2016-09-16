@@ -59,3 +59,19 @@ class ArchitectureInformation(object):
     @property
     def registers(self):
         raise NotImplementedError()
+
+    @property
+    def max_instruction_size(self):
+        raise NotImplementedError()
+
+    def instr_is_ret(self, instruction):
+        raise NotImplementedError()
+
+    def instr_is_call(self, instruction):
+        raise NotImplementedError()
+
+    def instr_is_halt(self, instruction):
+        raise NotImplementedError()
+
+    def instr_is_branch(self, instruction):
+        raise NotImplementedError()
