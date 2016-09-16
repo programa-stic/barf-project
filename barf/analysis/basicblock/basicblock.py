@@ -33,8 +33,9 @@ from pydot import Edge
 from pydot import Node
 
 from barf.arch.arm.armbase import ArmArchitectureInformation
-from barf.arch.arm.armdisassembler import InvalidDisassemblerData, CapstoneOperandNotSupported
 from barf.arch.x86.x86base import X86ArchitectureInformation
+from barf.core.bi import InvalidAddressError
+from barf.core.disassembler import DisassemblerError
 from barf.core.reil import DualInstruction
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilMnemonic
@@ -416,9 +417,6 @@ class CFGRecover(object):
         # An instance of a REIL translator.
         self._ir_trans = translator
 
-        # Maximum number of bytes that gets from memory to disassemble.
-        self._lookahead_max = 16
-
         # Memory of the program being analyze.
         self._mem = memory
 
@@ -437,7 +435,7 @@ class CFGRecover(object):
         symbols = {} if not symbols else symbols
 
         # Find candidates for basic blocks.
-        bbs = self._recover_bbs(start_address, end_address, symbols=symbols)
+        bbs = self._recover_bbs(start_address, end_address, symbols)
         bbs = self._split_bbs(bbs, symbols)
 
         # Extract call targets for further processing.
@@ -449,7 +447,7 @@ class CFGRecover(object):
 
         return bbs, call_targets
 
-    def _recover_bbs(self, start_address, end_address, symbols=None):
+    def _recover_bbs(self, start, end, symbols):
         raise NotImplementedError()
 
     def _split_bbs(self, bbs, symbols):
@@ -566,21 +564,18 @@ class CFGRecover(object):
     def _is_function_nonreturn(self, address, symbols):
         return address in symbols and not symbols[address][2]
 
-    def _disassemble_bb(self, start_address, end_address, symbols):
+    def _disassemble_bb(self, start, end, symbols):
         bb = BasicBlock()
-        addr = start_address
+        addr = start
         taken, not_taken, direct = None, None, None
 
-        while addr < end_address:
+        while addr < end:
             try:
-                end = addr + self._lookahead_max
-                data_chunk = self._mem[addr:min(end, end_address)]
+                data_end = addr + self._arch_info.max_instruction_size
+                data_chunk = self._mem[addr:min(data_end, end)]
                 asm = self._disasm.disassemble(data_chunk, addr)
-            except (IndexError, InvalidDisassemblerData, CapstoneOperandNotSupported):
+            except (DisassemblerError, InvalidAddressError):
                 logger.warn("Error while disassembling @ {:#x}".format(addr))
-                break
-
-            if not asm:
                 break
 
             ir = self._ir_trans.translate(asm)
@@ -597,7 +592,7 @@ class CFGRecover(object):
                 target_oprnd = ir[-1].operands[2]
 
                 if isinstance(target_oprnd, ReilImmediateOperand):
-                    target_addr = ir[-1].operands[2].immediate >> 0x8
+                    target_addr = target_oprnd.immediate >> 0x8
 
                     if self._is_function_nonreturn(target_addr, symbols):
                         bb.is_exit = True
@@ -683,39 +678,35 @@ class RecursiveDescent(CFGRecover):
     def __init__(self, disassembler, memory, translator, arch_info):
         super(RecursiveDescent, self).__init__(disassembler, memory, translator, arch_info)
 
-    def _recover_bbs(self, start_address, end_address, symbols=None):
-        symbols = {} if not symbols else symbols
-
+    def _recover_bbs(self, start, end, symbols):
         bbs = []
-
         addrs_to_process = Queue()
         addrs_processed = set()
 
-        addrs_to_process.put(start_address)
+        addrs_to_process.put(start)
 
         while not addrs_to_process.empty():
-            addr_curr = addrs_to_process.get()
+            addr = addrs_to_process.get()
 
             # Skip current address if:
             #   a. it has already been processed or
-            #   b. it is not within range ([start_address, end_address])
-            if addr_curr in addrs_processed or \
-               not start_address <= addr_curr <= end_address:
+            #   b. it is not within range ([start, end])
+            if addr in addrs_processed or not start <= addr <= end:
                 continue
 
-            bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols)
+            bb = self._disassemble_bb(addr, end + 0x1, symbols)
 
             if bb.empty():
                 continue
 
-            if bb.address == start_address:
+            if bb.address == start:
                 bb.is_entry = True
 
             # Add new basic block to the list.
             bbs.append(bb)
 
             # Add current address to the list of processed addresses.
-            addrs_processed.add(addr_curr)
+            addrs_processed.add(addr)
 
             # Recursive descent mode: add branches to process queue.
             for addr, _ in bb.branches:
@@ -732,47 +723,43 @@ class LinearSweep(CFGRecover):
     def __init__(self, disassembler, memory, translator, arch_info):
         super(LinearSweep, self).__init__(disassembler, memory, translator, arch_info)
 
-    def _recover_bbs(self, start_address, end_address, symbols=None):
-        symbols = {} if not symbols else symbols
-
+    def _recover_bbs(self, start, end, symbols):
         bbs = []
-
         addrs_to_process = Queue()
         addrs_processed = set()
 
-        addrs_to_process.put(start_address)
+        addrs_to_process.put(start)
 
         while not addrs_to_process.empty():
-            addr_curr = addrs_to_process.get()
+            addr = addrs_to_process.get()
 
             # Skip current address if:
             #   a. it has already been processed or
-            #   b. it is not within range ([start_address, end_address])
-            if addr_curr in addrs_processed or \
-               not start_address <= addr_curr <= end_address:
+            #   b. it is not within range ([start, end])
+            if addr in addrs_processed or not start <= addr <= end:
                 continue
 
-            bb = self._disassemble_bb(addr_curr, end_address + 0x1, symbols)
+            bb = self._disassemble_bb(addr, end + 0x1, symbols)
 
             if bb.empty():
                 continue
 
-            if bb.address == start_address:
+            if bb.address == start:
                 bb.is_entry = True
 
             # Add new basic block to the list.
             bbs.append(bb)
 
             # Add current address to the list of processed addresses.
-            addrs_processed.add(addr_curr)
+            addrs_processed.add(addr)
 
             # Linear sweep mode: add next address to process queue.
-            next_addr = bb.address + bb.size
+            addr_next = bb.address + bb.size
 
             if not self._bb_ends_in_direct_jmp(bb) and \
                not self._bb_ends_in_return(bb) and \
-               not next_addr in addrs_processed:
-                addrs_to_process.put(next_addr)
+               not addr_next in addrs_processed:
+                addrs_to_process.put(addr_next)
 
         return bbs
 

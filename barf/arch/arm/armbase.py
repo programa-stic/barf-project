@@ -257,6 +257,17 @@ class ArmArchitectureInformation(ArchitectureInformation):
         """
         return self._alias_mapper
 
+    @property
+    def max_instruction_size(self):
+        """Return the maximum instruction size in bytes.
+        """
+        instruction_size_map = {
+            ARCH_ARM_MODE_ARM : 4,
+            ARCH_ARM_MODE_THUMB : 2,
+        }
+
+        return instruction_size_map[self._arch_mode]
+
     def _load_alias_mapper(self):
         alias_mapper = {
             "fp" : ("r11", 0),

@@ -25,6 +25,10 @@
 """Generic Disassembler Interface.
 """
 
+class DisassemblerError(Exception):
+    pass
+
+
 class InvalidDisassemblerData(Exception):
     pass
 

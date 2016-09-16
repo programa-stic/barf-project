@@ -305,6 +305,17 @@ class X86ArchitectureInformation(ArchitectureInformation):
         """
         return self._alias_mapper
 
+    @property
+    def max_instruction_size(self):
+        """Return the maximum instruction size in bytes.
+        """
+        instruction_size_map = {
+            ARCH_X86_MODE_32 : 16,
+            ARCH_X86_MODE_64 : 16,
+        }
+
+        return instruction_size_map[self._arch_mode]
+
     def _load_alias_mapper(self):
         if self._arch_mode == ARCH_X86_MODE_32:
             alias_mapper = {
