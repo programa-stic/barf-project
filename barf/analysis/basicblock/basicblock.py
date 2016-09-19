@@ -593,7 +593,7 @@ class CFGRecover(object):
         targets = []
 
         for dinstr in bb:
-            if dinstr.asm_instr.mnemonic in ["call", "bl"]:
+            if self._arch_info.instr_is_call(dinstr.asm_instr):
                 assert dinstr.ir_instrs[-1].mnemonic == ReilMnemonic.JCC
 
                 targets.append(dinstr.ir_instrs[-1].operands[2])
