@@ -205,7 +205,7 @@ def main():
 
     cg = CallGraph(cfgs_filtered)
 
-    cg.save_ex(filename.split(os.path.sep)[-1] + "_callgraph")
+    cg.save(filename.split(os.path.sep)[-1] + "_callgraph")
 
     process_end = time.time()
 
