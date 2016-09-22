@@ -32,8 +32,9 @@ import time
 
 import arch
 
-# from analysis.basicblock import BasicBlockBuilder
+from analysis.basicblock import CFGRecoverer
 from analysis.basicblock import ControlFlowGraph
+from analysis.basicblock import RecursiveDescent
 from analysis.codeanalyzer import CodeAnalyzer
 from analysis.gadget import GadgetClassifier
 from analysis.gadget import GadgetFinder
@@ -50,15 +51,13 @@ from core.smt.smtlibv2 import CVC4Solver
 from core.smt.smtlibv2 import Z3Solver
 from core.smt.smttranslator import SmtTranslator
 
-from analysis.basicblock import CFGRecoverer
-from analysis.basicblock import RecursiveDescent
-
 logger = logging.getLogger(__name__)
 
 # Choose between SMT Solvers...
 SMT_SOLVER = "Z3"
 # SMT_SOLVER = "CVC4"
 # SMT_SOLVER = None
+
 
 class BARF(object):
     """Binary Analysis Framework."""
@@ -155,9 +154,7 @@ class BARF(object):
         """Set up analysis modules.
         """
         ## basic block
-        # self.bb_builder = BasicBlockBuilder(self.disassembler, self.text_section, self.ir_translator, self.arch_info)
         self.bb_builder = CFGRecoverer(RecursiveDescent(self.disassembler, self.text_section, self.ir_translator, self.arch_info))
-
 
         ## code analyzer
         self.code_analyzer = CodeAnalyzer(self.smt_solver, self.smt_translator, self.arch_info)
