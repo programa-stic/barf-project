@@ -347,6 +347,16 @@ class ControlFlowGraph(object):
 
         return (map(lambda addr: self._bb_by_addr[addr], path) for path in paths)
 
+    def find_basic_block(self, start):
+        bb_rv = None
+
+        for bb in self._basic_blocks:
+            if bb.address == start:
+                bb_rv = bb
+                break
+
+        return bb_rv
+
     def save(self, filename, print_ir=False, format='dot'):
         # renderer = CFGSimpleRenderer()
         renderer = CFGSimpleRendererEx()
