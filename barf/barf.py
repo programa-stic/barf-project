@@ -243,71 +243,39 @@ class BARF(object):
     def recover_cfg(self, ea_start=None, ea_end=None, symbols=None, callback=None, arch_mode=None):
         """Recover CFG
 
-        :param ea_start: start address
-        :type ea_start: int
-        :param ea_end: end address
-        :type ea_end: int
-
-        :returns: a graph where each node is a basic block
-        :rtype: ControlFlowGraph
+        :int start: Start address.
+        :int end: End address.
+        :returns: A CFG.
 
         """
+        # Set architecture in case it wasn't already set.
         if arch_mode == None:
             arch_mode = self.binary.architecture_mode
 
         # Reload modules.
         self._load(arch_mode=arch_mode)
 
-        cfg, _ = self._recover_cfg(ea_start=ea_start, ea_end=ea_end, symbols=symbols, callback=callback)
+        cfg, _ = self._recover_cfg(start=ea_start, ea_end=end, symbols=symbols, callback=callback)
 
         return cfg
 
-    def _recover_cfg(self, ea_start=None, ea_end=None, symbols=None, callback=None):
-        """Recover CFG
-
-        :param ea_start: start address
-        :type ea_start: int
-        :param ea_end: end address
-        :type ea_end: int
-
-        :returns: a graph where each node is a basic block
-        :rtype: ControlFlowGraph
-
-        """
-        if symbols and ea_start in symbols:
-            name = symbols[ea_start][0]
-            size = symbols[ea_start][1] - 1 if symbols[ea_start][1] != 0 else 0
-        else:
-            name = "sub_{:x}".format(ea_start)
-            size = 0
-
-        start_addr = ea_start if ea_start else self.binary.ea_start
-        end_addr = ea_end if ea_end else self.binary.ea_end
-
-        if callback:
-            callback(ea_start, name, size)
-
-        bbs, calls = self.bb_builder.build(start_addr, end_addr, symbols)
-
-        cfg = ControlFlowGraph(bbs, name=name)
-
-        return cfg, calls
-
     def recover_cfg_all(self, start, callback=None, arch_mode=None):
-        """Recover CFG for all functions
+        """Recover CFG for all functions from an entry point.
 
-        :param start: start address
-
-        :returns: a list of graphs
-        :rtype: List of ControlFlowGraph
+        :int start: Start address.
+        :returns: A list of CFGs.
 
         """
+        # Set architecture in case it wasn't already set.
         if arch_mode == None:
             arch_mode = self.binary.architecture_mode
 
         # Reload modules.
         self._load(arch_mode=arch_mode)
 
+        symbols = {}
+
+        # Recover the CFGs.
         cfgs = []
         addrs_processed = set()
         calls = [start]
@@ -315,7 +283,7 @@ class BARF(object):
         while len(calls) > 0:
             start, calls = calls[0], calls[1:]
 
-            cfg, calls_tmp = self._recover_cfg(ea_start=start, callback=callback)
+            cfg, calls_tmp = self._recover_cfg(start=start, symbols=symbols, callback=callback)
 
             addrs_processed.add(start)
 
@@ -328,39 +296,28 @@ class BARF(object):
         return cfgs
 
     def recover_cfg_all_ex(self, symbols, callback=None, arch_mode=None):
-        """Recover CFG for all functions
+        """Recover CFG for all functions from symbols
 
-        :param start: start address
-
-        :returns: a list of graphs
-        :rtype: List of ControlFlowGraph
+        :int start: Start address.
+        :returns: A list of CFGs.
 
         """
+        # Set architecture in case it wasn't already set.
         if arch_mode == None:
             arch_mode = self.binary.architecture_mode
 
         # Reload modules.
         self._load(arch_mode=arch_mode)
 
+        # Recover the CFGs.
         cfgs = []
         addrs_processed = set()
-        calls = []
-
-        for addr in sorted(symbols.keys()):
-            cfg, calls_tmp = self._recover_cfg(ea_start=addr, symbols=symbols, callback=callback)
-
-            addrs_processed.add(addr)
-
-            cfgs.append(cfg)
-
-            for addr in sorted(calls_tmp):
-                if not addr in addrs_processed and not addr in calls:
-                    calls.append(addr)
+        calls = [addr for addr in sorted(symbols.keys())]
 
         while len(calls) > 0:
             start, calls = calls[0], calls[1:]
 
-            cfg, calls_tmp = self._recover_cfg(ea_start=start, callback=callback)
+            cfg, calls_tmp = self._recover_cfg(start=start, symbols=symbols, callback=callback)
 
             addrs_processed.add(start)
 
@@ -371,6 +328,34 @@ class BARF(object):
                     calls.append(addr)
 
         return cfgs
+
+    def _recover_cfg(self, start=None, end=None, symbols=None, callback=None):
+        """Recover CFG
+
+        """
+        # Retrieve symbol name in case it is available.
+        if symbols and start in symbols:
+            name = symbols[start][0]
+            size = symbols[start][1] - 1 if symbols[start][1] != 0 else 0
+        else:
+            name = "sub_{:x}".format(start)
+            size = 0
+
+        # Compute start and end address.
+        start_addr = start if start else self.binary.ea_start
+        end_addr = end if end else self.binary.ea_end
+
+        # Set callback.
+        if callback:
+            callback(start, name, size)
+
+        # Recover basic blocks.
+        bbs, calls = self.bb_builder.build(start_addr, end_addr, symbols)
+
+        # Build CFG.
+        cfg = ControlFlowGraph(bbs, name=name)
+
+        return cfg, calls
 
     def recover_bbs(self, ea_start=None, ea_end=None):
         """Recover basic blocks.
