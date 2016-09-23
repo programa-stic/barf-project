@@ -40,6 +40,8 @@ from barf.core.reil import DualInstruction
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilMnemonic
 
+from barf.core.disassembler import InvalidDisassemblerData
+
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers.asm import NasmLexer
@@ -512,8 +514,8 @@ class CFGRecover(object):
                 data_end = addr + self._arch_info.max_instruction_size
                 data_chunk = self._memory[addr:min(data_end, end)]
                 asm = self._disasm.disassemble(data_chunk, addr)
-            except (DisassemblerError, InvalidAddressError):
-                logger.warn("Error while disassembling @ {:#x}".format(addr))
+            except (DisassemblerError, InvalidAddressError, InvalidDisassemblerData):
+                logger.warn("Error while disassembling @ {:#x}".format(addr), exc_info=True)
                 break
 
             ir = self._translator.translate(asm)
