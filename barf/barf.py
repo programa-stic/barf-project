@@ -276,22 +276,7 @@ class BARF(object):
         symbols = {}
 
         # Recover the CFGs.
-        cfgs = []
-        addrs_processed = set()
-        calls = [start]
-
-        while len(calls) > 0:
-            start, calls = calls[0], calls[1:]
-
-            cfg, calls_tmp = self._recover_cfg(start=start, symbols=symbols, callback=callback)
-
-            addrs_processed.add(start)
-
-            cfgs.append(cfg)
-
-            for addr in sorted(calls_tmp):
-                if not addr in addrs_processed and not addr in calls:
-                    calls.append(addr)
+        cfgs = self._recover_cfg_all([start], symbols, callback)
 
         return cfgs
 
@@ -310,22 +295,7 @@ class BARF(object):
         self._load(arch_mode=arch_mode)
 
         # Recover the CFGs.
-        cfgs = []
-        addrs_processed = set()
-        calls = [addr for addr in sorted(symbols.keys())]
-
-        while len(calls) > 0:
-            start, calls = calls[0], calls[1:]
-
-            cfg, calls_tmp = self._recover_cfg(start=start, symbols=symbols, callback=callback)
-
-            addrs_processed.add(start)
-
-            cfgs.append(cfg)
-
-            for addr in sorted(calls_tmp):
-                if not addr in addrs_processed and not addr in calls:
-                    calls.append(addr)
+        cfgs = self._recover_cfg_all([addr for addr in sorted(symbols.keys())], symbols, callback)
 
         return cfgs
 
@@ -356,6 +326,26 @@ class BARF(object):
         cfg = ControlFlowGraph(bbs, name=name)
 
         return cfg, calls
+
+    def _recover_cfg_all(self, entries, symbols, callback):
+        cfgs = []
+        addrs_processed = set()
+        calls = entries
+
+        while len(calls) > 0:
+            start, calls = calls[0], calls[1:]
+
+            cfg, calls_tmp = self._recover_cfg(start=start, symbols=symbols, callback=callback)
+
+            addrs_processed.add(start)
+
+            cfgs.append(cfg)
+
+            for addr in sorted(calls_tmp):
+                if not addr in addrs_processed and not addr in calls:
+                    calls.append(addr)
+
+        return cfgs
 
     def recover_bbs(self, ea_start=None, ea_end=None):
         """Recover basic blocks.
