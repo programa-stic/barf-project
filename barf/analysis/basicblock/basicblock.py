@@ -33,14 +33,15 @@ from pydot import Edge
 from pydot import Node
 
 from barf.arch.arm.armbase import ArmArchitectureInformation
+from barf.arch.arm.armbase import ArmImmediateOperand
 from barf.arch.x86.x86base import X86ArchitectureInformation
+from barf.arch.x86.x86base import X86ImmediateOperand
 from barf.core.bi import InvalidAddressError
 from barf.core.disassembler import DisassemblerError
+from barf.core.disassembler import InvalidDisassemblerData
 from barf.core.reil import DualInstruction
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilMnemonic
-
-from barf.core.disassembler import InvalidDisassemblerData
 
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
@@ -453,9 +454,12 @@ class CFGRecover(object):
         # Extract call targets for further processing.
         call_targets = []
         for bb in bbs:
-            for target in self._extract_call_targets(bb):
-                if isinstance(target, ReilImmediateOperand):
-                    call_targets.append(target.immediate >> 8)
+            for dinstr in bb:
+                if self._arch_info.instr_is_call(dinstr.asm_instr):
+                    target = self._extract_call_target(dinstr.asm_instr)
+
+                    if target:
+                        call_targets.append(target)
 
         return bbs, call_targets
 
@@ -523,28 +527,32 @@ class CFGRecover(object):
             bb.instrs.append(DualInstruction(addr, asm, ir))
 
             # If it is a RET or HALT instruction, break.
-            if self._arch_info.instr_is_ret(asm) or self._arch_info.instr_is_halt(asm):
+            if self._arch_info.instr_is_ret(asm) or \
+               self._arch_info.instr_is_halt(asm):
                 bb.is_exit = True
                 break
 
             # If it is a CALL instruction and the callee does not return, break.
             if self._arch_info.instr_is_call(asm):
-                target_oprnd = ir[-1].operands[2]
+                target = self._extract_call_target(asm)
 
-                if isinstance(target_oprnd, ReilImmediateOperand):
-                    target_addr = target_oprnd.immediate >> 0x8
-
-                    if self._is_function_nonreturn(target_addr, symbols):
-                        bb.is_exit = True
-                        break
-
-            # If it is a BRANCH instruction, extract targets and break.
-            if self._arch_info.instr_is_branch(asm):
-                taken, not_taken, direct = self._extract_branch_targets(asm, ir)
-
-                # Jump to a function?
-                if direct in symbols:
+                if target and self._is_function_nonreturn(target, symbols):
                     bb.is_exit = True
+                    break
+
+            # If it is a BRANCH instruction, extract target and break.
+            if self._arch_info.instr_is_branch(asm):
+                target = self._extract_branch_target(asm)
+
+                if self._arch_info.instr_is_branch_cond(asm):
+                    taken = target
+                    not_taken = asm.address + asm.size
+                else:
+                    direct = target
+
+                    # Jump to a function?
+                    if direct in symbols:
+                        bb.is_exit = True
 
                 break
 
@@ -557,60 +565,27 @@ class CFGRecover(object):
 
         return bb
 
-    def _resolve_branch_target(self, branch_instr, instrs):
-        target = branch_instr.operands[2]
+    def _extract_branch_target(self, asm):
+        address = None
 
-        if isinstance(target, ReilImmediateOperand):
-            # branch address is an immediate
-            # Transform Reil address back to source arch address
-            return target.immediate >> 8
-        else:
-            # try to resolve branch address
-            for instr in instrs[::-1]:
-                if instr.mnemonic == ReilMnemonic.STR and \
-                   isinstance(instr.operands[0], ReilImmediateOperand) and \
-                   instr.operands[2] == target:
+        # TODO Remove arch dependent code
+        target_oprnd = asm.operands[0]
+        if isinstance(target_oprnd, X86ImmediateOperand) or \
+           isinstance(target_oprnd, ArmImmediateOperand):
+            address = target_oprnd.immediate
 
-                    # Transform Reil address back to source arch address
-                    return instr.operands[0].immediate >> 8
+        return address
 
-    def _extract_branch_targets(self, asm, ir):
-        taken_branch, not_taken_branch, direct_branch = None, None, None
+    def _extract_call_target(self, asm):
+        address = None
 
-        instr_last = ir[-1]
+        # TODO Remove arch dependent code
+        target_oprnd = asm.operands[0]
+        if isinstance(target_oprnd, X86ImmediateOperand) or \
+           isinstance(target_oprnd, ArmImmediateOperand):
+            address = target_oprnd.immediate
 
-        if instr_last.mnemonic == ReilMnemonic.JCC:
-            cond = instr_last.operands[0]
-
-            branch_addr = self._resolve_branch_target(instr_last, ir)
-
-            # Set branch address according to its type
-            if isinstance(cond, ReilImmediateOperand):
-                if cond.immediate == 0x0:
-                    not_taken_branch = branch_addr
-
-                if cond.immediate == 0x1:
-                    if asm.mnemonic == 'call':
-                        direct_branch = asm.address + asm.size
-
-                    if asm.mnemonic != 'call':
-                        direct_branch = branch_addr
-            else:
-                taken_branch = branch_addr
-                not_taken_branch = asm.address + asm.size
-
-        return taken_branch, not_taken_branch, direct_branch
-
-    def _extract_call_targets(self, bb):
-        targets = []
-
-        for dinstr in bb:
-            if self._arch_info.instr_is_call(dinstr.asm_instr):
-                assert dinstr.ir_instrs[-1].mnemonic == ReilMnemonic.JCC
-
-                targets.append(dinstr.ir_instrs[-1].operands[2])
-
-        return targets
+        return address
 
 
 class RecursiveDescent(CFGRecover):

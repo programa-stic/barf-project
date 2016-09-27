@@ -335,6 +335,16 @@ class X86ArchitectureInformation(ArchitectureInformation):
 
         return instruction.mnemonic in branch_instrs
 
+    def instr_is_branch_cond(self, instruction):
+        branch_instrs = [
+            "ja", "jae", "jb", "jbe", "jc", "je", "jg", "jge", "jl",
+            "jle", "jna", "jnae", "jnb", "jnbe", "jnc", "jne", "jng", "jnge",
+            "jnl", "jnle", "jno", "jnp", "jns", "jnz", "jo", "jp", "jpe",
+            "jpo", "js", "jz"
+        ]
+
+        return instruction.mnemonic in branch_instrs
+
     def _load_alias_mapper(self):
         if self._arch_mode == ARCH_X86_MODE_32:
             alias_mapper = {

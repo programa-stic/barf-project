@@ -75,3 +75,6 @@ class ArchitectureInformation(object):
 
     def instr_is_branch(self, instruction):
         raise NotImplementedError()
+
+    def instr_is_branch_cond(self, instruction):
+        raise NotImplementedError()

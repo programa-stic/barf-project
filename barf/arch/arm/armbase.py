@@ -299,6 +299,14 @@ class ArmArchitectureInformation(ArchitectureInformation):
 
         return instruction.mnemonic in branch_instr
 
+    def instr_is_branch_cond(self, instruction):
+        branch_instr = [
+            "bne", "beq", "bpl", "ble", "bcs", "bhs", "blt", "bge",
+            "bhi", "blo", "bls"
+        ]
+
+        return instruction.mnemonic in branch_instr
+
     def _load_alias_mapper(self):
         alias_mapper = {
             "fp" : ("r11", 0),
