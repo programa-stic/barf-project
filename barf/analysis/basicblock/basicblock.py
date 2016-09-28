@@ -32,8 +32,7 @@ from pydot import Dot
 from pydot import Edge
 from pydot import Node
 
-from barf.arch.arm.armbase import ArmImmediateOperand
-from barf.arch.x86.x86base import X86ImmediateOperand
+from barf.arch import helper
 from barf.core.bi import InvalidAddressError
 from barf.core.disassembler import DisassemblerError
 from barf.core.disassembler import InvalidDisassemblerData
@@ -452,7 +451,7 @@ class CFGRecover(object):
         for bb in bbs:
             for dinstr in bb:
                 if self._arch_info.instr_is_call(dinstr.asm_instr):
-                    target = self._extract_call_target(dinstr.asm_instr)
+                    target = helper.extract_call_target(dinstr.asm_instr)
 
                     if target:
                         call_targets.append(target)
@@ -530,7 +529,7 @@ class CFGRecover(object):
 
             # If it is a CALL instruction and the callee does not return, break.
             if self._arch_info.instr_is_call(asm):
-                target = self._extract_call_target(asm)
+                target = helper.extract_call_target(asm)
 
                 if target and self._is_function_nonreturn(target, symbols):
                     bb.is_exit = True
@@ -538,7 +537,7 @@ class CFGRecover(object):
 
             # If it is a BRANCH instruction, extract target and break.
             if self._arch_info.instr_is_branch(asm):
-                target = self._extract_branch_target(asm)
+                target = helper.extract_branch_target(asm)
 
                 if self._arch_info.instr_is_branch_cond(asm):
                     taken = target
@@ -560,28 +559,6 @@ class CFGRecover(object):
         bb.direct_branch = direct
 
         return bb
-
-    def _extract_branch_target(self, asm):
-        address = None
-
-        # TODO Remove arch dependent code
-        target_oprnd = asm.operands[0]
-        if isinstance(target_oprnd, X86ImmediateOperand) or \
-           isinstance(target_oprnd, ArmImmediateOperand):
-            address = target_oprnd.immediate
-
-        return address
-
-    def _extract_call_target(self, asm):
-        address = None
-
-        # TODO Remove arch dependent code
-        target_oprnd = asm.operands[0]
-        if isinstance(target_oprnd, X86ImmediateOperand) or \
-           isinstance(target_oprnd, ArmImmediateOperand):
-            address = target_oprnd.immediate
-
-        return address
 
 
 class RecursiveDescent(CFGRecover):
