@@ -29,7 +29,6 @@ from barf.arch.x86.x86base import X86ImmediateOperand
 def extract_branch_target(asm_instruction):
     address = None
 
-    # TODO Remove arch dependent code
     target_oprnd = asm_instruction.operands[0]
     if isinstance(target_oprnd, X86ImmediateOperand) or \
        isinstance(target_oprnd, ArmImmediateOperand):
@@ -40,7 +39,6 @@ def extract_branch_target(asm_instruction):
 def extract_call_target(asm_instruction):
     address = None
 
-    # TODO Remove arch dependent code
     target_oprnd = asm_instruction.operands[0]
     if isinstance(target_oprnd, X86ImmediateOperand) or \
        isinstance(target_oprnd, ArmImmediateOperand):
