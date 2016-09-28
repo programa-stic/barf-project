@@ -32,16 +32,12 @@ from pydot import Dot
 from pydot import Edge
 from pydot import Node
 
-from barf.arch.arm.armbase import ArmArchitectureInformation
 from barf.arch.arm.armbase import ArmImmediateOperand
-from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86base import X86ImmediateOperand
 from barf.core.bi import InvalidAddressError
 from barf.core.disassembler import DisassemblerError
 from barf.core.disassembler import InvalidDisassemblerData
 from barf.core.reil import DualInstruction
-from barf.core.reil import ReilImmediateOperand
-from barf.core.reil import ReilMnemonic
 
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
@@ -679,18 +675,15 @@ class LinearSweep(CFGRecover):
         return bbs
 
     def _bb_ends_in_direct_jmp(self, bb):
-        last_instr = bb.instrs[-1].ir_instrs[-1]
-
-        return last_instr.mnemonic == ReilMnemonic.JCC and \
-            isinstance(last_instr.operands[0], ReilImmediateOperand) and \
-            last_instr.operands[0].immediate == 0x1
-
-    def _bb_ends_in_return(self, bb):
-        # TODO: Process instructions without resorting to
-        # asm.mnemonic or asm.prefix.
         last_instr = bb.instrs[-1].asm_instr
 
-        return last_instr.mnemonic == "ret"
+        return self._arch_info.instr_is_branch(last_instr) and \
+               not self._arch_info.instr_is_branch_cond(last_instr)
+
+    def _bb_ends_in_return(self, bb):
+        last_instr = bb.instrs[-1].asm_instr
+
+        return self._arch_info.instr_is_ret(last_instr)
 
 
 class CFGRecoverer(object):
