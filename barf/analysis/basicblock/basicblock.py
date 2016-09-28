@@ -958,6 +958,7 @@ class CFGSimpleRendererEx(CFGRenderer):
         asm_str += instr.mnemonic + fill_char * (mnemonic_width - len(instr.mnemonic))
         asm_str += " " + oprnds_str if oprnds_str else ""
 
+        # TODO Highlight for ARM too.
         asm_str = highlight(asm_str, NasmLexer(), formatter)
         asm_str = asm_str.replace("span", "font")
         asm_str = asm_str.replace('style="color: ', 'color="')

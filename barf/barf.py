@@ -255,7 +255,7 @@ class BARF(object):
         # Reload modules.
         self._load(arch_mode=arch_mode)
 
-        cfg, _ = self._recover_cfg(start=ea_start, ea_end=end, symbols=symbols, callback=callback)
+        cfg, _ = self._recover_cfg(start=ea_start, end=ea_end, symbols=symbols, callback=callback)
 
         return cfg
 
@@ -277,7 +277,22 @@ class BARF(object):
         symbols = {} if not symbols else symbols
 
         # Recover the CFGs.
-        cfgs = self._recover_cfg_all(entries, symbols, callback)
+        cfgs = []
+        addrs_processed = set()
+        calls = entries
+
+        while len(calls) > 0:
+            start, calls = calls[0], calls[1:]
+
+            cfg, calls_tmp = self._recover_cfg(start=start, symbols=symbols, callback=callback)
+
+            addrs_processed.add(start)
+
+            cfgs.append(cfg)
+
+            for addr in sorted(calls_tmp):
+                if not addr in addrs_processed and not addr in calls:
+                    calls.append(addr)
 
         return cfgs
 
@@ -308,26 +323,6 @@ class BARF(object):
         cfg = ControlFlowGraph(bbs, name=name)
 
         return cfg, calls
-
-    def _recover_cfg_all(self, entries, symbols, callback):
-        cfgs = []
-        addrs_processed = set()
-        calls = entries
-
-        while len(calls) > 0:
-            start, calls = calls[0], calls[1:]
-
-            cfg, calls_tmp = self._recover_cfg(start=start, symbols=symbols, callback=callback)
-
-            addrs_processed.add(start)
-
-            cfgs.append(cfg)
-
-            for addr in sorted(calls_tmp):
-                if not addr in addrs_processed and not addr in calls:
-                    calls.append(addr)
-
-        return cfgs
 
     def recover_bbs(self, ea_start=None, ea_end=None):
         """Recover basic blocks.

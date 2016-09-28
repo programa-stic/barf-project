@@ -297,7 +297,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
             "bhi", "blo", "bls"
         ]
 
-        return instruction.mnemonic in branch_instr
+        return instruction.mnemonic_full in branch_instr
 
     def instr_is_branch_cond(self, instruction):
         branch_instr = [
@@ -305,7 +305,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
             "bhi", "blo", "bls"
         ]
 
-        return instruction.mnemonic in branch_instr
+        return instruction.mnemonic_full in branch_instr
 
     def _load_alias_mapper(self):
         alias_mapper = {
@@ -389,6 +389,11 @@ class ArmInstruction(object):
     def mnemonic(self):
         """Get instruction mnemonic."""
         return self._mnemonic
+
+    @property
+    def mnemonic_full(self):
+        """Get instruction mnemonic with condition code."""
+        return self._mnemonic + cc_inverse_mapper[self.condition_code]
 
     @property
     def operands(self):
