@@ -65,16 +65,13 @@ def load_symbols_from_file(filename):
 
     return symbols_by_addr
 
-def recover_cfg(barf, address, symbols_by_addr):
-    cfg = barf.recover_cfg(ea_start=address, symbols=symbols_by_addr, callback=print_recovery_status)
-
-    return cfg
-
 def recover_cfg_some(barf, addresses, symbols_by_addr):
     cfgs = []
 
     for addr in sorted(addresses):
-        cfgs.append(recover_cfg(barf, addr, symbols_by_addr))
+        cfg = barf.recover_cfg(ea_start=addr, symbols=symbols_by_addr, callback=print_recovery_status)
+
+        cfgs.append(cfg)
 
     return cfgs
 
@@ -82,30 +79,15 @@ def recover_cfg_all(barf, symbols_by_addr):
     if len(symbols_by_addr) > 0:
         print("[+] Recovering from symbols")
 
-        cfgs = recover_cfg_all_from_symbols_ex(barf, symbols_by_addr)
+        entries = [addr for addr in sorted(symbols_by_addr.keys())]
     else:
         print("[+] Recovering from entry point")
 
-        cfgs = recover_cfg_all_from_entry_point(barf)
+        entries = [barf.binary.entry_point]
+
+    cfgs = barf.recover_cfg_all(entries, symbols=symbols_by_addr, callback=print_recovery_status)
 
     return cfgs
-
-def recover_cfg_all_from_entry_point(barf):
-    start = barf.binary.entry_point
-    cfgs = barf.recover_cfg_all(start, callback=print_recovery_status)
-
-    return cfgs
-
-def recover_cfg_all_from_symbols(barf, symbols_by_addr):
-    cfgs = []
-
-    for addr in sorted(symbols_by_addr.keys()):
-        cfgs.append(recover_cfg(barf, addr, symbols_by_addr))
-
-    return cfgs
-
-def recover_cfg_all_from_symbols_ex(barf, symbols_by_addr):
-    return barf.recover_cfg_all_ex(symbols_by_addr, callback=print_recovery_status)
 
 def create_output_dir(name):
     if not os.path.exists(name):

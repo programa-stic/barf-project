@@ -259,8 +259,8 @@ class BARF(object):
 
         return cfg
 
-    def recover_cfg_all(self, start, callback=None, arch_mode=None):
-        """Recover CFG for all functions from an entry point.
+    def recover_cfg_all(self, entries, symbols=None, callback=None, arch_mode=None):
+        """Recover CFG for all functions from an entry point and/or symbol table.
 
         :int start: Start address.
         :returns: A list of CFGs.
@@ -273,29 +273,11 @@ class BARF(object):
         # Reload modules.
         self._load(arch_mode=arch_mode)
 
-        symbols = {}
+        # Set symbols.
+        symbols = {} if not symbols else symbols
 
         # Recover the CFGs.
-        cfgs = self._recover_cfg_all([start], symbols, callback)
-
-        return cfgs
-
-    def recover_cfg_all_ex(self, symbols, callback=None, arch_mode=None):
-        """Recover CFG for all functions from symbols
-
-        :int start: Start address.
-        :returns: A list of CFGs.
-
-        """
-        # Set architecture in case it wasn't already set.
-        if arch_mode == None:
-            arch_mode = self.binary.architecture_mode
-
-        # Reload modules.
-        self._load(arch_mode=arch_mode)
-
-        # Recover the CFGs.
-        cfgs = self._recover_cfg_all([addr for addr in sorted(symbols.keys())], symbols, callback)
+        cfgs = self._recover_cfg_all(entries, symbols, callback)
 
         return cfgs
 
