@@ -22,59 +22,26 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# Supported architectures
-
-# Intel x86 architecture definition
-ARCH_X86 = 0
-ARCH_X86_MODE_32 = 0
-ARCH_X86_MODE_64 = 1
-
-# ARM architecture definition
-ARCH_ARM = 1
-ARCH_ARM_MODE_ARM = 0
-ARCH_ARM_MODE_THUMB = 1
+from barf.arch.arm.armbase import ArmImmediateOperand
+from barf.arch.x86.x86base import X86ImmediateOperand
 
 
-class ArchitectureInformation(object):
+def extract_branch_target(asm_instruction):
+    address = None
 
-    def __init__(self):
-        pass
+    target_oprnd = asm_instruction.operands[0]
+    if isinstance(target_oprnd, X86ImmediateOperand) or \
+       isinstance(target_oprnd, ArmImmediateOperand):
+        address = target_oprnd.immediate
 
-    @property
-    def architecture_mode(self):
-        raise NotImplementedError()
+    return address
 
-    @property
-    def architecture_size(self):
-        raise NotImplementedError()
+def extract_call_target(asm_instruction):
+    address = None
 
-    @property
-    def operand_size(self):
-        raise NotImplementedError()
+    target_oprnd = asm_instruction.operands[0]
+    if isinstance(target_oprnd, X86ImmediateOperand) or \
+       isinstance(target_oprnd, ArmImmediateOperand):
+        address = target_oprnd.immediate
 
-    @property
-    def address_size(self):
-        raise NotImplementedError()
-
-    @property
-    def registers(self):
-        raise NotImplementedError()
-
-    @property
-    def max_instruction_size(self):
-        raise NotImplementedError()
-
-    def instr_is_ret(self, instruction):
-        raise NotImplementedError()
-
-    def instr_is_call(self, instruction):
-        raise NotImplementedError()
-
-    def instr_is_halt(self, instruction):
-        raise NotImplementedError()
-
-    def instr_is_branch(self, instruction):
-        raise NotImplementedError()
-
-    def instr_is_branch_cond(self, instruction):
-        raise NotImplementedError()
+    return address

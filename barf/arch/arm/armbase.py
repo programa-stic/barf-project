@@ -257,6 +257,56 @@ class ArmArchitectureInformation(ArchitectureInformation):
         """
         return self._alias_mapper
 
+    @property
+    def max_instruction_size(self):
+        """Return the maximum instruction size in bytes.
+        """
+        instruction_size_map = {
+            ARCH_ARM_MODE_ARM : 4,
+            ARCH_ARM_MODE_THUMB : 2,
+        }
+
+        return instruction_size_map[self._arch_mode]
+
+    def instr_is_ret(self, instruction):
+        is_ret = False
+
+        # ARM: "POP reg, {reg*, pc}" instr.
+        if instruction.mnemonic == "pop" and \
+           ("pc" in str(instruction.operands[1]) or \
+           "r15" in str(instruction.operands[1])):
+            is_ret = True
+
+        # ARM: "LDR pc, *" instr.
+        if instruction.mnemonic == "ldr" and \
+           ("pc" in str(instruction.operands[0]) or \
+           "r15" in str(instruction.operands[0])):
+            is_ret = True
+
+        return is_ret
+
+    def instr_is_call(self, instruction):
+        return instruction.mnemonic == "bl"
+
+    def instr_is_halt(self, instruction):
+        return False
+
+    def instr_is_branch(self, instruction):
+        branch_instr = [
+            "b", "bx", "bne", "beq", "bpl", "ble", "bcs", "bhs", "blt", "bge",
+            "bhi", "blo", "bls"
+        ]
+
+        return instruction.mnemonic_full in branch_instr
+
+    def instr_is_branch_cond(self, instruction):
+        branch_instr = [
+            "bne", "beq", "bpl", "ble", "bcs", "bhs", "blt", "bge",
+            "bhi", "blo", "bls"
+        ]
+
+        return instruction.mnemonic_full in branch_instr
+
     def _load_alias_mapper(self):
         alias_mapper = {
             "fp" : ("r11", 0),
@@ -339,6 +389,11 @@ class ArmInstruction(object):
     def mnemonic(self):
         """Get instruction mnemonic."""
         return self._mnemonic
+
+    @property
+    def mnemonic_full(self):
+        """Get instruction mnemonic with condition code."""
+        return self._mnemonic + cc_inverse_mapper[self.condition_code]
 
     @property
     def operands(self):

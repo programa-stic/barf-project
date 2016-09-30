@@ -213,6 +213,8 @@ class ArmDisassembler(Disassembler):
             instr.address = address
             instr.size = disasm.size
             instr.bytes = data[0:disasm.size]
+        else:
+            raise DisassembleError()
 
         return instr
 

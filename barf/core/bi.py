@@ -36,6 +36,10 @@ import pefile
 logger = logging.getLogger(__name__)
 
 
+class InvalidAddressError(Exception):
+    pass
+
+
 class Memory(object):
 
     def __init__(self):
@@ -63,7 +67,7 @@ class Memory(object):
                     chunck.append(self._read_byte(addr))
             except IndexError as reason:
                 logger.warn("Address out of range: {:#x}".format(addr))
-                raise IndexError(reason)
+                raise InvalidAddressError()
 
             return str(chunck)
         elif isinstance(key, int):

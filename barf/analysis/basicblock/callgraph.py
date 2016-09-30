@@ -28,90 +28,14 @@ class CallGraph(object):
         # Basic block graph
         self._graph = self._build_graph()
 
-    def save_ex(self, filename, format='dot'):
-        """Save basic block graph into a file.
-        """
-        fontname = 'Ubuntu Mono'
-        # fontname = 'DejaVu Sans Mono'
-        # fontname = 'DejaVu Sans Condensed'
-        # fontname = 'DejaVu Sans Light'
-        # fontname = 'Liberation Mono'
-        # fontname = 'DejaVu Serif Condensed'
-        # fontname = 'Ubuntu Condensed'
+    @property
+    def cfgs(self):
+        return self._cfgs
 
-        node_format = {
-            'shape'     : 'plaintext',
-            'rankdir'   : 'LR',
-            'fontname'  : fontname,
-            'fontsize'  : 9.0,
-            'penwidth'  : 0.5,
-            # 'style'     : 'filled',
-            # 'fillcolor' : 'orange',
-        }
+    def save(self, filename, format='dot'):
+        renderer = CGSimpleRenderer()
 
-        edge_format = {
-            'fontname'  : fontname,
-            'fontsize'  : 8.0,
-            'penwidth'  : 0.5,
-            'arrowsize' : 0.6,
-            'arrowhead' : 'vee',
-        }
-
-        edge_colors = {
-            'direct'   : 'blue',
-            'indirect' : 'red',
-        }
-
-        label_fmt  = '<'
-        label_fmt += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
-        label_fmt += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
-        label_fmt += '  <tr><td align="left" cellspacing="1">{label}</td></tr>'
-        label_fmt += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
-        label_fmt += '</table>'
-        label_fmt += '>'
-
-        try:
-            dot_graph = Dot(graph_type="digraph", rankdir="TB", splines="ortho", nodesep=1.2)
-
-            # add nodes
-            nodes = {}
-            for cfg_addr in self._graph.node.keys():
-                if cfg_addr != "unknown":
-                    if cfg_addr in self._cfg_by_addr and not isinstance(self._cfg_by_addr[cfg_addr], str) and self._cfg_by_addr[cfg_addr].name:
-                        cfg_label = self._cfg_by_addr[cfg_addr].name
-                    else:
-                        cfg_label = "sub_{:x}".format(cfg_addr)
-                else:
-                    cfg_label = "unknown"
-
-                label = label_fmt.format(label=cfg_label)
-
-                nodes[cfg_addr] = Node(cfg_addr, label=label, **node_format)
-
-                dot_graph.add_node(nodes[cfg_addr])
-
-            # add edges
-            for cfg_src_addr in self._graph.node.keys():
-                for cfg_dst_addr in self._edges.get(cfg_src_addr, []):
-                    if cfg_dst_addr == "unknown":
-                        branch_type = "indirect"
-                    else:
-                        branch_type = "direct"
-
-                    dot_graph.add_edge(
-                        Edge(nodes[cfg_src_addr],
-                        nodes[cfg_dst_addr],
-                        color=edge_colors[branch_type],
-                        **edge_format))
-
-            dot_graph.write("{}.{}".format(filename, format), format=format)
-        except Exception as err:
-           logger.error(
-                "Failed to save basic block graph: %s (%s)",
-                filename,
-                format,
-                exc_info=True
-            )
+        renderer.save(self, filename, format)
 
     # Auxiliary functions
     # ======================================================================== #
@@ -161,3 +85,102 @@ class CallGraph(object):
 
         # CFGs accessed by address
         self._cfg_by_addr = dict([(cfg.start_address, cfg) for cfg in cfgs])
+
+
+class CGRenderer(object):
+
+    def save(self):
+        raise NotImplementedError()
+
+
+class CGSimpleRenderer(CGRenderer):
+
+    fontname = 'Ubuntu Mono'
+    # fontname = 'DejaVu Sans Mono'
+    # fontname = 'DejaVu Sans Condensed'
+    # fontname = 'DejaVu Sans Light'
+    # fontname = 'Liberation Mono'
+    # fontname = 'DejaVu Serif Condensed'
+    # fontname = 'Ubuntu Condensed'
+
+    graph_format = {
+        'graph_type' : 'digraph',
+        'rankdir'    : 'TB',
+        'splines'    : 'ortho',
+        'nodesep'    : '1.2',
+    }
+
+    node_format = {
+        'shape'     : 'plaintext',
+        'rankdir'   : 'LR',
+        'fontname'  : fontname,
+        'fontsize'  : 9.0,
+        'penwidth'  : 0.5,
+    }
+
+    edge_format = {
+        'fontname'  : fontname,
+        'fontsize'  : 8.0,
+        'penwidth'  : 0.5,
+        'arrowsize' : 0.6,
+        'arrowhead' : 'vee',
+    }
+
+    edge_color = {
+        'direct'   : 'blue',
+        'indirect' : 'red',
+    }
+
+    # Templates.
+    node_tpl  = '<'
+    node_tpl += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
+    node_tpl += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
+    node_tpl += '  <tr><td align="left" cellspacing="1">{label}</td></tr>'
+    node_tpl += '  <tr><td align="center" cellpadding="1" port="exit" ></td></tr>'
+    node_tpl += '</table>'
+    node_tpl += '>'
+
+    def save(self, cf, filename, format='dot'):
+        """Save basic block graph into a file.
+        """
+        try:
+            dot_graph = Dot(**self.graph_format)
+
+            # add nodes
+            nodes = {}
+            for cfg_addr in cf._graph.node.keys():
+                nodes[cfg_addr] = self._create_node(cfg_addr, cf)
+
+                dot_graph.add_node(nodes[cfg_addr])
+
+            # add edges
+            for cfg_src_addr in cf._graph.node.keys():
+                for cfg_dst_addr in cf._edges.get(cfg_src_addr, []):
+                    edge = self._create_edge(nodes, cfg_src_addr, cfg_dst_addr)
+
+                    dot_graph.add_edge(edge)
+
+            dot_graph.write("{}.{}".format(filename, format), format=format)
+        except Exception as err:
+           logger.error("Failed to save call graph: %s (%s)", filename, format, exc_info=True)
+
+    def _create_node(self, cfg_addr, cf):
+        if cfg_addr != "unknown":
+            if cfg_addr in cf._cfg_by_addr and not isinstance(cf._cfg_by_addr[cfg_addr], str) and cf._cfg_by_addr[cfg_addr].name:
+                cfg_label = cf._cfg_by_addr[cfg_addr].name
+            else:
+                cfg_label = "sub_{:x}".format(cfg_addr)
+        else:
+            cfg_label = "unknown"
+
+        label = self.node_tpl.format(label=cfg_label)
+
+        return Node(cfg_addr, label=label, **self.node_format)
+
+    def _create_edge(self, nodes, cfg_src_addr, cfg_dst_addr):
+        if cfg_dst_addr == "unknown":
+            branch_type = "indirect"
+        else:
+            branch_type = "direct"
+
+        return Edge(nodes[cfg_src_addr], nodes[cfg_dst_addr], color=self.edge_color[branch_type], **self.edge_format)

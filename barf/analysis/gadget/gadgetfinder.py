@@ -115,10 +115,13 @@ class GadgetFinder(object):
             if self._mem[addr] not in op_codes:
                 continue
 
-            asm_instr = self._disasm.disassemble(
-                self._mem[addr:min(addr+16, end_address + 1)],
-                addr
-            )
+            try:
+                asm_instr = self._disasm.disassemble(
+                    self._mem[addr:min(addr+16, end_address + 1)],
+                    addr
+                )
+            except:
+                asm_instr = None
 
             if not asm_instr:
                 continue
@@ -139,10 +142,13 @@ class GadgetFinder(object):
                 # add for REX.W + FF /3 call instruction
                 if ins_ir[-1].mnemonic == ReilMnemonic.JCC:
                     #try addr - 1
-                    asm_instr_1 = self._disasm.disassemble(
-                        self._mem[addr-1:min(addr+15, end_address + 1)],
-                        addr
-                    )
+                    try:
+                        asm_instr_1 = self._disasm.disassemble(
+                            self._mem[addr-1:min(addr+15, end_address + 1)],
+                            addr
+                        )
+                    except:
+                        asm_instr = None
 
                     if asm_instr:
                         self._ir_trans.reset()
@@ -206,11 +212,14 @@ class GadgetFinder(object):
             gadget_tail_addr.append(addr)
 
         for addr in gadget_tail_addr:
-            asm_instr = self._disasm.disassemble(
-                self._mem[addr:min(addr+4, end_address + 1)], # TODO: Add thumb (+16)
-                addr,
-                architecture_mode=self._architecture_mode
-            )
+            try:
+                asm_instr = self._disasm.disassemble(
+                    self._mem[addr:min(addr+4, end_address + 1)], # TODO: Add thumb (+16)
+                    addr,
+                    architecture_mode=self._architecture_mode
+                )
+            except:
+                asm_instr = None
 
             if not asm_instr:
                 continue
@@ -263,7 +272,10 @@ class GadgetFinder(object):
                 except InvalidDisassemblerData:
                     continue
             else:
-                asm_instr = self._disasm.disassemble(raw_bytes, start_addr)
+                try:
+                    asm_instr = self._disasm.disassemble(raw_bytes, start_addr)
+                except:
+                    asm_instr = None
 
             if not asm_instr or asm_instr.size != step:
                 continue

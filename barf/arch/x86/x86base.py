@@ -305,6 +305,46 @@ class X86ArchitectureInformation(ArchitectureInformation):
         """
         return self._alias_mapper
 
+    @property
+    def max_instruction_size(self):
+        """Return the maximum instruction size in bytes.
+        """
+        instruction_size_map = {
+            ARCH_X86_MODE_32 : 16,
+            ARCH_X86_MODE_64 : 16,
+        }
+
+        return instruction_size_map[self._arch_mode]
+
+    def instr_is_ret(self, instruction):
+        return instruction.mnemonic == "ret"
+
+    def instr_is_call(self, instruction):
+        return instruction.mnemonic == "call"
+
+    def instr_is_halt(self, instruction):
+        return instruction.mnemonic == "hlt"
+
+    def instr_is_branch(self, instruction):
+        branch_instrs = [
+            "jmp", "ja", "jae", "jb", "jbe", "jc", "je", "jg", "jge", "jl",
+            "jle", "jna", "jnae", "jnb", "jnbe", "jnc", "jne", "jng", "jnge",
+            "jnl", "jnle", "jno", "jnp", "jns", "jnz", "jo", "jp", "jpe",
+            "jpo", "js", "jz"
+        ]
+
+        return instruction.mnemonic in branch_instrs
+
+    def instr_is_branch_cond(self, instruction):
+        branch_instrs = [
+            "ja", "jae", "jb", "jbe", "jc", "je", "jg", "jge", "jl",
+            "jle", "jna", "jnae", "jnb", "jnbe", "jnc", "jne", "jng", "jnge",
+            "jnl", "jnle", "jno", "jnp", "jns", "jnz", "jo", "jp", "jpe",
+            "jpo", "js", "jz"
+        ]
+
+        return instruction.mnemonic in branch_instrs
+
     def _load_alias_mapper(self):
         if self._arch_mode == ARCH_X86_MODE_32:
             alias_mapper = {

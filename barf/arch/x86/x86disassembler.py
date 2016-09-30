@@ -34,6 +34,7 @@ from barf.arch import ARCH_X86_MODE_64
 from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86parser import X86Parser
 from barf.core.disassembler import Disassembler
+from barf.core.disassembler import DisassemblerError
 
 class X86Disassembler(Disassembler):
     """X86 Disassembler.
@@ -64,6 +65,8 @@ class X86Disassembler(Disassembler):
             instr.address = address
             instr.size = size
             instr.bytes = data[0:size]
+        else:
+            raise DisassemblerError()
 
         return instr
 
