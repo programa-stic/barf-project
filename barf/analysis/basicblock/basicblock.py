@@ -46,8 +46,34 @@ from pygments.lexers.asm import NasmLexer
 logger = logging.getLogger(__name__)
 
 
-class BasicBlock(object):
+def func_is_non_return(address, symbols):
+    return address in symbols and not symbols[address][2]
 
+
+def bb_get_instr_max_width(basic_block):
+    """Get maximum instruction mnemonic width
+    """
+    asm_mnemonic_max_width = 0
+
+    for dinstr in basic_block:
+        if len(dinstr.asm_instr.mnemonic) > asm_mnemonic_max_width:
+            asm_mnemonic_max_width = len(dinstr.asm_instr.mnemonic)
+
+    return asm_mnemonic_max_width
+
+
+def bb_get_type(basic_block):
+    if basic_block.is_entry:
+        bb_type = "entry"
+    elif basic_block.is_exit:
+        bb_type = "exit"
+    else:
+        bb_type = "other"
+
+    return bb_type
+
+
+class BasicBlock(object):
     """Basic block representation.
     """
 
@@ -253,12 +279,13 @@ class BasicBlock(object):
         return len(self._instrs)
 
     def __getstate__(self):
-        state = {}
-        state['_instrs'] = self._instrs
-        state['_address'] = self._address
-        state['_taken_branch'] = self._taken_branch
-        state['_not_taken_branch'] = self._not_taken_branch
-        state['_direct_branch'] = self._direct_branch
+        state = {
+            '_instrs': self._instrs,
+            '_address': self._address,
+            '_taken_branch': self._taken_branch,
+            '_not_taken_branch': self._not_taken_branch,
+            '_direct_branch': self._direct_branch,
+        }
 
         return state
 
@@ -388,9 +415,9 @@ class ControlFlowGraph(object):
         return bb_rv
 
     def __getstate__(self):
-        state = {}
-
-        state['_basic_blocks'] = self._basic_blocks
+        state = {
+            '_basic_blocks': self._basic_blocks,
+        }
 
         return state
 
@@ -431,30 +458,23 @@ class CFGRecover(object):
         # Architecture information of the binary.
         self._arch_info = arch_info
 
-    def build(self, start_address, end_address, symbols=None):
+    def build(self, start, end, symbols=None):
         """Return the list of basic blocks.
 
-        @param start_address: Address of the first byte to start disassembling
-        basic blocks.
-        @param end_address: Address of the last byte (inclusive) to finish
-        disassembling basic blocks.
+        :int start: Start address of the disassembling process.
+        :int end: End address of the disassembling process.
 
         """
         symbols = {} if not symbols else symbols
 
-        # Find candidates for basic blocks.
-        bbs = self._recover_bbs(start_address, end_address, symbols)
+        # First pass: Recover BBs.
+        bbs = self._recover_bbs(start, end, symbols)
+
+        # Second pass: Split overlapping basic blocks introduced by backedges.
         bbs = self._split_bbs(bbs, symbols)
 
-        # Extract call targets for further processing.
-        call_targets = []
-        for bb in bbs:
-            for dinstr in bb:
-                if self._arch_info.instr_is_call(dinstr.asm_instr):
-                    target = helper.extract_call_target(dinstr.asm_instr)
-
-                    if target:
-                        call_targets.append(target)
+        # Third pass: Extract call targets for further analysis.
+        call_targets = self._extract_call_targets(bbs)
 
         return bbs, call_targets
 
@@ -492,6 +512,18 @@ class CFGRecover(object):
 
         return bbs_new
 
+    def _extract_call_targets(self, bbs):
+        call_targets = []
+        for bb in bbs:
+            for dinstr in bb:
+                if self._arch_info.instr_is_call(dinstr.asm_instr):
+                    target = helper.extract_call_target(dinstr.asm_instr)
+
+                    if target:
+                        call_targets.append(target)
+
+        return call_targets
+
     def _split_bb(self, bb, address, symbols):
         bb_upper_half = self._disassemble_bb(bb.start_address, address, symbols)
         bb_lower_half = self._disassemble_bb(address, bb.end_address, symbols)
@@ -499,9 +531,6 @@ class CFGRecover(object):
         bb_upper_half.direct_branch = address
 
         return bb_lower_half, bb_upper_half
-
-    def _is_function_nonreturn(self, address, symbols):
-        return address in symbols and not symbols[address][2]
 
     def _disassemble_bb(self, start, end, symbols):
         bb = BasicBlock()
@@ -531,7 +560,7 @@ class CFGRecover(object):
             if self._arch_info.instr_is_call(asm):
                 target = helper.extract_call_target(asm)
 
-                if target and self._is_function_nonreturn(target, symbols):
+                if target and func_is_non_return(target, symbols):
                     bb.is_exit = True
                     break
 
@@ -677,59 +706,38 @@ class CFGRenderer(object):
     def save(self):
         raise NotImplementedError()
 
-    def _get_bb_max_instr_width(self, basic_block):
-        """Get maximum instruction mnemonic width
-        """
-        asm_mnemonic_max_width = 0
-
-        for dinstr in basic_block:
-            if len(dinstr.asm_instr.mnemonic) > asm_mnemonic_max_width:
-                asm_mnemonic_max_width = len(dinstr.asm_instr.mnemonic)
-
-        return asm_mnemonic_max_width
-
-    def _get_bb_type(self, bb):
-        if bb.is_entry:
-            bb_type = "entry"
-        elif bb.is_exit:
-            bb_type = "exit"
-        else:
-            bb_type = "other"
-
-        return bb_type
-
 
 class CFGSimpleRenderer(CFGRenderer):
 
     fontname = 'monospace'
 
     graph_format = {
-        'graph_type' : 'digraph',
-        'rankdir'    : 'TB',
+        'graph_type': 'digraph',
+        'rankdir': 'TB',
     }
 
     node_format = {
-        'shape'    : 'Mrecord',
-        'rankdir'  : 'LR',
-        'fontname' : fontname,
-        'fontsize' : '9.0',
+        'shape': 'Mrecord',
+        'rankdir': 'LR',
+        'fontname': fontname,
+        'fontsize': '9.0',
     }
 
     node_color = {
-        'entry' : 'black',
-        'exit'  : 'black',
-        'other' : 'black',
+        'entry': 'black',
+        'exit': 'black',
+        'other': 'black',
     }
 
     edge_format = {
-        'fontname' : 'monospace',
-        'fontsize' : '8.0',
+        'fontname': fontname,
+        'fontsize': '8.0',
     }
 
     edge_color = {
-        'taken'     : 'green',
-        'not-taken' : 'red',
-        'direct'    : 'blue',
+        'taken': 'green',
+        'not-taken': 'red',
+        'direct': 'blue',
     }
 
     # Templates.
@@ -766,7 +774,7 @@ class CFGSimpleRenderer(CFGRenderer):
 
     def _create_node(self, bb, name, print_ir):
         bb_dump = self._render_bb(bb, name, print_ir)
-        bb_type = self._get_bb_type(bb)
+        bb_type = bb_get_type(bb)
 
         return Node(bb.address, label=bb_dump, color=self.node_color[bb_type], **self.node_format)
 
@@ -782,11 +790,11 @@ class CFGSimpleRenderer(CFGRenderer):
 
         # html-encode colon character
         html_entities = {
-            "!" : "&#33;",
-            "#" : "&#35;",
-            ":" : "&#58;",
-            "{" : "&#123;",
-            "}" : "&#125;",
+            "!": "&#33;",
+            "#": "&#35;",
+            ":": "&#58;",
+            "{": "&#123;",
+            "}": "&#125;",
         }
 
         for char, encoding in html_entities.items():
@@ -800,7 +808,7 @@ class CFGSimpleRenderer(CFGRenderer):
     def _render_bb(self, basic_block, name, print_ir):
         lines = []
 
-        asm_mnemonic_max_width = self._get_bb_max_instr_width(basic_block)
+        asm_mnemonic_max_width = bb_get_instr_max_width(basic_block)
 
         for dinstr in basic_block:
             asm_str = self._render_asm(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char="\\ ")
@@ -835,38 +843,38 @@ class CFGSimpleRendererEx(CFGRenderer):
     # fontname = 'Ubuntu Condensed'
 
     graph_format = {
-        'graph_type' : 'digraph',
-        'nodesep'    : 1.2,
-        'rankdir'    : 'TB',
-        # 'splines'    : 'ortho', # NOTE This option brings up performance issues.
+        'graph_type': 'digraph',
+        'nodesep': 1.2,
+        'rankdir': 'TB',
+        # 'splines': 'ortho', # NOTE This option brings up performance issues.
     }
 
     node_format = {
-        'fontname'  : fontname,
-        'fontsize'  : 9.0,
-        'penwidth'  : 0.5,
-        'rankdir'   : 'LR',
-        'shape'     : 'plaintext',
+        'fontname': fontname,
+        'fontsize': 9.0,
+        'penwidth': 0.5,
+        'rankdir': 'LR',
+        'shape': 'plaintext',
     }
 
     edge_format = {
-        'arrowhead' : 'vee',
-        'arrowsize' : 0.6,
-        'fontname'  : fontname,
-        'fontsize'  : 8.0,
-        'penwidth'  : 0.5,
+        'arrowhead': 'vee',
+        'arrowsize': 0.6,
+        'fontname': fontname,
+        'fontsize': 8.0,
+        'penwidth': 0.5,
     }
 
     node_color = {
-        'entry' : 'orange',
-        'exit'  : 'gray',
-        'other' : 'black',
+        'entry': 'orange',
+        'exit': 'gray',
+        'other': 'black',
     }
 
     edge_color = {
-        'direct'    : 'blue',
-        'not-taken' : 'red',
-        'taken'     : 'darkgreen',
+        'direct': 'blue',
+        'not-taken': 'red',
+        'taken': 'darkgreen',
     }
 
     # Templates.
@@ -910,7 +918,7 @@ class CFGSimpleRendererEx(CFGRenderer):
 
     def _create_node(self, bb, name, print_ir):
         bb_dump = self._render_bb(bb, name, print_ir)
-        bb_type = self._get_bb_type(bb)
+        bb_type = bb_get_type(bb)
 
         return Node(bb.address, label=bb_dump, color=self.node_color[bb_type], **self.node_format)
 
@@ -941,7 +949,7 @@ class CFGSimpleRendererEx(CFGRenderer):
     def _render_bb(self, basic_block, name, print_ir):
         lines = []
 
-        asm_mnemonic_max_width = self._get_bb_max_instr_width(basic_block)
+        asm_mnemonic_max_width = bb_get_instr_max_width(basic_block)
 
         for dinstr in basic_block:
             asm_str = self._render_asm(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char=" ")
