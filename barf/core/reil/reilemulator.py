@@ -990,6 +990,9 @@ class ReilEmulator(object):
 
         return dict(self.__cpu.registers), self.__mem
 
+    def single_step(self, instruction):
+        return self.__cpu.execute(instruction)
+
     # Reset methods
     # ======================================================================== #
     def reset(self):
