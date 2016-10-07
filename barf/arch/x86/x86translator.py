@@ -3002,6 +3002,7 @@ class X86Translator(Translator):
         counter_zero = tb.temporal(1)
         zf_zero = tb.temporal(1)
 
+        # Termination Condition 1: RCX or (E)CX = 0.
         tb.add(self._builder.gen_sub(counter, counter_imm_one, counter_tmp))
         tb.add(self._builder.gen_str(counter_tmp, counter))
         tb.add(self._builder.gen_bisz(counter, counter_zero))
@@ -3010,15 +3011,19 @@ class X86Translator(Translator):
         prefix = instruction.prefix
 
         if prefix in ["rep"]:
+            # Termination Condition 2: None.
             pass
         elif prefix in ["repz", "repe"]:
+            # Termination Condition 2: ZF = 0.
             tb.add(self._builder.gen_xor(self._flags["zf"], imm_one, zf_zero))
+            tb.add(self._builder.gen_jcc(zf_zero, end_addr))
         elif prefix in ["repnz", "repne"]:
+            # Termination Condition 2: ZF = 1.
             tb.add(self._builder.gen_str(self._flags["zf"], zf_zero))
+            tb.add(self._builder.gen_jcc(zf_zero, end_addr))
         else:
             raise Exception("Invalid prefix: %s" % prefix)
 
-        tb.add(self._builder.gen_jcc(zf_zero, end_addr))
         tb.add(self._builder.gen_jcc(imm_one, loop_start_lbl))
 
 # "I/O Instructions"
