@@ -202,7 +202,6 @@ class BinaryFile(object):
         self._arch_mode = self._get_arch_mode_elf(elffile)
 
         # TODO: Load all segments instead of just one section.
-        # Map binary to memory (only text section)
         m = Memory()
 
         found = False
@@ -225,11 +224,42 @@ class BinaryFile(object):
         #     if len(segment.data()) > 0:
         #         m.add_vma(segment.header.p_vaddr, bytearray(segment.data()))
 
-        f.close()
-
         self._section_text_start = text_section_start
         self._section_text_end = text_section_end - 1
         self._section_text_memory = m
+
+        # TODO: Load all segments instead of just one section.
+        m = Memory()
+
+        found = False
+
+        for nseg, section in enumerate(elffile.iter_sections()):
+            if section.name == ".rodata":
+                found = True
+
+                rodata_section_start = section.header.sh_addr
+                rodata_section_end = section.header.sh_addr + section.header.sh_size
+
+                print(".rodata: {:#x} - {:#x}".format(rodata_section_start, rodata_section_end))
+
+                m.add_vma(section.header.sh_addr, bytearray(section.data()))
+
+            if section.name == ".data":
+                found = True
+
+                data_section_start = section.header.sh_addr
+                data_section_end = section.header.sh_addr + section.header.sh_size
+
+                print(".data: {:#x} - {:#x}".format(data_section_start, data_section_end))
+
+                m.add_vma(section.header.sh_addr, bytearray(section.data()))
+
+
+        self._section_data_start = min(data_section_start, rodata_section_start)
+        self._section_data_end = max(data_section_end, rodata_section_end) - 1
+        self._section_data_memory = m
+
+        f.close()
 
     def _open_pe(self, filename):
         pe = pefile.PE(filename)
