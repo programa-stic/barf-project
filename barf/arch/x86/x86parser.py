@@ -138,6 +138,11 @@ def parse_instruction(string, location, tokens):
 
     infer_operands_size(operands)
 
+    # Quick hack: Capstone returns rep instead of repe for cmps and scas
+    # instructions.
+    if prefix == "rep" and mnemonic.startswith("cmps") or mnemonic.startswith("scas"):
+        prefix = "repe"
+
     instr = X86Instruction(
         prefix,
         mnemonic,
