@@ -176,7 +176,7 @@ def init_parser():
         "-d", "--output-dir",
         type=str,
         default=".",
-        help="Ouput directory.")
+        help="Output directory.")
 
     parser.add_argument(
         "-b", "--brief",
