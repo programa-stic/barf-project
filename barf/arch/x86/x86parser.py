@@ -55,6 +55,7 @@ logger = logging.getLogger(__name__)
 arch_info = None
 
 modifier_size = {
+    "ymmword ptr" : 256,
     "xmmword ptr" : 128,
     "xword ptr"   : 80,
     "tword ptr"   : 80,
@@ -169,6 +170,7 @@ dec_num = Word("0123456789")
 # ============================================================================ #
 modifier = (
     Optional(Or([
+        Literal("ymmword"),
         Literal("xmmword"),
         Literal("xword"),
         Literal("tword"),
