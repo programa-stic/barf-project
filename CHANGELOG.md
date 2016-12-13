@@ -15,6 +15,11 @@ All notable changes to this project will be documented in this file.
 - Add support for more x86 instructions.
 
 ### Changed
+- Improve CFG recovery functionality.
+- Refactor basickblock module.
+- Replace PyBFD with PyELFTools.
+- Improve SMT performace.
+- Refactor smtlibv2 module.
 - Overall directory restructure.
 - Improve ARM disassembly integration to Capstone Engine.
 - Overall improvements to CFG recovery and rendering.
