@@ -3,7 +3,7 @@
 from setuptools import setup
 from setuptools import find_packages
 
-__version__ = '0.2.1'
+__version__ = '0.3'
 
 # https://github.com/aquynh/capstone/issues/583
 def fix_setuptools():
@@ -30,7 +30,7 @@ setup(
     author           = 'Christian Heitman',
     author_email     = 'cnheitman@fundacionsadosky.org.ar',
     description      = 'A multiplatform open source Binary Analysis and Reverse engineering Framework',
-    download_url     = 'https://github.com/programa-stic/barf-project/tarball/v0.2.1',
+    download_url     = 'https://github.com/programa-stic/barf-project/tarball/v0.3',
     install_requires = [
         'capstone',
         'networkx',
