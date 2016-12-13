@@ -2,7 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3][unreleased]
+## [0.4][unreleased]
+### Added
+### Changed
+### Fixed
+### Removed
+
+## [0.3] - 2016-12-13
 ### Added
 - Add new BARF tool, BARFcg, for CG recovery.
 - Add support for CG recovery (x86 and ARM).
@@ -60,6 +66,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - x86instruction and x86intructiontranslator modules were removed.
 
-[unreleased]: https://github.com/programa-stic/barf-project/compare/v0.2.1...develop
+[unreleased]: https://github.com/programa-stic/barf-project/compare/v0.3...develop
+[0.3]: https://github.com/programa-stic/barf-project/compare/v0.2.1...v0.3
 [0.2.1]: https://github.com/programa-stic/barf-project/compare/v0.2...v0.2.1
 [0.2]: https://github.com/programa-stic/barf-project/compare/v0.1...v0.2
