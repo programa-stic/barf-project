@@ -35,6 +35,34 @@ import pefile
 
 logger = logging.getLogger(__name__)
 
+class SectionRequest(object):
+
+    def __init__(self, name):
+        self._name = name
+        self._found = False
+        self.memory = Memory()
+        self._sect_start_addr = -1
+        self._sect_size = -1
+
+    @property
+    def found(self):
+        return self._found
+
+    def set_found(self, found):
+        self._found = found
+
+    def get_sect_properties(self):
+        return self._sect_start_addr, self._sect_size
+
+    def set_sect_properties(self, start, size):
+        self._sect_start_addr = start
+        self._sect_size = size
+
+    def __str__(self):
+        return "{}  {:#x} - {:#x}".format(self._name,
+                                          self._sect_start_addr,
+                                          self._sect_start_addr + self._sect_size)
+
 
 class InvalidAddressError(Exception):
     pass
@@ -192,6 +220,28 @@ class BinaryFile(object):
         else:
             raise Exception("Unkown file format: {}".format(filename))
 
+
+    @staticmethod
+    def _extract_section(sect_req, elffile, mem = None):
+        """
+            :sect_req dictionary of section names as strings and SectionRequest objects
+            :mem if mem is not null, it serves as an accumulator rather than using the memory
+                 in SectionRequests
+
+            :returns nothing
+        """
+        for nseg, section in enumerate(elffile.iter_sections()):
+            request = sect_req.get(section.name, None)
+            if request:
+                request.set_found(True)
+                request.set_sect_properties(section.header.sh_addr,
+                                            section.header.sh_size)
+                if mem:
+                    mem.add_vma(section.header.sh_addr, bytearray(section.data()))
+                else:
+                    request.memory.add_vma(section.header.sh_addr, bytearray(section.data()))
+
+
     def _open_elf(self, filename):
         f = open(filename, 'rb')
 
@@ -202,81 +252,47 @@ class BinaryFile(object):
         self._arch_mode = self._get_arch_mode_elf(elffile)
 
         # TODO: Load all segments instead of just one section.
-        m = Memory()
-
-        found = False
-
-        for nseg, section in enumerate(elffile.iter_sections()):
-            if section.name == ".text":
-                found = True
-
-                text_section_start = section.header.sh_addr
-                text_section_end = section.header.sh_addr + section.header.sh_size
-
-                m.add_vma(section.header.sh_addr, bytearray(section.data()))
-
-        if not found:
-            raise Exception("Error loading ELF file.")
-
         # for nseg, segment in enumerate(elffile.iter_segments()):
         #     print("loading segment #{} - {} [{} bytes]".format(nseg, segment.header.p_vaddr, len(segment.data())))
 
         #     if len(segment.data()) > 0:
         #         m.add_vma(segment.header.p_vaddr, bytearray(segment.data()))
 
+        sections = { ".text": SectionRequest(".text") }
+
+        BinaryFile._extract_section(sections, elffile)
+        text = sections[".text"]
+
+        if not text.found:
+            raise Exception("Error loading ELF file.")
+
+        sections = { ".data": SectionRequest(".data"),
+                     ".rodata": SectionRequest(".rodata"),
+                     ".got": SectionRequest(".got"),
+                     ".got.plt": SectionRequest(".got.plt")}
+        m = Memory()
+        BinaryFile._extract_section(sections,
+                                    elffile,
+                                    mem = m)
+
+        data_addrs_start = []
+        data_addrs_ends  = []
+        for k, v in sections.items():
+            if v.found:
+                print v
+                start, size = v.get_sect_properties()
+                data_addrs_start.append(start)
+                data_addrs_ends.append(start + size)
+
+        text_section_start, text_section_end = text.get_sect_properties()
+        text_section_end += text_section_start
+
         self._section_text_start = text_section_start
         self._section_text_end = text_section_end - 1
-        self._section_text_memory = m
+        self._section_text_memory = text.memory
 
-        # TODO: Load all segments instead of just one section.
-        m = Memory()
-
-        found = False
-
-        for nseg, section in enumerate(elffile.iter_sections()):
-            if section.name == ".rodata":
-                found = True
-
-                rodata_section_start = section.header.sh_addr
-                rodata_section_end = section.header.sh_addr + section.header.sh_size
-
-                print(".rodata: {:#x} - {:#x}".format(rodata_section_start, rodata_section_end))
-
-                m.add_vma(section.header.sh_addr, bytearray(section.data()))
-
-            if section.name == ".data":
-                found = True
-
-                data_section_start = section.header.sh_addr
-                data_section_end = section.header.sh_addr + section.header.sh_size
-
-                print(".data: {:#x} - {:#x}".format(data_section_start, data_section_end))
-
-                m.add_vma(section.header.sh_addr, bytearray(section.data()))
-
-            if section.name == ".got":
-                found = True
-
-                got_section_start = section.header.sh_addr
-                got_section_end = section.header.sh_addr + section.header.sh_size
-
-                print(".got: {:#x} - {:#x}".format(got_section_start, got_section_end))
-
-                m.add_vma(section.header.sh_addr, bytearray(section.data()))
-
-            if section.name == ".got.plt":
-                found = True
-
-                gotplt_section_start = section.header.sh_addr
-                gotplt_section_end = section.header.sh_addr + section.header.sh_size
-
-                print(".got.plt: {:#x} - {:#x}".format(gotplt_section_start, gotplt_section_end))
-
-                m.add_vma(section.header.sh_addr, bytearray(section.data()))
-
-
-        self._section_data_start = min(data_section_start, rodata_section_start, got_section_start, gotplt_section_start)
-        self._section_data_end = max(data_section_end, rodata_section_end, got_section_end, gotplt_section_end) - 1
+        self._section_data_start = min(data_addrs_start)
+        self._section_data_end = max(data_addrs_ends) - 1
         self._section_data_memory = m
 
         f.close()
