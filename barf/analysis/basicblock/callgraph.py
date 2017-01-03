@@ -61,6 +61,13 @@ class CallGraph(object):
 
         renderer.save(self, filename, format)
 
+    def simple_paths(self, start_address, end_address):
+        """Return a list of paths between start and end functions.
+        """
+        paths = networkx.all_simple_paths(self._graph, source=start_address, target=end_address)
+
+        return (map(lambda addr: self._cfg_by_addr[addr], path) for path in paths)
+
     # Auxiliary functions
     # ======================================================================== #
     def _build_graph(self):
@@ -109,6 +116,10 @@ class CallGraph(object):
 
         # CFGs accessed by address
         self._cfg_by_addr = dict([(cfg.start_address, cfg) for cfg in cfgs])
+
+    def __iter__(self):
+        for cfg in self._cfgs:
+            yield cfg
 
 
 class CGRenderer(object):
