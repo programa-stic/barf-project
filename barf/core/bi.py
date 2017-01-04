@@ -279,7 +279,6 @@ class BinaryFile(object):
         data_addrs_ends  = []
         for k, v in sections.items():
             if v.found:
-                print v
                 start, size = v.get_sect_properties()
                 data_addrs_start.append(start)
                 data_addrs_ends.append(start + size)
