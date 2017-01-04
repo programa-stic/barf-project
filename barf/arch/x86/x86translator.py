@@ -162,6 +162,24 @@ class X86TranslationBuilder(TranslationBuilder):
 
                 addr = disp
 
+        # TODO Improve this code and add support for the rest of the segments.
+        if mem_operand.segment in ["gs", "fs"]:
+            seg_base_addr_map = {
+                "gs": "gs_base_addr",
+                "fs": "gs_base_addr",
+            }
+
+            seg_base = ReilRegisterOperand(seg_base_addr_map[mem_operand.segment], size)
+
+            if addr:
+                tmp = self.temporal(size)
+
+                self.add(self._builder.gen_add(addr, seg_base, tmp))
+
+                addr = tmp
+            else:
+                addr = seg_base
+
         return addr
 
 
