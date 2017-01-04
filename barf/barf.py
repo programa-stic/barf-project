@@ -27,8 +27,6 @@ BARF : Binary Analysis Framework.
 
 """
 import logging
-import os
-import time
 
 import arch
 
@@ -46,7 +44,11 @@ from arch.x86.x86base import X86ArchitectureInformation
 from arch.x86.x86disassembler import X86Disassembler
 from arch.x86.x86translator import X86Translator
 from core.bi import BinaryFile
+from core.reil import ReilContainer
+from core.reil import ReilContainerInvalidAddressError
 from core.reil import ReilEmulator
+from core.reil import ReilSequence
+from core.reil import split_address
 from core.smt.smtlibv2 import CVC4Solver
 from core.smt.smtlibv2 import Z3Solver
 from core.smt.smttranslator import SmtTranslator
@@ -100,13 +102,13 @@ class BARF(object):
         if self.binary.architecture == arch.ARCH_X86:
             self._setup_x86_arch(arch_mode)
         else:
-            # TODO: add arch in the binary file class
+            # TODO: add arch to the binary file class.
             self._setup_arm_arch(arch_mode)
 
     def _setup_arm_arch(self, arch_mode=None):
         """Set up ARM architecture.
         """
-        if arch_mode == None:
+        if arch_mode is None:
             arch_mode = arch.ARCH_ARM_MODE_THUMB
 
         self.arch_info = ArmArchitectureInformation(arch_mode)
@@ -116,7 +118,7 @@ class BARF(object):
     def _setup_x86_arch(self, arch_mode=None):
         """Set up x86 architecture.
         """
-        if arch_mode == None:
+        if arch_mode is None:
             arch_mode = self.binary.architecture_mode
 
         # Set up architecture information
@@ -153,15 +155,17 @@ class BARF(object):
     def _setup_analysis_modules(self):
         """Set up analysis modules.
         """
-        ## basic block
-        self.bb_builder = CFGRecoverer(RecursiveDescent(self.disassembler, self.text_section, self.ir_translator, self.arch_info))
+        # Basic block.
+        self.bb_builder = CFGRecoverer(RecursiveDescent(self.disassembler, self.text_section, self.ir_translator,
+                                                        self.arch_info))
 
-        ## code analyzer
+        # Code analyzer.
         self.code_analyzer = CodeAnalyzer(self.smt_solver, self.smt_translator, self.arch_info)
 
-        ## gadget
+        # Gadgets.
         self.gadget_classifier = GadgetClassifier(self.ir_emulator, self.arch_info)
-        self.gadget_finder = GadgetFinder(self.disassembler, self.text_section, self.ir_translator, self.binary.architecture, self.binary.architecture_mode)
+        self.gadget_finder = GadgetFinder(self.disassembler, self.text_section, self.ir_translator,
+                                          self.binary.architecture, self.binary.architecture_mode)
         self.gadget_verifier = GadgetVerifier(self.code_analyzer, self.arch_info)
 
     # ======================================================================== #
@@ -195,6 +199,8 @@ class BARF(object):
         :type ea_start: int
         :param ea_end: end address
         :type ea_end: int
+        :param arch_mode: architecture mode
+        :type arch_mode: int
 
         :returns: a tuple of the form (address, assembler instruction, instruction size)
         :rtype: (int, Instruction, int)
@@ -215,12 +221,14 @@ class BARF(object):
         :type ea_start: int
         :param ea_end: end address
         :type ea_end: int
+        :param arch_mode: architecture mode
+        :type arch_mode: int
 
         :returns: a tuple of the form (address, assembler instruction, instruction size)
         :rtype: (int, Instruction, int)
 
         """
-        if arch_mode == None:
+        if arch_mode is None:
             arch_mode = self.binary.architecture_mode
 
         curr_addr = ea_start if ea_start else self.binary.ea_start
@@ -245,11 +253,12 @@ class BARF(object):
 
         :int start: Start address.
         :int end: End address.
+
         :returns: A CFG.
 
         """
         # Set architecture in case it wasn't already set.
-        if arch_mode == None:
+        if arch_mode is None:
             arch_mode = self.binary.architecture_mode
 
         # Reload modules.
@@ -267,7 +276,7 @@ class BARF(object):
 
         """
         # Set architecture in case it wasn't already set.
-        if arch_mode == None:
+        if arch_mode is None:
             arch_mode = self.binary.architecture_mode
 
         # Reload modules.
@@ -291,7 +300,7 @@ class BARF(object):
             cfgs.append(cfg)
 
             for addr in sorted(calls_tmp):
-                if not addr in addrs_processed and not addr in calls:
+                if addr not in addrs_processed and addr not in calls:
                     calls.append(addr)
 
         return cfgs
@@ -346,109 +355,128 @@ class BARF(object):
     def emulate_full(self, context, ea_start=None, ea_end=None, arch_mode=None):
         """Emulate REIL instructions.
 
-        :param context: processor context
+        :param context: processor context (register and/or memory)
         :type context: dict
+        :param ea_start: start address
+        :type ea_start: int
+        :param ea_end: end address
+        :type ea_end: int
+        :param arch_mode: architecture mode
+        :type arch_mode: int
 
         :returns: a context
         :rtype: dict
 
         """
-        if not arch_mode == None:
+        def _translate_asm_instruction(asm_instr):
+            reil_translator = self.ir_translator
+
+            # Create ReilContainer
+            instr_container = ReilContainer()
+            instr_seq = ReilSequence()
+            for reil_instr in reil_translator.translate(asm_instr):
+                instr_seq.append(reil_instr)
+            instr_container.add(instr_seq)
+
+            return instr_container
+
+        def _process_asm_instruction(reil_emulator, asm_instr):
+            instr_container = _translate_asm_instruction(asm_instr)
+            ip = asm_instr.address << 8 | 0x0
+            next_addr = None
+
+            while ip:
+                # Fetch instruction.
+                try:
+                    reil_instr = instr_container.fetch(ip)
+                except ReilContainerInvalidAddressError:
+                    next_addr = split_address(ip)[0]
+                    break
+
+                next_ip = reil_emulator.single_step(reil_instr)
+
+                # Update instruction pointer.
+                ip = next_ip if next_ip else instr_container.get_next_address(ip)
+
+            if next_addr is None:
+                next_addr = asm_instr.address + asm_instr.size
+
+            return next_addr
+
+        if arch_mode is not None:
             # Reload modules.
             self._load(arch_mode=arch_mode)
 
         start_addr = ea_start if ea_start else self.binary.ea_start
         end_addr = ea_end if ea_end else self.binary.ea_end
 
-        # load registers
-        if 'registers' in context:
-            for reg, val in context['registers'].items():
-                self.ir_emulator.registers[reg] = val
+        # Load registers
+        for reg, val in context.get('registers', {}).items():
+            self.ir_emulator.registers[reg] = val
 
-        # load memory
-        if 'memory' in context:
-            for addr, val in context['memory'].items():
-                self.ir_emulator.memory.write(addr, 32 / 8, val)
+        # Load memory
+        for addr, val in context.get('memory', {}).items():
+            self.ir_emulator.memory.write(addr, 4, val)
 
-        # instrs = [reil for _, _, reil in self.translate(ea_start, ea_end)]
+        next_addr = start_addr
+        while next_addr != end_addr:
+            start, end = next_addr, next_addr + self.arch_info.max_instruction_size
+            asm_instr = self.disassembler.disassemble(self.text_section[start:end], next_addr)
+            next_addr = _process_asm_instruction(self.ir_emulator, asm_instr)
 
-        # self.ir_emulator.execute(instrs, start_addr << 8, end_address=end_addr << 8)
-
-        # Create ReilContainer
-        # ==================================================================== #
-        from core.reil.reil import ReilContainer
-        from core.reil.reil import ReilSequence
-
-        instr_container = ReilContainer()
-
-        asm_instr_last = None
-        instr_seq_prev = None
-
-        for asm_addr, asm_instr, asm_size in self.disassemble(ea_start=ea_start, ea_end=ea_end, arch_mode=arch_mode):
-            instr_seq = ReilSequence()
-
-            for reil_instr in self.ir_translator.translate(asm_instr):
-                instr_seq.append(reil_instr)
-
-            if instr_seq_prev:
-                instr_seq_prev.next_sequence_address = instr_seq.address
-
-            instr_container.add(instr_seq)
-
-            instr_seq_prev = instr_seq
-
-        if instr_seq_prev:
-            if asm_instr_last:
-                instr_seq_prev.next_sequence_address = (asm_instr_last.address + asm_instr_last.size) << 8
-        # ==================================================================== #
-
-        self.ir_emulator.execute(instr_container, start_addr << 8, end=end_addr << 8)
-
-        context_out = {}
+        context_out = {
+            'registers': {},
+            'memory': {}
+        }
 
         # save registers
-        context_out['registers'] = {}
         for reg, val in self.ir_emulator.registers.items():
             context_out['registers'][reg] = val
 
-        # save memory
-        context_out['memory'] = {}
-
         return context_out
 
-    def emulate_full_ex(self, context, instr_container, ea_start=None, ea_end=None):
+    def emulate_full_ex(self, context, instr_container, ea_start=None, ea_end=None, arch_mode=None):
         """Emulate REIL instructions from an instruction container.
 
-        :param context: processor context
+        :param context: processor context (register and/or memory)
         :type context: dict
+        :param instr_container: instruction container
+        :type instr_container: ReilContainer
+        :param ea_start: start address
+        :type ea_start: int
+        :param ea_end: end address
+        :type ea_end: int
+        :param arch_mode: architecture mode
+        :type arch_mode: int
 
         :returns: a context
         :rtype: dict
 
         """
+        if arch_mode is not None:
+            # Reload modules.
+            self._load(arch_mode=arch_mode)
+
         start_addr = ea_start if ea_start else self.binary.ea_start
         end_addr = ea_end if ea_end else self.binary.ea_end
 
-        # load registers
-        if 'registers' in context:
-            for reg, val in context['registers'].items():
-                self.ir_emulator.registers[reg] = val
+        # Load registers
+        for reg, val in context.get('registers', {}).items():
+            self.ir_emulator.registers[reg] = val
 
-        # load memory
-        if 'memory' in context:
-            for addr, val in context['memory'].items():
-                self.ir_emulator.memory.write(addr, 32 / 8, val)
+        # Load memory
+        for addr, val in context.get('memory', {}).items():
+            self.ir_emulator.memory.write(addr, 4, val)
 
-        self.ir_emulator.execute(instr_container, start_addr << 8, end=end_addr << 8)
+        self.ir_emulator.execute(instr_container, start=start_addr << 8, end=end_addr << 8)
 
-        context_out = {}
+        context_out = {
+            'registers': {},
+            'memory': {}
+        }
 
         # save registers
-        context_out['registers'] = {}
         for reg, val in self.ir_emulator.registers.items():
             context_out['registers'][reg] = val
-
-        # save memory
-        context_out['memory'] = {}
 
         return context_out
