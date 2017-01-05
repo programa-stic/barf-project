@@ -3,7 +3,8 @@ CC = gcc
 .PHONY: all clean
 
 all: branch1 branch2 branch3 branch4 complex1 constraint1 constraint2 \
-	constraint3 helloworld1 gadget1 gadget2 serial1 stack1 loop1 loop2
+	constraint3 helloworld1 gadget1 gadget2 serial1 stack1 loop1 loop2 \
+	example1
 
 branch1: branch1.c
 	$(CC) -m32 -o branch1 branch1.c
@@ -55,6 +56,9 @@ loop1: loop1.asm
 
 loop2: loop2.c
 	$(CC) -m32 -o loop2 loop2.c
+
+exampl1: exampl1.c
+	$(CC) -o exampl1 exampl1.c
 
 clean:
 	rm -f branch1
