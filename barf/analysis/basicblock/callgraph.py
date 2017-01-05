@@ -61,12 +61,57 @@ class CallGraph(object):
 
         renderer.save(self, filename, format)
 
-    def simple_paths(self, start_address, end_address):
+    def simple_paths_by_name(self, start_name, end_name):
         """Return a list of paths between start and end functions.
         """
+        cfg_start = self.find_function_by_name(start_name)
+        cfg_end = self.find_function_by_name(end_name)
+
+        if not cfg_start or not cfg_end:
+            raise Exception("Start/End function not found.")
+
+        start_address = cfg_start.start_address
+        end_address = cfg_end.start_address
+
         paths = networkx.all_simple_paths(self._graph, source=start_address, target=end_address)
 
         return (map(lambda addr: self._cfg_by_addr[addr], path) for path in paths)
+
+    def simple_paths_by_address(self, start_address, end_address):
+        """Return a list of paths between start and end functions.
+        """
+        cfg_start = self.find_function_by_address(start_address)
+        cfg_end = self.find_function_by_address(end_address)
+
+        if not cfg_start or not cfg_end:
+            raise Exception("Start/End function not found.")
+
+        start_address = cfg_start.start_address
+        end_address = cfg_end.start_address
+
+        paths = networkx.all_simple_paths(self._graph, source=start_address, target=end_address)
+
+        return (map(lambda addr: self._cfg_by_addr[addr], path) for path in paths)
+
+    def find_function_by_name(self, name):
+        """Return the cfg of the requested function by name.
+        """
+        cfg_rv = None
+        for cfg in self._cfgs:
+            if cfg.name == name:
+                cfg_rv = cfg
+                break
+        return cfg_rv
+
+    def find_function_by_address(self, address):
+        """Return the cfg of the requested function by address.
+        """
+        cfg_rv = None
+        for cfg in self._cfgs:
+            if cfg.start_address == address:
+                cfg_rv = cfg
+                break
+        return cfg_rv
 
     # Auxiliary functions
     # ======================================================================== #
