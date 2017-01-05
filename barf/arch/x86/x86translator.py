@@ -580,6 +580,23 @@ class X86Translator(Translator):
 
 # "Data Transfer Instructions"
 # ============================================================================ #
+    def _translate_cdq(self, tb, instruction):
+        # Flags Affected
+        # None.
+        eax = X86RegisterOperand("eax", 32)
+        edx = X86RegisterOperand("edx", 32)
+
+        oprnd1 = tb.read(eax)
+
+        tmp0 = tb.temporal(64)
+        tmp1 = tb.temporal(32)
+        imm32 = tb.immediate(-32, 64)
+
+        tb.add(self._builder.gen_sext(oprnd1, tmp0))
+        tb.add(self._builder.gen_bsh(tmp0, imm32, tmp1))
+
+        tb.write(edx, tmp1) # if in 64 bit mode, it zeros the upper half of rdx.
+
     def _translate_cdqe(self, tb, instruction):
         # Flags Affected
         # None.
