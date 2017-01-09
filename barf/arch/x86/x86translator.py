@@ -1620,6 +1620,13 @@ class X86Translator(Translator):
         imm1 = tb.immediate((2**oprnd0.size)-1, oprnd0.size)
         imm2 = tb.immediate(-1, oprnd0.size)
 
+        if self._arch_info.architecture_mode == ARCH_X86_MODE_32:
+            mask = tb.immediate(0x1f, oprnd1.size)
+        elif self._arch_info.architecture_mode == ARCH_X86_MODE_64:
+            mask = tb.immediate(0x2f, oprnd1.size)
+        else:
+            raise Exception()
+
         tmp0 = tb.temporal(oprnd0.size)
         tmp1 = tb.temporal(oprnd0.size)
         tmp2 = tb.temporal(oprnd0.size)
@@ -1628,8 +1635,9 @@ class X86Translator(Translator):
         tmp5 = tb.temporal(oprnd0.size)
         tmp6 = tb.temporal(oprnd0.size)
 
-        # Extend 2nd operand to 1st operand size
-        tb.add(self._builder.gen_str(oprnd1, tmp0))
+        # Mask the 2nd operand and extend its size to match the size of
+        # the 1st operand.
+        tb.add(self._builder.gen_and(oprnd1, mask, tmp0))
 
         # Decrement in 1 shift amount
         tb.add(self._builder.gen_sub(tmp0, imm0, tmp1))
