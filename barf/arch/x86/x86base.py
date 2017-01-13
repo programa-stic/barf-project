@@ -345,6 +345,13 @@ class X86ArchitectureInformation(ArchitectureInformation):
 
         return instruction.mnemonic in branch_instrs
 
+    def instr_is_syscall(self, instruction):
+        syscall_instrs = [
+            "int", "syscall", "sysenter"
+        ]
+
+        return instruction.mnemonic in syscall_instrs
+
     def _load_alias_mapper(self):
         if self._arch_mode == ARCH_X86_MODE_32:
             alias_mapper = {

@@ -78,3 +78,6 @@ class ArchitectureInformation(object):
 
     def instr_is_branch_cond(self, instruction):
         raise NotImplementedError()
+
+    def instr_is_syscall(self, instruction):
+        raise NotImplementedError()
