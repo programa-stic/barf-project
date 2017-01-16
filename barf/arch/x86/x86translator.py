@@ -1936,12 +1936,13 @@ class X86Translator(Translator):
         tmp1 = tb.temporal(1)
         tmp1_zero = tb.temporal(1)
         tmp2 = tb.temporal(oprnd0.size)
+        tmp3 = tb.temporal(1)
 
         zero = tb.immediate(0, oprnd0.size)
         imm1 = tb.immediate(1, oprnd0.size)
         imm2 = tb.immediate(-oprnd0.size, oprnd0.size * 2)
         imm3 = tb.immediate(-(oprnd0.size + 1), oprnd0.size)
-        imm4 = tb.immediate(oprnd0.size - 1, oprnd0.size)
+        imm4 = tb.immediate(-oprnd0.size + 1, oprnd0.size)
         imm5 = tb.immediate(oprnd0.size - 2, oprnd0.size)
 
         # Compute temp count.
@@ -1958,7 +1959,8 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_or(oprnd_ext_shifted_l, oprnd_ext_shifted_h, result))
 
         # Compute CF.
-        tb.add(self._builder.gen_bsh(result, imm4, self._flags["cf"]))
+        tb.add(self._builder.gen_bsh(result, imm4, tmp3))
+        tb.add(self._builder.gen_str(tmp3, self._flags["cf"]))
 
         # Compute OF.
         undef_of_lbl = tb.label('undef_of_lbl')
