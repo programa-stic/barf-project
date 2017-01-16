@@ -346,8 +346,34 @@ class X86Translator(Translator):
         pass
 
     def _update_pf(self, tb, oprnd0, oprnd1, result):
-        # TODO: Implement
-        pass
+        tmp0 = tb.temporal(result.size)
+        tmp1 = tb.temporal(result.size)
+        tmp2 = tb.temporal(result.size)
+        tmp3 = tb.temporal(result.size)
+        tmp4 = tb.temporal(result.size)
+        tmp5 = tb.temporal(result.size)
+
+        imm1 = tb.immediate(1, result.size)
+        immn1 = tb.immediate(-1, result.size)
+        immn2 = tb.immediate(-2, result.size)
+        immn4 = tb.immediate(-4, result.size)
+
+        pf = self._flags["pf"]
+
+        # tmp1 =  result ^ (result >> 4)
+        tb.add(self._builder.gen_bsh(result, immn4, tmp0))
+        tb.add(self._builder.gen_xor(result, tmp0, tmp1))
+
+        # tmp3 =  tmp1 ^ (tmp1 >> 2)
+        tb.add(self._builder.gen_bsh(tmp1, immn2, tmp2))
+        tb.add(self._builder.gen_xor(tmp2, tmp1, tmp3))
+
+        # tmp5 = tmp3 ^ (tmp3 >> 1)
+        tb.add(self._builder.gen_bsh(tmp3, immn1, tmp4))
+        tb.add(self._builder.gen_xor(tmp4, tmp3, tmp5))
+
+        # Invert and save result.
+        tb.add(self._builder.gen_xor(tmp5, imm1, pf))
 
     def _update_sf(self, tb, oprnd0, oprnd1, result):
         # Create temporal variables.
