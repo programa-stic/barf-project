@@ -1688,16 +1688,24 @@ class X86Translator(Translator):
         oprnd1 = tb.read(instruction.operands[1])
 
         imm0 = tb.immediate(1, oprnd0.size)
+        imm1 = tb.immediate(-31, oprnd0.size)
+
+        if self._arch_info.architecture_mode == ARCH_X86_MODE_32:
+            mask = tb.immediate(0x1f, oprnd1.size)
+        elif self._arch_info.architecture_mode == ARCH_X86_MODE_64:
+            mask = tb.immediate(0x2f, oprnd1.size)
+        else:
+            raise Exception()
 
         tmp0 = tb.temporal(oprnd0.size)
         tmp1 = tb.temporal(oprnd0.size)
         tmp2 = tb.temporal(oprnd0.size)
-        tmp3 = tb.temporal(oprnd0.size)
-
+        tmp3 = tb.temporal(1)
         tmp4 = tb.temporal(oprnd0.size)
 
-        # Extend 2nd operand to 1st operand size
-        tb.add(self._builder.gen_str(oprnd1, tmp0))
+        # Mask the 2nd operand and extend its size to match the size of
+        # the 1st operand.
+        tb.add(self._builder.gen_and(oprnd1, mask, tmp0))
 
         # Decrement in 1 shift amount
         tb.add(self._builder.gen_sub(tmp0, imm0, tmp1))
@@ -1705,8 +1713,8 @@ class X86Translator(Translator):
         # Shift left
         tb.add(self._builder.gen_bsh(oprnd0, tmp1, tmp2))
 
-        # Save LSB in CF
-        tb.add(self._builder.gen_and(tmp2, imm0, tmp3))
+        # Save MSB in CF
+        tb.add(self._builder.gen_bsh(tmp2, imm1, tmp3))
         tb.add(self._builder.gen_str(tmp3, self._flags["cf"]))
 
         # Shift one more time
