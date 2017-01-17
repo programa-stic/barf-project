@@ -342,8 +342,70 @@ class X86Translator(Translator):
 # "Flags"
 # ============================================================================ #
     def _update_af(self, tb, oprnd0, oprnd1, result):
-        # TODO: Implement
-        pass
+        assert oprnd0.size == oprnd1.size
+
+        tmp0 = tb.temporal(8)
+        tmp1 = tb.temporal(8)
+        tmp2 = tb.temporal(8)
+        tmp3 = tb.temporal(8)
+        tmp4 = tb.temporal(8)
+        tmp5 = tb.temporal(8)
+        tmp6 = tb.temporal(8)
+
+        imm4 = tb.immediate(4, 8)
+        immn4 = tb.immediate(-4, 8)
+
+        af = self._flags["af"]
+
+        # Extract lower byte.
+        tb.add(self._builder.gen_str(oprnd0, tmp0))
+        tb.add(self._builder.gen_str(oprnd1, tmp1))
+
+        # Zero-extend lower 4 bits.
+        tb.add(self._builder.gen_bsh(tmp0, imm4, tmp2))
+        tb.add(self._builder.gen_bsh(tmp2, immn4, tmp4))
+
+        tb.add(self._builder.gen_bsh(tmp1, imm4, tmp3))
+        tb.add(self._builder.gen_bsh(tmp3, immn4, tmp5))
+
+        # Add up.
+        tb.add(self._builder.gen_add(tmp4, tmp5, tmp6))
+
+        # Move bit 4 to AF flag.
+        tb.add(self._builder.gen_bsh(tmp6, immn4, af))
+
+    def _update_af_sub(self, tb, oprnd0, oprnd1, result):
+        assert oprnd0.size == oprnd1.size
+
+        tmp0 = tb.temporal(8)
+        tmp1 = tb.temporal(8)
+        tmp2 = tb.temporal(8)
+        tmp3 = tb.temporal(8)
+        tmp4 = tb.temporal(8)
+        tmp5 = tb.temporal(8)
+        tmp6 = tb.temporal(8)
+
+        imm4 = tb.immediate(4, 8)
+        immn4 = tb.immediate(-4, 8)
+
+        af = self._flags["af"]
+
+        # Extract lower byte.
+        tb.add(self._builder.gen_str(oprnd0, tmp0))
+        tb.add(self._builder.gen_str(oprnd1, tmp1))
+
+        # Zero-extend lower 4 bits.
+        tb.add(self._builder.gen_bsh(tmp0, imm4, tmp2))
+        tb.add(self._builder.gen_bsh(tmp2, immn4, tmp4))
+
+        tb.add(self._builder.gen_bsh(tmp1, imm4, tmp3))
+        tb.add(self._builder.gen_bsh(tmp3, immn4, tmp5))
+
+        # Subtract
+        tb.add(self._builder.gen_sub(tmp4, tmp5, tmp6))
+
+        # Move bit 4 to AF flag.
+        tb.add(self._builder.gen_bsh(tmp6, immn4, af))
 
     def _update_pf(self, tb, oprnd0, oprnd1, result):
         tmp0 = tb.temporal(result.size)
@@ -929,7 +991,7 @@ class X86Translator(Translator):
         self._update_of_sub(tb, accum, oprnd0, tmp0)
         self._update_sf(tb, accum, oprnd0, tmp0)
         self._update_zf(tb, accum, oprnd0, tmp0)
-        self._update_af(tb, accum, oprnd0, tmp0)
+        self._update_af_sub(tb, accum, oprnd0, tmp0)
         self._update_pf(tb, accum, oprnd0, tmp0)
 
         # Exchange
@@ -1009,7 +1071,7 @@ class X86Translator(Translator):
             self._update_of_sub(tb, oprnd0, oprnd1, tmp0)
             self._update_sf(tb, oprnd0, oprnd1, tmp0)
             self._update_zf(tb, oprnd0, oprnd1, tmp0)
-            self._update_af(tb, oprnd0, oprnd1, tmp0)
+            self._update_af_sub(tb, oprnd0, oprnd1, tmp0)
             self._update_pf(tb, oprnd0, oprnd1, tmp0)
             self._update_cf(tb, oprnd0, oprnd1, tmp0)
 
@@ -1040,7 +1102,7 @@ class X86Translator(Translator):
             self._update_of_sub(tb, tmp3, tmp4, tmp2)
             self._update_sf(tb, tmp3, tmp4, tmp2)
             self._update_zf(tb, tmp3, tmp4, tmp2)
-            self._update_af(tb, tmp3, tmp4, tmp2)
+            self._update_af_sub(tb, tmp3, tmp4, tmp2)
             self._update_pf(tb, tmp3, tmp4, tmp2)
             self._update_cf(tb, tmp3, tmp4, tmp2)
 
@@ -1517,7 +1579,7 @@ class X86Translator(Translator):
         self._update_of_sub(tb, oprnd0, oprnd1, tmp0)
         self._update_sf(tb, oprnd0, oprnd1, tmp0)
         self._update_zf(tb, oprnd0, oprnd1, tmp0)
-        self._update_af(tb, oprnd0, oprnd1, tmp0)
+        self._update_af_sub(tb, oprnd0, oprnd1, tmp0)
         self._update_pf(tb, oprnd0, oprnd1, tmp0)
 
 # "Decimal Arithmetic Instructions"
