@@ -1524,7 +1524,7 @@ class X86Translator(Translator):
             self._update_of_sub(tb, oprnd0, imm0, tmp0)
             self._update_sf(tb, oprnd0, imm0, tmp0)
             self._update_zf(tb, oprnd0, imm0, tmp0)
-            self._update_af(tb, oprnd0, imm0, tmp0)
+            self._update_af_sub(tb, oprnd0, imm0, tmp0)
             self._update_pf(tb, oprnd0, imm0, tmp0)
 
         tb.write(instruction.operands[0], tmp0)
@@ -1540,6 +1540,7 @@ class X86Translator(Translator):
         imm0 = tb.immediate((2**oprnd0.size)-1, oprnd0.size)
         imm1 = tb.immediate(1, oprnd0.size)
         imm2 = tb.immediate(1, 1)
+        zero = tb.immediate(0, oprnd0.size)
 
         tmp0 = tb.temporal(oprnd0.size)
         tmp1 = tb.temporal(oprnd0.size)
@@ -1557,7 +1558,7 @@ class X86Translator(Translator):
             self._update_of_sub(tb, oprnd0, oprnd0, tmp1)
             self._update_sf(tb, oprnd0, oprnd0, tmp1)
             self._update_zf(tb, oprnd0, oprnd0, tmp1)
-            self._update_af(tb, oprnd0, oprnd0, tmp1)
+            self._update_af_sub(tb, zero, oprnd0, tmp1)
             self._update_pf(tb, oprnd0, oprnd0, tmp1)
 
         tb.write(instruction.operands[0], tmp1)
@@ -2821,7 +2822,7 @@ class X86Translator(Translator):
         self._update_of_sub(tb, src1_data, src2_data, tmp0)
         self._update_sf(tb, src1_data, src2_data, tmp0)
         self._update_zf(tb, src1_data, src2_data, tmp0)
-        self._update_af(tb, src1_data, src2_data, tmp0)
+        self._update_af_sub(tb, src1_data, src2_data, tmp0)
         self._update_pf(tb, src1_data, src2_data, tmp0)
 
         # Update source pointers.
@@ -3035,7 +3036,7 @@ class X86Translator(Translator):
         self._update_of_sub(tb, src1_data, src2_data, tmp0)
         self._update_sf(tb, src1_data, src2_data, tmp0)
         self._update_zf(tb, src1_data, src2_data, tmp0)
-        self._update_af(tb, src1_data, src2_data, tmp0)
+        self._update_af_sub(tb, src1_data, src2_data, tmp0)
         self._update_pf(tb, src1_data, src2_data, tmp0)
 
         # Update source pointers.
