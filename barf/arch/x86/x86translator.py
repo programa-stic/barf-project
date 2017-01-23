@@ -704,6 +704,11 @@ class X86Translator(Translator):
 
         tb.write(instruction.operands[0], oprnd1)
 
+    def _translate_movabs(self, tb, instruction):
+        # Alias for mov with 64bit operands.
+
+        self._translate_mov(tb, instruction)
+
     def _translate_movsx(self, tb, instruction):
         # Flags Affected
         # None.
