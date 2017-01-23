@@ -889,7 +889,7 @@ class CFGSimpleRendererEx(CFGRenderer):
 
     asm_tpl = "<tr><td align='left'>{address:08x} [{size:02d}] {assembly} </td></tr>"
 
-    reil_tpl = "<tr><td align='left'>              {assembly} </td></tr>"
+    reil_tpl = "<tr><td align='left'>         .{index:02x}  {assembly} </td></tr>"
 
     def save(self, cfg, filename, print_ir=False, format='dot'):
         """Save basic block graph into a file.
@@ -944,7 +944,7 @@ class CFGSimpleRendererEx(CFGRenderer):
         return self.asm_tpl.format(address=instr.address, size=instr.size, assembly=asm_str)
 
     def _render_reil(self, instr):
-        return self.reil_tpl.format(assembly=instr)
+        return self.reil_tpl.format(index=instr.address & 0xff, assembly=instr)
 
     def _render_bb(self, basic_block, name, print_ir):
         lines = []
