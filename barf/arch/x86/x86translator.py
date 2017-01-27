@@ -3370,3 +3370,37 @@ class X86Translator(Translator):
         # None.
 
         tb.add(self._builder.gen_unkn())
+
+# "SIMD Instructions"
+# ============================================================================ #
+    def _translate_movdqa(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        # DEST[127:0] <- SRC[127:0]
+
+        # NOTE This implementation ignores the alignment.
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tmp0 = tb.temporal(oprnd0.size)
+
+        tb.add(self._builder.gen_str(oprnd1, tmp0))
+
+        tb.write(instruction.operands[0], tmp0)
+
+    def _translate_pxor(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        # DEST <- DEST XOR SRC
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tmp0 = tb.temporal(oprnd0.size)
+
+        tb.add(self._builder.gen_xor(oprnd0, oprnd1, tmp0))
+
+        tb.write(instruction.operands[0], tmp0)
