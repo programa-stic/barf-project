@@ -721,6 +721,12 @@ class X86Translator(Translator):
 
         tb.write(instruction.operands[0], tmp0)
 
+    def _translate_movsxd(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        self._translate_movsx(tb, instruction)
+
     def _translate_movzx(self, tb, instruction):
         # Flags Affected
         # None.
