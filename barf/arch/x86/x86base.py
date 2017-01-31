@@ -330,7 +330,7 @@ class X86ArchitectureInformation(ArchitectureInformation):
             "jmp", "ja", "jae", "jb", "jbe", "jc", "je", "jg", "jge", "jl",
             "jle", "jna", "jnae", "jnb", "jnbe", "jnc", "jne", "jng", "jnge",
             "jnl", "jnle", "jno", "jnp", "jns", "jnz", "jo", "jp", "jpe",
-            "jpo", "js", "jz"
+            "jpo", "js", "jz", "loop", "loope", "loopne"
         ]
 
         return instruction.mnemonic in branch_instrs
@@ -340,7 +340,7 @@ class X86ArchitectureInformation(ArchitectureInformation):
             "ja", "jae", "jb", "jbe", "jc", "je", "jg", "jge", "jl",
             "jle", "jna", "jnae", "jnb", "jnbe", "jnc", "jne", "jng", "jnge",
             "jnl", "jnle", "jno", "jnp", "jns", "jnz", "jo", "jp", "jpe",
-            "jpo", "js", "jz"
+            "jpo", "js", "jz", "loop", "loope", "loopne"
         ]
 
         return instruction.mnemonic in branch_instrs
