@@ -28,12 +28,10 @@ x86 Instruction Parser.
 
 import copy
 import logging
-import os
 
 from pyparsing import alphanums
 from pyparsing import alphas
 from pyparsing import Combine
-from pyparsing import Forward
 from pyparsing import Literal
 from pyparsing import nums
 from pyparsing import Optional
@@ -43,7 +41,6 @@ from pyparsing import Word
 from pyparsing import ZeroOrMore
 
 from barf.arch import ARCH_X86_MODE_32
-from barf.arch import ARCH_X86_MODE_64
 from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86base import X86ImmediateOperand
 from barf.arch.x86.x86base import X86Instruction
@@ -63,9 +60,9 @@ modifier_size = {
     "dword ptr"   : 32,
     "word ptr"    : 16,
     "byte ptr"    : 8,
-    "ptr"         : None, # Based on architecture size.
-    "far ptr"     : None, # Based on architecture size.
-    "far"         : None, # Based on architecture size.
+    "ptr"         : None,   # Based on architecture size.
+    "far ptr"     : None,   # Based on architecture size.
+    "far"         : None,   # Based on architecture size.
 }
 
 # Parsing functions
@@ -89,6 +86,7 @@ def infer_operands_size(operands):
             if isinstance(oprnd, X86ImmediateOperand) and not oprnd.size:
                 oprnd.size = arch_info.architecture_size
 
+
 def parse_immediate(string):
     if string.startswith("0x") or string.startswith("-0x"):
         immediate = int(string, 16)
@@ -96,6 +94,7 @@ def parse_immediate(string):
         immediate = int(string, 10)
 
     return immediate
+
 
 def parse_operand(string, location, tokens):
     """Parse an x86 instruction operand.
@@ -129,6 +128,7 @@ def parse_operand(string, location, tokens):
         oprnd.size = modifier_size[oprnd.modifier]
 
     return oprnd
+
 
 def parse_instruction(string, location, tokens):
     """Parse an x86 instruction.
@@ -269,6 +269,7 @@ instruction = (
     Optional(ZeroOrMore(operand + Suppress(comma)) + operand)("operands")
 ).setParseAction(parse_instruction)
 
+
 class X86Parser(object):
     """x86 Instruction Parser.
     """
@@ -290,7 +291,7 @@ class X86Parser(object):
         try:
             instr_lower = instr.lower()
 
-            if not instr_lower in self._cache:
+            if instr_lower not in self._cache:
                 instr_asm = instruction.parseString(instr_lower)[0]
 
                 self._cache[instr_lower] = instr_asm

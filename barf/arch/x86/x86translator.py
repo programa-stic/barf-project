@@ -33,16 +33,11 @@ from barf.arch.translator import TranslationBuilder
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
 from barf.arch.x86.x86base import X86ArchitectureInformation
-from barf.arch.x86.x86base import X86ImmediateOperand
-from barf.arch.x86.x86base import X86MemoryOperand
 from barf.arch.x86.x86base import X86RegisterOperand
-from barf.core.reil import check_operands_size
-from barf.core.reil import ReilEmptyOperand
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilInstructionBuilder
-from barf.core.reil import ReilInstruction
-from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
+from barf.core.reil import check_operands_size
 from barf.utils.utils import VariableNamer
 
 FULL_TRANSLATION = 0
@@ -91,8 +86,7 @@ class X86TranslationBuilder(TranslationBuilder):
 
             reil_operand = ReilRegisterOperand(x86_operand.name, x86_operand.size)
 
-            if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and \
-                x86_operand.size == 32:
+            if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and x86_operand.size == 32:
                 if x86_operand.name in self._regs_mapper:
                     base_reg, offset = self._regs_mapper[x86_operand.name]
 
@@ -189,6 +183,8 @@ class X86Translator(Translator):
 
     def __init__(self, architecture_mode=ARCH_X86_MODE_32, translation_mode=FULL_TRANSLATION):
 
+        super(X86Translator, self).__init__()
+
         # Set *Architecture Mode*. The translation of each instruction
         # into the REIL language is based on this.
         self._arch_mode = architecture_mode
@@ -206,13 +202,13 @@ class X86Translator(Translator):
         self._builder = ReilInstructionBuilder()
 
         self._flags = {
-            "af" : ReilRegisterOperand("af", 1),
-            "cf" : ReilRegisterOperand("cf", 1),
-            "df" : ReilRegisterOperand("df", 1),
-            "of" : ReilRegisterOperand("of", 1),
-            "pf" : ReilRegisterOperand("pf", 1),
-            "sf" : ReilRegisterOperand("sf", 1),
-            "zf" : ReilRegisterOperand("zf", 1),
+            "af": ReilRegisterOperand("af", 1),
+            "cf": ReilRegisterOperand("cf", 1),
+            "df": ReilRegisterOperand("df", 1),
+            "of": ReilRegisterOperand("of", 1),
+            "pf": ReilRegisterOperand("pf", 1),
+            "sf": ReilRegisterOperand("sf", 1),
+            "zf": ReilRegisterOperand("zf", 1),
         }
 
         if self._arch_mode == ARCH_X86_MODE_32:
@@ -220,13 +216,13 @@ class X86Translator(Translator):
             self._bp = ReilRegisterOperand("ebp", 32)
             self._ip = ReilRegisterOperand("eip", 32)
 
-            self._ws = ReilImmediateOperand(4, 32) # word size
+            self._ws = ReilImmediateOperand(4, 32)  # word size
         elif self._arch_mode == ARCH_X86_MODE_64:
             self._sp = ReilRegisterOperand("rsp", 64)
             self._bp = ReilRegisterOperand("rbp", 64)
             self._ip = ReilRegisterOperand("rip", 64)
 
-            self._ws = ReilImmediateOperand(8, 64) # word size
+            self._ws = ReilImmediateOperand(8, 64)  # word size
 
     def translate(self, instruction):
         """Return IR representation of an instruction.
@@ -319,7 +315,7 @@ class X86Translator(Translator):
         raise NotImplementedError("Instruction Not Implemented")
 
     def _extract_bit(self, tb, reg, bit):
-        assert(bit >= 0 and bit < reg.size)
+        assert(0 <= bit < reg.size)
 
         tmp = tb.temporal(reg.size)
         ret = tb.temporal(1)
@@ -683,7 +679,7 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_sext(oprnd1, tmp0))
         tb.add(self._builder.gen_bsh(tmp0, imm32, tmp1))
 
-        tb.write(edx, tmp1) # if in 64 bit mode, it zeros the upper half of rdx.
+        tb.write(edx, tmp1)     # if in 64 bit mode, it zeros the upper half of rdx.
 
     def _translate_cdqe(self, tb, instruction):
         # Flags Affected
@@ -768,62 +764,91 @@ class X86Translator(Translator):
 
     def _translate_cmova(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'a')
+
     def _translate_cmovae(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'ae')
+
     def _translate_cmovb(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'b')
+
     def _translate_cmovbe(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'be')
+
     def _translate_cmovc(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'c')
+
     def _translate_cmove(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'e')
+
     def _translate_cmovg(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'g')
+
     def _translate_cmovge(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'ge')
+
     def _translate_cmovl(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'l')
+
     def _translate_cmovle(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'le')
+
     def _translate_cmovna(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'na')
+
     def _translate_cmovnae(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'nae')
+
     def _translate_cmovnb(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'nb')
+
     def _translate_cmovnbe(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'nbe')
+
     def _translate_cmovnc(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'nc')
+
     def _translate_cmovne(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'ne')
+
     def _translate_cmovng(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'ng')
+
     def _translate_cmovnge(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'nge')
+
     def _translate_cmovnl(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'nl')
+
     def _translate_cmovnle(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'nle')
+
     def _translate_cmovno(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'no')
+
     def _translate_cmovnp(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'np')
+
     def _translate_cmovns(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'ns')
+
     def _translate_cmovnz(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'nz')
+
     def _translate_cmovo(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'o')
+
     def _translate_cmovp(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'p')
+
     def _translate_cmovpe(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'pe')
+
     def _translate_cmovpo(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'po')
+
     def _translate_cmovs(self, tb, instruction):
         self._translate_cmov(tb, instruction, 's')
+
     def _translate_cmovz(self, tb, instruction):
         self._translate_cmov(tb, instruction, 'z')
 
@@ -850,62 +875,91 @@ class X86Translator(Translator):
 
     def _translate_seta(self, tb, instruction):
         self._translate_set(tb, instruction, 'a')
+
     def _translate_setae(self, tb, instruction):
         self._translate_set(tb, instruction, 'ae')
+
     def _translate_setb(self, tb, instruction):
         self._translate_set(tb, instruction, 'b')
+
     def _translate_setbe(self, tb, instruction):
         self._translate_set(tb, instruction, 'be')
+
     def _translate_setc(self, tb, instruction):
         self._translate_set(tb, instruction, 'c')
+
     def _translate_sete(self, tb, instruction):
         self._translate_set(tb, instruction, 'e')
+
     def _translate_setg(self, tb, instruction):
         self._translate_set(tb, instruction, 'g')
+
     def _translate_setge(self, tb, instruction):
         self._translate_set(tb, instruction, 'ge')
+
     def _translate_setl(self, tb, instruction):
         self._translate_set(tb, instruction, 'l')
+
     def _translate_setle(self, tb, instruction):
         self._translate_set(tb, instruction, 'le')
+
     def _translate_setna(self, tb, instruction):
         self._translate_set(tb, instruction, 'na')
+
     def _translate_setnae(self, tb, instruction):
         self._translate_set(tb, instruction, 'nae')
+
     def _translate_setnb(self, tb, instruction):
         self._translate_set(tb, instruction, 'nb')
+
     def _translate_setnbe(self, tb, instruction):
         self._translate_set(tb, instruction, 'nbe')
+
     def _translate_setnc(self, tb, instruction):
         self._translate_set(tb, instruction, 'nc')
+
     def _translate_setne(self, tb, instruction):
         self._translate_set(tb, instruction, 'ne')
+
     def _translate_setng(self, tb, instruction):
         self._translate_set(tb, instruction, 'ng')
+
     def _translate_setnge(self, tb, instruction):
         self._translate_set(tb, instruction, 'nge')
+
     def _translate_setnl(self, tb, instruction):
         self._translate_set(tb, instruction, 'nl')
+
     def _translate_setnle(self, tb, instruction):
         self._translate_set(tb, instruction, 'nle')
+
     def _translate_setno(self, tb, instruction):
         self._translate_set(tb, instruction, 'no')
+
     def _translate_setnp(self, tb, instruction):
         self._translate_set(tb, instruction, 'np')
+
     def _translate_setns(self, tb, instruction):
         self._translate_set(tb, instruction, 'ns')
+
     def _translate_setnz(self, tb, instruction):
         self._translate_set(tb, instruction, 'nz')
+
     def _translate_seto(self, tb, instruction):
         self._translate_set(tb, instruction, 'o')
+
     def _translate_setp(self, tb, instruction):
         self._translate_set(tb, instruction, 'p')
+
     def _translate_setpe(self, tb, instruction):
         self._translate_set(tb, instruction, 'pe')
+
     def _translate_setpo(self, tb, instruction):
         self._translate_set(tb, instruction, 'po')
+
     def _translate_sets(self, tb, instruction):
         self._translate_set(tb, instruction, 's')
+
     def _translate_setz(self, tb, instruction):
         self._translate_set(tb, instruction, 'z')
 
@@ -1167,8 +1221,7 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_mul(oprnd0, oprnd1, tmp0))
 
         # Clean rax and rdx registers.
-        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and \
-            oprnd0.size == 32:
+        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and oprnd0.size == 32:
 
             zero = tb.immediate(0, 64)
 
@@ -1259,25 +1312,21 @@ class X86Translator(Translator):
             if oprnd0.size == 8:
                 oprnd1 = ReilRegisterOperand("al", 8)
 
-                tmp0 = tb.temporal(16)
                 result_low = ReilRegisterOperand("al", 8)
                 result_high = ReilRegisterOperand("ah", 8)
             elif oprnd0.size == 16:
                 oprnd1 = ReilRegisterOperand("ax", 16)
 
-                tmp0 = tb.temporal(32)
                 result_low = ReilRegisterOperand("dx", 16)
                 result_high = ReilRegisterOperand("ax", 16)
             elif oprnd0.size == 32:
                 oprnd1 = ReilRegisterOperand("eax", 32)
 
-                tmp0 = tb.temporal(64)
                 result_low = ReilRegisterOperand("edx", 32)
                 result_high = ReilRegisterOperand("eax", 32)
             elif oprnd0.size == 64:
                 oprnd1 = ReilRegisterOperand("rax", 64)
 
-                tmp0 = tb.temporal(64)
                 result_low = ReilRegisterOperand("rdx", 64)
                 result_high = ReilRegisterOperand("rax", 64)
 
@@ -1373,8 +1422,7 @@ class X86Translator(Translator):
 
         # Store result.
         # TODO: Improve this code.
-        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and \
-            result_low.size == 32:
+        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and result_low.size == 32:
             if result_low.name in tb._regs_mapper:
                 base_reg, offset = tb._regs_mapper[result_low.name]
 
@@ -1386,8 +1434,7 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_str(tmp5, result_low))
 
         # TODO: Improve this code.
-        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and \
-            result_high.size == 32:
+        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and result_high.size == 32:
             if result_high.name in tb._regs_mapper:
                 base_reg, offset = tb._regs_mapper[result_high.name]
 
@@ -1460,8 +1507,7 @@ class X86Translator(Translator):
 
         # Store result.
         # TODO: Improve this code.
-        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and \
-            result_low.size == 32:
+        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and result_low.size == 32:
             if result_low.name in tb._regs_mapper:
                 base_reg, offset = tb._regs_mapper[result_low.name]
 
@@ -1473,8 +1519,7 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_str(tmp5, result_low))
 
         # TODO: Improve this code.
-        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and \
-            result_high.size == 32:
+        if self._arch_info.architecture_mode == ARCH_X86_MODE_64 and result_high.size == 32:
             if result_high.name in tb._regs_mapper:
                 base_reg, offset = tb._regs_mapper[result_high.name]
 
@@ -1874,7 +1919,6 @@ class X86Translator(Translator):
         tmp0 = tb.temporal(oprnd0.size)
         tmp1 = tb.temporal(oprnd0.size)
         tmp2 = tb.temporal(oprnd0.size)
-        tmp6 = tb.temporal(oprnd0.size)
         tmp3 = tb.temporal(oprnd0.size)
         tmp4 = tb.temporal(oprnd0.size)
         tmp5 = tb.temporal(oprnd0.size)
@@ -2090,8 +2134,6 @@ class X86Translator(Translator):
         oprnd0 = tb.read(instruction.operands[0])
         oprnd1 = tb.read(instruction.operands[1])
 
-        size = tb.immediate(oprnd0.size, oprnd0.size)
-
         tmp_cf_ext = tb.temporal(oprnd0.size * 2)
         tmp_cf_ext_1 = tb.temporal(oprnd0.size * 2)
 
@@ -2109,7 +2151,6 @@ class X86Translator(Translator):
 
         imm1 = tb.immediate(1, oprnd0.size)
         imm2 = tb.immediate(-(oprnd0.size + 1), oprnd0.size * 2)
-        imm3 = tb.immediate(-(oprnd0.size + 1), oprnd0.size)
         imm4 = tb.immediate(oprnd0.size, oprnd0.size * 2)
 
         if oprnd0.size == 8:
@@ -2203,19 +2244,12 @@ class X86Translator(Translator):
         oprnd0 = tb.read(instruction.operands[0])
         oprnd1 = tb.read(instruction.operands[1])
 
-        size = tb.immediate(oprnd0.size, oprnd0.size)
-        msize = tb.immediate(-oprnd0.size, oprnd0.size)
-
-        tmp0 = tb.temporal(oprnd0.size)
         tmp0_1 = tb.temporal(oprnd0.size)
-        count = tb.temporal(oprnd0.size)
-        temp_count = tb.temporal(oprnd0.size)
         zero = tb.immediate(0, oprnd0.size)
 
         # TODO: Improve this translation. It uses unecessary large
         # register...
         tmp_cf_ext = tb.temporal(oprnd0.size * 4)
-        tmp_cf_ext_1 = tb.temporal(oprnd0.size * 4)
 
         oprnd_ext = tb.temporal(oprnd0.size * 4)
         oprnd_ext_1 = tb.temporal(oprnd0.size * 4)
@@ -2227,16 +2261,12 @@ class X86Translator(Translator):
 
         result = tb.temporal(oprnd0.size)
         result_msb = tb.temporal(1)
-        result_msb_prev = tb.temporal(1)
 
         tmp1 = tb.temporal(1)
         tmp1_zero = tb.temporal(1)
 
         imm1 = tb.immediate(1, oprnd0.size)
         imm7 = tb.immediate(-(oprnd0.size - 1), oprnd0.size)
-
-        one = tb.immediate(1, oprnd0.size * 2)
-        mone = tb.immediate(-1, oprnd0.size * 2)
 
         cf_old = tb.temporal(1)
 
@@ -2344,7 +2374,7 @@ class X86Translator(Translator):
 
         # Compute bit offset.
         tb.add(self._builder.gen_mod(oprnd1, bit_base_size, bit_offset_tmp))
-        tb.add(self._builder.gen_sub(zero, bit_offset_tmp, bit_offset)) # negate
+        tb.add(self._builder.gen_sub(zero, bit_offset_tmp, bit_offset))     # negate
 
         # Extract bit.
         tb.add(self._builder.gen_bsh(oprnd0, bit_offset, tmp0))
@@ -2431,62 +2461,91 @@ class X86Translator(Translator):
 
     def _translate_ja(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'a')
+
     def _translate_jae(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'ae')
+
     def _translate_jb(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'b')
+
     def _translate_jbe(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'be')
+
     def _translate_jc(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'c')
+
     def _translate_je(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'e')
+
     def _translate_jg(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'g')
+
     def _translate_jge(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'ge')
+
     def _translate_jl(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'l')
+
     def _translate_jle(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'le')
+
     def _translate_jna(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'na')
+
     def _translate_jnae(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'nae')
+
     def _translate_jnb(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'nb')
+
     def _translate_jnbe(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'nbe')
+
     def _translate_jnc(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'nc')
+
     def _translate_jne(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'ne')
+
     def _translate_jng(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'ng')
+
     def _translate_jnge(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'nge')
+
     def _translate_jnl(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'nl')
+
     def _translate_jnle(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'nle')
+
     def _translate_jno(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'no')
+
     def _translate_jnp(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'np')
+
     def _translate_jns(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'ns')
+
     def _translate_jnz(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'nz')
+
     def _translate_jo(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'o')
+
     def _translate_jp(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'p')
+
     def _translate_jpe(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'pe')
+
     def _translate_jpo(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'po')
+
     def _translate_js(self, tb, instruction):
         self._translate_jcc(tb, instruction, 's')
+
     def _translate_jz(self, tb, instruction):
         self._translate_jcc(tb, instruction, 'z')
 
@@ -2514,10 +2573,8 @@ class X86Translator(Translator):
         addr_oprnd = self._translate_address(tb, oprnd0)
 
         imm1 = tb.immediate(1, 1)
-        size = tb.immediate(instruction.size, self._sp.size)
 
         tmp0 = tb.temporal(self._sp.size)
-        tmp1 = tb.temporal(self._sp.size)
 
         end_addr = ReilImmediateOperand((instruction.address + instruction.size), self._arch_info.address_size)
 
@@ -2545,7 +2602,7 @@ class X86Translator(Translator):
         if len(instruction.operands) > 0:
             oprnd0 = tb.read(instruction.operands[0])
 
-            imm0 = tb.immediate(oprnd0.immediate & (2**self._sp.size -1), self._sp.size)
+            imm0 = tb.immediate(oprnd0.immediate & (2**self._sp.size - 1), self._sp.size)
 
             tmp3 = tb.temporal(self._sp.size)
 
@@ -2568,18 +2625,13 @@ class X86Translator(Translator):
 
         addr_oprnd = self._translate_address(tb, oprnd0)
 
-        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
-
         tmp0 = tb.temporal(counter.size)
-        exit_cond = tb.temporal(1)
 
         imm0 = tb.immediate(1, counter.size)
 
-        stop_looping_lbl = tb.label('stop_looping')
-
         tb.add(self._builder.gen_str(counter, tmp0))
         tb.add(self._builder.gen_sub(tmp0, imm0, counter))
-        tb.add(self._builder.gen_jcc(counter, addr_oprnd)) # keep looping
+        tb.add(self._builder.gen_jcc(counter, addr_oprnd))  # keep looping
 
     def _translate_loopne(self, tb, instruction):
         # Flags Affected
@@ -2615,7 +2667,7 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_xor(counter_zero, imm1, counter_not_zero))
         tb.add(self._builder.gen_and(counter_not_zero, zf_zero, branch_cond))
         tb.add(self._builder.gen_jcc(branch_cond, keep_looping_lbl))
-        tb.add(self._builder.gen_jcc(imm0, end_addr)) # exit loop
+        tb.add(self._builder.gen_jcc(imm0, end_addr))   # exit loop
         tb.add(keep_looping_lbl)
         tb.add(self._builder.gen_jcc(imm0, addr_oprnd))
 
@@ -2658,7 +2710,7 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_xor(counter_zero, imm1, counter_not_zero))
         tb.add(self._builder.gen_and(counter_not_zero, zf_not_zero, branch_cond))
         tb.add(self._builder.gen_jcc(branch_cond, keep_looping_lbl))
-        tb.add(self._builder.gen_jcc(imm0, end_addr)) # exit loop
+        tb.add(self._builder.gen_jcc(imm0, end_addr))   # exit loop
         tb.add(keep_looping_lbl)
         tb.add(self._builder.gen_jcc(imm0, addr_oprnd))
 
@@ -2677,7 +2729,6 @@ class X86Translator(Translator):
         # Create labels.
         forward_lbl = Label('forward')
         backward_lbl = Label('backward')
-        continue_lbl = Label('continue')
 
         end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
 
@@ -2750,7 +2801,7 @@ class X86Translator(Translator):
         tb.add(continue_lbl)
 
     def _translate_cmps(self, tb, instruction):
-        self._translate_cmpsb(self, tb, instruction)
+        self._translate_cmpsb(tb, instruction)
 
     def _translate_cmpsb(self, tb, instruction):
         self._translate_cmps_suffix(tb, instruction, "b")
@@ -2844,7 +2895,7 @@ class X86Translator(Translator):
             self._rep_prefix_end(tb, instruction, counter, loop_start_lbl)
 
     def _translate_lods(self, tb, instruction):
-        self._translate_lodsb(self, tb, instruction)
+        self._translate_lodsb(tb, instruction)
 
     def _translate_lodsb(self, tb, instruction):
         self._translate_lods_suffix(tb, instruction, "b")
@@ -2904,7 +2955,7 @@ class X86Translator(Translator):
             self._rep_prefix_end(tb, instruction, counter, loop_start_lbl)
 
     def _translate_movs(self, tb, instruction):
-        self._translate_movsb(self, tb, instruction)
+        self._translate_movsb(tb, instruction)
 
     def _translate_movsb(self, tb, instruction):
         self._translate_movs_suffix(tb, instruction, "b")
@@ -2970,7 +3021,7 @@ class X86Translator(Translator):
             self._rep_prefix_end(tb, instruction, counter, loop_start_lbl)
 
     def _translate_scas(self, tb, instruction):
-        self._translate_scasb(self, tb, instruction)
+        self._translate_scasb(tb, instruction)
 
     def _translate_scasb(self, tb, instruction):
         self._translate_scas_suffix(tb, instruction, "b")
@@ -3058,7 +3109,7 @@ class X86Translator(Translator):
             self._rep_prefix_end(tb, instruction, counter, loop_start_lbl)
 
     def _translate_stos(self, tb, instruction):
-        self._translate_stosb(self, tb, instruction)
+        self._translate_stosb(tb, instruction)
 
     def _translate_stosb(self, tb, instruction):
         self._translate_stos_suffix(tb, instruction, "b")
@@ -3302,7 +3353,6 @@ class X86Translator(Translator):
         # All flags may be affected; see the Operation section for
         # details.
 
-        tmp0 = tb.temporal(self._sp.size)
         tmp1 = tb.temporal(self._sp.size)
 
         shl_one = tb.immediate(-1, self._sp.size)

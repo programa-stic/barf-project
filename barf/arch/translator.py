@@ -46,7 +46,7 @@ class Translator(object):
     def __init__(self):
         pass
 
-    def translator(self):
+    def translate(self, instruction):
         raise NotImplementedError()
 
     def reset(self):

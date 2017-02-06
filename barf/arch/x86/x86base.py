@@ -31,6 +31,7 @@ from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
 from barf.arch import ArchitectureInformation
 
+
 class X86ArchitectureInformation(ArchitectureInformation):
     """This class describe the Intel x86 architecture."""
 
@@ -245,8 +246,8 @@ class X86ArchitectureInformation(ArchitectureInformation):
     @property
     def architecture_size(self):
         arch_size_map = {
-            ARCH_X86_MODE_32 : 32,
-            ARCH_X86_MODE_64 : 64,
+            ARCH_X86_MODE_32: 32,
+            ARCH_X86_MODE_64: 64,
         }
 
         return arch_size_map[self._arch_mode]
@@ -254,8 +255,8 @@ class X86ArchitectureInformation(ArchitectureInformation):
     @property
     def operand_size(self):
         operand_size_map = {
-            ARCH_X86_MODE_32 : 32,
-            ARCH_X86_MODE_64 : 64,
+            ARCH_X86_MODE_32: 32,
+            ARCH_X86_MODE_64: 64,
         }
 
         return operand_size_map[self._arch_mode]
@@ -263,8 +264,8 @@ class X86ArchitectureInformation(ArchitectureInformation):
     @property
     def address_size(self):
         address_size_map = {
-            ARCH_X86_MODE_32 : 32,
-            ARCH_X86_MODE_64 : 64,
+            ARCH_X86_MODE_32: 32,
+            ARCH_X86_MODE_64: 64,
         }
 
         return address_size_map[self._arch_mode]
@@ -310,8 +311,8 @@ class X86ArchitectureInformation(ArchitectureInformation):
         """Return the maximum instruction size in bytes.
         """
         instruction_size_map = {
-            ARCH_X86_MODE_32 : 16,
-            ARCH_X86_MODE_64 : 16,
+            ARCH_X86_MODE_32: 16,
+            ARCH_X86_MODE_64: 16,
         }
 
         return instruction_size_map[self._arch_mode]

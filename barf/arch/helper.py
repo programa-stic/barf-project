@@ -36,6 +36,7 @@ def extract_branch_target(asm_instruction):
 
     return address
 
+
 def extract_call_target(asm_instruction):
     address = None
 

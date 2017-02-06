@@ -36,6 +36,7 @@ from barf.arch.x86.x86parser import X86Parser
 from barf.core.disassembler import Disassembler
 from barf.core.disassembler import DisassemblerError
 
+
 class X86Disassembler(Disassembler):
     """X86 Disassembler.
     """
@@ -44,8 +45,8 @@ class X86Disassembler(Disassembler):
         super(X86Disassembler, self).__init__()
 
         arch_mode_map = {
-            ARCH_X86_MODE_32 : CS_MODE_32,
-            ARCH_X86_MODE_64 : CS_MODE_64
+            ARCH_X86_MODE_32: CS_MODE_32,
+            ARCH_X86_MODE_64: CS_MODE_64
         }
 
         self._arch_mode = architecture_mode
