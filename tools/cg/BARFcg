@@ -114,19 +114,28 @@ def init_parser():
         help="Load symbols from file.")
 
     parser.add_argument(
-        "-a", "--recover-all",
-        action="store_true",
-        help="Recover all functions.")
-
-    parser.add_argument(
-        "-r", "--recover",
+        "-f", "--format",
         type=str,
-        help="Recover specified functions by address (comma separated).")
+        default="dot",
+        choices=["pdf", "png", "dot"],
+        help="Output format.")
 
     parser.add_argument(
         "-t", "--time",
         action="store_true",
         help="Print process time.")
+
+    group = parser.add_mutually_exclusive_group()
+
+    group.add_argument(
+        "-a", "--recover-all",
+        action="store_true",
+        help="Recover all functions.")
+
+    group.add_argument(
+        "-r", "--recover",
+        type=str,
+        help="Recover specified functions by address (comma separated).")
 
     return parser
 
@@ -135,6 +144,10 @@ def main():
     parser = init_parser()
 
     args = parser.parse_args()
+
+    # Set default options.
+    if not args.recover_all and not args.recover:
+        args.recover_all = True
 
     process_start = time.time()
 
@@ -187,7 +200,7 @@ def main():
 
     cg = CallGraph(cfgs_filtered)
 
-    cg.save(filename.split(os.path.sep)[-1] + "_callgraph")
+    cg.save(filename.split(os.path.sep)[-1] + "_callgraph", format=args.format)
 
     process_end = time.time()
 

@@ -88,8 +88,8 @@ def recover_cfg_all(barf, symbols_by_addr):
 
     return cfgs
 
-def save_cfg_graph(cfg, output_dir, show_reil):
-    cfg.save(output_dir + os.path.sep + cfg.name, print_ir=show_reil, format='dot')
+def save_cfg_graph(cfg, output_dir, show_reil, format):
+    cfg.save(output_dir + os.path.sep + cfg.name, print_ir=show_reil, format=format)
 
 def save_cfg_text(cfg, output_dir, show_reil, brief):
     fn_name = cfg.name
@@ -120,10 +120,10 @@ def save_cfgs(cfgs, output_dir, output_format, show_reil, brief):
             print("[*] Ignoring empty CFG: {}".format(cfg.name))
             continue
 
-        if output_format == "graph":
-            save_cfg_graph(cfg, output_dir, show_reil)
+        if output_format in ["pdf", "png", "dot"]:
+            save_cfg_graph(cfg, output_dir, show_reil, output_format)
 
-        if output_format == "text":
+        if output_format == "txt":
             save_cfg_text(cfg, output_dir, show_reil, brief)
 
 def create_output_dir(name):
@@ -151,20 +151,10 @@ def init_parser():
         help="Load symbols from file.")
 
     parser.add_argument(
-        "-a", "--recover-all",
-        action="store_true",
-        help="Recover all functions.")
-
-    parser.add_argument(
-        "-r", "--recover",
-        type=str,
-        help="Recover specified functions by address (comma separated).")
-
-    parser.add_argument(
         "-f", "--format",
         type=str,
-        default="graph",
-        choices=["graph", "text"],
+        default="dot",
+        choices=["txt", "pdf", "png", "dot"],
         help="Output format.")
 
     parser.add_argument(
@@ -190,6 +180,18 @@ def init_parser():
         action="store_true",
         help="Show REIL translation.")
 
+    group = parser.add_mutually_exclusive_group()
+
+    group.add_argument(
+        "-a", "--recover-all",
+        action="store_true",
+        help="Recover all functions.")
+
+    group.add_argument(
+        "-r", "--recover",
+        type=str,
+        help="Recover specified functions by address (comma separated).")
+
     return parser
 
 def main():
@@ -197,6 +199,10 @@ def main():
     parser = init_parser()
 
     args = parser.parse_args()
+
+    # Set default options.
+    if not args.recover_all and not args.recover:
+        args.recover_all = True
 
     process_start = time.time()
 
