@@ -55,6 +55,29 @@ class X86TranslationTests(unittest.TestCase):
 
         self.context_filename = "failing_context.data"
 
+    def test_pcmpeqb(self):
+        asm = ["pcmpeqb xmm0, xmm1"]
+
+        ctx_init = self.__init_context()
+
+        ctx_init["xmm0"] = 0x11145178113156181231517111345618
+        ctx_init["xmm1"] = 0x12345678123456781234567812345678
+
+        res = 0x000000ff0000ff00ff00000000ffff00
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # TODO Fix.
+        # cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        # if not cmp_result:
+        #     self.__save_failing_context(ctx_init)
+
+        # self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+        self.assertEquals(reil_ctx_out["xmm0"], res)
+        self.assertEquals(reil_ctx_out["xmm1"], ctx_init["xmm1"])
+
     def test_bswap_1(self):
         asm = ["bswap eax"]
 

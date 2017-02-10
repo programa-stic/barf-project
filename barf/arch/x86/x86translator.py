@@ -3482,3 +3482,54 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_xor(oprnd0, oprnd1, tmp0))
 
         tb.write(instruction.operands[0], tmp0)
+
+    def _translate_pcmpeqb(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        # IF DEST[7:0] = SRC[7:0]
+            # THEN DEST[7:0) <- FFH;
+            # ELSE DEST[7:0] <- 0; FI;
+        # (* Continue comparison of 2nd through 7th bytes in DEST and SRC *)
+        # IF DEST[63:56] = SRC[63:56]
+            # THEN DEST[63:56] <- FFH;
+            # ELSE DEST[63:56] <- 0; FI;
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        dst = tb.temporal(oprnd0.size)
+
+        tb.add(self._builder.gen_str(tb.immediate(0, dst.size), dst))
+
+        for i in xrange(oprnd0.size / 8):
+            t1 = tb.temporal(8)
+            t2 = tb.temporal(8)
+            t3 = tb.temporal(8)
+            t4 = tb.temporal(8)
+            t5 = tb.temporal(8)
+            t6 = tb.temporal(oprnd0.size)
+            dst_new = tb.temporal(oprnd0.size)
+
+            imm1 = tb.immediate(-(i * 8), oprnd0.size)
+            imm2 = tb.immediate(i * 8, 8)
+
+            # Extract i-th bytes.
+            tb.add(self._builder.gen_bsh(oprnd0, imm1, t1))
+            tb.add(self._builder.gen_bsh(oprnd1, imm1, t2))
+
+            # Compare i-th bytes.
+            tb.add(self._builder.gen_sub(t1, t2, t3))
+
+            tb.add(self._builder.gen_bisz(t3, t4))
+
+            # Set result for the i-th byte.
+            tb.add(self._builder.gen_mul(t4, tb.immediate(0xff, 8), t5))
+
+            # Store the i-th result.
+            tb.add(self._builder.gen_bsh(t5, imm2, t6))
+            tb.add(self._builder.gen_or(dst, t6, dst_new))
+
+            dst = dst_new
+
+        tb.write(instruction.operands[0], dst)
