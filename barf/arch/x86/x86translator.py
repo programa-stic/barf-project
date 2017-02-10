@@ -664,6 +664,34 @@ class X86Translator(Translator):
 
 # "Data Transfer Instructions"
 # ============================================================================ #
+    def _translate_bswap(self, tb, instruction):
+        # Flags Affected
+        # None.
+        oprnd0 = tb.read(instruction.operands[0])
+
+        dst = tb.temporal(oprnd0.size)
+
+        tb.add(self._builder.gen_str(tb.immediate(0, dst.size), dst))
+
+        for i in xrange(oprnd0.size / 8):
+            t1 = tb.temporal(8)
+            t2 = tb.temporal(oprnd0.size)
+            t3 = tb.temporal(oprnd0.size)
+
+            dst_new = tb.temporal(oprnd0.size)
+
+            imm1 = tb.immediate(-(i * 8), oprnd0.size)
+            imm2 = tb.immediate(8, oprnd0.size)
+
+            tb.add(self._builder.gen_bsh(oprnd0, imm1, t1))
+            tb.add(self._builder.gen_str(t1, t2))
+            tb.add(self._builder.gen_bsh(dst, imm2, t3))
+            tb.add(self._builder.gen_or(t3, t2, dst_new))
+
+            dst = dst_new
+
+        tb.write(instruction.operands[0], dst)
+
     def _translate_cdq(self, tb, instruction):
         # Flags Affected
         # None.

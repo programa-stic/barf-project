@@ -55,6 +55,34 @@ class X86TranslationTests(unittest.TestCase):
 
         self.context_filename = "failing_context.data"
 
+    def test_bswap_1(self):
+        asm = ["bswap eax"]
+
+        ctx_init = self.__init_context()
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_bswap_2(self):
+        asm = ["bswap rax"]
+
+        ctx_init = self.__init_context()
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
     def test_cdq(self):
         asm = ["cdq"]
 
