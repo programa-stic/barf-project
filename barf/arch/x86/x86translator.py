@@ -3533,3 +3533,45 @@ class X86Translator(Translator):
             dst = dst_new
 
         tb.write(instruction.operands[0], dst)
+
+    def _translate_pmovmskb(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        # PMOVMSKB (with 64-bit source operand and r32)
+        # r32[0] <- SRC[7];
+        # r32[1] <- SRC[15];
+        # (* Repeat operation for bytes 2 through 6 *)
+        # r32[7] <- SRC[63];
+        # r32[31:8] <- ZERO_FILL;
+
+        oprnd1 = tb.read(instruction.operands[1])
+
+        dst = tb.temporal(instruction.operands[0].size)
+
+        tb.add(self._builder.gen_str(tb.immediate(0, dst.size), dst))
+
+        j = 0
+
+        for i in xrange(oprnd1.size / 8):
+            t1 = tb.temporal(1)
+            t2 = tb.temporal(dst.size)
+            t3 = tb.temporal(dst.size)
+
+            dst_new = tb.temporal(dst.size)
+
+            imm1 = tb.immediate(-(i * 8 + 7), oprnd1.size)
+            imm2 = tb.immediate(j, dst.size)
+
+            tb.add(self._builder.gen_bsh(oprnd1, imm1, t1))
+
+            tb.add(self._builder.gen_str(t1, t2))
+
+            tb.add(self._builder.gen_bsh(t2, imm2, t3))
+            tb.add(self._builder.gen_or(dst, t3, dst_new))
+
+            j += 1
+
+            dst = dst_new
+
+        tb.write(instruction.operands[0], dst)
