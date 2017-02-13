@@ -55,7 +55,53 @@ class X86TranslationTests(unittest.TestCase):
 
         self.context_filename = "failing_context.data"
 
-    def test_por(self):
+    def test_movd(self):
+        asm = ["movd xmm0, xmm1"]
+
+        ctx_init = self.__init_context()
+
+        ctx_init["xmm0"] = 0x12345678123456781234567812345678
+        ctx_init["xmm1"] = 0x87654321876543218765432187654321
+
+        res = ctx_init["xmm0"] | ctx_init["xmm1"]
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # TODO Fix.
+        # cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        # if not cmp_result:
+        #     self.__save_failing_context(ctx_init)
+
+        # self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+        self.assertEquals(reil_ctx_out["xmm0"], res)
+        self.assertEquals(reil_ctx_out["xmm1"], ctx_init["xmm1"])
+
+    def test_por_1(self):
+        asm = ["por mm0, mm1"]
+
+        ctx_init = self.__init_context()
+
+        ctx_init["mm0"] = 0x12345678123456781234567812345678
+        ctx_init["mm1"] = 0x87654321876543218765432187654321
+
+        res = ctx_init["mm0"] | ctx_init["mm1"]
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # TODO Fix.
+        # cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        # if not cmp_result:
+        #     self.__save_failing_context(ctx_init)
+
+        # self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+        self.assertEquals(reil_ctx_out["mm0"], res)
+        self.assertEquals(reil_ctx_out["mm1"], ctx_init["mm1"])
+
+    def test_por_2(self):
         asm = ["por xmm0, xmm1"]
 
         ctx_init = self.__init_context()
