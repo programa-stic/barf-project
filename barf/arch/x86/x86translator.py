@@ -3969,3 +3969,59 @@ class X86Translator(Translator):
             dst = dst_new
 
         tb.write(instruction.operands[0], dst)
+
+    def _translate_punpcklbw(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        # Operation
+        # PUNPCKLBW instruction with 64-bit operands:
+        # DEST[63:56] <- SRC[31:24];
+        # DEST[55:48] <- DEST[31:24];
+        # DEST[47:40] <- SRC[23:16];
+        # DEST[39:32] <- DEST[23:16];
+        # DEST[31:24] <- SRC[15:8];
+        # DEST[23:16] <- DEST[15:8];
+        # DEST[15:8] <- SRC[7:0];
+        # DEST[7:0] <- DEST[7:0];
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        dst = tb.temporal(oprnd0.size)
+
+        tb.add(self._builder.gen_str(tb.immediate(0, dst.size), dst))
+
+        j = 0
+
+        for i in xrange(oprnd0.size / 8):
+            t1 = tb.temporal(8)
+            t2 = tb.temporal(8)
+            t1_ext = tb.temporal(oprnd0.size)
+            t2_ext = tb.temporal(oprnd0.size)
+            dst_tmp0 = tb.temporal(oprnd0.size)
+            dst_tmp1 = tb.temporal(oprnd0.size)
+            dst_new = tb.temporal(oprnd0.size)
+
+            imm1 = tb.immediate(-(i * 8), oprnd0.size)
+            imm2 = tb.immediate(j * 8, 8)
+            imm3 = tb.immediate((j+1) * 8, 8)
+            imm4 = tb.immediate(16, oprnd0.size)
+
+            # Extract i-th bytes.
+            tb.add(self._builder.gen_bsh(oprnd0, imm1, t1))
+            tb.add(self._builder.gen_bsh(oprnd1, imm1, t2))
+
+            # Shift and extend to the size of the dst operand.
+            tb.add(self._builder.gen_bsh(t1, imm2, t1_ext))
+            tb.add(self._builder.gen_bsh(t2, imm3, t2_ext))
+
+            # Store the i-th result.
+            tb.add(self._builder.gen_or(dst, t1_ext, dst_tmp0))
+            tb.add(self._builder.gen_or(dst_tmp0, t2_ext, dst_new))
+
+            j += 2
+
+            dst = dst_new
+
+        tb.write(instruction.operands[0], dst)
