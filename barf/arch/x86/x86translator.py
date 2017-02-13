@@ -3653,6 +3653,37 @@ class X86Translator(Translator):
 
         tb.write(instruction.operands[0], dst)
 
+    def _translate_movlpd(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        # Operation
+        # MOVLPD (128-bit Legacy SSE load)
+        # DEST[63:0] <- SRC[63:0]
+        # DEST[MAX_VL-1:64] (Unmodified)
+
+        # NOTE Only supports mmx and xmm registers.
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        dst_low = tb.temporal(64)
+        dst_high = tb.temporal(64)
+        dst = tb.temporal(oprnd0.size)
+        dst_tmp0 = tb.temporal(oprnd0.size)
+        dst_tmp1 = tb.temporal(oprnd0.size)
+        dst_low_ext = tb.temporal(oprnd0.size)
+
+        tb.add(self._builder.gen_bsh(oprnd0, tb.immediate(-64, oprnd0.size), dst_high))
+        tb.add(self._builder.gen_str(oprnd1, dst_low))
+
+        tb.add(self._builder.gen_bsh(dst_high, tb.immediate(64, dst_high.size), dst_tmp0))
+        tb.add(self._builder.gen_str(dst_low, dst_low_ext))
+
+        tb.add(self._builder.gen_or(dst_low_ext, dst_tmp0, dst))
+
+        tb.write(instruction.operands[0], dst)
+
     def _translate_por(self, tb, instruction):
         # Flags Affected
         # None.
