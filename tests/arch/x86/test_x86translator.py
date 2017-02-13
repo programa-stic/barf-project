@@ -55,6 +55,102 @@ class X86TranslationTests(unittest.TestCase):
 
         self.context_filename = "failing_context.data"
 
+    def test_movd_1(self):
+        # MOVD mm, r/m32
+        asm = ["movd mm0, eax"]
+
+        ctx_init = self.__init_context()
+
+        ctx_init["mm0"] = 0x1234567812345678
+        ctx_init["rax"] = 0xffffffff87654321
+
+        res = 0x0000000087654321
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # TODO Fix.
+        # cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        # if not cmp_result:
+        #     self.__save_failing_context(ctx_init)
+
+        # self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+        self.assertEquals(reil_ctx_out["mm0"], res)
+        self.assertEquals(reil_ctx_out["rax"], ctx_init["rax"])
+
+    def test_movd_2(self):
+        # MOVD r/m32, mm
+        asm = ["movd eax, mm0"]
+
+        ctx_init = self.__init_context()
+
+        ctx_init["mm0"] = 0x1234567812345678
+        ctx_init["rax"] = 0xffffffff87654321
+
+        res = 0x0000000012345678
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # TODO Fix.
+        # cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        # if not cmp_result:
+        #     self.__save_failing_context(ctx_init)
+
+        # self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+        self.assertEquals(reil_ctx_out["rax"], res)
+        self.assertEquals(reil_ctx_out["mm0"], ctx_init["mm0"])
+
+    def test_movd_3(self):
+        # MOVD xmm, r/m32
+        asm = ["movd xmm0, eax"]
+
+        ctx_init = self.__init_context()
+
+        ctx_init["xmm0"] = 0x12345678123456781234567812345678
+        ctx_init["rax"] = 0xffffffff87654321
+
+        res = 0x00000000000000000000000087654321
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # TODO Fix.
+        # cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        # if not cmp_result:
+        #     self.__save_failing_context(ctx_init)
+
+        # self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+        self.assertEquals(reil_ctx_out["xmm0"], res)
+        self.assertEquals(reil_ctx_out["rax"], ctx_init["rax"])
+
+    def test_movd_4(self):
+        # MOVD r/m32, xmm
+        asm = ["movd eax, xmm0"]
+
+        ctx_init = self.__init_context()
+
+        ctx_init["xmm0"] = 0x12345678123456781234567812345678
+        ctx_init["rax"] = 0xffffffff87654321
+
+        res = 0x0000000012345678
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # TODO Fix.
+        # cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        # if not cmp_result:
+        #     self.__save_failing_context(ctx_init)
+
+        # self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+        self.assertEquals(reil_ctx_out["rax"], res)
+        self.assertEquals(reil_ctx_out["xmm0"], ctx_init["xmm0"])
+
     def test_por_1(self):
         asm = ["por mm0, mm1"]
 

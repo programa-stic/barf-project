@@ -3529,6 +3529,36 @@ class X86Translator(Translator):
 
 # "SIMD Instructions"
 # ============================================================================ #
+    def _translate_movd(self, tb, instruction):
+        # Flags Affected
+        # None
+
+        # Operation
+        # MOVD (when destination operand is MMX technology register)
+        # DEST[31:0] <- SRC;
+        # DEST[63:32] <- 00000000H;
+        #
+        # MOVD (when destination operand is XMM register)
+        # DEST[31:0] <- SRC;
+        # DEST[127:32] <- 000000000000000000000000H;
+        # DEST[VLMAX-1:128] (Unmodified)
+        #
+        # MOVD (when source operand is MMX technology or XMM register)
+        # DEST <- SRC[31:0];
+
+        # NOTE Only supports mmx and xmm registers.
+        # TODO Check.
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tmp0 = tb.temporal(oprnd0.size)
+
+        tb.add(self._builder.gen_str(tb.immediate(0, oprnd0.size), tmp0))
+        tb.add(self._builder.gen_str(oprnd1, tmp0))
+
+        tb.write(instruction.operands[0], tmp0)
+
     def _translate_movdqa(self, tb, instruction):
         # Flags Affected
         # None.
