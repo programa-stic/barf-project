@@ -3546,6 +3546,29 @@ class X86Translator(Translator):
 
         tb.write(instruction.operands[0], tmp0)
 
+    def _translate_por(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        # Operation
+        # POR (64-bit operand)
+        # DEST <- DEST OR SRC
+
+        # POR (128-bit Legacy SSE version)
+        # DEST <- DEST OR SRC
+        # DEST[VLMAX-1:128] (Unmodified)
+
+        # NOTE Only supports mmx and xmm registers.
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tmp0 = tb.temporal(oprnd0.size)
+
+        tb.add(self._builder.gen_or(oprnd0, oprnd1, tmp0))
+
+        tb.write(instruction.operands[0], tmp0)
+
     def _translate_pxor(self, tb, instruction):
         # Flags Affected
         # None.
