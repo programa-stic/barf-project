@@ -3559,6 +3559,35 @@ class X86Translator(Translator):
 
         tb.write(instruction.operands[0], tmp0)
 
+    def _translate_movq(self, tb, instruction):
+        # Flags Affected
+        # None
+
+        # Operation
+        # MOVQ (when destination operand is XMM register)
+        # DEST[63:0] <- SRC[63:0];
+        # DEST[127:64] <- 0000000000000000H;
+        # DEST[VLMAX-1:128] (Unmodified)
+        #
+        # MOVQ (when destination operand is r/m64)
+        # DEST[63:0] <- SRC[63:0];
+        #
+        # MOVQ (when source operand is XMM register or r/m64)
+        # DEST <- SRC[63:0];
+
+        # NOTE Only supports mmx and xmm registers.
+        # TODO Check.
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tmp0 = tb.temporal(oprnd0.size)
+
+        tb.add(self._builder.gen_str(tb.immediate(0, oprnd0.size), tmp0))
+        tb.add(self._builder.gen_str(oprnd1, tmp0))
+
+        tb.write(instruction.operands[0], tmp0)
+
     def _translate_movdqa(self, tb, instruction):
         # Flags Affected
         # None.
