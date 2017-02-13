@@ -2450,8 +2450,6 @@ class X86Translator(Translator):
         src_is_zero = tb.temporal(1)
         bit_zero = tb.temporal(1)
 
-        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
-
         src_is_zero_lbl = Label("src_is_zero_lbl")
         loop_lbl = Label("loop_lbl")
         end_lbl = Label("end_lbl")
@@ -3739,8 +3737,6 @@ class X86Translator(Translator):
             t2 = tb.temporal(8)
             t3 = tb.temporal(8)
             t4 = tb.temporal(oprnd0.size)
-            t5 = tb.temporal(8)
-            t6 = tb.temporal(oprnd0.size)
             dst_new = tb.temporal(oprnd0.size)
 
             imm1 = tb.immediate(-(i * 8), oprnd0.size)
@@ -3755,7 +3751,6 @@ class X86Translator(Translator):
 
             # Store the i-th result.
             tb.add(self._builder.gen_bsh(t3, imm2, t4))
-            # tb.add(self._builder.gen_str(t4, t6))
             tb.add(self._builder.gen_or(dst, t4, dst_new))
 
             dst = dst_new
