@@ -3797,6 +3797,58 @@ class X86Translator(Translator):
         # Save the result.
         tb.write(instruction.operands[0], dst)
 
+    def _translate_psrldq(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        # Operation
+        # PSRLDQ(128-bit Legacy SSE version)
+        # TEMP <- COUNT
+        # IF (TEMP > 15) THEN TEMP <- 16; FI
+        # DEST <- DEST >> (TEMP * 8)
+        # DEST[MAX_VL-1:128] (Unmodified)
+
+        # NOTE Only supports xmm registers.
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        count = tb.temporal(oprnd0.size)
+        count_tmp = tb.temporal(oprnd1.size)
+        count_tmp_2 = tb.temporal(oprnd1.size)
+        tmp0 = tb.temporal(oprnd1.size)
+        cmp_result = tb.temporal(1)
+        dst = tb.temporal(oprnd0.size)
+
+        imm0 = tb.immediate(~0x7fff, oprnd1.size)
+
+        # Create labels.
+        count_ok_lbl = Label('count_ok_lbl')
+
+        # Check if count <= 16
+        tb.add(self._builder.gen_str(oprnd1, count_tmp))
+        tb.add(self._builder.gen_and(count_tmp, imm0, tmp0))
+        tb.add(self._builder.gen_bisz(tmp0, cmp_result))
+        tb.add(self._builder.gen_jcc(cmp_result, count_ok_lbl))
+
+        # Set count to 16.
+        tb.add(self._builder.gen_str(imm0, count_tmp))
+
+        # Count ok.
+        tb.add(count_ok_lbl)
+
+        # Extend count to the size of oprnd0 and multiply by 8.
+        tb.add(self._builder.gen_mul(count_tmp, tb.immediate(8, oprnd1.size), count_tmp_2))
+
+        # Negate
+        tb.add(self._builder.gen_sub(tb.immediate(0, oprnd1.size), count_tmp_2, count))
+
+        # Do the shift.
+        tb.add(self._builder.gen_bsh(oprnd0, count, dst))
+
+        # Save the result.
+        tb.write(instruction.operands[0], dst)
+
     def _translate_psubb(self, tb, instruction):
         # Flags Affected
         # None.

@@ -357,6 +357,48 @@ class X86TranslationTests(unittest.TestCase):
 
         self.assertEquals(reil_ctx_out["xmm0"], res)
 
+    def test_psrldq_1(self):
+        asm = ["psrldq xmm0, 7"]
+
+        ctx_init = self.__init_context()
+
+        ctx_init["xmm0"] = 0x12345678123456781234567812345678
+
+        res = 0x00000000000000123456781234567812
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # TODO Fix.
+        # cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        # if not cmp_result:
+        #     self.__save_failing_context(ctx_init)
+
+        # self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+        self.assertEquals(reil_ctx_out["xmm0"], res)
+
+    def test_psrldq_2(self):
+        asm = ["psrldq xmm0, 16"]
+
+        ctx_init = self.__init_context()
+
+        ctx_init["xmm0"] = 0x12345678123456781274861892345698
+
+        res = 0x00000000000000000000000000000000
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # TODO Fix.
+        # cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        # if not cmp_result:
+        #     self.__save_failing_context(ctx_init)
+
+        # self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+        self.assertEquals(reil_ctx_out["xmm0"], res)
+
     def test_pmovmskb(self):
         asm = ["pmovmskb eax, xmm0"]
 
