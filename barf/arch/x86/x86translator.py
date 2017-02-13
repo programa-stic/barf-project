@@ -3621,3 +3621,63 @@ class X86Translator(Translator):
 
         # Save the result.
         tb.write(instruction.operands[0], dst)
+
+    def _translate_psubb(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        # PSUBB (128-bit Legacy SSE version)
+        # DEST[7:0] <- DEST[7:0]-SRC[7:0]
+        # DEST[15:8] <- DEST[15:8]-SRC[15:8]
+        # DEST[23:16] <- DEST[23:16]-SRC[23:16]
+        # DEST[31:24] <- DEST[31:24]-SRC[31:24]
+        # DEST[39:32] <- DEST[39:32]-SRC[39:32]
+        # DEST[47:40] <- DEST[47:40]-SRC[47:40]
+        # DEST[55:48] <- DEST[55:48]-SRC[55:48]
+        # DEST[63:56] <- DEST[63:56]-SRC[63:56]
+        # DEST[71:64] <- DEST[71:64]-SRC[71:64]
+        # DEST[79:72] <- DEST[79:72]-SRC[79:72]
+        # DEST[87:80] <- DEST[87:80]-SRC[87:80]
+        # DEST[95:88] <- DEST[95:88]-SRC[95:88]
+        # DEST[103:96] <- DEST[103:96]-SRC[103:96]
+        # DEST[111:104] <- DEST[111:104]-SRC[111:104]
+        # DEST[119:112] <- DEST[119:112]-SRC[119:112]
+        # DEST[127:120] <- DEST[127:120]-SRC[127:120]
+        # DEST[MAX_VL-1:128] (Unmodified)
+
+        # NOTE Only supports xmm registers.
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        dst = tb.temporal(oprnd0.size)
+
+        tb.add(self._builder.gen_str(tb.immediate(0, dst.size), dst))
+
+        for i in xrange(oprnd0.size / 8):
+            t1 = tb.temporal(8)
+            t2 = tb.temporal(8)
+            t3 = tb.temporal(8)
+            t4 = tb.temporal(oprnd0.size)
+            t5 = tb.temporal(8)
+            t6 = tb.temporal(oprnd0.size)
+            dst_new = tb.temporal(oprnd0.size)
+
+            imm1 = tb.immediate(-(i * 8), oprnd0.size)
+            imm2 = tb.immediate(i * 8, 8)
+
+            # Extract i-th bytes.
+            tb.add(self._builder.gen_bsh(oprnd0, imm1, t1))
+            tb.add(self._builder.gen_bsh(oprnd1, imm1, t2))
+
+            # Do subtraction between i-th bytes.
+            tb.add(self._builder.gen_sub(t1, t2, t3))
+
+            # Store the i-th result.
+            tb.add(self._builder.gen_bsh(t3, imm2, t4))
+            # tb.add(self._builder.gen_str(t4, t6))
+            tb.add(self._builder.gen_or(dst, t4, dst_new))
+
+            dst = dst_new
+
+        tb.write(instruction.operands[0], dst)
