@@ -2418,6 +2418,86 @@ class X86Translator(Translator):
             self._undefine_flag(tb, self._flags["af"])
             self._undefine_flag(tb, self._flags["pf"])
 
+    def _translate_bsf(self, tb, instruction):
+        # Flags Affected
+        # The ZF flag is set to 1 if all the source operand is 0;
+        # otherwise, the ZF flag is cleared. The CF, OF, SF, AF, and PF,
+        # flags are undefined.
+
+        # Operation
+        # IF SRC = 0
+        #     THEN
+        #         ZF <- 1;
+        #         DEST is undefined;
+        #     ELSE
+        #         ZF <- 0;
+        #         temp <- 0;
+        #         WHILE Bit(SRC, temp) = 0
+        #         DO
+        #             temp <- temp + 1;
+        #         OD;
+        #         DEST <- temp;
+        # FI;
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        zf = self._flags["zf"]
+        tmp = tb.temporal(oprnd1.size)
+        tmp1 = tb.temporal(oprnd1.size)
+        bit_curr = tb.temporal(1)
+        dst = tb.temporal(oprnd0.size)
+        src_is_zero = tb.temporal(1)
+        bit_zero = tb.temporal(1)
+
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
+
+        src_is_zero_lbl = Label("src_is_zero_lbl")
+        loop_lbl = Label("loop_lbl")
+        end_lbl = Label("end_lbl")
+
+        tb.add(self._builder.gen_bisz(oprnd1, src_is_zero))
+        tb.add(self._builder.gen_jcc(src_is_zero, src_is_zero_lbl))
+
+        # if src != 0 ...
+        tb.add(self._builder.gen_str(tb.immediate(0, 1), zf))
+        tb.add(self._builder.gen_str(tb.immediate(1, tmp.size), tmp))
+        tb.add(self._builder.gen_str(tb.immediate(-1, tmp1.size), tmp1))
+
+        # while bit(src, tmp) == 0 ...
+        tb.add(loop_lbl)
+        tb.add(self._builder.gen_sub(tmp, tb.immediate(1, tmp.size), tmp))
+        tb.add(self._builder.gen_add(tmp1, tb.immediate(1, tmp.size), tmp1))
+
+        tb.add(self._builder.gen_bsh(oprnd1, tmp, bit_curr))
+        tb.add(self._builder.gen_bisz(bit_curr, bit_zero))
+        tb.add(self._builder.gen_jcc(bit_zero, loop_lbl))
+
+        # Save result.
+        tb.add(self._builder.gen_str(tmp1, dst))
+
+        # jump to the end.
+        tb.add(self._builder.gen_jcc(tb.immediate(1, 1), end_lbl))
+
+        # If src == 0 ...
+        tb.add(src_is_zero_lbl)
+        tb.add(self._builder.gen_str(tb.immediate(1, 1), zf))
+        # Undefine dst (set the same value).
+        tb.add(self._builder.gen_str(oprnd0, dst))
+
+        tb.add(end_lbl)
+
+        # Set flags.
+        if self._translation_mode == FULL_TRANSLATION:
+            # Flags : CF, OF, SF, AF, and PF
+            self._undefine_flag(tb, self._flags["cf"])
+            self._undefine_flag(tb, self._flags["of"])
+            self._undefine_flag(tb, self._flags["sf"])
+            self._undefine_flag(tb, self._flags["af"])
+            self._undefine_flag(tb, self._flags["pf"])
+
+        tb.write(instruction.operands[0], dst)
+
     def _translate_test(self, tb, instruction):
         # Flags Affected
         # The OF and CF flags are set to 0. The SF, ZF, and PF flags are
