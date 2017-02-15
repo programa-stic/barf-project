@@ -160,7 +160,7 @@ class X86TranslationBuilder(TranslationBuilder):
         if mem_operand.segment in ["gs", "fs"]:
             seg_base_addr_map = {
                 "gs": "gs_base_addr",
-                "fs": "gs_base_addr",
+                "fs": "fs_base_addr",
             }
 
             seg_base = ReilRegisterOperand(seg_base_addr_map[mem_operand.segment], size)
