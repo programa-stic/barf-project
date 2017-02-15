@@ -1273,8 +1273,22 @@ class X86TranslationTests(unittest.TestCase):
 
         self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
-    def test_mov(self):
+    def test_mov_1(self):
         asm = ["mov eax, ebx"]
+
+        ctx_init = self.__init_context()
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+    def test_mov_2(self):
+        asm = ["mov eax, eax"]
 
         ctx_init = self.__init_context()
 

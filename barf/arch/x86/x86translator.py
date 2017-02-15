@@ -726,7 +726,11 @@ class X86Translator(Translator):
 
         oprnd1 = tb.read(instruction.operands[1])
 
-        tb.write(instruction.operands[0], oprnd1)
+        # For cases such as: mov rax, rax
+        tmp0 = tb.temporal(oprnd1.size)
+        tb.add(self._builder.gen_str(oprnd1, tmp0))
+
+        tb.write(instruction.operands[0], tmp0)
 
     def _translate_movabs(self, tb, instruction):
         # Alias for mov with 64bit operands.
@@ -1796,7 +1800,7 @@ class X86Translator(Translator):
         if self._arch_info.architecture_mode == ARCH_X86_MODE_32:
             mask = tb.immediate(0x1f, oprnd1.size)
         elif self._arch_info.architecture_mode == ARCH_X86_MODE_64:
-            mask = tb.immediate(0x2f, oprnd1.size)
+            mask = tb.immediate(0x3f, oprnd1.size)
         else:
             raise Exception()
 
@@ -1866,7 +1870,7 @@ class X86Translator(Translator):
         if self._arch_info.architecture_mode == ARCH_X86_MODE_32:
             mask = tb.immediate(0x1f, oprnd1.size)
         elif self._arch_info.architecture_mode == ARCH_X86_MODE_64:
-            mask = tb.immediate(0x2f, oprnd1.size)
+            mask = tb.immediate(0x3f, oprnd1.size)
         else:
             raise Exception()
 
