@@ -761,7 +761,11 @@ class X86Translator(Translator):
 
         oprnd1 = tb.read(instruction.operands[1])
 
-        tb.write(instruction.operands[0], oprnd1)
+        # For cases such as: movzx eax, al
+        tmp0 = tb.temporal(oprnd1.size)
+        tb.add(self._builder.gen_str(oprnd1, tmp0))
+
+        tb.write(instruction.operands[0], tmp0)
 
     def _translate_cmov(self, tb, instruction, cmov_cond):
         # Move if condition (cmov_cond) is met.
@@ -1797,9 +1801,16 @@ class X86Translator(Translator):
         imm1 = tb.immediate((2**oprnd0.size)-1, oprnd0.size)
         imm2 = tb.immediate(-1, oprnd0.size)
 
-        if self._arch_info.architecture_mode == ARCH_X86_MODE_32:
+        # if self._arch_info.architecture_mode == ARCH_X86_MODE_32:
+        #     mask = tb.immediate(0x1f, oprnd1.size)
+        # elif self._arch_info.architecture_mode == ARCH_X86_MODE_64:
+        #     mask = tb.immediate(0x3f, oprnd1.size)
+        # else:
+        #     raise Exception()
+
+        if (oprnd0.name, oprnd0.size) in self._arch_info.regs_32:
             mask = tb.immediate(0x1f, oprnd1.size)
-        elif self._arch_info.architecture_mode == ARCH_X86_MODE_64:
+        elif (oprnd0.name, oprnd0.size) in self._arch_info.regs_64:
             mask = tb.immediate(0x3f, oprnd1.size)
         else:
             raise Exception()
@@ -1867,9 +1878,16 @@ class X86Translator(Translator):
         imm0 = tb.immediate(1, oprnd0.size)
         imm1 = tb.immediate(-31, oprnd0.size)
 
-        if self._arch_info.architecture_mode == ARCH_X86_MODE_32:
+        # if self._arch_info.architecture_mode == ARCH_X86_MODE_32:
+        #     mask = tb.immediate(0x1f, oprnd1.size)
+        # elif self._arch_info.architecture_mode == ARCH_X86_MODE_64:
+        #     mask = tb.immediate(0x3f, oprnd1.size)
+        # else:
+        #     raise Exception()
+
+        if (oprnd0.name, oprnd0.size) in self._arch_info.regs_32:
             mask = tb.immediate(0x1f, oprnd1.size)
-        elif self._arch_info.architecture_mode == ARCH_X86_MODE_64:
+        elif (oprnd0.name, oprnd0.size) in self._arch_info.regs_64:
             mask = tb.immediate(0x3f, oprnd1.size)
         else:
             raise Exception()
