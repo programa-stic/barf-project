@@ -2440,6 +2440,58 @@ class X86Translator(Translator):
             self._undefine_flag(tb, self._flags["af"])
             self._undefine_flag(tb, self._flags["pf"])
 
+    def _translate_bts(self, tb, instruction):
+        # Flags Affected
+        # The CF flag contains the value of the selected bit before it
+        # is set. The ZF flag is unaffected. The OF, SF, AF, and PF
+        # flags are undefined.
+
+        # Operation
+        # CF <- Bit(BitBase, BitOffset);
+        # Bit(BitBase, BitOffset) <- 1;
+
+        # TODO Refactor code into a Bit function (this code is a copy of
+        # BT instruction translation.)
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tmp0 = tb.temporal(oprnd0.size)
+        zero = tb.immediate(0, oprnd0.size)
+        one = tb.immediate(1, oprnd0.size)
+        bit_base_size = tb.immediate(oprnd0.size, oprnd1.size)
+        bit_offset_tmp = tb.temporal(oprnd0.size)
+        bit_offset = tb.temporal(oprnd0.size)
+
+        offset = tb.temporal(oprnd1.size)
+        tmp0 = tb.temporal(oprnd0.size)
+        dst = tb.temporal(oprnd0.size)
+
+        # Compute bit offset.
+        tb.add(self._builder.gen_mod(oprnd1, bit_base_size, bit_offset_tmp))
+        tb.add(self._builder.gen_sub(zero, bit_offset_tmp, bit_offset))     # negate
+
+        # Extract bit.
+        tb.add(self._builder.gen_bsh(oprnd0, bit_offset, tmp0))
+
+        # Set CF.
+        tb.add(self._builder.gen_and(tmp0, one, self._flags["cf"]))
+
+        # Set bit in dst.
+        tb.add(self._builder.gen_str(oprnd1, offset))
+        tb.add(self._builder.gen_bsh(one, offset, tmp0))
+
+        tb.add(self._builder.gen_or(oprnd0, tmp0, dst))
+
+        # Set flags.
+        if self._translation_mode == FULL_TRANSLATION:
+            # Flags : OF, SF, AF, PF
+            self._undefine_flag(tb, self._flags["of"])
+            self._undefine_flag(tb, self._flags["sf"])
+            self._undefine_flag(tb, self._flags["af"])
+            self._undefine_flag(tb, self._flags["pf"])
+
+        tb.write(instruction.operands[0], dst)
+
     def _translate_bsf(self, tb, instruction):
         # Flags Affected
         # The ZF flag is set to 1 if all the source operand is 0;
