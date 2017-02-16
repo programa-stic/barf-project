@@ -4099,3 +4099,60 @@ class X86Translator(Translator):
             dst = dst_new
 
         tb.write(instruction.operands[0], dst)
+
+    def _translate_pshufd(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        # Operation
+        # PSHUFD (128-bit Legacy SSE version)
+        # DEST[31:0] <- (SRC >> (ORDER[1:0] * 32))[31:0];
+        # DEST[63:32] <- (SRC >> (ORDER[3:2] * 32))[31:0];
+        # DEST[95:64] <- (SRC >> (ORDER[5:4] * 32))[31:0];
+        # DEST[127:96] <- (SRC >> (ORDER[7:6] * 32))[31:0];
+        # DEST[VLMAX-1:128] (Unmodified)
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+        oprnd2 = tb.read(instruction.operands[2])
+
+        dst = tb.temporal(oprnd0.size)
+
+        tb.add(self._builder.gen_str(tb.immediate(0, dst.size), dst))
+
+        j = 0
+
+        for i in xrange(oprnd0.size / 32):
+
+            t1 = tb.temporal(2)
+            t2 = tb.temporal(8)
+            t3 = tb.temporal(oprnd1.size)
+            t4 = tb.temporal(oprnd1.size)
+
+            tmp0 = tb.temporal(32)
+            tmp1 = tb.temporal(oprnd0.size)
+
+            t1_ext = tb.temporal(oprnd0.size)
+            t2_ext = tb.temporal(oprnd0.size)
+            dst_tmp0 = tb.temporal(oprnd0.size)
+            dst_tmp1 = tb.temporal(oprnd0.size)
+            dst_new = tb.temporal(oprnd0.size)
+
+            imm1 = tb.immediate(-(i * 2), oprnd2.size)
+            imm2 = tb.immediate(i * 32, 32)
+
+            # Extract i-th dword order.
+            tb.add(self._builder.gen_bsh(oprnd2, imm1, t1))
+            tb.add(self._builder.gen_str(t1, t2))
+            tb.add(self._builder.gen_mul(t2, tb.immediate(32, t2.size), t3))
+            tb.add(self._builder.gen_sub(tb.immediate(0, t3.size), t3, t4))
+
+            tb.add(self._builder.gen_bsh(oprnd1, t4, tmp0))
+            tb.add(self._builder.gen_bsh(tmp0, imm2, tmp1))
+
+            # Store the i-th result.
+            tb.add(self._builder.gen_or(dst, tmp1, dst_new))
+
+            dst = dst_new
+
+        tb.write(instruction.operands[0], dst)
