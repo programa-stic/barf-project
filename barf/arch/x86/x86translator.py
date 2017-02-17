@@ -2477,7 +2477,7 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_and(tmp0, one, self._flags["cf"]))
 
         # Set bit in dst.
-        tb.add(self._builder.gen_str(oprnd1, offset))
+        tb.add(self._builder.gen_mod(oprnd1, bit_base_size, offset))
         tb.add(self._builder.gen_bsh(one, offset, tmp0))
 
         tb.add(self._builder.gen_or(oprnd0, tmp0, dst))
@@ -4176,7 +4176,7 @@ class X86Translator(Translator):
 
         for i in xrange(oprnd0.size / 32):
 
-            t1 = tb.temporal(2)
+            t1 = tb.temporal(8)
             t2 = tb.temporal(8)
             t3 = tb.temporal(oprnd1.size)
             t4 = tb.temporal(oprnd1.size)
@@ -4195,7 +4195,7 @@ class X86Translator(Translator):
 
             # Extract i-th dword order.
             tb.add(self._builder.gen_bsh(oprnd2, imm1, t1))
-            tb.add(self._builder.gen_str(t1, t2))
+            tb.add(self._builder.gen_and(t1, tb.immediate(0x3, t1.size), t2))
             tb.add(self._builder.gen_mul(t2, tb.immediate(32, t2.size), t3))
             tb.add(self._builder.gen_sub(tb.immediate(0, t3.size), t3, t4))
 
