@@ -27,6 +27,7 @@ BARF : Binary Analysis Framework.
 
 """
 import logging
+import subprocess
 
 import arch
 
@@ -59,6 +60,16 @@ logger = logging.getLogger(__name__)
 SMT_SOLVER = "Z3"
 # SMT_SOLVER = "CVC4"
 # SMT_SOLVER = None
+
+
+def _check_solver_installation(solver):
+    found = False
+    try:
+        path = subprocess.check_output(["which", solver])
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 0x1:
+            found = False
+    return found
 
 
 class BARF(object):
@@ -138,14 +149,24 @@ class BARF(object):
             self.ir_emulator = ReilEmulator(self.arch_info)
 
             # Set SMT Solver.
+            self.smt_solver = None
+
             if SMT_SOLVER == "Z3":
-                self.smt_solver = Z3Solver()
+                if _check_solver_installation("z3"):
+                    self.smt_solver = Z3Solver()
+                else:
+                    logger.warn("z3 solver is not installed. Run 'barf-install-solvers.sh' to install it.")
             elif SMT_SOLVER == "CVC4":
-                self.smt_solver = CVC4Solver()
+                if _check_solver_installation("cvc4"):
+                    self.smt_solver = CVC4Solver()
+                else:
+                    logger.warn("cvc4 solver is not installed. Run 'barf-install-solvers.sh' to install it.")
             elif SMT_SOLVER is not None:
                 raise Exception("Invalid SMT solver.")
 
             # Set SMT translator.
+            self.smt_translator = None
+
             if self.smt_solver:
                 self.smt_translator = SmtTranslator(self.smt_solver, self.arch_info.address_size)
 
@@ -160,13 +181,24 @@ class BARF(object):
                                                         self.arch_info))
 
         # Code analyzer.
-        self.code_analyzer = CodeAnalyzer(self.smt_solver, self.smt_translator, self.arch_info)
+        self.code_analyzer = None
 
-        # Gadgets.
+        if self.smt_translator:
+            self.code_analyzer = CodeAnalyzer(self.smt_solver, self.smt_translator, self.arch_info)
+
+        # Gadgets classifier.
         self.gadget_classifier = GadgetClassifier(self.ir_emulator, self.arch_info)
+
+
+        # Gadgets finder.
         self.gadget_finder = GadgetFinder(self.disassembler, self.text_section, self.ir_translator,
                                           self.binary.architecture, self.binary.architecture_mode)
-        self.gadget_verifier = GadgetVerifier(self.code_analyzer, self.arch_info)
+
+        # Gadget verifier.
+        self.gadget_verifier = None
+
+        if self.code_analyzer:
+            self.gadget_verifier = GadgetVerifier(self.code_analyzer, self.arch_info)
 
     # ======================================================================== #
 

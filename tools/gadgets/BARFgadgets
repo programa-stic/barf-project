@@ -456,25 +456,28 @@ def main():
 
     # Verify gadgets.
     if args.verify:
-        verified, verify_time, discarded, invalid = do_verify(barf, classified, args)
+        if barf.gadget_verifier:
+            verified, verify_time, discarded, invalid = do_verify(barf, classified, args)
 
-        print_gadgets_typed(verified, output_fd, address_size, "Verified Gadgets")
+            print_gadgets_typed(verified, output_fd, address_size, "Verified Gadgets")
 
-        if args.show_invalid:
-            print_gadgets_typed(invalid, output_fd, address_size, "Invalid Gadgets (classified but didn't pass verification process)")
+            if args.show_invalid:
+                print_gadgets_typed(invalid, output_fd, address_size, "Invalid Gadgets (classified but didn't pass verification process)")
 
-        # print non-verified
-        candidates_by_addr = sort_gadgets_by_address(candidates)
-        verified_by_addr   = sort_gadgets_by_address(verified)
-        discarded_by_addr   = sort_gadgets_by_address(discarded)
+            # print non-verified
+            candidates_by_addr = sort_gadgets_by_address(candidates)
+            verified_by_addr   = sort_gadgets_by_address(verified)
+            discarded_by_addr   = sort_gadgets_by_address(discarded)
 
-        diff = []
+            diff = []
 
-        for addr in candidates_by_addr.keys():
-            if not addr in verified_by_addr and not addr in discarded_by_addr:
-                diff += candidates_by_addr[addr]
+            for addr in candidates_by_addr.keys():
+                if not addr in verified_by_addr and not addr in discarded_by_addr:
+                    diff += candidates_by_addr[addr]
 
-        print_gadgets_raw(diff, output_fd, args.sort, args.color, "Non-verified Gadgets", args.show_binary)
+            print_gadgets_raw(diff, output_fd, args.sort, args.color, "Non-verified Gadgets", args.show_binary)
+        else:
+            print("Gadget verification not available. Check the log file for more information.")
 
     # Print processing time.
     if args.time:
