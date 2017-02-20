@@ -63,7 +63,7 @@ SMT_SOLVER = "Z3"
 
 
 def _check_solver_installation(solver):
-    found = False
+    found = True
     try:
         path = subprocess.check_output(["which", solver])
     except subprocess.CalledProcessError as e:
