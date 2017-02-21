@@ -147,19 +147,16 @@ class GadgetFinder(object):
                             self._mem[addr-1:min(addr+15, end_address + 1)],
                             addr
                         )
-                    except:
-                        asm_instr = None
 
-                    if asm_instr:
                         self._ir_trans.reset()
 
-                        try:
-                            ins_ir_1 = self._ir_trans.translate(asm_instr_1)
-                            if ins_ir_1[-1].mnemonic == ReilMnemonic.JCC:
-                                addr = addr - 1
-                                asm_instr = asm_instr_1
-                                ins_ir = ins_ir_1
-                        except:
+                        ins_ir_1 = self._ir_trans.translate(asm_instr_1)
+
+                        if ins_ir_1[-1].mnemonic == ReilMnemonic.JCC:
+                            addr = addr - 1
+                            asm_instr = asm_instr_1
+                            ins_ir = ins_ir_1
+                    except:
                             pass
 
                 root = GadgetTreeNode(DualInstruction(addr, asm_instr, ins_ir))

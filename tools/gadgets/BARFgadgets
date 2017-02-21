@@ -109,11 +109,16 @@ def print_gadgets_raw(gadgets, f, sort_mode, color, title, show_binary):
                 asm_instrs = map(lambda s: highlight(s, NasmLexer(), TerminalFormatter()), asm_instrs)
 
             asm_instrs_str = " ; ".join(asm_instrs).replace("\n", "")
-            asm_bytes = ["%02x" % ord(b) for dinstr in gadget.instrs for b in dinstr.asm_instr.bytes]
-            asm_bytes_str = "".join(asm_bytes)
 
             if show_binary:
-                print("0x%08x: %32s | %s" % (gadget.address, asm_bytes_str, asm_instrs_str), file=f)
+                try:
+                    asm_bytes = ["%02x" % ord(b) for dinstr in gadget.instrs for b in dinstr.asm_instr.bytes]
+                    asm_bytes_str = "".join(asm_bytes)
+
+                    print("0x%08x: %32s | %s" % (gadget.address, asm_bytes_str, asm_instrs_str), file=f)
+                except:
+                    print("[+] Error!")
+                    print("\t0x%08x: %s" % (gadget.address, asm_instrs_str), file=f)
             else:
                 print("0x%08x: %s" % (gadget.address, asm_instrs_str), file=f)
 
