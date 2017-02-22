@@ -589,6 +589,9 @@ class X86Operand(object):
         """Set operand size."""
         self._size = value
 
+    def to_string(self, **kwargs):
+        return self.__str__()
+
     def __getstate__(self):
         state = {}
         state['_modifier'] = self._modifier
@@ -623,6 +626,23 @@ class X86ImmediateOperand(X86Operand):
             raise Exception("Operand size missing.")
 
         return self._immediate
+
+    def to_string(self, **kwargs):
+        if not self._size:
+            raise Exception("Operand size missing.")
+
+        immediate_format = kwargs.get("immediate_format", "hex")
+
+        string  = self._modifier + " " if self._modifier else ""
+
+        if immediate_format == "hex":
+            string += hex(self._immediate & 2**self._size-1)
+        elif immediate_format == "dec":
+            string += str(self._immediate & 2**self._size-1)
+        else:
+            raise Exception("Invalid immediate format: {}".format(imm_fmt))
+
+        return string[:-1] if string[-1] == 'L' else string
 
     def __str__(self):
         if not self._size:

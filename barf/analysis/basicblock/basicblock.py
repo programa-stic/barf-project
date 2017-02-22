@@ -382,11 +382,11 @@ class ControlFlowGraph(object):
 
         return bb_rv
 
-    def save(self, filename, print_ir=False, format='dot'):
+    def save(self, filename, print_ir=False, format='dot', options=None):
         # renderer = CFGSimpleRenderer()
         renderer = CFGSimpleRendererEx()
 
-        renderer.save(self, filename, print_ir, format)
+        renderer.save(self, filename, print_ir=print_ir, format=format, options=options)
 
     # Auxiliary functions
     # ======================================================================== #
@@ -747,16 +747,19 @@ class CFGSimpleRenderer(CFGRenderer):
 
     reil_tpl = " {index:02x} {assembly}\\l"
 
-    def save(self, cfg, filename, print_ir=False, format='dot'):
+    def save(self, cfg, filename, print_ir=False, format='dot', options=None):
         """Save basic block graph into a file.
         """
+        if options is None:
+            options = {}
+
         try:
             dot_graph = Dot(**self.graph_format)
 
             # Add nodes.
             nodes = {}
             for bb in cfg.basic_blocks:
-                nodes[bb.address] = self._create_node(bb, cfg.name, print_ir)
+                nodes[bb.address] = self._create_node(bb, cfg.name, print_ir, options)
 
                 dot_graph.add_node(nodes[bb.address])
 
@@ -772,8 +775,8 @@ class CFGSimpleRenderer(CFGRenderer):
         except Exception:
             logger.error("Failed to save basic block graph: %s (%s)", filename, format, exc_info=True)
 
-    def _create_node(self, bb, name, print_ir):
-        bb_dump = self._render_bb(bb, name, print_ir)
+    def _create_node(self, bb, name, print_ir, options):
+        bb_dump = self._render_bb(bb, name, print_ir, options)
         bb_type = bb_get_type(bb)
 
         return Node(bb.address, label=bb_dump, color=self.node_color[bb_type], **self.node_format)
@@ -781,8 +784,8 @@ class CFGSimpleRenderer(CFGRenderer):
     def _create_edge(self, src, dst, branch_type):
         return Edge(src, dst, color=self.edge_color[branch_type], **self.edge_format)
 
-    def _render_asm(self, instr, mnemonic_width, fill_char=""):
-        oprnds_str = ", ".join([str(oprnd) for oprnd in instr.operands])
+    def _render_asm(self, instr, mnemonic_width, options, fill_char=""):
+        oprnds_str = ", ".join([oprnd.to_string(**options) for oprnd in instr.operands])
 
         asm_str  = instr.prefix + " " if instr.prefix else ""
         asm_str += instr.mnemonic + fill_char * (mnemonic_width - len(instr.mnemonic))
@@ -805,13 +808,13 @@ class CFGSimpleRenderer(CFGRenderer):
     def _render_reil(self, instr):
         return self.reil_tpl.format(index=instr.address & 0xff, assembly=instr)
 
-    def _render_bb(self, basic_block, name, print_ir):
+    def _render_bb(self, basic_block, name, print_ir, options):
         lines = []
 
         asm_mnemonic_max_width = bb_get_instr_max_width(basic_block)
 
         for dinstr in basic_block:
-            asm_str = self._render_asm(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char="\\ ")
+            asm_str = self._render_asm(dinstr.asm_instr, asm_mnemonic_max_width + 1, options, fill_char="\\ ")
             lines.append(asm_str)
 
             if print_ir:
@@ -891,16 +894,19 @@ class CFGSimpleRendererEx(CFGRenderer):
 
     reil_tpl = "<tr><td align='left'>         .{index:02x}  {assembly} </td></tr>"
 
-    def save(self, cfg, filename, print_ir=False, format='dot'):
+    def save(self, cfg, filename, print_ir=False, format='dot', options=None):
         """Save basic block graph into a file.
         """
+        if options is None:
+            options = {}
+
         try:
             dot_graph = Dot(**self.graph_format)
 
             # Add nodes.
             nodes = {}
             for bb in cfg.basic_blocks:
-                nodes[bb.address] = self._create_node(bb, cfg.name, print_ir)
+                nodes[bb.address] = self._create_node(bb, cfg.name, print_ir, options)
 
                 dot_graph.add_node(nodes[bb.address])
 
@@ -916,8 +922,8 @@ class CFGSimpleRendererEx(CFGRenderer):
         except Exception:
             logger.error("Failed to save basic block graph: %s (%s)", filename, format, exc_info=True)
 
-    def _create_node(self, bb, name, print_ir):
-        bb_dump = self._render_bb(bb, name, print_ir)
+    def _create_node(self, bb, name, print_ir, options):
+        bb_dump = self._render_bb(bb, name, print_ir, options)
         bb_type = bb_get_type(bb)
 
         return Node(bb.address, label=bb_dump, color=self.node_color[bb_type], **self.node_format)
@@ -925,12 +931,12 @@ class CFGSimpleRendererEx(CFGRenderer):
     def _create_edge(self, src, dst, branch_type):
         return Edge(src, dst, color=self.edge_color[branch_type], **self.edge_format)
 
-    def _render_asm(self, instr, mnemonic_width, fill_char=""):
+    def _render_asm(self, instr, mnemonic_width, options, fill_char=""):
         formatter = HtmlFormatter()
         formatter.noclasses = True
         formatter.nowrap = True
 
-        oprnds_str = ", ".join([str(oprnd) for oprnd in instr.operands])
+        oprnds_str = ", ".join([oprnd.to_string(**options) for oprnd in instr.operands])
 
         asm_str  = instr.prefix + " " if instr.prefix else ""
         asm_str += instr.mnemonic + fill_char * (mnemonic_width - len(instr.mnemonic))
@@ -940,19 +946,20 @@ class CFGSimpleRendererEx(CFGRenderer):
         asm_str = highlight(asm_str, NasmLexer(), formatter)
         asm_str = asm_str.replace("span", "font")
         asm_str = asm_str.replace('style="color: ', 'color="')
+        asm_str = asm_str.replace('style="border: 1px solid ', 'color="')
 
         return self.asm_tpl.format(address=instr.address, size=instr.size, assembly=asm_str)
 
     def _render_reil(self, instr):
         return self.reil_tpl.format(index=instr.address & 0xff, assembly=instr)
 
-    def _render_bb(self, basic_block, name, print_ir):
+    def _render_bb(self, basic_block, name, print_ir, options):
         lines = []
 
         asm_mnemonic_max_width = bb_get_instr_max_width(basic_block)
 
         for dinstr in basic_block:
-            asm_str = self._render_asm(dinstr.asm_instr, asm_mnemonic_max_width + 1, fill_char=" ")
+            asm_str = self._render_asm(dinstr.asm_instr, asm_mnemonic_max_width + 1, options, fill_char=" ")
             lines.append(asm_str)
 
             if print_ir:

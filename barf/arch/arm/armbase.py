@@ -519,6 +519,9 @@ class ArmOperand(object):
         """Set operand size."""
         self._size = value
 
+    def to_string(self, **kwargs):
+        return self.__str__()
+
 
 class ArmImmediateOperand(ArmOperand):
     """Representation of ARM immediate operand."""
@@ -554,6 +557,22 @@ class ArmImmediateOperand(ArmOperand):
             raise Exception("Operand size missing.")
 
         return self._immediate
+
+    def to_string(self, **kwargs):
+        if not self._size:
+            raise Exception("Operand size missing.")
+
+        immediate_format = kwargs.get("immediate_format", "hex")
+
+        if immediate_format == "hex":
+            # string = "#" + hex(self._immediate)
+            string = hex(self._immediate)
+        elif immediate_format == "dec":
+            string = str(self._immediate)
+        else:
+            raise Exception("Invalid immediate format: {}".format(imm_fmt))
+
+        return string[:-1] if string[-1] == 'L' else string
 
     def __str__(self):
         if not self._size:
