@@ -12,3 +12,6 @@ dependencies
 
 # Log files
 *.log
+
+# PyCharm files.
+.idea/*
