@@ -388,14 +388,14 @@ class ReilOperand(object):
 
     def __eq__(self, other):
         return  type(other) is type(self) and \
-                self._size == other._size
+                self._size == other.size
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __getstate__(self):
         state = {
-            '_size': self._size
+            '_size': self.size
         }
 
         return state
@@ -439,8 +439,8 @@ class ReilImmediateOperand(ReilOperand):
 
     def __eq__(self, other):
         return  type(other) is type(self) and \
-                self._size == other._size and \
-                self._immediate == other._immediate
+                self._size == other.size and \
+                self._immediate == other.immediate
 
     def __getstate__(self):
         state = super(ReilImmediateOperand, self).__getstate__()
@@ -481,8 +481,8 @@ class ReilRegisterOperand(ReilOperand):
 
     def __eq__(self, other):
         return  type(other) is type(self) and \
-                self._size == other._size and \
-                self._name == other._name
+                self._size == other.size and \
+                self._name == other.name
 
     def __getstate__(self):
         state = super(ReilRegisterOperand, self).__getstate__()
