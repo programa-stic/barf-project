@@ -50,12 +50,14 @@ Instructions
 
 """
 
-# Display operands size in intruction
+# Display operands size in instruction
 show_size = True
+
 
 # TODO: Create module util and move this function there.
 def split_address(address):
     return address >> 0x08, address & 0xff
+
 
 class ReilMnemonic(object):
 
@@ -221,6 +223,7 @@ REIL_MNEMONICS = (
     ReilMnemonic.SMOD,
 )
 
+
 class ReilInstruction(object):
 
     """Representation of a REIL instruction.
@@ -310,7 +313,6 @@ class ReilInstruction(object):
     def __str__(self):
         def print_oprnd(oprnd):
             oprnd_str = str(oprnd)
-            size_str = str(oprnd.size) if oprnd.size else ""
 
             sizes = {
                 256 : "DDQWORD",
@@ -326,7 +328,7 @@ class ReilInstruction(object):
             }
 
             if isinstance(oprnd, ReilEmptyOperand):
-                return "%s" % (oprnd_str)
+                return "%s" % oprnd_str
             else:
                 return "%s %s" % (sizes[oprnd.size if oprnd.size else ""], oprnd_str)
 
@@ -343,11 +345,12 @@ class ReilInstruction(object):
         return hash(str(self))
 
     def __getstate__(self):
-        state = {}
-        state['_mnemonic'] = self._mnemonic
-        state['_operands'] = self._operands
-        state['_comment'] = self._comment
-        state['_address'] = self._address
+        state = {
+            '_mnemonic': self._mnemonic,
+            '_operands': self._operands,
+            '_comment': self._comment,
+            '_address': self._address
+        }
 
         return state
 
@@ -391,8 +394,9 @@ class ReilOperand(object):
         return not self.__eq__(other)
 
     def __getstate__(self):
-        state = {}
-        state['_size'] = self._size
+        state = {
+            '_size': self._size
+        }
 
         return state
 
@@ -671,7 +675,7 @@ class DualInstruction(object):
         self._asm_instr = asm_instr
 
         # REIL translation of the assembler instruction. Note that one
-        # assemlber instruction is mapped to more than one REIL
+        # assembler instruction is mapped to more than one REIL
         # instruction.
         self._ir_instrs = ir_instrs
 
@@ -701,10 +705,11 @@ class DualInstruction(object):
         return not self.__eq__(other)
 
     def __getstate__(self):
-        state = {}
-        state['_address'] = self._address
-        state['_asm_instr'] = self._asm_instr
-        state['_ir_instrs'] = self._ir_instrs
+        state = {
+            '_address': self._address,
+            '_asm_instr': self._asm_instr,
+            '_ir_instrs': self._ir_instrs
+        }
 
         return state
 
@@ -820,7 +825,7 @@ def check_operands_size(instr, arch_size):
                             ReilMnemonic.XOR]:
         # operand0 : Source 1 (Literal or register)
         # operand1 : Source 2 (Literal or register)
-        # operand2 : Destination resgister
+        # operand2 : Destination register
 
         # Check that source operands have the same size.
         assert instr.operands[0].size == instr.operands[1].size, \
