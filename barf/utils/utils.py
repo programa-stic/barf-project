@@ -26,11 +26,14 @@
 def extract_sign_bit(value, size):
     return value >> (size-1)
 
+
 def twos_complement(value, size):
     return 2**size - value
 
+
 def extract_value(main_value, offset, size):
     return (main_value >> offset) & 2**size-1
+
 
 def insert_value(main_value, value_to_insert, offset, size):
     main_value &= ~((2**size-1) << offset)
@@ -38,11 +41,14 @@ def insert_value(main_value, value_to_insert, offset, size):
 
     return main_value
 
+
 def to_reil_address(asm_address, offset=0x0):
     return (asm_address << 0x08) | (offset & 0xff)
 
+
 def to_asm_address(reil_address):
     return reil_address >> 0x08
+
 
 class VariableNamer(object):
     """Variable Name Generator."""
