@@ -22,8 +22,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from barf.analysis.basicblock import BasicBlockBuilder
+from barf.analysis.basicblock import CFGRecoverer
 from barf.analysis.basicblock import ControlFlowGraph
+from barf.analysis.basicblock import RecursiveDescent
 from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86disassembler import X86Disassembler
 from barf.arch.x86.x86translator import X86Translator
@@ -40,7 +41,8 @@ class ReilContainerBuilder(object):
         self.__arch = X86ArchitectureInformation(self.__arch_mode)
         self.__disassembler = X86Disassembler(architecture_mode=self.__arch_mode)
         self.__translator = X86Translator(architecture_mode=self.__arch_mode)
-        self.__bb_builder = BasicBlockBuilder(self.__disassembler, self.__binary.text_section, self.__translator, self.__arch)
+        self.__bb_builder = CFGRecoverer(RecursiveDescent(self.__disassembler, self.__binary.text_section,
+                                                          self.__translator, self.__arch))
 
     def build(self, functions):
         reil_container = ReilContainer()
@@ -93,9 +95,6 @@ class ReilContainerBuilder(object):
 
         return reil_container
 
-    def translate(self, asm_instrs, reil_container):
-        return self.__translator(asm_instrs, reil_container)
-
 
 class ReilContainerEx(object):
 
@@ -105,7 +104,8 @@ class ReilContainerEx(object):
         self.__arch = X86ArchitectureInformation(self.__arch_mode)
         self.__disassembler = X86Disassembler(architecture_mode=self.__arch_mode)
         self.__translator = X86Translator(architecture_mode=self.__arch_mode)
-        self.__bb_builder = BasicBlockBuilder(self.__disassembler, self.__binary.text_section, self.__translator, self.__arch)
+        self.__bb_builder = CFGRecoverer(RecursiveDescent(self.__disassembler, self.__binary.text_section,
+                                                          self.__translator, self.__arch))
 
         self.__container = {}
         self.__symbols = symbols
