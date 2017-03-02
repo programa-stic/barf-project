@@ -23,7 +23,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
-This module contains all the necesary classes to emulate REIL
+This module contains all the necessary classes to emulate REIL
 instructions. So far, it only handles concrete values.
 
 The emulator is compose of two main classes. The emulator itself,
@@ -94,7 +94,7 @@ class ReilMemory(object):
         value = 0x0
 
         for i in xrange(0, size):
-            value = self._read_byte(address + i) << (i * 8) | value
+            value |= self._read_byte(address + i) << (i * 8)
 
         return value
 
@@ -102,7 +102,7 @@ class ReilMemory(object):
         """Read a byte from memory.
         """
         # Initialize memory location with a random value.
-        if not address in self._memory:
+        if address not in self._memory:
             self._memory[address] = random.randint(0x00, 0xff)
 
         return self._memory[address]
@@ -157,8 +157,7 @@ class ReilMemoryEx(ReilMemory):
         value.
 
         """
-        addr_candidates = [addr for addr, val in self._memory.items()
-                                    if val == (value & 0xff)]
+        addr_candidates = [addr for addr, val in self._memory.items() if val == (value & 0xff)]
         addr_matchings = []
 
         for addr in addr_candidates:
@@ -192,7 +191,7 @@ class ReilMemoryEx(ReilMemory):
             addr = address + i
 
             if addr in self._memory:
-                value = self._read_byte(addr) << (i * 8) | value
+                value |= self._read_byte(addr) << (i * 8)
             else:
                 return False, None
 
@@ -212,7 +211,7 @@ class ReilMemoryEx(ReilMemory):
 
             if addr in self.__memory_prev:
                 _, val_byte = self.__try_read_byte_prev(addr)
-                value = val_byte << (i * 8) | value
+                value |= val_byte << (i * 8)
             else:
                 return False, None
 
@@ -226,7 +225,7 @@ class ReilMemoryEx(ReilMemory):
 
         """
         # Initialize memory location with a random value
-        if not address in self.__memory_prev:
+        if address not in self.__memory_prev:
             return False, None
 
         return True, self.__memory_prev[address]
