@@ -98,7 +98,7 @@ class Memory(object):
                 raise InvalidAddressError()
 
             return str(chunck)
-        elif isinstance(key, int):
+        elif isinstance(key, int) or isinstance(key, long):
             return chr(self._read_byte(key))
         else:
             raise TypeError("Invalid argument type: {}".format(type(key)))
@@ -135,6 +135,8 @@ class BinaryFile(object):
 
         # Start address of the section .text.
         self._section_text_start = None
+
+        self._section_data_memory = None
 
         # End address of the section .text (last addressable byte
         # address).
@@ -196,6 +198,12 @@ class BinaryFile(object):
         """Get section .text.
         """
         return self._section_text_memory
+
+    @property
+    def data_section(self):
+        """Get section .data.
+        """
+        return self._section_data_memory
 
     @property
     def entry_point(self):
