@@ -660,7 +660,7 @@ class ReilCpu(object):
         """Execute LDM instruction.
         """
         assert instr.operands[0].size == self.__arch.address_size
-        assert instr.operands[2].size in [8, 16, 32, 64, 128]
+        assert instr.operands[2].size in [8, 16, 32, 64, 128, 256]
 
         # Memory address.
         op0_val = self.read_operand(instr.operands[0])
@@ -674,7 +674,7 @@ class ReilCpu(object):
     def __execute_stm(self, instr):
         """Execute STM instruction.
         """
-        assert instr.operands[0].size in [8, 16, 32, 64, 128]
+        assert instr.operands[0].size in [8, 16, 32, 64, 128, 256]
         assert instr.operands[2].size == self.__arch.address_size
 
         op0_val = self.read_operand(instr.operands[0])  # Data.

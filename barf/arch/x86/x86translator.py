@@ -3794,6 +3794,9 @@ class X86Translator(Translator):
 
         tb.write(instruction.operands[0], tmp0)
 
+    def _translate_vmovdqa(self, tb, instruction):
+        self._translate_movdqa(tb, instruction)
+
     def _translate_movdqa(self, tb, instruction):
         # Flags Affected
         # None.
