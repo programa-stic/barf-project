@@ -2099,6 +2099,7 @@ class X86Translator(Translator):
         imm2 = tb.immediate(-1, oprnd0.size)
 
         tmp0 = tb.temporal(oprnd0.size)
+        tmp0_zero = tb.temporal(1)
         tmp1 = tb.temporal(oprnd0.size)
         tmp2 = tb.temporal(oprnd0.size)
         tmp3 = tb.temporal(oprnd0.size)
@@ -2108,9 +2109,15 @@ class X86Translator(Translator):
 
         # Create labels.
         loop_lbl = tb.label('loop')
+        skip_lbl = tb.label('skip')
+        end_lbl = tb.label('end')
 
         # Initialize counter
         tb.add(self._builder.gen_str(oprnd1, tmp0))
+
+        # Check counter
+        tb.add(self._builder.gen_bisz(tmp0, tmp0_zero))
+        tb.add(self._builder.gen_jcc(tmp0_zero, skip_lbl))
 
         # Copy operand to temporal register
         tb.add(self._builder.gen_str(oprnd0, tmp1))
@@ -2156,6 +2163,14 @@ class X86Translator(Translator):
 
             # Flags : AF
             self._undefine_flag(tb, self._flags["af"])
+
+        tb.add(self._builder.gen_jcc(tb.immediate(1, 1), end_lbl))
+
+        # skip
+        tb.add(skip_lbl)
+        tb.add(self._builder.gen_str(oprnd0, tmp6))
+
+        tb.add(end_lbl)
 
         tb.write(instruction.operands[0], tmp6)
 
