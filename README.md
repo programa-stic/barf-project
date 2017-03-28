@@ -233,7 +233,8 @@ This is done through instruction emulation. Finally, the *verification* stage co
 ```
 usage: BARFgadgets [-h] [--version] [--bdepth BDEPTH] [--idepth IDEPTH] [-u]
                    [-c] [-v] [-o OUTPUT] [-t] [--sort {addr,depth}] [--color]
-                   [--show-binary] [--show-classification]
+                   [--show-binary] [--show-classification] [--show-invalid]
+                   [--summary SUMMARY] [-r {8,16,32,64}]
                    filename
 
 Tool for finding, classifying and verifying ROP gadgets.
@@ -259,6 +260,10 @@ optional arguments:
   --show-binary         Show binary code for each gadget.
   --show-classification
                         Show classification for each gadget.
+  --show-invalid        Show invalid gadget, i.e., gadgets that were
+                        classified but did not pass the verification process.
+  --summary SUMMARY     Save summary to file.
+  -r {8,16,32,64}       Filter verified gadgets by operands register size.
 ```
 
 For more information, see [README](./tools/gadgets/README.md).
