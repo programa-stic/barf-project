@@ -61,6 +61,7 @@ $ sudo python setup.py install --user
 
 * Only one SMT solver is needed in order to work. You may choose between Z3 and CVC4 or install both. You can use the [``barf-install-solver.sh``](./scripts) script which downloads and install both solver.
 * To run some tests you need to install PyAsmJIT first.
+* You may need to install [Graphviz]: ``sudo apt-get install graphviz``
 
 ### Quickstart
 
@@ -352,3 +353,4 @@ The BSD 2-Clause License. For more information, see [LICENSE](./LICENSE).
 [PySymEmu]: https://github.com/feliam/pysymemu
 [REIL]: http://www.usenix.org/legacy/event/woot10/tech/full_papers/Dullien.pdf
 [Z3]: https://github.com/Z3Prover/z3
+[Graphviz]: http://graphviz.org/
