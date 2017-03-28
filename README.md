@@ -306,7 +306,8 @@ For more information, see [README](./tools/cfg/README.md).
 call graph of a binary program.
 
 ```
-usage: BARFcg [-h] [-s SYMBOL_FILE] [-a] [-t] filename
+usage: BARFcg [-h] [-s SYMBOL_FILE] [-f {pdf,png,dot}] [-t] [-a | -r RECOVER]
+              filename
 
 Tool for recovering CG of a binary.
 
@@ -317,9 +318,13 @@ optional arguments:
   -h, --help            show this help message and exit
   -s SYMBOL_FILE, --symbol-file SYMBOL_FILE
                         Load symbols from file.
-  -a, --recover-all     Recover all functions.
+  -f {pdf,png,dot}, --format {pdf,png,dot}
+                        Output format.
   -t, --time            Print process time.
-
+  -a, --recover-all     Recover all functions.
+  -r RECOVER, --recover RECOVER
+                        Recover specified functions by address (comma
+                        separated).
 ```
 
 For more information, see [README](./tools/cg/README.md).
