@@ -6,12 +6,12 @@ control-flow graph of a binary program.
 # Usage
 
 ```
-usage: BARFcfg [-h] [-s SYMBOL_FILE] [-a] [-o RECOVER_ONE] [-f {graph,text}]
-               [-t] [-d OUTPUT_DIR] [-b] [-r]
+usage: BARFcfg [-h] [-s SYMBOL_FILE] [-f {txt,pdf,png,dot}] [-t]
+               [-d OUTPUT_DIR] [-b] [--show-reil]
+               [--immediate-format {hex,dec}] [-a | -r RECOVER]
                filename
 
 Tool for recovering CFG of a binary.
-
 
 positional arguments:
   filename              Binary file name.
@@ -20,15 +20,17 @@ optional arguments:
   -h, --help            show this help message and exit
   -s SYMBOL_FILE, --symbol-file SYMBOL_FILE
                         Load symbols from file.
-  -a, --recover-all     Recover all functions.
-  -o RECOVER_ONE, --recover-one RECOVER_ONE
-                        Recover specified function.
-  -f {graph,text}, --format {graph,text}
+  -f {txt,pdf,png,dot}, --format {txt,pdf,png,dot}
                         Output format.
   -t, --time            Print process time.
   -d OUTPUT_DIR, --output-dir OUTPUT_DIR
-                        Ouput directory.
+                        Output directory.
   -b, --brief           Brief output.
-  -r, --show-reil       Show REIL translation.
-
+  --show-reil           Show REIL translation.
+  --immediate-format {hex,dec}
+                        Output format.
+  -a, --recover-all     Recover all functions.
+  -r RECOVER, --recover RECOVER
+                        Recover specified functions by address (comma
+                        separated).
 ```
