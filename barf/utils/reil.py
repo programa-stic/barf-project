@@ -29,8 +29,15 @@ from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86disassembler import X86Disassembler
 from barf.arch.x86.x86translator import X86Translator
 from barf.core.reil import ReilContainer
+from barf.core.reil import ReilMnemonic
+from barf.core.reil import ReilRegisterOperand
 from barf.core.reil import ReilSequence
 from barf.core.reil import split_address
+
+
+def is_conditional_jump(instruction):
+    return instruction.mnemonic == ReilMnemonic.JCC and \
+                isinstance(instruction.operands[0], ReilRegisterOperand)
 
 
 class ReilContainerBuilder(object):
