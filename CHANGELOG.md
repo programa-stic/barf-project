@@ -66,7 +66,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - x86instruction and x86intructiontranslator modules were removed.
 
-[unreleased]: https://github.com/programa-stic/barf-project/compare/v0.3...develop
+[unreleased]: https://github.com/programa-stic/barf-project/compare/v0.3...master
 [0.3]: https://github.com/programa-stic/barf-project/compare/v0.2.1...v0.3
 [0.2.1]: https://github.com/programa-stic/barf-project/compare/v0.2...v0.2.1
 [0.2]: https://github.com/programa-stic/barf-project/compare/v0.1...v0.2
