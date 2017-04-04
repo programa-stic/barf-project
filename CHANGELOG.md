@@ -92,7 +92,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - `x86instruction` and `x86intructiontranslator` modules were removed.
 
-## [0.1] - 2014-10-23
+## [0.1] - 2014-11-19
 ### Added
 - First release.
 
