@@ -2,11 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.4][unreleased]
+## [Unreleased]
 ### Added
+* Update `README` to include new command line options for all BARF tools.
+* Add initial support for x86 `AVX` instruction set.
+* Add support for x86 instructions: `BSF`, `BSWAP`, `BTS`, `CDQ`, `MOVSXD` and `SHRD`.
+* Add support for x86 SSE instructions: `MOVD`, `MOVDQA`, `MOVDQU`, `MOVHPD`, `MOVLPD`, `MOVQ`, `PCMPEQB`, `PMINUB`, `PMOVMSKB`, `POR`, `PSHUFD`, `PSLLDQ`, `PSRLDQ`, `PSUBB`, `PUNPCKLBW`, `PUNPCKLWD` and `PXOR`.
+* Add initial support for x86 `SSE` instruction set.
+* Add support for `pdf`, `png` and `dot` output formats in `BARFcfg` and `BARFcg` tools.
+* Add option to display immediate operand values in `hex` and `dec` to the CFG rendering.
+* Add REIL instruction index to the CFG rendering.
+* Add support for missing x86 flag translations: `AF` and `PF`.
+* Add new method to the `ArchitectureInformation` class to retrieve information about syscall instructions.
+* Add new x86 example for finding and executing functions.
+* Add new methods to the `CallGraph` class.
+* Add initial support for `GS` and `FS` segments access (x86).
+
 ### Changed
+* Improve coding style and code quality of the `reil` module.
+* Improve coding style and code quality of the `reilemulator` module.
+* Check whether the choosen solver is installed.
+* Improve coding style and code quality of the `x86` package.
+* Improve `emulate_full` method to support any piece of code.
+* Refactor `_open_elf` logic in the `BinaryFile` class by @Seraphime.
+
 ### Fixed
-### Removed
+* Fix missing check on `recover_cfg` function parameters.
+* Update missing branch instructions in the `X86ArchitectureInformation` class.
+* Fix x86 instruction translation: `SAR`
+`SHR`, `SHL`, `ROR`, `MOVZX` and `MOV`.
+* Fix x86 gadget finding function.
+* Fix various typos.
+* Fix x86 `REP` prefix parsing.
 
 ## [0.3] - 2016-12-13
 ### Added
@@ -66,7 +93,11 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - x86instruction and x86intructiontranslator modules were removed.
 
-[unreleased]: https://github.com/programa-stic/barf-project/compare/v0.3...master
+## [0.1] - 2014-10-23
+### Added
+- First release.
+
+[Unreleased]: https://github.com/programa-stic/barf-project/compare/v0.3...master
 [0.3]: https://github.com/programa-stic/barf-project/compare/v0.2.1...v0.3
 [0.2.1]: https://github.com/programa-stic/barf-project/compare/v0.2...v0.2.1
 [0.2]: https://github.com/programa-stic/barf-project/compare/v0.1...v0.2
