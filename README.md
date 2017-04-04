@@ -94,7 +94,7 @@ cfg.save("branch1_cfg")
 
 We can check restrictions on code using a SMT solver. For instance, suppose you have the following code:
 
-```objdump
+```
  80483ed:       55                      push   ebp
  80483ee:       89 e5                   mov    ebp,esp
  80483f0:       83 ec 10                sub    esp,0x10
@@ -341,7 +341,7 @@ For more information, see [README](./tools/cg/README.md).
 
 This package was developed in order to test BARF instruction translation from x86_64/ARM to REIL. The main idea is to be able to run fragments of code natively. Then, the same fragment is translated to REIL and executed in a REIL VM. Finally, both final contexts (the one obtained through native execution and the one from emulation) are compare for differences.
 
-For more information, see [PyAsmJit].
+For more information, see [PyAsmJIT].
 
 ## License
 
