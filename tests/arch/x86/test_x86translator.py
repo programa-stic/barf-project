@@ -523,6 +523,37 @@ class X86TranslationTests(unittest.TestCase):
         self.assertEquals(reil_ctx_out["xmm0"], res)
         self.assertEquals(reil_ctx_out["xmm1"], ctx_init["xmm1"])
 
+    def test_punpcklqdq(self):
+        asm = ["punpcklqdq xmm0, xmm1"]
+
+        ctx_init = self.__init_context()
+
+        ctx_init["xmm0"] = 0x55555555555555551111111111111111
+        ctx_init["xmm1"] = 0x44444444444444448888888888888888
+
+        res = 0x88888888888888881111111111111111
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # # NOTE Hack to be able to test this instr (src oprnd should be a memory
+        # # operand instead of a xmm register).
+        # # -------------------------------------------------------------------- #
+        # address = 0xdeadbeef
+        # reil_instrs = self.__asm_to_reil(asm, address)
+        # reil_ctx_out, _ = self.reil_emulator.execute(reil_instrs, start=address << 8, registers=ctx_init)
+        # # -------------------------------------------------------------------- #
+
+        # TODO Fix.
+        # cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        # if not cmp_result:
+        #     self.__save_failing_context(ctx_init)
+
+        # self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
+        self.assertEquals(reil_ctx_out["xmm0"], res)
+        self.assertEquals(reil_ctx_out["xmm1"], ctx_init["xmm1"])
+
     def test_pshufd(self):
         asm = ["pshufd xmm0, xmm1, 0x93"]
 
