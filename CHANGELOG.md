@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 - Update `README` to include new command line options for all BARF tools.
 - Add initial support for x86 `AVX` instruction set.
 - Add support for x86 instructions: `BSF`, `BSWAP`, `BTS`, `CDQ`, `MOVSXD` and `SHRD`.
-- Add support for x86 SSE instructions: `MOVD`, `MOVDQA`, `MOVDQU`, `MOVHPD`, `MOVLPD`, `MOVQ`, `PCMPEQB`, `PMINUB`, `PMOVMSKB`, `POR`, `PSHUFD`, `PSLLDQ`, `PSRLDQ`, `PSUBB`, `PUNPCKLBW`, `PUNPCKLWD` and `PXOR`.
+- Add support for x86 SSE instructions: `MOVD`, `MOVDQA`, `MOVDQU`, `MOVHPD`, `MOVLPD`, `MOVQ`, `PCMPEQB`, `PMINUB`, `PMOVMSKB`, `POR`, `PSHUFD`, `PSLLDQ`, `PSRLDQ`, `PSUBB`, `PUNPCKLBW`, `PUNPCKLWD`, `PUNPCKLQDQ` and `PXOR`.
 - Add initial support for x86 `SSE` instruction set.
 - Add support for `pdf`, `png` and `dot` output formats in `BARFcfg` and `BARFcg` tools.
 - Add option to display immediate operand values in `hex` and `dec` to the CFG rendering.
