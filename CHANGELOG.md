@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security
+
+## [0.4.0]
+### Added
 - Update `README` to include new command line options for all BARF tools.
 - Add initial support for x86 `AVX` instruction set.
 - Add support for x86 instructions: `BSF`, `BSWAP`, `BTS`, `CDQ`, `MOVSXD` and `SHRD`.
@@ -96,7 +104,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 - First release.
 
-[Unreleased]: https://github.com/programa-stic/barf-project/compare/v0.3...master
+[Unreleased]: https://github.com/programa-stic/barf-project/compare/v0.4.0...master
+[0.4.0]: https://github.com/programa-stic/barf-project/compare/v0.3...v0.4.0
 [0.3]: https://github.com/programa-stic/barf-project/compare/v0.2.1...v0.3
 [0.2.1]: https://github.com/programa-stic/barf-project/compare/v0.2...v0.2.1
 [0.2]: https://github.com/programa-stic/barf-project/compare/v0.1...v0.2

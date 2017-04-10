@@ -19,10 +19,10 @@ For more information, see:
 
 Current status:
 
-| **Latest Release** | v0.3                                                                 |
-|-------------------:|:---------------------------------------------------------------------|
-|            **URL** | https://github.com/programa-stic/barf-project/releases/tag/v0.3      |
-|     **Change Log** | https://github.com/programa-stic/barf-project/blob/v0.3/CHANGELOG.md |
+| **Latest Release** | v0.4.0                                                                 |
+|-------------------:|:-----------------------------------------------------------------------|
+|            **URL** | https://github.com/programa-stic/barf-project/releases/tag/v0.4.0      |
+|     **Change Log** | https://github.com/programa-stic/barf-project/blob/v0.4.0/CHANGELOG.md |
 
 > All packages were tested on Ubuntu 16.04 (x86_64).
 
