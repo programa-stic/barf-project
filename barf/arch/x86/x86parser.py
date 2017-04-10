@@ -259,6 +259,7 @@ prefix = Or([
     Literal("addr16"),
     Literal("data16"),
     Literal("data32"),
+    Literal("bnd"),
 ])
 
 mnemonic = Word(alphanums)
