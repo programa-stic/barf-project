@@ -2303,7 +2303,10 @@ class X86TranslationTests(unittest.TestCase):
 
         x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
 
-        # TODO Test flags.
+        # NOTE: AF and OF can be left undefined in some cases. They are not
+        # cover by this test.
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
 
         cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
 

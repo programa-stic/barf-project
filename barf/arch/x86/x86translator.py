@@ -1908,7 +1908,11 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_bsh(dst_tmp0, dst_count, dst_tmp1))
         tb.add(self._builder.gen_str(dst_tmp1, dst))
 
-        # TODO Set flags accordingly.
+        if self._translation_mode == FULL_TRANSLATION:
+            # Flags : SF, ZF, PF
+            self._update_sf(tb, oprnd0, oprnd0, dst)
+            self._update_zf(tb, oprnd0, oprnd0, dst)
+            self._update_pf(tb, oprnd0, oprnd0, dst)
 
         tb.write(instruction.operands[0], dst)
 
