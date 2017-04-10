@@ -4,11 +4,11 @@
 # Python egg metadata, regenerated from source files by setuptools.
 *.egg-info
 
-# Build folder from Docs.
-doc/_build/*
+# Distribution files.
+dist/*
 
-# Dependencies folder.
-dependencies
+# Build folder from Docs.
+doc/manual/_build/*
 
 # Log files
 *.log
