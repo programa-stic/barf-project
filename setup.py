@@ -30,7 +30,7 @@ setup(
     author           = 'Christian Heitman',
     author_email     = 'cnheitman@fundacionsadosky.org.ar',
     description      = 'A multiplatform open source Binary Analysis and Reverse engineering Framework',
-    download_url     = 'https://github.com/programa-stic/barf-project/tarball/v0.3',
+    download_url     = 'https://github.com/programa-stic/barf-project/tarball/v' + __version__,
     install_requires = [
         'capstone',
         'networkx',
