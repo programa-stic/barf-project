@@ -580,7 +580,7 @@ class Z3Solver(object):
         ''' Send a string to the solver.
             @param cmd: a SMTLIBv2 command (ex. (check-sat))
         '''
-        logger.debug('>%s', cmd)
+        # logger.debug('>%s', cmd)
         self._proc.stdin.writelines((str(cmd), '\n'))
 
     def _recv(self):
@@ -601,7 +601,7 @@ class Z3Solver(object):
             left += l
             right += r
         buf = ''.join(bufl).strip()
-        logger.debug('<%s', buf)
+        # logger.debug('<%s', buf)
         if '(error' in bufl[0]:
             print("Error in simplify: %s" % str(buf))
             raise Exception("Error in smtlib <"+str(self)+">")
@@ -938,7 +938,7 @@ class CVC4Solver(object):
         ''' Send a string to the solver.
             @param cmd: a SMTLIBv2 command (ex. (check-sat))
         '''
-        logger.debug('>%s', cmd)
+        # logger.debug('>%s', cmd)
         self._proc.stdin.writelines((str(cmd), '\n'))
 
     def _recv(self):
@@ -959,7 +959,7 @@ class CVC4Solver(object):
             left += l
             right += r
         buf = ''.join(bufl).strip()
-        logger.debug('<%s', buf)
+        # logger.debug('<%s', buf)
         if '(error' in bufl[0]:
             print("Error in simplify: %s" % str(buf))
             raise Exception("Error in smtlib <"+str(self)+">")
