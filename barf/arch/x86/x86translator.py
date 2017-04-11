@@ -3638,6 +3638,82 @@ class X86Translator(Translator):
 
         tb.add(self._builder.gen_str(tmp3, self._flags["sf"]))
 
+    def _translate_lahf(self, tb, instruction):
+        # Operation
+        # IF 64-Bit Mode
+        #   THEN
+        #       IF CPUID.80000001H:ECX.LAHF-SAHF[bit 0] = 1;
+        #           THEN AH <- RFLAGS(SF:ZF:0:AF:0:PF:1:CF);
+        #       ELSE #UD;
+        #       FI;
+        #   ELSE
+        #       AH <- EFLAGS(SF:ZF:0:AF:0:PF:1:CF);
+        # FI;
+
+        # Flags Affected
+        # None. The state of the flags in the EFLAGS register is not affected.
+
+        ah = X86RegisterOperand("ah", 8)
+
+        dst = tb.temporal(8)
+
+        tmp0 = tb.temporal(dst.size)
+        tmp1 = tb.temporal(dst.size)
+        tmp2 = tb.temporal(dst.size)
+        tmp3 = tb.temporal(dst.size)
+
+        shl_one = tb.immediate(1, 8)
+
+        tb.add(self._builder.gen_str(tb.immediate(0, 8), dst))
+
+        # Store SF.
+        tb.add(self._builder.gen_str(self._flags["sf"], tmp1))
+        tb.add(self._builder.gen_or(tmp1, dst, dst))
+        # Shift left.
+        tb.add(self._builder.gen_bsh(dst, shl_one, dst))
+
+        # Store ZF.
+        tb.add(self._builder.gen_str(self._flags["zf"], tmp1))
+        tb.add(self._builder.gen_or(tmp1, dst, dst))
+        # Shift left.
+        tb.add(self._builder.gen_bsh(dst, shl_one, dst))
+
+        # Store 0.
+        tb.add(self._builder.gen_str(tb.immediate(0, 8), tmp1))
+        tb.add(self._builder.gen_or(tmp1, dst, dst))
+        # Shift left.
+        tb.add(self._builder.gen_bsh(dst, shl_one, dst))
+
+        # Store AF.
+        tb.add(self._builder.gen_str(self._flags["af"], tmp1))
+        tb.add(self._builder.gen_or(tmp1, dst, dst))
+        # Shift left.
+        tb.add(self._builder.gen_bsh(dst, shl_one, dst))
+
+        # Store 0.
+        tb.add(self._builder.gen_str(tb.immediate(0, 8), tmp1))
+        tb.add(self._builder.gen_or(tmp1, dst, dst))
+        # Shift left.
+        tb.add(self._builder.gen_bsh(dst, shl_one, dst))
+
+        # Store PF.
+        tb.add(self._builder.gen_str(self._flags["pf"], tmp1))
+        tb.add(self._builder.gen_or(tmp1, dst, dst))
+        # Shift left.
+        tb.add(self._builder.gen_bsh(dst, shl_one, dst))
+
+        # Store 1.
+        tb.add(self._builder.gen_str(tb.immediate(1, 8), tmp1))
+        tb.add(self._builder.gen_or(tmp1, dst, dst))
+        # Shift left.
+        tb.add(self._builder.gen_bsh(dst, shl_one, dst))
+
+        # Store CF.
+        tb.add(self._builder.gen_str(self._flags["cf"], tmp1))
+        tb.add(self._builder.gen_or(tmp1, dst, dst))
+
+        tb.write(ah, dst)
+
     def _translate_pushf(self, tb, instruction):
         # Flags Affected
         # None.
