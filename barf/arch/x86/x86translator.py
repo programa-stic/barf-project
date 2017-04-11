@@ -4580,3 +4580,11 @@ class X86Translator(Translator):
             dst = dst_new
 
         tb.write(instruction.operands[0], dst)
+
+    def _translate_movaps(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tb.write(instruction.operands[0], oprnd1)
