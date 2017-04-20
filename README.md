@@ -354,3 +354,5 @@ The BSD 2-Clause License. For more information, see [LICENSE](./LICENSE).
 [REIL]: http://www.usenix.org/legacy/event/woot10/tech/full_papers/Dullien.pdf
 [Z3]: https://github.com/Z3Prover/z3
 [Graphviz]: http://graphviz.org/
+[PEFile]: https://github.com/erocarrera/pefile
+[PyELFTools]: https://github.com/eliben/pyelftools
