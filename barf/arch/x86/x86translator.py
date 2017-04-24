@@ -262,7 +262,19 @@ class X86Translator(Translator):
         :type instruction: X86Instruction
         """
         # Retrieve translation function.
-        translator_name = "_translate_" + instruction.mnemonic
+        if instruction.mnemonic in ["movsd"]:
+            # Check if it refers to the strings instruction or the sse
+            # instruction.
+            if not instruction.bytes:
+                # Assume strings by default.
+                translator_name = "_translate_" + instruction.mnemonic
+            elif instruction.bytes[0] not in ["\xa4", "\xa5"]:
+                translator_name = "_translate_" + instruction.mnemonic + "_sse"
+            else:
+                translator_name = "_translate_" + instruction.mnemonic
+        else:
+            translator_name = "_translate_" + instruction.mnemonic
+
         translator_fn = getattr(self, translator_name, self._not_implemented)
 
         # Translate instruction.
@@ -4588,3 +4600,21 @@ class X86Translator(Translator):
         oprnd1 = tb.read(instruction.operands[1])
 
         tb.write(instruction.operands[0], oprnd1)
+
+    def _translate_movsd_sse(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        # Operation
+        # MOVSD (128-bit Legacy SSE version: MOVSD XMM1, m64)
+        # DEST[63:0] <- SRC[63:0]
+        # DEST[127:64] <- 0
+        # DEST[MAX_VL-1:128] (Unmodified)
+
+        oprnd1 = tb.read(instruction.operands[1])
+
+        dst = tb.temporal(64)
+
+        tb.add(self._builder.gen_str(oprnd1, dst))
+
+        tb.write(instruction.operands[0], dst)
