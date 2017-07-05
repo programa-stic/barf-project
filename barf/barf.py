@@ -49,10 +49,11 @@ from core.reil import ReilContainer
 from core.reil import ReilContainerInvalidAddressError
 from core.reil import ReilEmulator
 from core.reil import ReilSequence
-from core.reil import split_address
 from core.smt.smtlibv2 import CVC4Solver
 from core.smt.smtlibv2 import Z3Solver
 from core.smt.smttranslator import SmtTranslator
+from utils.utils import to_asm_address
+from utils.utils import to_reil_address
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ SMT_SOLVER = "Z3"
 def _check_solver_installation(solver):
     found = True
     try:
-        path = subprocess.check_output(["which", solver])
+        _ = subprocess.check_output(["which", solver])
     except subprocess.CalledProcessError as e:
         if e.returncode == 0x1:
             found = False
@@ -188,7 +189,6 @@ class BARF(object):
 
         # Gadgets classifier.
         self.gadget_classifier = GadgetClassifier(self.ir_emulator, self.arch_info)
-
 
         # Gadgets finder.
         self.gadget_finder = GadgetFinder(self.disassembler, self.text_section, self.ir_translator,
@@ -403,38 +403,50 @@ class BARF(object):
         :rtype: dict
 
         """
-        def _translate_asm_instruction(asm_instr):
+        def _build_reil_sequence(asm_instr):
             reil_translator = self.ir_translator
 
-            # Create ReilContainer
-            instr_container = ReilContainer()
             instr_seq = ReilSequence()
             for reil_instr in reil_translator.translate(asm_instr):
                 instr_seq.append(reil_instr)
-            instr_container.add(instr_seq)
+
+            return instr_seq
+
+        def _build_reil_container(asm_instr):
+            # Create ReilContainer
+            instr_container = ReilContainer()
+
+            instr_container.add(_build_reil_sequence(asm_instr))
 
             return instr_container
 
-        def _process_asm_instruction(reil_emulator, asm_instr):
-            instr_container = _translate_asm_instruction(asm_instr)
-            ip = asm_instr.address << 8 | 0x0
+        def _process_reil_instructions(reil_emulator, container, ip):
             next_addr = None
 
             while ip:
                 # Fetch instruction.
                 try:
-                    reil_instr = instr_container.fetch(ip)
+                    reil_instr = container.fetch(ip)
                 except ReilContainerInvalidAddressError:
-                    next_addr = split_address(ip)[0]
+                    next_addr = ip
                     break
 
                 next_ip = reil_emulator.single_step(reil_instr)
 
                 # Update instruction pointer.
-                ip = next_ip if next_ip else instr_container.get_next_address(ip)
+                ip = next_ip if next_ip else container.get_next_address(ip)
 
-            if next_addr is None:
+            return next_addr
+
+        def _process_asm_instruction(reil_emulator, asm_instr):
+            instr_container = _build_reil_container(asm_instr)
+            ip = to_reil_address(asm_instr.address)
+            target_addr = _process_reil_instructions(reil_emulator, instr_container, ip)
+
+            if target_addr is None:
                 next_addr = asm_instr.address + asm_instr.size
+            else:
+                next_addr = to_asm_address(target_addr)
 
             return next_addr
 
@@ -455,8 +467,13 @@ class BARF(object):
 
         next_addr = start_addr
         while next_addr != end_addr:
+            # Fetch instruction.
             start, end = next_addr, next_addr + self.arch_info.max_instruction_size
+
+            # Decode instruction.
             asm_instr = self.disassembler.disassemble(self.text_section[start:end], next_addr)
+
+            # Translate and execute instruction.
             next_addr = _process_asm_instruction(self.ir_emulator, asm_instr)
 
         context_out = {
