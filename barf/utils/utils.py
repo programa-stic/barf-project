@@ -97,12 +97,12 @@ class ExecutionCache(object):
     def __init__(self):
         self.__container = {}
 
-    def add(self, address, instruction, sequence):
+    def add(self, address, instruction, container):
         # NOTE Does not take into account self modifying code.
         if address in self.__container.keys():
             raise Exception("Invalid instruction")
 
-        self.__container[address] = (instruction, sequence)
+        self.__container[address] = (instruction, container)
 
     def retrieve(self, address):
         if address not in self.__container.keys():
