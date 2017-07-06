@@ -81,3 +81,12 @@ class ArchitectureInformation(object):
 
     def instr_is_syscall(self, instruction):
         raise NotImplementedError()
+
+    def stack_pointer_register(self):
+        raise NotImplementedError()
+
+    def instr_pointer_register(self):
+        raise NotImplementedError()
+
+    def flags_register(self):
+        raise NotImplementedError()

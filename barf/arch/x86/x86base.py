@@ -353,6 +353,30 @@ class X86ArchitectureInformation(ArchitectureInformation):
 
         return instruction.mnemonic in syscall_instrs
 
+    def stack_pointer_register(self):
+        stack_pointer_register_map = {
+            ARCH_X86_MODE_32: 'esp',
+            ARCH_X86_MODE_64: 'rsp',
+        }
+
+        return stack_pointer_register_map[self._arch_mode]
+
+    def instr_pointer_register(self):
+        instr_pointer_register_map = {
+            ARCH_X86_MODE_32: 'eip',
+            ARCH_X86_MODE_64: 'rip',
+        }
+
+        return instr_pointer_register_map[self._arch_mode]
+
+    def flags_register(self):
+        flag_register_map = {
+            ARCH_X86_MODE_32: 'eflags',
+            ARCH_X86_MODE_64: 'rflags',
+        }
+
+        return flag_register_map[self._arch_mode]
+
     def _load_alias_mapper(self):
         if self._arch_mode == ARCH_X86_MODE_32:
             alias_mapper = {

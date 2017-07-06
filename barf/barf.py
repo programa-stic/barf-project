@@ -92,6 +92,9 @@ class BARF(object):
         self.smt_translator = None
         self.ir_emulator = None
         self.bb_builder = None
+        self.ip = None
+        self.sp = None
+        self.ws = None
 
         self.open(filename)
 
@@ -137,6 +140,18 @@ class BARF(object):
         self.arch_info = X86ArchitectureInformation(arch_mode)
         self.disassembler = X86Disassembler(architecture_mode=arch_mode)
         self.ir_translator = X86Translator(architecture_mode=arch_mode)
+
+        # Load instruction pointer register.
+        if self.arch_info.architecture_mode == arch.ARCH_X86_MODE_32:
+            self.ip = "eip"
+            self.sp = "esp"
+            self.ws = 4
+        elif self.arch_info.architecture_mode == arch.ARCH_X86_MODE_64:
+            self.ip = "rip"
+            self.sp = "rsp"
+            self.ws = 8
+        else:
+            raise Exception("Invalid architecture mode.")
 
     def _setup_core_modules(self):
         """Set up core modules.
@@ -433,6 +448,13 @@ class BARF(object):
                 # Update instruction pointer.
                 ip = next_ip if next_ip else container.get_next_address(ip)
 
+            # Delete temporal registers.
+            regs = reil_emulator.registers.keys()
+
+            for r in regs:
+                if r.startswith("t"):
+                    del reil_emulator.registers[r]
+
             return next_addr
 
         if arch_mode is not None:
@@ -462,11 +484,14 @@ class BARF(object):
                 break
 
             if next_addr in hooks:
+                print("[+] Hook.")
                 fn, param = hooks[next_addr]
 
                 fn(self.ir_emulator, param)
 
-                next_addr = self.ir_emulator.read_memory(self.ir_emulator.registers["esp"], 4)
+                next_addr = self.ir_emulator.read_memory(self.ir_emulator.registers[self.sp], self.ws)
+
+                # print("\tnext address: {:#x} ({})".format(next_addr, self.ir_emulator.registers[self.sp]))
 
             try:
                 asm_instr, reil_container = execution_cache.retrieve(next_addr)
@@ -490,7 +515,10 @@ class BARF(object):
                 execution_cache.add(next_addr, asm_instr, reil_container)
 
             # Execute instruction.
-            # print("{:#x} {}".format(asm_instr.address, asm_instr))
+            print("{:#x} {}".format(asm_instr.address, asm_instr))
+
+            # Update the instruction pointer.
+            self.ir_emulator.registers[self.ip] = asm_instr.address + asm_instr.size
 
             target_addr = _process_reil_container(self.ir_emulator, reil_container, to_reil_address(next_addr))
 
