@@ -86,3 +86,29 @@ class VariableNamer(object):
         """Restart name counter.
         """
         self._counter_curr = self._counter_init
+
+
+class InvalidAddressError(Exception):
+    pass
+
+
+class ExecutionCache(object):
+
+    def __init__(self):
+        self.__container = {}
+
+    def add(self, address, instruction, sequence):
+        # NOTE Does not take into account self modifying code.
+        if address in self.__container.keys():
+            raise Exception("Invalid instruction")
+
+        self.__container[address] = (instruction, sequence)
+
+    def retrieve(self, address):
+        if address not in self.__container.keys():
+            # print("cache miss!")
+            raise InvalidAddressError()
+
+        # print("cache hit!")
+
+        return self.__container[address]

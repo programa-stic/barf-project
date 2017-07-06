@@ -52,7 +52,7 @@ from core.reil import ReilSequence
 from core.smt.smtlibv2 import CVC4Solver
 from core.smt.smtlibv2 import Z3Solver
 from core.smt.smttranslator import SmtTranslator
-from utils.utils import to_asm_address
+from utils.utils import to_asm_address, ExecutionCache, InvalidAddressError
 from utils.utils import to_reil_address
 
 logger = logging.getLogger(__name__)
@@ -387,7 +387,7 @@ class BARF(object):
 
         return bb_list
 
-    def emulate_full(self, context, ea_start=None, ea_end=None, arch_mode=None):
+    def emulate_full(self, context, ea_start=None, ea_end=None, arch_mode=None, hooks=None):
         """Emulate REIL instructions.
 
         :param context: processor context (register and/or memory)
@@ -420,7 +420,11 @@ class BARF(object):
 
             return instr_container
 
-        def _process_reil_instructions(reil_emulator, container, ip):
+        def _process_reil_sequence(reil_emulator, reil_sequence, ip):
+            container = ReilContainer()
+
+            container.add(reil_sequence)
+
             next_addr = None
 
             while ip:
@@ -441,7 +445,7 @@ class BARF(object):
         def _process_asm_instruction(reil_emulator, asm_instr):
             instr_container = _build_reil_container(asm_instr)
             ip = to_reil_address(asm_instr.address)
-            target_addr = _process_reil_instructions(reil_emulator, instr_container, ip)
+            target_addr = _process_reil_sequence(reil_emulator, instr_container, ip)
 
             if target_addr is None:
                 next_addr = asm_instr.address + asm_instr.size
@@ -457,6 +461,8 @@ class BARF(object):
         start_addr = ea_start if ea_start else self.binary.ea_start
         end_addr = ea_end if ea_end else self.binary.ea_end
 
+        hooks = hooks if hooks else {}
+
         # Load registers
         for reg, val in context.get('registers', {}).items():
             self.ir_emulator.registers[reg] = val
@@ -465,16 +471,42 @@ class BARF(object):
         for addr, val in context.get('memory', {}).items():
             self.ir_emulator.memory.write(addr, 4, val)
 
+        # Execute the code.
+        execution_cache = ExecutionCache()
         next_addr = start_addr
         while next_addr != end_addr:
-            # Fetch instruction.
-            start, end = next_addr, next_addr + self.arch_info.max_instruction_size
+            if next_addr in hooks:
+                fn, param = hooks[next_addr]
 
-            # Decode instruction.
-            asm_instr = self.disassembler.disassemble(self.text_section[start:end], next_addr)
+                fn(self.ir_emulator, param)
 
-            # Translate and execute instruction.
-            next_addr = _process_asm_instruction(self.ir_emulator, asm_instr)
+                next_addr = self.ir_emulator.read_memory(self.ir_emulator.registers["esp"], 4)
+
+            try:
+                asm_instr, reil_seq = execution_cache.retrieve(next_addr)
+            except InvalidAddressError:
+                # Fetch the instruction.
+                start, end = next_addr, next_addr + self.arch_info.max_instruction_size
+                encoding = self.text_section[start:end]
+
+                # Decode it.
+                asm_instr = self.disassembler.disassemble(encoding, next_addr)
+
+                # Translate it.
+                reil_seq = _build_reil_sequence(asm_instr)
+
+                # Add it to the cache.
+                execution_cache.add(next_addr, asm_instr, reil_seq)
+
+                # Execute instruction.
+            print("{:#x} {}".format(asm_instr.address, asm_instr))
+
+            target_addr = _process_reil_sequence(self.ir_emulator, reil_seq, to_reil_address(next_addr))
+
+            if target_addr is None:
+                next_addr = asm_instr.address + asm_instr.size
+            else:
+                next_addr = to_asm_address(target_addr)
 
         context_out = {
             'registers': {},
