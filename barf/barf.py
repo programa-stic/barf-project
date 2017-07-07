@@ -130,6 +130,18 @@ class BARF(object):
         self.disassembler = ArmDisassembler(architecture_mode=arch_mode)
         self.ir_translator = ArmTranslator(architecture_mode=arch_mode)
 
+        # Load instruction pointer register.
+        if self.arch_info.architecture_mode == arch.ARCH_ARM_MODE_THUMB:
+            self.ip = "pc"
+            self.sp = "sp"
+            self.ws = 2
+        elif self.arch_info.architecture_mode == arch.ARCH_ARM_MODE_ARM:
+            self.ip = "pc"
+            self.sp = "sp"
+            self.ws = 4
+        else:
+            raise Exception("Invalid architecture mode.")
+
     def _setup_x86_arch(self, arch_mode=None):
         """Set up x86 architecture.
         """
@@ -228,7 +240,9 @@ class BARF(object):
             self.binary = BinaryFile(filename)
             self.text_section = self.binary.text_section
 
-            self._load()
+            print("[open] self.binary.architecture_mode: {}".format(self.binary.architecture_mode))
+
+            self._load(arch_mode=self.binary.architecture_mode)
 
     def load_architecture(self, name, arch_info, disassembler, translator):
         # Set up architecture information
@@ -477,6 +491,8 @@ class BARF(object):
         # Execute the code.
         execution_cache = ExecutionCache()
 
+        print("emulate arch mode: {}".format(self.binary.architecture_mode))
+
         next_addr = start_addr
         icounter = 0
         while next_addr != end_addr:
@@ -489,7 +505,11 @@ class BARF(object):
 
                 fn(self.ir_emulator, param)
 
-                next_addr = self.ir_emulator.read_memory(self.ir_emulator.registers[self.sp], self.ws)
+                if self.binary.architecture == arch.ARCH_X86:
+                    next_addr = self.ir_emulator.read_memory(self.ir_emulator.registers[self.sp], self.ws)
+
+                if self.binary.architecture == arch.ARCH_ARM:
+                    next_addr = asm_instr.address + asm_instr.size
 
                 # print("\tnext address: {:#x} ({})".format(next_addr, self.ir_emulator.registers[self.sp]))
 
@@ -505,8 +525,10 @@ class BARF(object):
                 for i in xrange(end-start):
                     encoding += chr(self.ir_emulator.read_memory(start + i, 1))
 
+                # print("start: {}, end: {}, size: {}".format(start, end, end-start))
+
                 # Decode it.
-                asm_instr = self.disassembler.disassemble(encoding, next_addr)
+                asm_instr = self.disassembler.disassemble(encoding, next_addr, architecture_mode=self.binary.architecture_mode)
 
                 # Translate it.
                 reil_container = _build_reil_container(asm_instr)
