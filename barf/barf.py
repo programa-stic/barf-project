@@ -132,12 +132,12 @@ class BARF(object):
 
         # Load instruction pointer register.
         if self.arch_info.architecture_mode == arch.ARCH_ARM_MODE_THUMB:
-            self.ip = "pc"
-            self.sp = "sp"
-            self.ws = 2
+            self.ip = "r15"
+            self.sp = "r13"
+            self.ws = 2  # TODO Check.
         elif self.arch_info.architecture_mode == arch.ARCH_ARM_MODE_ARM:
-            self.ip = "pc"
-            self.sp = "sp"
+            self.ip = "r15"
+            self.sp = "r13"
             self.ws = 4
         else:
             raise Exception("Invalid architecture mode.")
@@ -540,7 +540,14 @@ class BARF(object):
             print("{:#x} {}".format(asm_instr.address, asm_instr))
 
             # Update the instruction pointer.
-            self.ir_emulator.registers[self.ip] = asm_instr.address + asm_instr.size
+            if self.binary.architecture == arch.ARCH_X86:
+                self.ir_emulator.registers[self.ip] = asm_instr.address + asm_instr.size
+
+            if self.binary.architecture == arch.ARCH_ARM:
+                if self.binary.architecture_mode == arch.ARCH_ARM_MODE_ARM:
+                    self.ir_emulator.registers[self.ip] = asm_instr.address + 8
+                elif self.binary.architecture_mode == arch.ARCH_ARM_MODE_THUMB:
+                    self.ir_emulator.registers[self.ip] = asm_instr.address + 4
 
             target_addr = _process_reil_container(self.ir_emulator, reil_container, to_reil_address(next_addr))
 
