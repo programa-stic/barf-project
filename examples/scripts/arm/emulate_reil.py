@@ -35,8 +35,7 @@ if __name__ == "__main__":
     #
     # REIL emulation
     #
-    context_in = {}
-    context_out = barf.emulate(context_in, ea_start=0x8390, ea_end=0x83e0)  # ARM mode
+    context_out = barf.emulate(start=0x8390, end=0x83e0)  # ARM mode
 
     print "%s : %s" % ("r3", hex(context_out['registers']["r3"]))
 

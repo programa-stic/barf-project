@@ -52,9 +52,12 @@ from core.reil import ReilSequence
 from core.smt.smtlibv2 import CVC4Solver
 from core.smt.smtlibv2 import Z3Solver
 from core.smt.smttranslator import SmtTranslator
-from elftools.elf.elffile import ELFFile
-from utils.utils import to_asm_address, ExecutionCache, InvalidAddressError
+from utils.utils import ExecutionCache
+from utils.utils import InvalidAddressError
+from utils.utils import to_asm_address
 from utils.utils import to_reil_address
+
+from elftools.elf.elffile import ELFFile
 
 logger = logging.getLogger(__name__)
 
@@ -421,22 +424,19 @@ class BARF(object):
 
         return bb_list
 
-    def emulate(self, context, ea_start=None, ea_end=None, arch_mode=None, hooks=None, max_instrs=None):
-        """Emulate REIL instructions.
+    def emulate(self, context=None, start=None, end=None, arch_mode=None, hooks=None, max_instrs=None):
+        """Emulate native code.
 
-        :param hooks: Set hooks by address.
-        :param context: processor context (register and/or memory)
-        :type context: dict
-        :param ea_start: start address
-        :type ea_start: int
-        :param ea_end: end address
-        :type ea_end: int
-        :param arch_mode: architecture mode
-        :type arch_mode: int
+        Args:
+            context (dict): Processor context (register and/or memory).
+            start (int): Start address.
+            end (int): End address.
+            arch_mode (int): Architecture mode.
+            hooks (dict): Hooks by address.
+            max_instrs (int): Maximum number of instructions to execute.
 
-        :returns: a context
-        :rtype: dict
-
+        Returns:
+            dict: Processor context.
         """
         def _build_reil_container(asm_instr):
             reil_translator = self.ir_translator
@@ -480,8 +480,10 @@ class BARF(object):
             # Reload modules.
             self._load(arch_mode=arch_mode)
 
-        start_addr = ea_start if ea_start else self.binary.ea_start
-        end_addr = ea_end if ea_end else self.binary.ea_end
+        context = context if context else {}
+
+        start_addr = start if start else self.binary.ea_start
+        end_addr = end if end else self.binary.ea_end
 
         hooks = hooks if hooks else {}
 
@@ -490,16 +492,17 @@ class BARF(object):
             self.ir_emulator.registers[reg] = val
 
         # Load memory
+        # TODO Memory content should be encoded as hex strings so each
+        # entry can be of different sizes.
         for addr, val in context.get('memory', {}).items():
             self.ir_emulator.memory.write(addr, 4, val)
 
         # Execute the code.
         execution_cache = ExecutionCache()
 
-        print("emulate arch mode: {}".format(self.binary.architecture_mode))
-
         next_addr = start_addr
         instr_count = 0
+        asm_instr = None
         while next_addr != end_addr:
             if max_instrs and instr_count > max_instrs:
                 break
