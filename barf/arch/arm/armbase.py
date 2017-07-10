@@ -263,7 +263,10 @@ class ArmArchitectureInformation(ArchitectureInformation):
         """
         instruction_size_map = {
             ARCH_ARM_MODE_ARM : 4,
-            ARCH_ARM_MODE_THUMB : 2,
+
+            # NOTE: THUMB instructions are 2 byte long but THUMBv2
+            # instruction have both 2 and 4 byte long.
+            ARCH_ARM_MODE_THUMB : 4,
         }
 
         return instruction_size_map[self._arch_mode]
@@ -306,6 +309,15 @@ class ArmArchitectureInformation(ArchitectureInformation):
         ]
 
         return instruction.mnemonic_full in branch_instr
+
+    def stack_pointer_register(self):
+        return "r13"
+
+    def instr_pointer_register(self):
+        return "r15"
+
+    def flags_register(self):
+        return "apsr"
 
     def _load_alias_mapper(self):
         alias_mapper = {
