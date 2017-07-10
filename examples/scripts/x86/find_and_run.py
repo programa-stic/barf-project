@@ -1,7 +1,5 @@
 #! /usr/bin/env python
 
-import sys
-
 from barf.analysis.basicblock.callgraph import CallGraph
 from barf.barf import BARF
 from barf.core.symbols import load_symbols
@@ -11,13 +9,10 @@ if __name__ == "__main__":
     #
     # Open file
     #
-    try:
-        filename = "../../samples/bin/example1.x86_64"
-        arg = "hello!"
-        barf = BARF(filename)
-    except Exception:
-        print("[-] Error opening file : {}".format(filename))
-        sys.exit(1)
+    filename = "../../samples/bin/example1.x86_64"
+    arg = "hello!"
+
+    barf = BARF(filename)
 
     #
     # Recover CFGs.
@@ -84,10 +79,10 @@ if __name__ == "__main__":
         argv = argv_base_addr
 
         # Push parameters into the stack.
-        reil_emulator.write_memory(esp + 0x00, 4, 0x41414141) # return address
+        reil_emulator.write_memory(esp + 0x00, 4, 0x41414141)   # return address
 
-        reil_emulator.write_memory(esp + 0x04, 4, argc) # argc
-        reil_emulator.write_memory(esp + 0x08, 4, argv) # argv
+        reil_emulator.write_memory(esp + 0x04, 4, argc)         # argc
+        reil_emulator.write_memory(esp + 0x08, 4, argv)         # argv
 
         # Set registers.
         ctx_init = {

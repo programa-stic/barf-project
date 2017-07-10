@@ -1,8 +1,5 @@
 #! /usr/bin/env python
 
-import os
-import sys
-
 from barf.barf import BARF
 from barf.arch import ARCH_ARM_MODE_ARM
 
@@ -10,16 +7,8 @@ if __name__ == "__main__":
     #
     # Open file
     #
-    try:
-        # ARM MODE
-        filename = os.path.abspath("../../samples/bin/branch4.arm")
-        barf = BARF(filename)
-    except Exception as err:
-        print err
-
-        print "[-] Error opening file : %s" % filename
-
-        sys.exit(1)
+    filename = "../../samples/bin/branch4.arm"
+    barf = BARF(filename)
 
     #
     # Recover CFG

@@ -1,22 +1,12 @@
 #! /usr/bin/env python
 
-import os
-import sys
-
 from barf.barf import BARF
-from barf.arch import ARCH_ARM_MODE_ARM
 
 if __name__ == "__main__":
     #
     # Open file
     #
-    try:
-        filename = os.path.abspath("../../samples/bin/loop2.arm")
-        barf = BARF(filename)
-    except Exception, err:
-        print "[-] Error opening file : %s" % filename
-
-        sys.exit(1)
+    barf = BARF("../../samples/bin/loop2.arm")
 
     # 00008390 <main>:
     #     8390:    e52db004     push    {fp}        ; (str fp, [sp, #-4]!)
