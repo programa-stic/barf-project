@@ -33,7 +33,7 @@ if __name__ == "__main__":
     # Add instructions to analyze
     print("[+] Adding instructions to the analyzer...")
 
-    for addr, asm_instr, reil_instrs in barf.translate(ea_start=start_addr, ea_end=end_addr):
+    for addr, asm_instr, reil_instrs in barf.translate(start=start_addr, end=end_addr):
         print("0x{0:08x} : {1}".format(addr, asm_instr))
 
         for reil_instr in reil_instrs:

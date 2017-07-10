@@ -261,22 +261,19 @@ class BARF(object):
         # setup analysis modules
         self._setup_analysis_modules()
 
-    def translate(self, ea_start=None, ea_end=None, arch_mode=None):
+    def translate(self, start=None, end=None, arch_mode=None):
         """Translate to REIL instructions.
 
-        :param ea_start: start address
-        :type ea_start: int
-        :param ea_end: end address
-        :type ea_end: int
-        :param arch_mode: architecture mode
-        :type arch_mode: int
+        Args:
+            start (int): Start address.
+            end (int): End address.
+            arch_mode (int): Architecture mode.
 
-        :returns: a tuple of the form (address, assembler instruction, instruction size)
-        :rtype: (int, Instruction, int)
-
+        Returns:
+            (int, Instruction, list): A tuple of the form (address, assembler instruction, REIL instructions).
         """
-        start_addr = ea_start if ea_start else self.binary.ea_start
-        end_addr = ea_end if ea_end else self.binary.ea_end
+        start_addr = start if start else self.binary.ea_start
+        end_addr = end if end else self.binary.ea_end
 
         self.ir_translator.reset()
 
