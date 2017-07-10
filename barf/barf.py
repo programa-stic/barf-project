@@ -405,25 +405,6 @@ class BARF(object):
 
         return cfg, calls
 
-    def recover_bbs(self, ea_start=None, ea_end=None):
-        """Recover basic blocks.
-
-        :param ea_start: start address
-        :type ea_start: int
-        :param ea_end: end address
-        :type ea_end: int
-
-        :returns: a list of basic blocks
-        :rtype: list
-
-        """
-        start_addr = ea_start if ea_start else self.binary.ea_start
-        end_addr = ea_end if ea_end else self.binary.ea_end
-
-        bb_list = self.bb_builder.build(start_addr, end_addr)
-
-        return bb_list
-
     def emulate(self, context=None, start=None, end=None, arch_mode=None, hooks=None, max_instrs=None):
         """Emulate native code.
 
