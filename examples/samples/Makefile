@@ -27,16 +27,20 @@ branch3: src/branch3.c
 	$(X86_CC) -m32 -o bin/branch3.x86 src/branch3.c
 
 branch4: src/branch4.c
-	$(X86_CC) -m32 -o bin/branch4.x86 src/branch4.c
+	$(X86_CC) -m32    -o bin/branch4.x86       src/branch4.c
+	$(ARM_CC) -marm   -o bin/branch4.arm       src/branch4.c
+	$(ARM_CC) -mthumb -o bin/branch4.arm_thumb src/branch4.c
 
 complex1: src/complex1.c
 	$(X86_CC) -ggdb -m32 -O0 -o bin/complex1.x86 src/complex1.c
 
 constraint1: src/constraint1.c
-	$(X86_CC) -m32 -O0 -o bin/constraint1.x86 src/constraint1.c
+	$(X86_CC) -m32  -O0 -o bin/constraint1.x86 src/constraint1.c
+	$(ARM_CC) -marm -O0 -o bin/constraint1.arm src/constraint1.c
 
 constraint2: src/constraint2.c
-	$(X86_CC) -m32 -O0 -o bin/constraint2.x86 src/constraint2.c
+	$(X86_CC) -m32  -O0 -o bin/constraint2.x86 src/constraint2.c
+	$(ARM_CC) -marm -O0 -o bin/constraint2.arm src/constraint2.c
 
 constraint3: src/constraint3.c
 	$(X86_CC) -m32 -O0 -o bin/constraint3.x86 src/constraint3.c
@@ -60,7 +64,8 @@ loop1: src/loop1.asm
 	rm loop1.o
 
 loop2: src/loop2.c
-	$(X86_CC) -m32 -o bin/loop2.x86 src/loop2.c
+	$(X86_CC) -m32  -o bin/loop2.x86 src/loop2.c
+	$(ARM_CC) -marm -o bin/loop2.arm src/loop2.c
 
 serial1: src/serial1.c
 	$(X86_CC) -m32 -o bin/serial1.x86 src/serial1.c
