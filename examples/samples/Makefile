@@ -56,7 +56,7 @@ helloworld1: src/helloworld1.c
 
 loop1: src/loop1.asm
 	nasm -felf32 src/loop1.asm -o loop1.o
-	ld -melf_i386 loop1.o -o bin/loop1
+	ld -melf_i386 loop1.o -o bin/loop1.x86
 	rm loop1.o
 
 loop2: src/loop2.c

@@ -12,7 +12,7 @@ if __name__ == "__main__":
     # Open file
     #
     try:
-        filename = "../../bin/x86/example1"
+        filename = "../../samples/bin/example1.x86_64"
         arg = "hello!"
         barf = BARF(filename)
     except Exception:
