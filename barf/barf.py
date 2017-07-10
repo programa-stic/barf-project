@@ -317,14 +317,18 @@ class BARF(object):
             # update instruction pointer
             curr_addr += asm.size
 
-    def recover_cfg(self, ea_start=None, ea_end=None, symbols=None, callback=None, arch_mode=None):
-        """Recover CFG
+    def recover_cfg(self, start=None, end=None, symbols=None, callback=None, arch_mode=None):
+        """Recover CFG.
 
-        :int start: Start address.
-        :int end: End address.
+        Args:
+            start (int): Start address.
+            end (int): End address.
+            symbols (dict): Symbol table.
+            callback (function): A callback function which is called after each successfully recovered CFG.
+            arch_mode (int): Architecture mode.
 
-        :returns: A CFG.
-
+        Returns:
+            ControlFlowGraph: A CFG.
         """
         # Set architecture in case it wasn't already set.
         if arch_mode is None:
@@ -334,18 +338,23 @@ class BARF(object):
         self._load(arch_mode=arch_mode)
 
         # Check start address.
-        ea_start = ea_start if ea_start else self.binary.entry_point
+        start = start if start else self.binary.entry_point
 
-        cfg, _ = self._recover_cfg(start=ea_start, end=ea_end, symbols=symbols, callback=callback)
+        cfg, _ = self._recover_cfg(start=start, end=end, symbols=symbols, callback=callback)
 
         return cfg
 
     def recover_cfg_all(self, entries, symbols=None, callback=None, arch_mode=None):
         """Recover CFG for all functions from an entry point and/or symbol table.
 
-        :int start: Start address.
-        :returns: A list of CFGs.
+        Args:
+            entries (list): A list of function addresses' to start the CFG recovery process.
+            symbols (dict): Symbol table.
+            callback (function): A callback function which is called after each successfully recovered CFG.
+            arch_mode (int): Architecture mode.
 
+        Returns:
+            list: A list of recovered CFGs.
         """
         # Set architecture in case it wasn't already set.
         if arch_mode is None:
