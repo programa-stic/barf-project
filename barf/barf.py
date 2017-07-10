@@ -52,6 +52,7 @@ from core.reil import ReilSequence
 from core.smt.smtlibv2 import CVC4Solver
 from core.smt.smtlibv2 import Z3Solver
 from core.smt.smttranslator import SmtTranslator
+from elftools.elf.elffile import ELFFile
 from utils.utils import to_asm_address, ExecutionCache, InvalidAddressError
 from utils.utils import to_reil_address
 
@@ -76,7 +77,7 @@ def _check_solver_installation(solver):
 class BARF(object):
     """Binary Analysis Framework."""
 
-    def __init__(self, filename):
+    def __init__(self, filename, load_bin=True):
         logger.info("[+] BARF: Initializing...")
 
         self.code_analyzer = None
@@ -97,6 +98,9 @@ class BARF(object):
         self.ws = None
 
         self.open(filename)
+
+        if load_bin:
+            self.load_binary()
 
     def _load(self, arch_mode=None):
         # setup architecture
@@ -494,38 +498,29 @@ class BARF(object):
         print("emulate arch mode: {}".format(self.binary.architecture_mode))
 
         next_addr = start_addr
-        icounter = 0
+        instr_count = 0
         while next_addr != end_addr:
-            if max_instrs and icounter > max_instrs:
+            if max_instrs and instr_count > max_instrs:
                 break
 
             if next_addr in hooks:
-                print("[+] Hook.")
                 fn, param = hooks[next_addr]
 
                 fn(self.ir_emulator, param)
 
+                # Compute next address after hook.
                 if self.binary.architecture == arch.ARCH_X86:
                     next_addr = self.ir_emulator.read_memory(self.ir_emulator.registers[self.sp], self.ws)
 
                 if self.binary.architecture == arch.ARCH_ARM:
                     next_addr = asm_instr.address + asm_instr.size
 
-                # print("\tnext address: {:#x} ({})".format(next_addr, self.ir_emulator.registers[self.sp]))
-
             try:
+                # Retrive next instruction from the execution cache.
                 asm_instr, reil_container = execution_cache.retrieve(next_addr)
             except InvalidAddressError:
                 # Fetch the instruction.
-                start, end = next_addr, next_addr + self.arch_info.max_instruction_size
-                # encoding = self.text_section[start:end]
-
-                # TODO Load the binary into the ReilMemory so the following can work.
-                encoding = ""
-                for i in xrange(end-start):
-                    encoding += chr(self.ir_emulator.read_memory(start + i, 1))
-
-                # print("start: {}, end: {}, size: {}".format(start, end, end-start))
+                encoding = self.__fetch_instr(next_addr)
 
                 # Decode it.
                 asm_instr = self.disassembler.disassemble(encoding, next_addr, architecture_mode=self.binary.architecture_mode)
@@ -533,30 +528,22 @@ class BARF(object):
                 # Translate it.
                 reil_container = _build_reil_container(asm_instr)
 
-                # Add it to the cache.
+                # Add it to the execution cache.
                 execution_cache.add(next_addr, asm_instr, reil_container)
+
+            # Update the instruction pointer.
+            self.__update_ip(asm_instr)
 
             # Execute instruction.
             print("{:#x} {}".format(asm_instr.address, asm_instr))
 
-            # Update the instruction pointer.
-            if self.binary.architecture == arch.ARCH_X86:
-                self.ir_emulator.registers[self.ip] = asm_instr.address + asm_instr.size
-
-            if self.binary.architecture == arch.ARCH_ARM:
-                if self.binary.architecture_mode == arch.ARCH_ARM_MODE_ARM:
-                    self.ir_emulator.registers[self.ip] = asm_instr.address + 8
-                elif self.binary.architecture_mode == arch.ARCH_ARM_MODE_THUMB:
-                    self.ir_emulator.registers[self.ip] = asm_instr.address + 4
-
             target_addr = _process_reil_container(self.ir_emulator, reil_container, to_reil_address(next_addr))
 
-            if target_addr is None:
-                next_addr = asm_instr.address + asm_instr.size
-            else:
-                next_addr = to_asm_address(target_addr)
+            # Get next address to execute.
+            next_addr = to_asm_address(target_addr) if target_addr else asm_instr.address + asm_instr.size
 
-            icounter += 1
+            # Count instruction.
+            instr_count += 1
 
         context_out = {
             'registers': {},
@@ -568,6 +555,25 @@ class BARF(object):
             context_out['registers'][reg] = val
 
         return context_out
+
+    def __fetch_instr(self, next_addr):
+        start, end = next_addr, next_addr + self.arch_info.max_instruction_size
+
+        encoding = ""
+        for i in xrange(end - start):
+            encoding += chr(self.ir_emulator.read_memory(start + i, 1))
+
+        return encoding
+
+    def __update_ip(self, asm_instr):
+        if self.binary.architecture == arch.ARCH_X86:
+            self.ir_emulator.registers[self.ip] = asm_instr.address + asm_instr.size
+
+        if self.binary.architecture == arch.ARCH_ARM:
+            if self.binary.architecture_mode == arch.ARCH_ARM_MODE_ARM:
+                self.ir_emulator.registers[self.ip] = asm_instr.address + 8
+            elif self.binary.architecture_mode == arch.ARCH_ARM_MODE_THUMB:
+                self.ir_emulator.registers[self.ip] = asm_instr.address + 4
 
     def emulate_full_ex(self, context, instr_container, ea_start=None, ea_end=None, arch_mode=None):
         """Emulate REIL instructions from an instruction container.
@@ -614,3 +620,32 @@ class BARF(object):
             context_out['registers'][reg] = val
 
         return context_out
+
+    def _load_binary_elf(self, filename):
+        f = open(filename, 'rb')
+
+        elffile = ELFFile(f)
+
+        for nseg, segment in enumerate(elffile.iter_segments()):
+            for i, b in enumerate(bytearray(segment.data())):
+                self.ir_emulator.write_memory(segment.header.p_vaddr + i, 1, b)
+
+        f.close()
+
+    def _load_binary_pe(reil_emulator, filename):
+        raise NotImplementedError()
+
+    def load_binary(self):
+        try:
+            fd = open(self.binary.filename, 'rb')
+            signature = fd.read(4)
+            fd.close()
+        except:
+            raise Exception("Error loading file.")
+
+        if signature[:4] == "\x7f\x45\x4c\x46":
+            m = self._load_binary_elf(self.binary.filename)
+        elif signature[:2] == b'\x4d\x5a':
+            m = self._load_binary_pe(self.binary.filename)
+        else:
+            raise Exception("Unknown file format.")
