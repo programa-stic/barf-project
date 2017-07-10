@@ -280,42 +280,40 @@ class BARF(object):
 
         self.ir_translator.reset()
 
-        for addr, asm, _ in self.disassemble(ea_start=start_addr, ea_end=end_addr, arch_mode=arch_mode):
+        for addr, asm, _ in self.disassemble(start=start_addr, end=end_addr, arch_mode=arch_mode):
             yield addr, asm, self.ir_translator.translate(asm)
 
-    def disassemble(self, ea_start=None, ea_end=None, arch_mode=None):
-        """Disassemble assembler instructions.
+    def disassemble(self, start=None, end=None, arch_mode=None):
+        """Disassemble native instructions.
 
-        :param ea_start: start address
-        :type ea_start: int
-        :param ea_end: end address
-        :type ea_end: int
-        :param arch_mode: architecture mode
-        :type arch_mode: int
+        Args:
+            start (int): Start address.
+            end (int): End address.
+            arch_mode (int): Architecture mode.
 
-        :returns: a tuple of the form (address, assembler instruction, instruction size)
-        :rtype: (int, Instruction, int)
-
+        Returns:
+            (int, Instruction, int): A tuple of the form (address, assembler instruction, instruction size).
         """
         if arch_mode is None:
             arch_mode = self.binary.architecture_mode
 
-        curr_addr = ea_start if ea_start else self.binary.ea_start
-        end_addr = ea_end if ea_end else self.binary.ea_end
+        curr_addr = start if start else self.binary.ea_start
+        end_addr = end if end else self.binary.ea_end
 
         while curr_addr < end_addr:
-            # disassemble instruction
-            start, end = curr_addr, min(curr_addr + 16, self.binary.ea_end + 1)
+            # Fetch the instruction.
+            encoding = self.__fetch_instr(curr_addr)
 
-            asm = self.disassembler.disassemble(self.text_section[start:end], curr_addr, architecture_mode=arch_mode)
+            # Decode it.
+            asm_instr = self.disassembler.disassemble(encoding, curr_addr, architecture_mode=arch_mode)
 
-            if not asm:
+            if not asm_instr:
                 return
 
-            yield curr_addr, asm, asm.size
+            yield curr_addr, asm_instr, asm_instr.size
 
             # update instruction pointer
-            curr_addr += asm.size
+            curr_addr += asm_instr.size
 
     def recover_cfg(self, start=None, end=None, symbols=None, callback=None, arch_mode=None):
         """Recover CFG.
