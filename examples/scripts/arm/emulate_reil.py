@@ -45,8 +45,11 @@ if __name__ == "__main__":
     #
     # REIL emulation
     #
+    barf.load_binary()
+
     context_in = {}
-    context_out = barf.emulate_full(context_in, 0x8390, 0x83e0, arch_mode=ARCH_ARM_MODE_ARM)
+    # context_out = barf.emulate_full(context_in, 0x8390, 0x83e0, arch_mode=ARCH_ARM_MODE_ARM)
+    context_out = barf.emulate_full(context_in, 0x8390, 0x83e0)
 
     print "%s : %s" % ("r3", hex(context_out['registers']["r3"]))
 

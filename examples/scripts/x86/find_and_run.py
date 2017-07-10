@@ -58,6 +58,8 @@ if __name__ == "__main__":
     # Execute.
     #
     if path_ok:
+        barf.load_binary()
+
         reil_emulator = barf.ir_emulator
 
         # Set stack pointer.

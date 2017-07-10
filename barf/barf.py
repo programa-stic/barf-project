@@ -575,58 +575,16 @@ class BARF(object):
             elif self.binary.architecture_mode == arch.ARCH_ARM_MODE_THUMB:
                 self.ir_emulator.registers[self.ip] = asm_instr.address + 4
 
-    def emulate_full_ex(self, context, instr_container, ea_start=None, ea_end=None, arch_mode=None):
-        """Emulate REIL instructions from an instruction container.
-
-        :param context: processor context (register and/or memory)
-        :type context: dict
-        :param instr_container: instruction container
-        :type instr_container: ReilContainer
-        :param ea_start: start address
-        :type ea_start: int
-        :param ea_end: end address
-        :type ea_end: int
-        :param arch_mode: architecture mode
-        :type arch_mode: int
-
-        :returns: a context
-        :rtype: dict
-
-        """
-        if arch_mode is not None:
-            # Reload modules.
-            self._load(arch_mode=arch_mode)
-
-        start_addr = ea_start if ea_start else self.binary.ea_start
-        end_addr = ea_end if ea_end else self.binary.ea_end
-
-        # Load registers
-        for reg, val in context.get('registers', {}).items():
-            self.ir_emulator.registers[reg] = val
-
-        # Load memory
-        for addr, val in context.get('memory', {}).items():
-            self.ir_emulator.memory.write(addr, 4, val)
-
-        self.ir_emulator.execute(instr_container, start=start_addr << 8, end=end_addr << 8)
-
-        context_out = {
-            'registers': {},
-            'memory': {}
-        }
-
-        # save registers
-        for reg, val in self.ir_emulator.registers.items():
-            context_out['registers'][reg] = val
-
-        return context_out
-
     def _load_binary_elf(self, filename):
+        logger.info("Loading elf image into memory")
+
         f = open(filename, 'rb')
 
         elffile = ELFFile(f)
 
         for nseg, segment in enumerate(elffile.iter_segments()):
+            logger.info("Loading segment #{} ({:#x}-{:#x})".format(nseg, segment.header.p_vaddr, segment.header.p_vaddr + segment.header.p_memsz))
+
             for i, b in enumerate(bytearray(segment.data())):
                 self.ir_emulator.write_memory(segment.header.p_vaddr + i, 1, b)
 
