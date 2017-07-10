@@ -81,8 +81,9 @@ class BARF(object):
     """Binary Analysis Framework."""
 
     def __init__(self, filename, load_bin=True):
-        logger.info("[+] BARF: Initializing...")
+        logger.info("Initializing BARF")
 
+        self.name = None
         self.code_analyzer = None
         self.ir_translator = None
         self.binary = None
@@ -134,6 +135,7 @@ class BARF(object):
         if arch_mode is None:
             arch_mode = arch.ARCH_ARM_MODE_THUMB
 
+        self.name = "ARM"
         self.arch_info = ArmArchitectureInformation(arch_mode)
         self.disassembler = ArmDisassembler(architecture_mode=arch_mode)
         self.ir_translator = ArmTranslator(architecture_mode=arch_mode)
@@ -157,6 +159,7 @@ class BARF(object):
             arch_mode = self.binary.architecture_mode
 
         # Set up architecture information
+        self.name = "x86"
         self.arch_info = X86ArchitectureInformation(arch_mode)
         self.disassembler = X86Disassembler(architecture_mode=arch_mode)
         self.ir_translator = X86Translator(architecture_mode=arch_mode)
@@ -240,9 +243,8 @@ class BARF(object):
     def open(self, filename):
         """Open a file for analysis.
 
-        :param filename: name of an executable file
-        :type filename: str
-
+        Args:
+            filename (str): Name of an executable file.
         """
         if filename:
             self.binary = BinaryFile(filename)
@@ -253,12 +255,21 @@ class BARF(object):
             self._load(arch_mode=self.binary.architecture_mode)
 
     def load_architecture(self, name, arch_info, disassembler, translator):
-        # Set up architecture information
+        """Translate to REIL instructions.
+
+        Args:
+            name (str): Architecture's name.
+            arch_info (ArchitectureInformation): Architecture information object.
+            disassembler (Disassembler): Disassembler for the architecture.
+            translator (Translator): Translator for the architecture.
+        """
+        # Set up architecture information.
+        self.name = name
         self.arch_info = arch_info
         self.disassembler = disassembler
         self.ir_translator = translator
 
-        # setup analysis modules
+        # Setup analysis modules.
         self._setup_analysis_modules()
 
     def translate(self, start=None, end=None, arch_mode=None):
@@ -505,14 +516,15 @@ class BARF(object):
                     next_addr = asm_instr.address + asm_instr.size
 
             try:
-                # Retrive next instruction from the execution cache.
+                # Retrieve next instruction from the execution cache.
                 asm_instr, reil_container = execution_cache.retrieve(next_addr)
             except InvalidAddressError:
                 # Fetch the instruction.
                 encoding = self.__fetch_instr(next_addr)
 
                 # Decode it.
-                asm_instr = self.disassembler.disassemble(encoding, next_addr, architecture_mode=self.binary.architecture_mode)
+                asm_instr = self.disassembler.disassemble(encoding, next_addr,
+                                                          architecture_mode=self.binary.architecture_mode)
 
                 # Translate it.
                 reil_container = _build_reil_container(asm_instr)
@@ -571,15 +583,16 @@ class BARF(object):
 
         elffile = ELFFile(f)
 
-        for nseg, segment in enumerate(elffile.iter_segments()):
-            logger.info("Loading segment #{} ({:#x}-{:#x})".format(nseg, segment.header.p_vaddr, segment.header.p_vaddr + segment.header.p_filesz))
+        for index, segment in enumerate(elffile.iter_segments()):
+            logger.info("Loading segment #{} ({:#x}-{:#x})".format(index, segment.header.p_vaddr,
+                                                                   segment.header.p_vaddr + segment.header.p_filesz))
 
             for i, b in enumerate(bytearray(segment.data())):
                 self.ir_emulator.write_memory(segment.header.p_vaddr + i, 1, b)
 
         f.close()
 
-    def _load_binary_pe(reil_emulator, filename):
+    def _load_binary_pe(self, filename):
         raise NotImplementedError()
 
     def load_binary(self):
