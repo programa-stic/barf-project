@@ -1,24 +1,12 @@
 #! /usr/bin/env python
 
-import os
-import sys
-
 from barf import BARF
-from barf.arch import ARCH_ARM_MODE_ARM
 
 if __name__ == "__main__":
     #
     # Open file
     #
-    try:
-        filename = os.path.abspath("../../bin/arm/constraint1")
-        barf = BARF(filename)
-    except Exception as err:
-        print err
-
-        print "[-] Error opening file : %s" % filename
-
-        sys.exit(1)
+    barf = BARF("../../samples/bin/constraint1.arm")
 
     #
     # Check constraint
@@ -45,7 +33,7 @@ if __name__ == "__main__":
     # Add instructions to analyze
     print("[+] Adding instructions to the analyzer...")
 
-    for addr, asm_instr, reil_instrs in barf.translate(ea_start=start_addr, ea_end=end_addr, arch_mode=ARCH_ARM_MODE_ARM):
+    for addr, asm_instr, reil_instrs in barf.translate(ea_start=start_addr, ea_end=end_addr):
         print("0x{0:08x} : {1}".format(addr, asm_instr))
 
         for reil_instr in reil_instrs:
@@ -75,7 +63,7 @@ if __name__ == "__main__":
     print("[+] Check for satisfiability...")
 
     if barf.code_analyzer.check() == 'sat':
-        print("    SAT! :: Possible assigments : ")
+        print("    SAT! :: Possible assignments : ")
 
         # Get concrete value for expressions
         a_val = barf.code_analyzer.get_expr_value(a)

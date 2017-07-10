@@ -1,21 +1,12 @@
 #! /usr/bin/env python
 
-import os
-import sys
-
 from barf.barf import BARF
 
 if __name__ == "__main__":
     #
     # Open file
     #
-    try:
-        filename = os.path.abspath("../../bin/x86/loop2")
-        barf = BARF(filename)
-    except Exception, err:
-        print "[-] Error opening file : %s" % filename
-
-        sys.exit(1)
+    barf = BARF("../../samples/bin/loop2.x86")
 
     #
     # REIL emulation

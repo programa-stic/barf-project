@@ -1,23 +1,12 @@
 #! /usr/bin/env python
 
-import os
-import sys
-
 from barf import BARF
 
 if __name__ == "__main__":
     #
     # Open file
     #
-    try:
-        filename = os.path.abspath("../../bin/x86/constraint2")
-        barf = BARF(filename)
-    except Exception as err:
-        print err
-
-        print "[-] Error opening file : %s" % filename
-
-        sys.exit(1)
+    barf = BARF("../../samples/bin/constraint2.x86")
 
     #
     # Check constraint
@@ -71,7 +60,7 @@ if __name__ == "__main__":
     print("[+] Check for satisfiability...")
 
     if barf.code_analyzer.check() == 'sat':
-        print("    SAT! :: Possible assigments : ")
+        print("    SAT! :: Possible assignments : ")
 
         # Get concrete value for expressions
         eax_val = barf.code_analyzer.get_expr_value(eax)
