@@ -12,7 +12,7 @@ if __name__ == "__main__":
     #
     try:
         # ARM MODE
-        filename = os.path.abspath("../../bin/arm/branch4")
+        filename = os.path.abspath("../../samples/bin/branch4.arm")
         barf = BARF(filename)
     except Exception as err:
         print err

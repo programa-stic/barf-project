@@ -11,7 +11,7 @@ if __name__ == "__main__":
     # Open file
     #
     try:
-        filename = os.path.abspath("../../bin/arm/constraint1")
+        filename = os.path.abspath("../../samples/bin/constraint1.arm")
         barf = BARF(filename)
     except Exception as err:
         print err
