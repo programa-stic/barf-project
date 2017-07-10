@@ -96,11 +96,9 @@ class BARF(object):
         self.ip = None
         self.sp = None
         self.ws = None
+        self._load_bin = load_bin
 
         self.open(filename)
-
-        if load_bin:
-            self.load_binary()
 
     def _load(self, arch_mode=None):
         # setup architecture
@@ -111,6 +109,9 @@ class BARF(object):
 
         # setup analysis modules
         self._setup_analysis_modules()
+
+        if self._load_bin:
+            self.load_binary()
 
     def _setup_arch(self, arch_mode=None):
         """Set up architecture.
@@ -420,7 +421,7 @@ class BARF(object):
 
         return bb_list
 
-    def emulate_full(self, context, ea_start=None, ea_end=None, arch_mode=None, hooks=None, max_instrs=None):
+    def emulate(self, context, ea_start=None, ea_end=None, arch_mode=None, hooks=None, max_instrs=None):
         """Emulate REIL instructions.
 
         :param hooks: Set hooks by address.
@@ -576,14 +577,14 @@ class BARF(object):
                 self.ir_emulator.registers[self.ip] = asm_instr.address + 4
 
     def _load_binary_elf(self, filename):
-        logger.info("Loading elf image into memory")
+        logger.info("Loading ELF image into memory")
 
         f = open(filename, 'rb')
 
         elffile = ELFFile(f)
 
         for nseg, segment in enumerate(elffile.iter_segments()):
-            logger.info("Loading segment #{} ({:#x}-{:#x})".format(nseg, segment.header.p_vaddr, segment.header.p_vaddr + segment.header.p_memsz))
+            logger.info("Loading segment #{} ({:#x}-{:#x})".format(nseg, segment.header.p_vaddr, segment.header.p_vaddr + segment.header.p_filesz))
 
             for i, b in enumerate(bytearray(segment.data())):
                 self.ir_emulator.write_memory(segment.header.p_vaddr + i, 1, b)
@@ -601,9 +602,9 @@ class BARF(object):
         except:
             raise Exception("Error loading file.")
 
-        if signature[:4] == "\x7f\x45\x4c\x46":
-            m = self._load_binary_elf(self.binary.filename)
-        elif signature[:2] == b'\x4d\x5a':
-            m = self._load_binary_pe(self.binary.filename)
+        if signature[:4] == b"\x7f\x45\x4c\x46":
+            self._load_binary_elf(self.binary.filename)
+        elif signature[:2] == b"\x4d\x5a":
+            self._load_binary_pe(self.binary.filename)
         else:
             raise Exception("Unknown file format.")
