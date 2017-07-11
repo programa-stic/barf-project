@@ -473,7 +473,7 @@ class BARF(object):
 
                 # Compute next address after hook.
                 if self.binary.architecture == arch.ARCH_X86:
-                    next_addr = self.ir_emulator.read_memory(self.ir_emulator.registers[self.sp], self.ws)
+                    next_addr = asm_instr.address + asm_instr.size
 
                 if self.binary.architecture == arch.ARCH_ARM:
                     next_addr = asm_instr.address + asm_instr.size
