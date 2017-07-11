@@ -434,44 +434,6 @@ class BARF(object):
         Returns:
             dict: Processor context.
         """
-        def _build_reil_container(asm_instr):
-            reil_translator = self.ir_translator
-
-            container = ReilContainer()
-            instr_seq = ReilSequence()
-
-            for reil_instr in reil_translator.translate(asm_instr):
-                instr_seq.append(reil_instr)
-
-            container.add(instr_seq)
-
-            return container
-
-        def _process_reil_container(reil_emulator, container, ip):
-            next_addr = None
-
-            while ip:
-                # Fetch instruction.
-                try:
-                    reil_instr = container.fetch(ip)
-                except ReilContainerInvalidAddressError:
-                    next_addr = ip
-                    break
-
-                next_ip = reil_emulator.single_step(reil_instr)
-
-                # Update instruction pointer.
-                ip = next_ip if next_ip else container.get_next_address(ip)
-
-            # Delete temporal registers.
-            regs = reil_emulator.registers.keys()
-
-            for r in regs:
-                if r.startswith("t"):
-                    del reil_emulator.registers[r]
-
-            return next_addr
-
         if arch_mode is not None:
             # Reload modules.
             self._load(arch_mode=arch_mode)
@@ -503,6 +465,7 @@ class BARF(object):
             if max_instrs and instr_count > max_instrs:
                 break
 
+            # Process hooks.
             if next_addr in hooks:
                 fn, param = hooks[next_addr]
 
@@ -527,7 +490,7 @@ class BARF(object):
                                                           architecture_mode=self.binary.architecture_mode)
 
                 # Translate it.
-                reil_container = _build_reil_container(asm_instr)
+                reil_container = self.__build_reil_container(asm_instr)
 
                 # Add it to the execution cache.
                 execution_cache.add(next_addr, asm_instr, reil_container)
@@ -538,7 +501,7 @@ class BARF(object):
             # Execute instruction.
             print("{:#x} {}".format(asm_instr.address, asm_instr))
 
-            target_addr = _process_reil_container(self.ir_emulator, reil_container, to_reil_address(next_addr))
+            target_addr = self.__process_reil_container(reil_container, to_reil_address(next_addr))
 
             # Get next address to execute.
             next_addr = to_asm_address(target_addr) if target_addr else asm_instr.address + asm_instr.size
@@ -556,6 +519,44 @@ class BARF(object):
             context_out['registers'][reg] = val
 
         return context_out
+
+    def __process_reil_container(self, container, ip):
+        next_addr = None
+
+        while ip:
+            # Fetch instruction.
+            try:
+                reil_instr = container.fetch(ip)
+            except ReilContainerInvalidAddressError:
+                next_addr = ip
+                break
+
+            next_ip = self.ir_emulator.single_step(reil_instr)
+
+            # Update instruction pointer.
+            ip = next_ip if next_ip else container.get_next_address(ip)
+
+        # Delete temporal registers.
+        regs = self.ir_emulator.registers.keys()
+
+        for r in regs:
+            if r.startswith("t"):
+                del self.ir_emulator.registers[r]
+
+        return next_addr
+
+    def __build_reil_container(self, asm_instr):
+        reil_translator = self.ir_translator
+
+        container = ReilContainer()
+        instr_seq = ReilSequence()
+
+        for reil_instr in reil_translator.translate(asm_instr):
+            instr_seq.append(reil_instr)
+
+        container.add(instr_seq)
+
+        return container
 
     def __fetch_instr(self, next_addr):
         start, end = next_addr, next_addr + self.arch_info.max_instruction_size
