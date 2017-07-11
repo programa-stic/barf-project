@@ -95,4 +95,4 @@ if __name__ == "__main__":
 
         # Emulate code.
         print("[+] Executing from {:#x} to {:#x}".format(cfg_start.start_address, cfg_end.start_address))
-        ctx_fini = barf.emulate(ctx_init, ea_start=cfg_start.start_address, ea_end=cfg_end.start_address)
+        ctx_fini = barf.emulate(context=ctx_init, start=cfg_start.start_address, end=cfg_end.start_address)

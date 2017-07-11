@@ -13,7 +13,7 @@ if __name__ == "__main__":
     #
     print("[+] Translating: x86 -> REIL -> SMT...")
 
-    for addr, asm_instr, reil_instrs in barf.translate(ea_start=0x000083c8, ea_end=0x00008404):
+    for addr, asm_instr, reil_instrs in barf.translate(start=0x000083c8, end=0x00008404):
         print("0x{0:08x} : {1}".format(addr, asm_instr))
 
         for reil_instr in reil_instrs:

@@ -69,7 +69,7 @@ def recover_cfg_some(barf, addresses, symbols_by_addr):
     cfgs = []
 
     for addr in sorted(addresses):
-        cfg = barf.recover_cfg(ea_start=addr, symbols=symbols_by_addr, callback=print_recovery_status)
+        cfg = barf.recover_cfg(start=addr, symbols=symbols_by_addr, callback=print_recovery_status)
 
         cfgs.append(cfg)
 

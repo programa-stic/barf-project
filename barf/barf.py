@@ -52,9 +52,12 @@ from core.reil import ReilSequence
 from core.smt.smtlibv2 import CVC4Solver
 from core.smt.smtlibv2 import Z3Solver
 from core.smt.smttranslator import SmtTranslator
-from elftools.elf.elffile import ELFFile
-from utils.utils import to_asm_address, ExecutionCache, InvalidAddressError
+from utils.utils import ExecutionCache
+from utils.utils import InvalidAddressError
+from utils.utils import to_asm_address
 from utils.utils import to_reil_address
+
+from elftools.elf.elffile import ELFFile
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +81,9 @@ class BARF(object):
     """Binary Analysis Framework."""
 
     def __init__(self, filename, load_bin=True):
-        logger.info("[+] BARF: Initializing...")
+        logger.info("Initializing BARF")
 
+        self.name = None
         self.code_analyzer = None
         self.ir_translator = None
         self.binary = None
@@ -131,6 +135,7 @@ class BARF(object):
         if arch_mode is None:
             arch_mode = arch.ARCH_ARM_MODE_THUMB
 
+        self.name = "ARM"
         self.arch_info = ArmArchitectureInformation(arch_mode)
         self.disassembler = ArmDisassembler(architecture_mode=arch_mode)
         self.ir_translator = ArmTranslator(architecture_mode=arch_mode)
@@ -154,6 +159,7 @@ class BARF(object):
             arch_mode = self.binary.architecture_mode
 
         # Set up architecture information
+        self.name = "x86"
         self.arch_info = X86ArchitectureInformation(arch_mode)
         self.disassembler = X86Disassembler(architecture_mode=arch_mode)
         self.ir_translator = X86Translator(architecture_mode=arch_mode)
@@ -237,9 +243,8 @@ class BARF(object):
     def open(self, filename):
         """Open a file for analysis.
 
-        :param filename: name of an executable file
-        :type filename: str
-
+        Args:
+            filename (str): Name of an executable file.
         """
         if filename:
             self.binary = BinaryFile(filename)
@@ -250,78 +255,86 @@ class BARF(object):
             self._load(arch_mode=self.binary.architecture_mode)
 
     def load_architecture(self, name, arch_info, disassembler, translator):
-        # Set up architecture information
+        """Translate to REIL instructions.
+
+        Args:
+            name (str): Architecture's name.
+            arch_info (ArchitectureInformation): Architecture information object.
+            disassembler (Disassembler): Disassembler for the architecture.
+            translator (Translator): Translator for the architecture.
+        """
+        # Set up architecture information.
+        self.name = name
         self.arch_info = arch_info
         self.disassembler = disassembler
         self.ir_translator = translator
 
-        # setup analysis modules
+        # Setup analysis modules.
         self._setup_analysis_modules()
 
-    def translate(self, ea_start=None, ea_end=None, arch_mode=None):
+    def translate(self, start=None, end=None, arch_mode=None):
         """Translate to REIL instructions.
 
-        :param ea_start: start address
-        :type ea_start: int
-        :param ea_end: end address
-        :type ea_end: int
-        :param arch_mode: architecture mode
-        :type arch_mode: int
+        Args:
+            start (int): Start address.
+            end (int): End address.
+            arch_mode (int): Architecture mode.
 
-        :returns: a tuple of the form (address, assembler instruction, instruction size)
-        :rtype: (int, Instruction, int)
-
+        Returns:
+            (int, Instruction, list): A tuple of the form (address, assembler instruction, REIL instructions).
         """
-        start_addr = ea_start if ea_start else self.binary.ea_start
-        end_addr = ea_end if ea_end else self.binary.ea_end
+        start_addr = start if start else self.binary.ea_start
+        end_addr = end if end else self.binary.ea_end
 
         self.ir_translator.reset()
 
-        for addr, asm, _ in self.disassemble(ea_start=start_addr, ea_end=end_addr, arch_mode=arch_mode):
+        for addr, asm, _ in self.disassemble(start=start_addr, end=end_addr, arch_mode=arch_mode):
             yield addr, asm, self.ir_translator.translate(asm)
 
-    def disassemble(self, ea_start=None, ea_end=None, arch_mode=None):
-        """Disassemble assembler instructions.
+    def disassemble(self, start=None, end=None, arch_mode=None):
+        """Disassemble native instructions.
 
-        :param ea_start: start address
-        :type ea_start: int
-        :param ea_end: end address
-        :type ea_end: int
-        :param arch_mode: architecture mode
-        :type arch_mode: int
+        Args:
+            start (int): Start address.
+            end (int): End address.
+            arch_mode (int): Architecture mode.
 
-        :returns: a tuple of the form (address, assembler instruction, instruction size)
-        :rtype: (int, Instruction, int)
-
+        Returns:
+            (int, Instruction, int): A tuple of the form (address, assembler instruction, instruction size).
         """
         if arch_mode is None:
             arch_mode = self.binary.architecture_mode
 
-        curr_addr = ea_start if ea_start else self.binary.ea_start
-        end_addr = ea_end if ea_end else self.binary.ea_end
+        curr_addr = start if start else self.binary.ea_start
+        end_addr = end if end else self.binary.ea_end
 
         while curr_addr < end_addr:
-            # disassemble instruction
-            start, end = curr_addr, min(curr_addr + 16, self.binary.ea_end + 1)
+            # Fetch the instruction.
+            encoding = self.__fetch_instr(curr_addr)
 
-            asm = self.disassembler.disassemble(self.text_section[start:end], curr_addr, architecture_mode=arch_mode)
+            # Decode it.
+            asm_instr = self.disassembler.disassemble(encoding, curr_addr, architecture_mode=arch_mode)
 
-            if not asm:
+            if not asm_instr:
                 return
 
-            yield curr_addr, asm, asm.size
+            yield curr_addr, asm_instr, asm_instr.size
 
             # update instruction pointer
-            curr_addr += asm.size
+            curr_addr += asm_instr.size
 
-    def recover_cfg(self, ea_start=None, ea_end=None, symbols=None, callback=None, arch_mode=None):
-        """Recover CFG
+    def recover_cfg(self, start=None, end=None, symbols=None, callback=None, arch_mode=None):
+        """Recover CFG.
 
-        :int start: Start address.
-        :int end: End address.
+        Args:
+            start (int): Start address.
+            end (int): End address.
+            symbols (dict): Symbol table.
+            callback (function): A callback function which is called after each successfully recovered CFG.
+            arch_mode (int): Architecture mode.
 
-        :returns: A CFG.
-
+        Returns:
+            ControlFlowGraph: A CFG.
         """
         # Set architecture in case it wasn't already set.
         if arch_mode is None:
@@ -331,18 +344,23 @@ class BARF(object):
         self._load(arch_mode=arch_mode)
 
         # Check start address.
-        ea_start = ea_start if ea_start else self.binary.entry_point
+        start = start if start else self.binary.entry_point
 
-        cfg, _ = self._recover_cfg(start=ea_start, end=ea_end, symbols=symbols, callback=callback)
+        cfg, _ = self._recover_cfg(start=start, end=end, symbols=symbols, callback=callback)
 
         return cfg
 
     def recover_cfg_all(self, entries, symbols=None, callback=None, arch_mode=None):
         """Recover CFG for all functions from an entry point and/or symbol table.
 
-        :int start: Start address.
-        :returns: A list of CFGs.
+        Args:
+            entries (list): A list of function addresses' to start the CFG recovery process.
+            symbols (dict): Symbol table.
+            callback (function): A callback function which is called after each successfully recovered CFG.
+            arch_mode (int): Architecture mode.
 
+        Returns:
+            list: A list of recovered CFGs.
         """
         # Set architecture in case it wasn't already set.
         if arch_mode is None:
@@ -402,41 +420,19 @@ class BARF(object):
 
         return cfg, calls
 
-    def recover_bbs(self, ea_start=None, ea_end=None):
-        """Recover basic blocks.
+    def emulate(self, context=None, start=None, end=None, arch_mode=None, hooks=None, max_instrs=None):
+        """Emulate native code.
 
-        :param ea_start: start address
-        :type ea_start: int
-        :param ea_end: end address
-        :type ea_end: int
+        Args:
+            context (dict): Processor context (register and/or memory).
+            start (int): Start address.
+            end (int): End address.
+            arch_mode (int): Architecture mode.
+            hooks (dict): Hooks by address.
+            max_instrs (int): Maximum number of instructions to execute.
 
-        :returns: a list of basic blocks
-        :rtype: list
-
-        """
-        start_addr = ea_start if ea_start else self.binary.ea_start
-        end_addr = ea_end if ea_end else self.binary.ea_end
-
-        bb_list = self.bb_builder.build(start_addr, end_addr)
-
-        return bb_list
-
-    def emulate(self, context, ea_start=None, ea_end=None, arch_mode=None, hooks=None, max_instrs=None):
-        """Emulate REIL instructions.
-
-        :param hooks: Set hooks by address.
-        :param context: processor context (register and/or memory)
-        :type context: dict
-        :param ea_start: start address
-        :type ea_start: int
-        :param ea_end: end address
-        :type ea_end: int
-        :param arch_mode: architecture mode
-        :type arch_mode: int
-
-        :returns: a context
-        :rtype: dict
-
+        Returns:
+            dict: Processor context.
         """
         def _build_reil_container(asm_instr):
             reil_translator = self.ir_translator
@@ -480,8 +476,10 @@ class BARF(object):
             # Reload modules.
             self._load(arch_mode=arch_mode)
 
-        start_addr = ea_start if ea_start else self.binary.ea_start
-        end_addr = ea_end if ea_end else self.binary.ea_end
+        context = context if context else {}
+
+        start_addr = start if start else self.binary.ea_start
+        end_addr = end if end else self.binary.ea_end
 
         hooks = hooks if hooks else {}
 
@@ -490,16 +488,17 @@ class BARF(object):
             self.ir_emulator.registers[reg] = val
 
         # Load memory
+        # TODO Memory content should be encoded as hex strings so each
+        # entry can be of different sizes.
         for addr, val in context.get('memory', {}).items():
             self.ir_emulator.memory.write(addr, 4, val)
 
         # Execute the code.
         execution_cache = ExecutionCache()
 
-        print("emulate arch mode: {}".format(self.binary.architecture_mode))
-
         next_addr = start_addr
         instr_count = 0
+        asm_instr = None
         while next_addr != end_addr:
             if max_instrs and instr_count > max_instrs:
                 break
@@ -517,14 +516,15 @@ class BARF(object):
                     next_addr = asm_instr.address + asm_instr.size
 
             try:
-                # Retrive next instruction from the execution cache.
+                # Retrieve next instruction from the execution cache.
                 asm_instr, reil_container = execution_cache.retrieve(next_addr)
             except InvalidAddressError:
                 # Fetch the instruction.
                 encoding = self.__fetch_instr(next_addr)
 
                 # Decode it.
-                asm_instr = self.disassembler.disassemble(encoding, next_addr, architecture_mode=self.binary.architecture_mode)
+                asm_instr = self.disassembler.disassemble(encoding, next_addr,
+                                                          architecture_mode=self.binary.architecture_mode)
 
                 # Translate it.
                 reil_container = _build_reil_container(asm_instr)
@@ -583,15 +583,16 @@ class BARF(object):
 
         elffile = ELFFile(f)
 
-        for nseg, segment in enumerate(elffile.iter_segments()):
-            logger.info("Loading segment #{} ({:#x}-{:#x})".format(nseg, segment.header.p_vaddr, segment.header.p_vaddr + segment.header.p_filesz))
+        for index, segment in enumerate(elffile.iter_segments()):
+            logger.info("Loading segment #{} ({:#x}-{:#x})".format(index, segment.header.p_vaddr,
+                                                                   segment.header.p_vaddr + segment.header.p_filesz))
 
             for i, b in enumerate(bytearray(segment.data())):
                 self.ir_emulator.write_memory(segment.header.p_vaddr + i, 1, b)
 
         f.close()
 
-    def _load_binary_pe(reil_emulator, filename):
+    def _load_binary_pe(self, filename):
         raise NotImplementedError()
 
     def load_binary(self):

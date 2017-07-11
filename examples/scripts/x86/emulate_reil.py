@@ -11,8 +11,7 @@ if __name__ == "__main__":
     #
     # REIL emulation
     #
-    context_in = {}
-    context_out = barf.emulate(context_in, ea_start=0x080483ec, ea_end=0x08048414)
+    context_out = barf.emulate(start=0x080483ec, end=0x08048414)
 
     print "%s : %s" % ("eax", hex(context_out['registers']["eax"]))
 
