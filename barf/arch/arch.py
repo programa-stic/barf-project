@@ -90,3 +90,6 @@ class ArchitectureInformation(object):
 
     def flags_register(self):
         raise NotImplementedError()
+
+    def flags_default_value(self):
+        raise NotImplementedError()

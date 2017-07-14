@@ -319,6 +319,9 @@ class ArmArchitectureInformation(ArchitectureInformation):
     def flags_register(self):
         return "apsr"
 
+    def flags_default_value(self):
+        return 0x0
+
     def _load_alias_mapper(self):
         alias_mapper = {
             "fp" : ("r11", 0),

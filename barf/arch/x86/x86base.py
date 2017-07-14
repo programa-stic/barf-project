@@ -377,6 +377,9 @@ class X86ArchitectureInformation(ArchitectureInformation):
 
         return flag_register_map[self._arch_mode]
 
+    def flags_default_value(self):
+        return 0x202
+
     def _load_alias_mapper(self):
         if self._arch_mode == ARCH_X86_MODE_32:
             alias_mapper = {
