@@ -102,6 +102,8 @@ class BARF(object):
         self.ws = None
         self._load_bin = load_bin
 
+        self._arch_mode = None
+
         self.open(filename)
 
     def _load(self, arch_mode=None):
@@ -456,6 +458,18 @@ class BARF(object):
             self.ir_emulator.memory.write(addr, 4, val)
 
         # Execute the code.
+        # Switch arch mode accordingly for ARM base on the start address.
+        if self.binary.architecture == arch.ARCH_ARM:
+            if start_addr & 0x1 == 0x1:
+                start_addr = start_addr & ~0x1
+                end_addr = end_addr & ~0x1
+                self._arch_mode = arch.ARCH_ARM_MODE_THUMB
+            else:
+                self._arch_mode = arch.ARCH_ARM_MODE_ARM
+
+        if self.binary.architecture == arch.ARCH_X86:
+            self._arch_mode = self.binary.architecture_mode
+
         execution_cache = ExecutionCache()
 
         next_addr = start_addr
@@ -487,7 +501,7 @@ class BARF(object):
 
                 # Decode it.
                 asm_instr = self.disassembler.disassemble(encoding, next_addr,
-                                                          architecture_mode=self.binary.architecture_mode)
+                                                          architecture_mode=self._arch_mode)
 
                 # Translate it.
                 reil_container = self.__build_reil_container(asm_instr)
@@ -572,9 +586,9 @@ class BARF(object):
             self.ir_emulator.registers[self.ip] = asm_instr.address + asm_instr.size
 
         if self.binary.architecture == arch.ARCH_ARM:
-            if self.binary.architecture_mode == arch.ARCH_ARM_MODE_ARM:
+            if self._arch_mode == arch.ARCH_ARM_MODE_ARM:
                 self.ir_emulator.registers[self.ip] = asm_instr.address + 8
-            elif self.binary.architecture_mode == arch.ARCH_ARM_MODE_THUMB:
+            elif self._arch_mode == arch.ARCH_ARM_MODE_THUMB:
                 self.ir_emulator.registers[self.ip] = asm_instr.address + 4
 
     def _load_binary_elf(self, filename):
