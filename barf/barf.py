@@ -29,6 +29,8 @@ BARF : Binary Analysis Framework.
 import logging
 import subprocess
 
+import pefile
+
 import arch
 
 from analysis.basicblock import CFGRecoverer
@@ -608,7 +610,18 @@ class BARF(object):
         f.close()
 
     def _load_binary_pe(self, filename):
-        raise NotImplementedError()
+        logger.info("Loading PE image into memory")
+
+        pe = pefile.PE(filename)
+
+        pe.parse_data_directories()
+
+        for index, section in enumerate(pe.sections):
+            logger.info("Loading section #{} ({:#x}-{:#x})".format(index, pe.OPTIONAL_HEADER.ImageBase + section.VirtualAddress,
+                                                                   pe.OPTIONAL_HEADER.ImageBase + section.VirtualAddress + len(section.get_data())))
+
+            for i, b in enumerate(bytearray(section.get_data())):
+                self.ir_emulator.write_memory(pe.OPTIONAL_HEADER.ImageBase + section.VirtualAddress + i, 1, b)
 
     def load_binary(self):
         try:
