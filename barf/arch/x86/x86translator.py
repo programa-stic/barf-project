@@ -1116,6 +1116,36 @@ class X86Translator(Translator):
         # tb.add(self._builder.gen_str(oprnd0, accum))
         tb.write(accum_x86, oprnd0)
 
+    def _translate_xadd(self, tb, instruction):
+        # Flags Affected
+        # The CF, PF, AF, SF, ZF, and OF flags are set according to the
+        # result of the addition, which is stored in the destination
+        # operand.
+
+        # Operation
+        # TEMP <- SRC + DEST;
+        # SRC <- DEST;
+        # DEST <- TEMP;
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tmp0 = tb.temporal(oprnd0.size*2)
+
+        tb.add(self._builder.gen_add(oprnd0, oprnd1, tmp0))
+
+        if self._translation_mode == FULL_TRANSLATION:
+            # Flags : OF, SF, ZF, AF, CF, PF
+            self._update_of(tb, oprnd0, oprnd1, tmp0)
+            self._update_sf(tb, oprnd0, oprnd1, tmp0)
+            self._update_zf(tb, oprnd0, oprnd1, tmp0)
+            self._update_af(tb, oprnd0, oprnd1, tmp0)
+            self._update_cf(tb, oprnd0, oprnd1, tmp0)
+            self._update_pf(tb, oprnd0, oprnd1, tmp0)
+
+        tb.write(instruction.operands[0], tmp0)
+        tb.write(instruction.operands[1], oprnd0)
+
 # "Binary Arithmetic Instructions"
 # ============================================================================ #
     def _translate_add(self, tb, instruction):
