@@ -5,34 +5,13 @@ from setuptools import find_packages
 
 __version__ = '0.4.0'
 
-# https://github.com/aquynh/capstone/issues/583
-def fix_setuptools():
-    """Work around bugs in setuptools.
-
-    Some versions of setuptools are broken and raise SandboxViolation for normal
-    operations in a virtualenv. We therefore disable the sandbox to avoid these
-    issues.
-    """
-    try:
-        from setuptools.sandbox import DirectorySandbox
-
-        def violation(operation, *args, **_):
-            print "SandboxViolation: %s" % (args,)
-
-        DirectorySandbox._violation = violation
-    except ImportError:
-        pass
-
-# Fix bugs in setuptools.
-fix_setuptools()
-
 setup(
     author           = 'Christian Heitman',
     author_email     = 'cnheitman@fundacionsadosky.org.ar',
     description      = 'A multiplatform open source Binary Analysis and Reverse engineering Framework',
     download_url     = 'https://github.com/programa-stic/barf-project/tarball/v' + __version__,
     install_requires = [
-        'capstone',
+        'capstone>=3.0.5rc2',
         'networkx',
         'pefile',
         'pydot',
