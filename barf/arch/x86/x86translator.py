@@ -4648,3 +4648,18 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_str(oprnd1, dst))
 
         tb.write(instruction.operands[0], dst)
+
+    def _translate_lddqu(self, tb, instruction):
+        # Flags Affected
+        # None.
+
+        # DEST[127:0] <- SRC[127:0]
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+
+        tmp0 = tb.temporal(oprnd0.size)
+
+        tb.add(self._builder.gen_str(oprnd1, tmp0))
+
+        tb.write(instruction.operands[0], tmp0)
