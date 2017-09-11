@@ -25,11 +25,8 @@
 import unittest
 
 from barf.core.reil import ReilParser
-from barf.core.smt.smtlibv2 import BitVec
 from barf.core.smt.smtlibv2 import Z3Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
-
-VERBOSE = False
 
 
 class SmtTranslatorTests(unittest.TestCase):
@@ -40,596 +37,166 @@ class SmtTranslatorTests(unittest.TestCase):
         self._solver = SmtSolver()
         self._translator = SmtTranslator(self._solver, self._address_size)
 
-    def test_add_reg_reg(self):
-        if VERBOSE:
-            print "\n[+] Test: test_add_reg_reg"
+    # Arithmetic Instructions
+    def test_translate_add_1(self):
+        # Same size operands.
+        instr = self._parser.parse(["add [BYTE t0, BYTE t1, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-        # add eax, ebx
-        instrs = self._parser.parse([
-            "add [eax, ebx, t0]",
-            "str [t0, e, eax]",
-        ])
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (bvadd t0_0 t1_0))")
 
-        instrs[0].operands[0].size = 32
-        instrs[0].operands[1].size = 32
-        instrs[0].operands[2].size = 32
+    def test_translate_add_2(self):
+        # Destination operand larger than source operands.
+        instr = self._parser.parse(["add [BYTE t0, BYTE t1, WORD t2]"])[0]
+        form = self._translator.translate(instr)
 
-        instrs[1].operands[0].size = 32
-        instrs[1].operands[2].size = 32
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (bvadd ((_ zero_extend 8) t0_0) ((_ zero_extend 8) t1_0)))")
 
-        self._solver.reset()
+    def test_translate_add_3(self):
+        # Destination operand smaller than source operands.
+        instr = self._parser.parse(["add [WORD t0, WORD t1, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-        # translate instructions to formulae
-        if VERBOSE:
-            print "[+] Instructions:"
-            for instr in instrs:
-                trans = self._translator.translate(instr)
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 ((_ extract 7 0) (bvadd t0_0 t1_0)))")
 
-                if trans is not None:
-                    self._solver.add(trans)
+    def test_translate_add_4(self):
+        # Mixed source operands.
+        instr = self._parser.parse(["add [BYTE t0, BYTE 0x12, WORD t2]"])[0]
+        form = self._translator.translate(instr)
 
-                print "    %-20s -> %-20s" % (instr, trans)
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (bvadd ((_ zero_extend 8) t0_0) ((_ zero_extend 8) #x12)))")
 
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("eax")) == 42,
-            self._solver.mkBitVec(32, self._translator.get_init_name("eax")) != 42,
-        ]
+    def test_translate_sub(self):
+        instr = self._parser.parse(["sub [BYTE t0, BYTE t1, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-        if VERBOSE:
-            print "[+] Constraints :"
-            for i, constr in enumerate(constraints):
-                self._solver.add(constr)
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (bvsub t0_0 t1_0))")
 
-                print "    %2d : %s" % (i, constr)
+    def test_translate_mul(self):
+        instr = self._parser.parse(["mul [BYTE t0, BYTE t1, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-        # check satisfiability
-        is_sat = self._solver.check() == 'sat'
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (bvmul t0_0 t1_0))")
 
-        if VERBOSE:
-            print "[+] Satisfiability : %s" % str(is_sat)
+    def test_translate_div(self):
+        instr = self._parser.parse(["div [BYTE t0, BYTE t1, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-            if is_sat:
-                print "    eax : 0x%08x" % self._solver.getvaluebyname(self._translator.get_curr_name("eax"))
-                print "    ebx : 0x%08x" % self._solver.getvaluebyname(self._translator.get_curr_name("ebx"))
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (bvudiv t0_0 t1_0))")
 
-            print "~" * 80
+    def test_translate_sdiv(self):
+        instr = self._parser.parse(["sdiv [BYTE t0, BYTE t1, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-        self.assertEqual(is_sat, True)
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (bvsdiv t0_0 t1_0))")
 
-    def test_add_reg_mem(self):
-        if VERBOSE:
-            print "\n[+] Test: test_add_reg_mem"
+    # FIX It generates a bvsmod expression when it should generate a bvmod one.
+    # def test_translate_mod(self):
+    #     instr = self._parser.parse(["mod [BYTE t0, BYTE t1, BYTE t2]"])[0]
+    #     form = self._translator.translate(instr)
 
-        # add eax, [ebx]
-        instrs = self._parser.parse([
-            "ldm [ebx, EMPTY, t0]",
-            "add [eax, t0, t1]",
-            "str [t1, EMPTY, eax]",
-        ])
+    #     self.assertEqual(len(form), 1)
+    #     self.assertEqual(form[0].value, "(= t2_1 (bvmod t0_0 t1_0))")
 
-        instrs[0].operands[0].size = 32
-        instrs[0].operands[2].size = 32
+    def test_translate_smod(self):
+        instr = self._parser.parse(["smod [BYTE t0, BYTE t1, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-        instrs[1].operands[0].size = 32
-        instrs[1].operands[1].size = 32
-        instrs[1].operands[2].size = 32
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (bvsmod t0_0 t1_0))")
 
-        instrs[2].operands[0].size = 32
-        instrs[2].operands[2].size = 32
+    # Bitwise Instructions
+    def test_translate_and(self):
+        instr = self._parser.parse(["and [BYTE t0, BYTE t1, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-        self._solver.reset()
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (bvand t0_0 t1_0))")
 
-        # translate instructions to formulae
-        if VERBOSE:
-            print "[+] Instructions:"
-            for instr in instrs:
-                trans = self._translator.translate(instr)
+    def test_translate_or(self):
+        instr = self._parser.parse(["or [BYTE t0, BYTE t1, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-                if trans is not None:
-                    self._solver.add(trans)
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (bvor t0_0 t1_0))")
 
-                print "    %-20s -> %-20s" % (instr, trans)
+    def test_translate_xor(self):
+        instr = self._parser.parse(["xor [BYTE t0, BYTE t1, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("eax")) == 42,
-            self._solver.mkBitVec(32, self._translator.get_init_name("eax")) != 42,
-        ]
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (bvxor t0_0 t1_0))")
 
-        if VERBOSE:
-            print "[+] Constraints :"
-            for i, constr in enumerate(constraints):
-                self._solver.add(constr)
+    # Data Transfer Instructions
+    def test_translate_ldm(self):
+        instr = self._parser.parse(["ldm [DWORD t0, empty, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-                print "    %2d : %s" % (i, constr)
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= (select MEM_0 (bvadd t0_0 #x00000000)) t2_1)")
 
-        # check satisfiability
-        is_sat = self._solver.check() == 'sat'
+    def test_translate_stm(self):
+        instr = self._parser.parse(["stm [BYTE t0, empty, DWORD t2]"])[0]
+        form = self._translator.translate(instr)
 
-        if VERBOSE:
-            print "[+] Satisfiability : %s" % str(is_sat)
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= MEM_1 (store MEM_0 (bvadd t2_0 #x00000000) t0_0))")
 
-            if is_sat:
-                print "    eax : 0x%08x" % self._solver.getvaluebyname(self._translator.get_curr_name("eax"))
-                print "    ebx : 0x%08x" % self._solver.getvaluebyname(self._translator.get_curr_name("ebx"))
+    def test_translate_str(self):
+        instr = self._parser.parse(["str [BYTE t0, empty, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-            print "~" * 80
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t0_0 t2_1)")
 
-        self.assertEqual(is_sat, True)
+    # Conditional Instructions
+    def test_translate_bisz(self):
+        instr = self._parser.parse(["bisz [DWORD t0, empty, DWORD t2]"])[0]
+        form = self._translator.translate(instr)
 
-    def test_add_mem_reg(self):
-        if VERBOSE:
-            print "\n[+] Test: test_add_mem_reg"
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (ite (= t0_0 #x00000000) #x00000001 #x00000000))")
 
-        # add [eax], ebx
-        instrs = self._parser.parse([
-            "ldm [eax, EMPTY, t0]",
-            "add [t0, ebx, t1]",
-            "stm [t1, EMPTY, eax]",
-        ])
+    def test_translate_jcc(self):
+        instr = self._parser.parse(["jcc [BIT t0, empty, DWORD t2]"])[0]
+        form = self._translator.translate(instr)
 
-        instrs[0].operands[0].size = 32
-        instrs[0].operands[2].size = 32
+        self.assertEqual(len(form), 0)
 
-        instrs[1].operands[0].size = 32
-        instrs[1].operands[1].size = 32
-        instrs[1].operands[2].size = 32
+    # Other Instructions
+    def test_translate_undef(self):
+        instr = self._parser.parse(["undef [empty, empty, DWORD t2]"])[0]
+        form = self._translator.translate(instr)
 
-        instrs[2].operands[0].size = 32
-        instrs[2].operands[2].size = 32
+        self.assertEqual(len(form), 0)
 
-        self._solver.reset()
+    def test_translate_unkn(self):
+        instr = self._parser.parse(["undef [empty, empty, empty]"])[0]
 
-        # add constrains
-        mem = self._translator.get_memory()
-        eax = self._solver.mkBitVec(32, "eax_0")
+        self.assertRaises(Exception, self._translator.translate(instr))
 
-        constraint = (mem[eax] != 42)
+    def test_translate_nop(self):
+        instr = self._parser.parse(["nop [empty, empty, empty]"])[0]
+        form = self._translator.translate(instr)
 
-        if VERBOSE:
-            print "constraint : %s" % constraint
+        self.assertEqual(len(form), 0)
 
-        self._solver.add(constraint)
+    # Extensions
+    def test_translate_sext(self):
+        instr = self._parser.parse(["sext [BYTE t0, empty, WORD t2]"])[0]
+        form = self._translator.translate(instr)
 
-        # translate instructions to formulae
-        if VERBOSE:
-            print "[+] Instructions:"
-            for instr in instrs:
-                trans = self._translator.translate(instr)
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 ((_ sign_extend 8) t0_0))")
 
-                if trans is not None:
-                    self._solver.add(trans)
-
-                print "    %-20s -> %-20s" % (instr, trans)
-
-        # add constrains
-        constraints = [
-            mem[eax] == 42,
-            self._solver.mkBitVec(32, self._translator.get_init_name("t0")) != 42,
-        ]
-
-        if VERBOSE:
-            print "[+] Constraints :"
-            for i, constr in enumerate(constraints):
-                self._solver.add(constr)
-
-                print "    %2d : %s" % (i, constr)
-
-        # check satisfiability
-        is_sat = self._solver.check() == 'sat'
-
-        if VERBOSE:
-            print "[+] Satisfiability : %s" % str(is_sat)
-
-            if is_sat:
-                print "    eax : 0x%08x" % self._solver.getvaluebyname(self._translator.get_curr_name("eax"))
-                print "    ebx : 0x%08x" % self._solver.getvaluebyname(self._translator.get_curr_name("ebx"))
-                print "    t0 : 0x%08x" % self._solver.getvaluebyname(self._translator.get_curr_name("t0"))
-                print "    [eax] : 0x%08x" % self._solver.getvalue(mem[eax])
-
-            print "~" * 80
-
-        self.assertEqual(is_sat, True)
-
-    def test_add_mem_reg_2(self):
-        if VERBOSE:
-            print "\n[+] Test: test_add_mem_reg_2"
-
-        # add [eax + 0x1000], ebx
-        instrs = self._parser.parse([
-            "add [eax, 0x1000, t0]",
-            "ldm [t0, e, t1]",
-            "add [t1, ebx, t2]",
-            "stm [t2, e, t0]",
-        ])
-
-        instrs[0].operands[0].size = 32
-        instrs[0].operands[1].size = 32
-        instrs[0].operands[2].size = 32
-
-        instrs[1].operands[0].size = 32
-        instrs[1].operands[2].size = 32
-
-        instrs[2].operands[0].size = 32
-        instrs[2].operands[1].size = 32
-        instrs[2].operands[2].size = 32
-
-        instrs[3].operands[0].size = 32
-        instrs[3].operands[2].size = 32
-
-        self._solver.reset()
-
-        # add constrains
-        mem = self._translator.get_memory()
-        eax = self._solver.mkBitVec(32, "eax_0")
-        off = BitVec(32, "#x%08x" % 0x1000)
-
-        constraint = (mem[eax + off] != 42)
-
-        if VERBOSE:
-            print "constraint : %s" % constraint
-
-        self._solver.add(constraint)
-
-        # translate instructions to formulae
-        if VERBOSE:
-            print "[+] Instructions:"
-            for instr in instrs:
-                trans = self._translator.translate(instr)
-
-                if trans is not None:
-                    self._solver.add(trans)
-
-                print "    %-20s -> %-20s" % (instr, trans)
-
-        # add constrains
-        constraints = [
-            mem[eax + off] == 42,
-            self._solver.mkBitVec(32, self._translator.get_init_name("t1")) != 42,
-        ]
-
-        if VERBOSE:
-            print "[+] Constraints :"
-
-            for i, constr in enumerate(constraints):
-                self._solver.add(constr)
-
-                print "    %2d : %s" % (i, constr)
-
-        # check satisfiability
-        is_sat = self._solver.check() == 'sat'
-
-        if VERBOSE:
-            print "[+] Satisfiability : %s" % str(is_sat)
-
-            if is_sat:
-                print "    eax : 0x%08x" % self._solver.getvaluebyname(self._translator.get_curr_name("eax"))
-                print "    ebx : 0x%08x" % self._solver.getvaluebyname(self._translator.get_curr_name("ebx"))
-                print "    t0 : 0x%08x" % self._solver.getvaluebyname(self._translator.get_curr_name("t0"))
-                print "    t1 : 0x%08x" % self._solver.getvaluebyname(self._translator.get_curr_name("t1"))
-                print "    [eax + off] : 0x%08x" % self._solver.getvalue(mem[eax + off])
-
-            print "~" * 80
-
-        self.assertEqual(is_sat, True)
-
-    def test_mul(self):
-        if VERBOSE:
-            print "\n[+] Test: test_mul"
-
-        instrs = self._parser.parse([
-            "mul [0x0, 0x1, t0]",
-        ])
-
-        instrs[0].operands[0].size = 32
-        instrs[0].operands[1].size = 32
-
-        # TODO: Ver esto, el tam del output deberia ser 64
-        instrs[0].operands[2].size = 32
-
-        self._solver.reset()
-
-        # translate instructions to formulae
-        if VERBOSE:
-            print "[+] Instructions:"
-            for instr in instrs:
-                trans = self._translator.translate(instr)
-
-                if trans is not None:
-                    self._solver.add(trans)
-
-                print "    %-20s -> %-20s" % (instr, trans)
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t0")) == 0,
-            self._solver.mkBitVec(32, self._translator.get_init_name("t0")) != 0,
-        ]
-
-        if VERBOSE:
-            print "[+] Constraints :"
-            for i, constr in enumerate(constraints):
-                self._solver.add(constr)
-
-                print "    %2d : %s" % (i, constr)
-
-        # check satisfiability
-        is_sat = self._solver.check() == 'sat'
-
-        if VERBOSE:
-            print "[+] Satisfiability : %s" % str(is_sat)
-
-            if is_sat:
-                print "    t0 : 0x%08x" % self._solver.getvaluebyname(self._translator.get_curr_name("t0"))
-
-            print "~" * 80
-
-        self.assertEqual(is_sat, True)
-
-    def test_sext_1(self):
-        instr = self._parser.parse(["sext [WORD 0xffff, EMPTY, DWORD t1]"])
-
-        self._solver.reset()
-
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0xffffffff,
-        ]
-
-        self._solver.add(constraints[0])
-
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_sext_2(self):
-        instr = self._parser.parse(["sext [WORD 0x7fff, EMPTY, DWORD t1]"])
-
-        self._solver.reset()
-
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0x00007fff,
-        ]
-
-        self._solver.add(constraints[0])
-
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_bsh_left_1(self):
-        instr = self._parser.parse(["bsh [DWORD t1, DWORD 16, QWORD t2]"])
-
-        self._solver.reset()
-
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
-            self._solver.mkBitVec(64, self._translator.get_curr_name("t2")) != 0x0000ffffffff0000,
-        ]
-
-        self._solver.add(constraints[0])
-        self._solver.add(constraints[1])
-
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_bsh_left_2(self):
-        instr = self._parser.parse(["bsh [DWORD t1, DWORD 16, DWORD t2]"])
-
-        self._solver.reset()
-
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t2")) != 0xffff0000,
-        ]
-
-        self._solver.add(constraints[0])
-        self._solver.add(constraints[1])
-
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_bsh_left_3(self):
-        instr = self._parser.parse(["bsh [DWORD t1, DWORD 16, WORD t2]"])
-
-        self._solver.reset()
-
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
-            self._solver.mkBitVec(16, self._translator.get_curr_name("t2")) != 0x0000,
-        ]
-
-        self._solver.add(constraints[0])
-        self._solver.add(constraints[1])
-
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_bsh_right_1(self):
-        instr = self._parser.parse(["bsh [DWORD t1, DWORD -16, QWORD t2]"])
-
-        self._solver.reset()
-
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
-            self._solver.mkBitVec(64, self._translator.get_curr_name("t2")) != 0x000000000000ffff,
-        ]
-
-        self._solver.add(constraints[0])
-        self._solver.add(constraints[1])
-
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_bsh_right_2(self):
-        instr = self._parser.parse(["bsh [DWORD t1, DWORD -16, DWORD t2]"])
-
-        self._solver.reset()
-
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t2")) != 0x0000ffff,
-        ]
-
-        self._solver.add(constraints[0])
-        self._solver.add(constraints[1])
-
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_bsh_right_3(self):
-        instr = self._parser.parse(["bsh [DWORD t1, DWORD -16, WORD t2]"])
-
-        self._solver.reset()
-
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
-            self._solver.mkBitVec(16, self._translator.get_curr_name("t2")) != 0xffff,
-        ]
-
-        self._solver.add(constraints[0])
-        self._solver.add(constraints[1])
-
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_div_1(self):
-        instr = self._parser.parse(["div [DWORD 2, DWORD 1, DWORD t1]"])
-
-        self._solver.reset()
-
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0x2,
-        ]
-
-        self._solver.add(constraints[0])
-
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_div_2(self):
-        instr = self._parser.parse(["div [DWORD 0xffffffff, DWORD 0x2, DWORD t1]"])
-
-        self._solver.reset()
-
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0x7fffffff,
-        ]
-
-        self._solver.add(constraints[0])
-
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_sdiv_1(self):
-        instr = self._parser.parse(["sdiv [DWORD -2, DWORD -1, DWORD t1]"])
-
-        self._solver.reset()
-
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0x2,
-        ]
-
-        self._solver.add(constraints[0])
-
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_sdiv_2(self):
-        instr = self._parser.parse(["sdiv [DWORD -2, DWORD 1, DWORD t1]"])
-
-        self._solver.reset()
-
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0xfffffffe,
-        ]
-
-        self._solver.add(constraints[0])
-
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_smod_1(self):
-        instr = self._parser.parse(["smod [DWORD 5, DWORD -3, DWORD t1]"])
-
-        self._solver.reset()
-
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0xffffffff,
-        ]
-
-        self._solver.add(constraints[0])
-
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_smod_2(self):
-        instr = self._parser.parse(["smod [DWORD -5, DWORD 3, DWORD t1]"])
-
-        self._solver.reset()
-
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
-
-        # add constrains
-        constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t1")) != 0x1,
-        ]
-
-        self._solver.add(constraints[0])
-
-        self.assertEqual(self._solver.check(), 'unsat')
 
 def main():
     unittest.main()
