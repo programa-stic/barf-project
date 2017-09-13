@@ -175,6 +175,57 @@ class SmtTranslator(object):
 
         self._var_name_mappers = {}
 
+    def translate_immediate_oprnd(self, operand):
+        """Translate REIL immediate operand to SMT.
+        """
+        if operand.size >= 4:
+            fmt = "#x%" + "%0003d" % (operand.size / 4) + "x"
+        else:
+            fmt = "#b%1d"
+
+        return smtlibv2.BitVec(operand.size, fmt % operand.immediate)
+
+    def convert_to_bitvec(self, operand):
+        """Convert operand to a BitVec
+        """
+        if isinstance(operand, ReilRegisterOperand):
+
+            bitvec = self._solver.mkBitVec(
+                operand.size,
+                self.get_curr_name(operand.name)
+            )
+
+        elif isinstance(operand, ReilImmediateOperand):
+
+            bitvec = self.translate_immediate_oprnd(operand)
+
+        else:
+
+            self._raise_invalid_type_oprnd(operand)
+
+        return bitvec
+
+    def set_arch_alias_mapper(self, alias_mapper):
+        """Set native register alias mapper.
+
+        This is necessary as some architecture has register alias. For
+        example, in Intel x86 (32 bits), *ax* refers to the lower half
+        of the *eax* register, so when *ax* is modified so it is *eax*.
+        Then, this alias_mapper is a dictionary where its keys are
+        registers (names, only) and each associated value is a tuple
+        of the form (base register name, offset).
+        This information is used to modified the correct register at
+        the correct location (within the register) when a register alias
+        value is changed.
+
+        """
+        self._arch_alias_mapper = alias_mapper
+
+    def set_arch_registers_size(self, registers_size):
+        """Set registers.
+        """
+        self._arch_regs_size = registers_size
+
     # Auxiliary functions
     # ======================================================================== #
     def _register_name(self, name):
@@ -298,63 +349,12 @@ class SmtTranslator(object):
 
         return ret_val, parent_reg_constrs
 
-    def translate_immediate_oprnd(self, operand):
-        """Translate REIL immediate operand to SMT.
-        """
-        if operand.size >= 4:
-            fmt = "#x%" + "%0003d" % (operand.size / 4) + "x"
-        else:
-            fmt = "#b%1d"
-
-        return smtlibv2.BitVec(operand.size, fmt % operand.immediate)
-
     def _raise_invalid_type_oprnd(self, operand):
         """Raise exception for invalid operand type.
         """
         msg_fmt = "Invalid source type: {0} ({1})"
 
         raise Exception(msg_fmt.format(str(operand), type(operand)))
-
-    def convert_to_bitvec(self, operand):
-        """Convert operand to a BitVec
-        """
-        if isinstance(operand, ReilRegisterOperand):
-
-            bitvec = self._solver.mkBitVec(
-                operand.size,
-                self.get_curr_name(operand.name)
-            )
-
-        elif isinstance(operand, ReilImmediateOperand):
-
-            bitvec = self.translate_immediate_oprnd(operand)
-
-        else:
-
-            self._raise_invalid_type_oprnd(operand)
-
-        return bitvec
-
-    def set_arch_alias_mapper(self, alias_mapper):
-        """Set native register alias mapper.
-
-        This is necessary as some architecture has register alias. For
-        example, in Intel x86 (32 bits), *ax* refers to the lower half
-        of the *eax* register, so when *ax* is modified so it is *eax*.
-        Then, this alias_mapper is a dictionary where its keys are
-        registers (names, only) and each associated value is a tuple
-        of the form (base register name, offset).
-        This information is used to modified the correct register at
-        the correct location (within the register) when a register alias
-        value is changed.
-
-        """
-        self._arch_alias_mapper = alias_mapper
-
-    def set_arch_registers_size(self, registers_size):
-        """Set registers.
-        """
-        self._arch_regs_size = registers_size
 
     # Arithmetic Instructions
     # ======================================================================== #
