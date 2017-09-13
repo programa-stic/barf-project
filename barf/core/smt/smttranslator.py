@@ -35,7 +35,7 @@ as a parameter. It interacts with a SMT solver (through the **smtlibv2**
 module). When an instruction is translated, this translation is reflected
 in the state of the SMT solver (this means, each expression is asserted
 in the current context of SMT solver). Also, the translation is return
-in form of a expression of BitVect. For example, the translation of
+in form of a expression of BitVec. For example, the translation of
 "ADD t0 (32), t1 (32), t2 (32)" returns the SMT expression
 "(= t2_0 (bvadd t0_1 t1_0))". It also send the following commands to the
 solver:
@@ -47,7 +47,6 @@ solver:
 
 """
 import logging
-import traceback
 
 import barf.core.smt.smtlibv2 as smtlibv2
 
@@ -57,6 +56,7 @@ from barf.core.reil.reil import ReilRegisterOperand
 from barf.utils.utils import VariableNamer
 
 logger = logging.getLogger(__name__)
+
 
 class SmtTranslator(object):
 
@@ -86,7 +86,7 @@ class SmtTranslator(object):
         self._arch_regs_size = {}
         self._arch_alias_mapper = {}
 
-        # Intructions translators (from REIL to SMT expressions)
+        # Instructions translators (from REIL to SMT expressions)
         self._instr_translators = {
             # Arithmetic Instructions
             ReilMnemonic.ADD : self._translate_add,
@@ -278,7 +278,7 @@ class SmtTranslator(object):
         return ret_val, parent_reg_constrs
 
     def _translate_src_register_oprnd(self, operand):
-        """Translate source resgister operand to SMT expr.
+        """Translate source register operand to SMT expr.
         """
         reg_info = self._arch_alias_mapper.get(operand.name, None)
 
@@ -297,7 +297,7 @@ class SmtTranslator(object):
         return ret_val
 
     def _translate_dst_register_oprnd(self, operand):
-        """Translate destination resgister operand to SMT expr.
+        """Translate destination register operand to SMT expr.
         """
         reg_info = self._arch_alias_mapper.get(operand.name, None)
 
@@ -319,7 +319,7 @@ class SmtTranslator(object):
 
             constrs = []
 
-            if offset > 0 and offset < var_size - 1:
+            if 0 < offset < var_size - 1:
                 lower_expr_1 = smtlibv2.EXTRACT(ret_val_cpy, 0, offset)
                 lower_expr_2 = smtlibv2.EXTRACT(old_ret_val, 0, offset)
 
@@ -670,8 +670,6 @@ class SmtTranslator(object):
 
         exprs = []
 
-        bytes_exprs = []
-        bytes_exprs_2 = []
         for i in reversed(xrange(0, size, 8)):
             bytes_exprs_1 = smtlibv2.ord(self._mem[where + i/8])
             bytes_exprs_2 = smtlibv2.EXTRACT(op3_var, i, 8)
@@ -718,8 +716,6 @@ class SmtTranslator(object):
         op1_var = self._translate_src_oprnd(oprnd1)
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
-        dst_size = op3_var.size
-
         constrs = []
 
         if oprnd1.size == oprnd3.size:
@@ -727,9 +723,9 @@ class SmtTranslator(object):
         elif oprnd1.size < oprnd3.size:
             expr = (op1_var == smtlibv2.EXTRACT(op3_var, 0, op1_var.size))
 
-			# Make sure that the values that can take dst operand
-			# do not exceed the range of the source operand.
-			# TODO: Find a better way to enforce this.
+            # Make sure that the values that can take dst operand
+            # do not exceed the range of the source operand.
+            # TODO: Find a better way to enforce this.
             fmt = "#b%0{0}d".format(op3_var.size - op1_var.size)
             imm = smtlibv2.BitVec(op3_var.size - op1_var.size, fmt % 0)
 
@@ -812,8 +808,6 @@ class SmtTranslator(object):
 
         op1_var = self._translate_src_oprnd(oprnd1)
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
-
-        dst_size = op3_var.size
 
         constrs = []
 
