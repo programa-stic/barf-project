@@ -79,8 +79,8 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("eax")) == 42,
-            self._solver.mkBitVec(32, self._translator.get_init_name("eax")) != 42,
+            self._solver.mkBitVec(32, self._translator.get_curr_name("eax")) == 42,     # Precondition
+            self._solver.mkBitVec(32, self._translator.get_init_name("eax")) != 42,     # Postcondition
         ]
 
         for constr in constraints:
@@ -99,22 +99,24 @@ class Smtlibv2Tests(unittest.TestCase):
             "stm [DWORD t1, EMPTY, DWORD eax]",
         ])
 
-        # Add constraints (preconditions)
-        eax = self._solver.mkBitVec(32, "eax_0")
-
-        mem_before = self._translator.get_memory_init()
-
-        self._solver.add(mem_before[eax] != 42)
-
         # Translate instructions to formulae
         for instr in instrs:
             for form in self._translator.translate(instr):
                 self._solver.add(form)
 
-        # Add constraints (postconditions)
+        # Add constraints
+        eax = self._solver.mkBitVec(32, self._translator.get_init_name("eax"))
+
+        mem_before = self._translator.get_memory_init()
         mem_after = self._translator.get_memory()
 
-        self._solver.add(mem_after[eax] == 42)
+        constraints = [
+            mem_before[eax] != 42,  # Precondition
+            mem_after[eax] == 42,   # Postcondition
+        ]
+
+        for constr in constraints:
+            self._solver.add(constr)
 
         # Assertions
         self.assertEqual(self._solver.check(), 'sat')
@@ -130,23 +132,25 @@ class Smtlibv2Tests(unittest.TestCase):
             "stm [DWORD t2, e, DWORD t0]",
         ])
 
-        # Add constraints (preconditions)
-        eax = self._solver.mkBitVec(32, "eax_0")
-        off = BitVec(32, "#x%08x" % 0x1000)
-
-        mem_before = self._translator.get_memory_init()
-
-        self._solver.add(mem_before[eax + off] != 42)
-
         # Translate instructions to formulae
         for instr in instrs:
             for form in self._translator.translate(instr):
                 self._solver.add(form)
 
-        # Add constraints (postconditions)
+        # Add constraints
+        eax = self._solver.mkBitVec(32, self._translator.get_init_name("eax"))
+        off = BitVec(32, "#x%08x" % 0x1000)
+
+        mem_before = self._translator.get_memory_init()
         mem_after = self._translator.get_memory()
 
-        self._solver.add(mem_after[eax + off] == 42)
+        constraints = [
+            mem_before[eax + off] != 42,  # Precondition
+            mem_after[eax + off] == 42,   # Postcondition
+        ]
+
+        for constr in constraints:
+            self._solver.add(constr)
 
         # Assertions
         self.assertEqual(self._solver.check(), 'sat')
@@ -154,12 +158,14 @@ class Smtlibv2Tests(unittest.TestCase):
         self.assertEqual(self._solver.getvalue(mem_after[eax + off]), 42)
 
     def test_mul(self):
-        instr = self._parser.parse(["mul [DWORD 0x0, DWORD 0x1, DWORD t0]"])
+        instrs = self._parser.parse([
+            "mul [DWORD 0x0, DWORD 0x1, DWORD t0]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
@@ -174,12 +180,14 @@ class Smtlibv2Tests(unittest.TestCase):
         self.assertEqual(self._solver.check(), 'sat')
 
     def test_div_1(self):
-        instr = self._parser.parse(["div [DWORD 2, DWORD 1, DWORD t1]"])
+        instrs = self._parser.parse([
+            "div [DWORD 2, DWORD 1, DWORD t1]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
@@ -193,12 +201,14 @@ class Smtlibv2Tests(unittest.TestCase):
         self.assertEqual(self._solver.check(), 'unsat')
 
     def test_div_2(self):
-        instr = self._parser.parse(["div [DWORD 0xffffffff, DWORD 0x2, DWORD t1]"])
+        instrs = self._parser.parse([
+            "div [DWORD 0xffffffff, DWORD 0x2, DWORD t1]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
@@ -212,12 +222,14 @@ class Smtlibv2Tests(unittest.TestCase):
         self.assertEqual(self._solver.check(), 'unsat')
 
     def test_sdiv_1(self):
-        instr = self._parser.parse(["sdiv [DWORD -2, DWORD -1, DWORD t1]"])
+        instrs = self._parser.parse([
+            "sdiv [DWORD -2, DWORD -1, DWORD t1]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
@@ -231,12 +243,14 @@ class Smtlibv2Tests(unittest.TestCase):
         self.assertEqual(self._solver.check(), 'unsat')
 
     def test_sdiv_2(self):
-        instr = self._parser.parse(["sdiv [DWORD -2, DWORD 1, DWORD t1]"])
+        instrs = self._parser.parse([
+            "sdiv [DWORD -2, DWORD 1, DWORD t1]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
@@ -250,12 +264,14 @@ class Smtlibv2Tests(unittest.TestCase):
         self.assertEqual(self._solver.check(), 'unsat')
 
     def test_smod_1(self):
-        instr = self._parser.parse(["smod [DWORD 5, DWORD -3, DWORD t1]"])
+        instrs = self._parser.parse([
+            "smod [DWORD 5, DWORD -3, DWORD t1]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
@@ -269,12 +285,14 @@ class Smtlibv2Tests(unittest.TestCase):
         self.assertEqual(self._solver.check(), 'unsat')
 
     def test_smod_2(self):
-        instr = self._parser.parse(["smod [DWORD -5, DWORD 3, DWORD t1]"])
+        instrs = self._parser.parse([
+            "smod [DWORD -5, DWORD 3, DWORD t1]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
@@ -288,12 +306,14 @@ class Smtlibv2Tests(unittest.TestCase):
         self.assertEqual(self._solver.check(), 'unsat')
 
     def test_bsh_left_1(self):
-        instr = self._parser.parse(["bsh [DWORD t1, DWORD 16, QWORD t2]"])
+        instrs = self._parser.parse([
+            "bsh [DWORD t1, DWORD 16, QWORD t2]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
@@ -308,12 +328,14 @@ class Smtlibv2Tests(unittest.TestCase):
         self.assertEqual(self._solver.check(), 'unsat')
 
     def test_bsh_left_2(self):
-        instr = self._parser.parse(["bsh [DWORD t1, DWORD 16, DWORD t2]"])
+        instrs = self._parser.parse([
+            "bsh [DWORD t1, DWORD 16, DWORD t2]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
@@ -328,12 +350,14 @@ class Smtlibv2Tests(unittest.TestCase):
         self.assertEqual(self._solver.check(), 'unsat')
 
     def test_bsh_left_3(self):
-        instr = self._parser.parse(["bsh [DWORD t1, DWORD 16, WORD t2]"])
+        instrs = self._parser.parse([
+            "bsh [DWORD t1, DWORD 16, WORD t2]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
@@ -348,12 +372,14 @@ class Smtlibv2Tests(unittest.TestCase):
         self.assertEqual(self._solver.check(), 'unsat')
 
     def test_bsh_right_1(self):
-        instr = self._parser.parse(["bsh [DWORD t1, DWORD -16, QWORD t2]"])
+        instrs = self._parser.parse([
+            "bsh [DWORD t1, DWORD -16, QWORD t2]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
@@ -368,12 +394,14 @@ class Smtlibv2Tests(unittest.TestCase):
         self.assertEqual(self._solver.check(), 'unsat')
 
     def test_bsh_right_2(self):
-        instr = self._parser.parse(["bsh [DWORD t1, DWORD -16, DWORD t2]"])
+        instrs = self._parser.parse([
+            "bsh [DWORD t1, DWORD -16, DWORD t2]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
@@ -388,12 +416,14 @@ class Smtlibv2Tests(unittest.TestCase):
         self.assertEqual(self._solver.check(), 'unsat')
 
     def test_bsh_right_3(self):
-        instr = self._parser.parse(["bsh [DWORD t1, DWORD -16, WORD t2]"])
+        instrs = self._parser.parse([
+            "bsh [DWORD t1, DWORD -16, WORD t2]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
@@ -409,12 +439,14 @@ class Smtlibv2Tests(unittest.TestCase):
 
     # Extensions
     def test_sext_1(self):
-        instr = self._parser.parse(["sext [WORD 0xffff, EMPTY, DWORD t1]"])
+        instrs = self._parser.parse([
+            "sext [WORD 0xffff, EMPTY, DWORD t1]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
@@ -428,12 +460,14 @@ class Smtlibv2Tests(unittest.TestCase):
         self.assertEqual(self._solver.check(), 'unsat')
 
     def test_sext_2(self):
-        instr = self._parser.parse(["sext [WORD 0x7fff, EMPTY, DWORD t1]"])
+        instrs = self._parser.parse([
+            "sext [WORD 0x7fff, EMPTY, DWORD t1]"
+        ])
 
         # Translate instructions to formulae
-        smt_expr = self._translator.translate(instr[0])
-
-        self._solver.add(smt_expr[0])
+        for instr in instrs:
+            for form in self._translator.translate(instr):
+                self._solver.add(form)
 
         # Add constraints
         constraints = [
