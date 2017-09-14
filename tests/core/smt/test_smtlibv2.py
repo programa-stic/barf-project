@@ -52,8 +52,8 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("eax")) == 42,     # Precondition
-            self._solver.mkBitVec(32, self._translator.get_init_name("eax")) != 42,     # Postcondition
+            self._solver.mkBitVec(32, self._translator.get_init_name("eax")) != 42,     # Precondition
+            self._solver.mkBitVec(32, self._translator.get_curr_name("eax")) == 42,     # Postcondition
         ]
 
         for constr in constraints:
@@ -79,8 +79,8 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("eax")) == 42,     # Precondition
-            self._solver.mkBitVec(32, self._translator.get_init_name("eax")) != 42,     # Postcondition
+            self._solver.mkBitVec(32, self._translator.get_init_name("eax")) != 42,     # Precondition
+            self._solver.mkBitVec(32, self._translator.get_curr_name("eax")) == 42,     # Postcondition
         ]
 
         for constr in constraints:
@@ -169,8 +169,8 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.mkBitVec(32, self._translator.get_curr_name("t0")) == 0,
-            self._solver.mkBitVec(32, self._translator.get_init_name("t0")) != 0,
+            self._solver.mkBitVec(32, self._translator.get_init_name("t0")) != 0,   # Precondition
+            self._solver.mkBitVec(32, self._translator.get_curr_name("t0")) == 0,   # Postcondition
         ]
 
         for constr in constraints:
