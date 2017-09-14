@@ -117,7 +117,7 @@ def init_parser():
         "-f", "--format",
         type=str,
         default="dot",
-        choices=["pdf", "png", "dot"],
+        choices=["pdf", "png", "dot", "svg"],
         help="Output format.")
 
     parser.add_argument(
@@ -200,7 +200,7 @@ def main():
 
     cg = CallGraph(cfgs_filtered)
 
-    cg.save(filename.split(os.path.sep)[-1] + "_callgraph", format=args.format)
+    cg.save(filename.split(os.path.sep)[-1] + "_cg", format=args.format)
 
     process_end = time.time()
 
