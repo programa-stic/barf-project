@@ -54,7 +54,7 @@ if __name__ == "__main__":
     barf.code_analyzer.set_preconditions([b >= 2, b <= 100])
 
     # Set desired value for the result
-    barf.code_analyzer.set_postcondition(c == 15)
+    barf.code_analyzer.set_postconditions([c == 15])
 
     # Check satisfiability
     print("[+] Check for satisfiability...")

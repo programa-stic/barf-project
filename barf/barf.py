@@ -254,8 +254,6 @@ class BARF(object):
             self.binary = BinaryFile(filename)
             self.text_section = self.binary.text_section
 
-            print("[open] self.binary.architecture_mode: {}".format(self.binary.architecture_mode))
-
             self._load(arch_mode=self.binary.architecture_mode)
 
     def load_architecture(self, name, arch_info, disassembler, translator):
@@ -424,7 +422,7 @@ class BARF(object):
 
         return cfg, calls
 
-    def emulate(self, context=None, start=None, end=None, arch_mode=None, hooks=None, max_instrs=None):
+    def emulate(self, context=None, start=None, end=None, arch_mode=None, hooks=None, max_instrs=None, print_asm=False):
         """Emulate native code.
 
         Args:
@@ -483,16 +481,25 @@ class BARF(object):
 
             # Process hooks.
             if next_addr in hooks:
-                fn, param = hooks[next_addr]
+                print("[+] Hooking @ {:#x}".format(next_addr))
+
+                fn, param, skip, offset = hooks[next_addr]
 
                 fn(self.ir_emulator, param)
 
                 # Compute next address after hook.
-                if self.binary.architecture == arch.ARCH_X86:
-                    next_addr = asm_instr.address + asm_instr.size
+                if skip:
+                    if self.binary.architecture == arch.ARCH_X86:
+                        # print("[+] debug1")
+                        # print("     addr: {:#x}".format(asm_instr.address))
+                        # print("     size: {:#x}".format(asm_instr.size))
+                        next_addr = asm_instr.address + asm_instr.size + offset
 
-                if self.binary.architecture == arch.ARCH_ARM:
-                    next_addr = asm_instr.address + asm_instr.size
+                    if self.binary.architecture == arch.ARCH_ARM:
+                        # print("[+] debug2")
+                        next_addr = asm_instr.address + asm_instr.size + offset
+
+                print("[+] Continuing @ {:#x}".format(next_addr))
 
             try:
                 # Retrieve next instruction from the execution cache.
@@ -515,7 +522,8 @@ class BARF(object):
             self.__update_ip(asm_instr)
 
             # Execute instruction.
-            print("{:#x} {}".format(asm_instr.address, asm_instr))
+            if print_asm:
+                print("{:#x} {}".format(asm_instr.address, asm_instr))
 
             target_addr = self.__process_reil_container(reil_container, to_reil_address(next_addr))
 

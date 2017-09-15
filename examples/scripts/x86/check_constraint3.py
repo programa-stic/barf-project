@@ -38,7 +38,7 @@ if __name__ == "__main__":
     # Set stack
     esp = barf.code_analyzer.get_register_expr("esp")
 
-    barf.code_analyzer.set_precondition(esp == 0xffffceec)
+    barf.code_analyzer.set_preconditions([esp == 0xffffceec])
 
     # Traverse paths and check satisfiability
     print("Checking path satisfiability...")

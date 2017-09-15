@@ -108,7 +108,10 @@ class GadgetVerifier(object):
         if not constrs:
             return False
 
-        return self.analyzer.check_constraints(constrs) == 'unsat'
+        for constr in constrs:
+            self.analyzer.add_constraint(constr)
+
+        return self.analyzer.check() == 'unsat'
 
     # Verifiers
     # ======================================================================== #

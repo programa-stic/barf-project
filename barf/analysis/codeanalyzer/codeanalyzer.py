@@ -210,9 +210,6 @@ class CodeAnalyzer(object):
         # A context (registers and memory)
         self._context = None
 
-        self.read_addrs = []
-        self.write_addrs = []
-
         self._arch_info = arch
 
     def set_context(self, context):
@@ -360,9 +357,6 @@ class CodeAnalyzer(object):
         if full:
             self._translator.reset()
 
-            self.read_addrs = []
-            self.write_addrs = []
-
     def get_operand_expr(self, operand, mode="post"):
         if isinstance(operand, ReilRegisterOperand):
             if operand.name in self._arch_info.registers_flags:
@@ -376,6 +370,11 @@ class CodeAnalyzer(object):
             raise Exception("Invalid operand: %s" % str(operand))
 
         return expr
+
+    def get_immediate_expr(self, immediate, size):
+        """Return a smt bit vector that represents an immediate value.
+        """
+        return self._translator.translate_immediate_oprnd(ReilImmediateOperand(immediate, size))
 
     def get_register_expr(self, register_name, mode="post"):
         """Return a smt bit vector that represents a register.
@@ -433,11 +432,6 @@ class CodeAnalyzer(object):
 
         return ret_val
 
-    def get_immediate_expr(self, immediate, size):
-        """Return a smt bit vector that represents an immediate value.
-        """
-        return self._translator.translate_immediate_oprnd(ReilImmediateOperand(immediate, size))
-
     def get_memory(self, mode):
         """Return a smt bit vector that represents a memory location.
         """
@@ -448,21 +442,14 @@ class CodeAnalyzer(object):
 
         return mem
 
-    def add_constraint(self, constraint, comment=None):
-        self._solver.add(constraint, comment)
-
     def add_instruction(self, reil_instruction, comment=None):
         """Add an instruction for analysis.
         """
         if reil_instruction.mnemonic == ReilMnemonic.LDM:
             addr = self._translator.convert_to_bitvec(reil_instruction.operands[0])
 
-            self.read_addrs.append(addr)
-
         if reil_instruction.mnemonic == ReilMnemonic.STM:
             addr = self._translator.convert_to_bitvec(reil_instruction.operands[2])
-
-            self.write_addrs.append(addr)
 
         smt_exprs = self._translator.translate(reil_instruction)
 
@@ -472,40 +459,10 @@ class CodeAnalyzer(object):
             else:
                 self._solver.add(smt_expr)
 
-    def check(self):
-        """Check if the instruction and restrictions added so far are
-        satisfiable.
-
+    def add_constraint(self, constraint, comment=None):
+        """Add constraint to the current set of formulas.
         """
-        return self._solver.check()
-
-    def check_constraint(self, constraint):
-        """Check if the instruction and restrictions added so far are
-        satisfiable.
-
-        """
-        self._solver.add(constraint)
-
-        is_sat = self._solver.check()
-
-        return is_sat
-
-    def check_constraints(self, constraints):
-        """Check if the instruction and restrictions added so far are
-        satisfiable.
-
-        """
-        for constraint in constraints:
-            self._solver.add(constraint)
-
-        is_sat = self._solver.check()
-
-        return is_sat
-
-    def set_precondition(self, condition):
-        """Add a precondition to the analyzer.
-        """
-        self._solver.add(condition)
+        self._solver.add(constraint, comment)
 
     def set_preconditions(self, conditions):
         """Add preconditions to the analyzer.
@@ -513,16 +470,18 @@ class CodeAnalyzer(object):
         for cond in conditions:
             self._solver.add(cond)
 
-    def set_postcondition(self, condition):
-        """Add a postcondition to the analyzer.
-        """
-        self._solver.add(condition)
-
     def set_postconditions(self, conditions):
         """Add a postcondition to the analyzer.
         """
         for cond in conditions:
             self._solver.add(cond)
+
+    def check(self):
+        """Check if the instruction and restrictions added so far are
+        satisfiable.
+
+        """
+        return self._solver.check()
 
     def get_expr_value(self, expr):
         """Get a value for an expression.
@@ -534,18 +493,14 @@ class CodeAnalyzer(object):
     def _get_operand_var(self, operand):
         return self._translator._translate_src_oprnd(operand)
 
-    def _get_tmp_register_expr(self, register_name, register_size, mode="post"):
+    def _get_tmp_register_expr(self, name, size, mode="post"):
         """Return a smt bit vector that represents a register.
         """
         if mode == "pre":
-            var_name = self._translator.get_init_name(register_name)
+            var_name = self._translator.get_init_name(name)
         elif mode == "post":
-            var_name = self._translator.get_curr_name(register_name)
+            var_name = self._translator.get_curr_name(name)
         else:
             raise Exception()
 
-        var_size = register_size
-
-        ret_val = self._solver.mkBitVec(var_size, var_name)
-
-        return ret_val
+        return self._solver.mkBitVec(size, var_name)

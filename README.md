@@ -145,7 +145,7 @@ barf.code_analyzer.set_preconditions([a >= 2, a <= 100])
 barf.code_analyzer.set_preconditions([b >= 2, b <= 100])
 
 # Set desired value for the result
-barf.code_analyzer.set_postcondition(c == 13)
+barf.code_analyzer.set_postconditions([c == 13])
 ```
 
 Finally, we check is the restrictions we establish can be resolved.
