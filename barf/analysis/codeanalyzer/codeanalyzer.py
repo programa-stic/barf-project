@@ -137,7 +137,7 @@ class GenericContext(object):
         # Set of flags.
         self._flags = flags
 
-        # A dictionary-based represetation of memory.
+        # A dictionary-based representation of memory.
         self._memory = memory
 
     @property
@@ -235,7 +235,7 @@ class CodeAnalyzer(object):
             self._solver.add(smt_flag == gen_flag.value)
 
         # Add each memory location and its content to the SMT solver
-        # as an assetion.
+        # as an assertion.
         mem = self._translator.get_memory()
 
         for addr, value in self._context.memory.items():
@@ -273,7 +273,7 @@ class CodeAnalyzer(object):
 
         return GenericContext(registers, flags, memory)
 
-    def check_path_satisfiability(self, path, start_address, verbose=False):
+    def check_path_satisfiability(self, path, start_address):
         """Check satisfiability of a basic block path.
         """
         self._solver.reset()
@@ -315,8 +315,8 @@ class CodeAnalyzer(object):
                         # Make sure branch target address from current
                         # basic block is the start address of the next.
                         assert(bb_curr.taken_branch == bb_next.address or
-                            bb_curr.not_taken_branch == bb_next.address or
-                            bb_curr.direct_branch == bb_next.address)
+                               bb_curr.not_taken_branch == bb_next.address or
+                               bb_curr.direct_branch == bb_next.address)
 
                         # Set branch condition accordingly.
                         if bb_curr.taken_branch == bb_next.address:
@@ -326,7 +326,7 @@ class CodeAnalyzer(object):
                         else:
                             continue
 
-                        # Add branch condition goal contraint.
+                        # Add branch condition goal constraint.
                         branch_var = self.get_operand_var(reil_instr.operands[0])
 
                         self.add_constraint(branch_var == branch_var_goal)
@@ -377,7 +377,7 @@ class CodeAnalyzer(object):
             else:
                 expr = self.get_tmp_register_expr(
                         operand.name, operand.size, mode=mode)
-        elif isinstance(operand, ReilRegisterOperand):
+        elif isinstance(operand, ReilImmediateOperand):
             expr = self.get_immediate_expr(operand.immediate, operand.size)
         else:
             raise Exception("Invalid operand: %s" % str(operand))
@@ -471,8 +471,8 @@ class CodeAnalyzer(object):
 
         return mem
 
-    def add_constraint(self, contraint, comment=None):
-        self._solver.add(contraint, comment)
+    def add_constraint(self, constraint, comment=None):
+        self._solver.add(constraint, comment)
 
     def add_instruction(self, reil_instruction, comment=None):
         """Add an instruction for analysis.
