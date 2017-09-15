@@ -26,9 +26,9 @@ import logging
 
 import barf.core.smt.smtlibv2 as smtlibv2
 
+from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
-from barf.core.reil import ReilImmediateOperand
 
 logger = logging.getLogger(__name__)
 
@@ -327,7 +327,7 @@ class CodeAnalyzer(object):
                             continue
 
                         # Add branch condition goal constraint.
-                        branch_var = self.get_operand_var(reil_instr.operands[0])
+                        branch_var = self._get_operand_var(reil_instr.operands[0])
 
                         self.add_constraint(branch_var == branch_var_goal)
 
@@ -363,19 +363,12 @@ class CodeAnalyzer(object):
             self.read_addrs = []
             self.write_addrs = []
 
-    # ======================================================================== #
-    def set_arch_info(self, arch_info):
-        self._arch_info = arch_info
-
-    def get_operand_var(self, operand):
-        return self._translator._translate_src_oprnd(operand)
-
     def get_operand_expr(self, operand, mode="post"):
         if isinstance(operand, ReilRegisterOperand):
             if operand.name in self._arch_info.registers_flags:
                 expr = self.get_register_expr(operand.name, mode=mode)
             else:
-                expr = self.get_tmp_register_expr(
+                expr = self._get_tmp_register_expr(
                         operand.name, operand.size, mode=mode)
         elif isinstance(operand, ReilImmediateOperand):
             expr = self.get_immediate_expr(operand.immediate, operand.size)
@@ -418,22 +411,6 @@ class CodeAnalyzer(object):
             var_size = self._arch_info.registers_size[register_name]
 
             ret_val = self._solver.mkBitVec(var_size, var_name)
-
-        return ret_val
-
-    def get_tmp_register_expr(self, register_name, register_size, mode="post"):
-        """Return a smt bit vector that represents a register.
-        """
-        if mode == "pre":
-            var_name = self._translator.get_init_name(register_name)
-        elif mode == "post":
-            var_name = self._translator.get_curr_name(register_name)
-        else:
-            raise Exception()
-
-        var_size = register_size
-
-        ret_val = self._solver.mkBitVec(var_size, var_name)
 
         return ret_val
 
@@ -551,3 +528,24 @@ class CodeAnalyzer(object):
         """Get a value for an expression.
         """
         return self._solver.getvalue(expr)
+
+    # Auxiliary methods
+    # ======================================================================== #
+    def _get_operand_var(self, operand):
+        return self._translator._translate_src_oprnd(operand)
+
+    def _get_tmp_register_expr(self, register_name, register_size, mode="post"):
+        """Return a smt bit vector that represents a register.
+        """
+        if mode == "pre":
+            var_name = self._translator.get_init_name(register_name)
+        elif mode == "post":
+            var_name = self._translator.get_curr_name(register_name)
+        else:
+            raise Exception()
+
+        var_size = register_size
+
+        ret_val = self._solver.mkBitVec(var_size, var_name)
+
+        return ret_val
