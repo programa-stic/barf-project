@@ -210,6 +210,7 @@ class CodeAnalyzer(object):
         # A context (registers and memory)
         self._context = None
 
+        # Architecture information of the binary.
         self._arch_info = arch
 
     def set_context(self, context):
@@ -384,13 +385,7 @@ class CodeAnalyzer(object):
         if reg_info:
             var_base_name, offset = reg_info
 
-            if mode == "pre":
-                var_name = self._translator.get_init_name(var_base_name)
-            elif mode == "post":
-                var_name = self._translator.get_curr_name(var_base_name)
-            else:
-                raise Exception()
-
+            var_name = self._get_var_name(var_base_name, mode)
             var_size = self._arch_info.registers_size[var_base_name]
 
             ret_val = self._translator._solver.mkBitVec(var_size, var_name)
@@ -400,13 +395,7 @@ class CodeAnalyzer(object):
                 self._arch_info.registers_size[register_name]
             )
         else:
-            if mode == "pre":
-                var_name = self._translator.get_init_name(register_name)
-            elif mode == "post":
-                var_name = self._translator.get_curr_name(register_name)
-            else:
-                raise Exception()
-
+            var_name = self._get_var_name(register_name, mode)
             var_size = self._arch_info.registers_size[register_name]
 
             ret_val = self._solver.mkBitVec(var_size, var_name)
@@ -416,21 +405,14 @@ class CodeAnalyzer(object):
     def get_memory_expr(self, address, size, mode="post"):
         """Return a smt bit vector that represents a memory location.
         """
-        if mode == "pre":
-            mem = self._translator.get_memory_init()
-        elif mode == "post":
-            mem = self._translator.get_memory()
-        else:
-            raise Exception()
+        mem = self.get_memory(mode)
 
         bytes_exprs = []
 
         for index in xrange(0, size):
             bytes_exprs.append(mem[address + index])
 
-        ret_val = smtlibv2.CONCAT(8, *reversed(bytes_exprs))
-
-        return ret_val
+        return smtlibv2.CONCAT(8, *reversed(bytes_exprs))
 
     def get_memory(self, mode):
         """Return a smt bit vector that represents a memory location.
@@ -439,18 +421,14 @@ class CodeAnalyzer(object):
             mem = self._translator.get_memory_init()
         elif mode == "post":
             mem = self._translator.get_memory()
+        else:
+            raise Exception()
 
         return mem
 
     def add_instruction(self, reil_instruction, comment=None):
         """Add an instruction for analysis.
         """
-        if reil_instruction.mnemonic == ReilMnemonic.LDM:
-            addr = self._translator.convert_to_bitvec(reil_instruction.operands[0])
-
-        if reil_instruction.mnemonic == ReilMnemonic.STM:
-            addr = self._translator.convert_to_bitvec(reil_instruction.operands[2])
-
         smt_exprs = self._translator.translate(reil_instruction)
 
         for idx, smt_expr in enumerate(smt_exprs):
@@ -471,13 +449,13 @@ class CodeAnalyzer(object):
             self._solver.add(cond)
 
     def set_postconditions(self, conditions):
-        """Add a postcondition to the analyzer.
+        """Add postconditions to the analyzer.
         """
         for cond in conditions:
             self._solver.add(cond)
 
     def check(self):
-        """Check if the instruction and restrictions added so far are
+        """Check if the instructions and restrictions added so far are
         satisfiable.
 
         """
@@ -490,17 +468,24 @@ class CodeAnalyzer(object):
 
     # Auxiliary methods
     # ======================================================================== #
+    def _get_var_name(self, register_name, mode):
+        """Get variable name for a register considering pre and post mode.
+        """
+        if mode == "pre":
+            var_name = self._translator.get_init_name(register_name)
+        elif mode == "post":
+            var_name = self._translator.get_curr_name(register_name)
+        else:
+            raise Exception()
+
+        return var_name
+
     def _get_operand_var(self, operand):
         return self._translator._translate_src_oprnd(operand)
 
     def _get_tmp_register_expr(self, name, size, mode="post"):
         """Return a smt bit vector that represents a register.
         """
-        if mode == "pre":
-            var_name = self._translator.get_init_name(name)
-        elif mode == "post":
-            var_name = self._translator.get_curr_name(name)
-        else:
-            raise Exception()
+        var_name = self._get_var_name(name, mode)
 
         return self._solver.mkBitVec(size, var_name)
