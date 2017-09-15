@@ -129,7 +129,7 @@ class CodeAnalyzerTests(unittest.TestCase):
                 print "      To : %s" % hex(end)
                 print "      Path : %s" % " -> ".join((map(lambda o : hex(o.address), bb_path)))
 
-            is_sat = codeAnalyzer.check_path_satisfiability(bb_path, start, verbose=False)
+            is_sat = codeAnalyzer.check_path_satisfiability(bb_path, start)
 
             if VERBOSE:
                 print "[+] Satisfiability : %s" % str(is_sat)
