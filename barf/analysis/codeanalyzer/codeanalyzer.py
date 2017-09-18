@@ -325,7 +325,7 @@ class CodeAnalyzer(object):
                             continue
 
                         # Add branch condition goal constraint.
-                        branch_var = self._translator._translate_src_oprnd(reil_instr.operands[0])
+                        branch_var = self.get_operand_var(reil_instr.operands[0])
 
                         self.add_constraint(branch_var == branch_var_goal)
 
@@ -357,6 +357,9 @@ class CodeAnalyzer(object):
 
         if full:
             self._translator.reset()
+
+    def get_operand_var(self, operand):
+        return self._translator._translate_src_oprnd(operand)
 
     def get_operand_expr(self, operand, mode="post"):
         if isinstance(operand, ReilRegisterOperand):
