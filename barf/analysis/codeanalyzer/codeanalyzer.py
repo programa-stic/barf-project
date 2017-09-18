@@ -325,7 +325,7 @@ class CodeAnalyzer(object):
                             continue
 
                         # Add branch condition goal constraint.
-                        branch_var = self._get_operand_var(reil_instr.operands[0])
+                        branch_var = self._translator._translate_src_oprnd(reil_instr.operands[0])
 
                         self.add_constraint(branch_var == branch_var_goal)
 
@@ -360,11 +360,13 @@ class CodeAnalyzer(object):
 
     def get_operand_expr(self, operand, mode="post"):
         if isinstance(operand, ReilRegisterOperand):
-            if operand.name in self._arch_info.registers_flags:
+            if operand.name in self._arch_info.registers_all:
+                # Process architectural registers (eax, ebx, etc.)
                 expr = self.get_register_expr(operand.name, mode=mode)
             else:
-                expr = self._get_tmp_register_expr(
-                        operand.name, operand.size, mode=mode)
+                # Process temporal registers (t0, t1, etc.)
+                var_name = self._get_var_name(name, mode)
+                expr = self._solver.mkBitVec(size, var_name)
         elif isinstance(operand, ReilImmediateOperand):
             expr = self.get_immediate_expr(operand.immediate, operand.size)
         else:
@@ -479,13 +481,3 @@ class CodeAnalyzer(object):
             raise Exception()
 
         return var_name
-
-    def _get_operand_var(self, operand):
-        return self._translator._translate_src_oprnd(operand)
-
-    def _get_tmp_register_expr(self, name, size, mode="post"):
-        """Return a smt bit vector that represents a register.
-        """
-        var_name = self._get_var_name(name, mode)
-
-        return self._solver.mkBitVec(size, var_name)
