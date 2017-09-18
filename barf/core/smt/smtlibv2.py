@@ -80,11 +80,10 @@ class Symbol(object):
 
 
 class BitVec(Symbol):
-    """ A symbolic bitvector """
+    """ A symbolic bit vector """
 
     def __init__(self, size, value, *children, **kwargs):
         super(BitVec, self).__init__(value, *children, **kwargs)
-        # assert size in [1, 8, 16, 32, 64, 128, 256]
 
         self.size = size
 
@@ -420,7 +419,7 @@ class Array(object):
 
 class Z3Solver(object):
     def __init__(self):
-        """ Build a solver intance.
+        """ Build a solver instance.
             This is implemented using an external native solver via a subprocess.
             Every time a new symbol or assertion is added a smtlibv2 command is
             sent to the solver.
@@ -507,8 +506,8 @@ class Z3Solver(object):
         """ Reads the response from the solver """
 
         def readline():
-            buf = self._proc.stdout.readline()
-            return buf, buf.count('('), buf.count(')')
+            line = self._proc.stdout.readline()
+            return line, line.count('('), line.count(')')
 
         bufl = []
         left = 0
@@ -688,10 +687,12 @@ class Z3Solver(object):
         """
         if self._status is None:
             self.reset()
-        # file('simplifications.txt','a').write('(simplify %s  :expand-select-store true :pull-cheap-ite true )'%val+'\n')
+
         if not isinstance(val, (BitVec, Bool)):
             return val
+
         self._send('(simplify %s  :expand-select-store true :pull-cheap-ite true )' % val)
+
         result = self._recv()
 
         # TODO clean move casts somewhere else.  BitVec8, BitVec16, BitVec32, BitVec64, BitVec127 __new__() ?
@@ -868,8 +869,8 @@ class CVC4Solver(object):
         """ Reads the response from the solver """
 
         def readline():
-            buf = self._proc.stdout.readline()
-            return buf, buf.count('('), buf.count(')')
+            line = self._proc.stdout.readline()
+            return line, line.count('('), line.count(')')
 
         bufl = []
         left = 0
@@ -1174,9 +1175,9 @@ def UGT(a, b):
         (int, long): lambda: a > b if a >= 0 and b >= 0 else None,
         (long, long): lambda: a > b if a >= 0 and b >= 0 else None,
         (BitVec, int): lambda: a.ugt(b),
-        (int, BitVec): lambda: b.ule(a) == False,
+        (int, BitVec): lambda: not b.ule(a),
         (BitVec, long): lambda: a.ugt(b),
-        (long, BitVec): lambda: b.ule(a) == False,
+        (long, BitVec): lambda: not b.ule(a),
         (BitVec, BitVec): lambda: a.ugt(b),
     }[(type(a), type(b))]()
 
@@ -1189,8 +1190,8 @@ def UGE(a, b):
         (long, long): lambda: a >= b if a >= 0 and b >= 0 else None,
         (BitVec, int): lambda: a.uge(b),
         (BitVec, long): lambda: a.uge(b),
-        (int, BitVec): lambda: b.ult(a) == False,
-        (long, BitVec): lambda: b.ult(a) == False,
+        (int, BitVec): lambda: not b.ult(a),
+        (long, BitVec): lambda: not b.ult(a),
         (BitVec, BitVec): lambda: a.uge(b),
     }[(type(a), type(b))]()
 
@@ -1203,8 +1204,8 @@ def ULT(a, b):
         (long, long): lambda: a < b if a >= 0 and b >= 0 else None,
         (BitVec, int): lambda: a.ult(b),
         (BitVec, long): lambda: a.ult(b),
-        (int, BitVec): lambda: b.uge(a) == False,
-        (long, BitVec): lambda: b.uge(a) == False,
+        (int, BitVec): lambda: not b.uge(a),
+        (long, BitVec): lambda: not b.uge(a),
         (BitVec, BitVec): lambda: a.ult(b),
     }[(type(a), type(b))]()
 
@@ -1217,8 +1218,8 @@ def ULE(a, b):
         (long, long): lambda: a <= b if a >= 0 and b >= 0 else None,
         (BitVec, int): lambda: a.ule(b),
         (BitVec, long): lambda: a.ule(b),
-        (int, BitVec): lambda: b.ugt(a) == False,
-        (long, BitVec): lambda: b.ugt(a) == False,
+        (int, BitVec): lambda: not b.ugt(a),
+        (long, BitVec): lambda: not b.ugt(a),
         (BitVec, BitVec): lambda: a.ule(b),
     }[(type(a), type(b))]()
 
@@ -1301,12 +1302,12 @@ def CONCAT(size, *args):
                 if solver is not None:
                     break
 
-            def cast(x):
-                if type(x) in (int, long):
+            def cast(e):
+                if type(e) in (int, long):
                     if size == 1:
-                        return BitVec(size, '#' + bin(x & 1)[1:], solver=solver)
-                    return BitVec(size, '#x%0*x' % (size / 4, x & ((1 << size) - 1)), solver=solver)
-                return x
+                        return BitVec(size, '#' + bin(e & 1)[1:], solver=solver)
+                    return BitVec(size, '#x%0*x' % (size / 4, e & ((1 << size) - 1)), solver=solver)
+                return e
 
             return BitVec(size * len(args), 'concat', *map(cast, args), solver=solver)
         else:
