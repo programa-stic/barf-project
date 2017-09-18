@@ -29,44 +29,10 @@ import copy
 import logging
 import weakref
 
-from functools import wraps
-from subprocess import PIPE, Popen
+from subprocess import PIPE
+from subprocess import Popen
 
 logger = logging.getLogger("smtlibv2")
-
-
-def goaux_bv(old_method):
-    @wraps(old_method)
-    def new_method(self, *args, **kw_args):
-        bv = old_method(self, *args, **kw_args)
-        # try:
-        #     bv = self.solver.simplify(bv)
-        # except Exception,e:
-        #     print "EXCEPTION", e
-        #     import sys,traceback
-        #     print '-'*60
-        #     traceback.print_exc(file=sys.stdout)
-        #     print '-'*60
-        #     sys.stdin.readline()
-        #     pass
-
-        # if isinstance(bv, Symbol) and len(str(bv.value)) > 200 and self.solver is not None:
-        #     aux = self.solver.mkBitVec(bv.size)
-        #     self.solver.add(aux == bv)
-        #     return aux
-        return bv
-    return new_method
-
-def goaux_bool(old_method):
-    @wraps(old_method)
-    def new_method(self, *args, **kw_args):
-        b = old_method(self, *args, **kw_args)
-        if False and self.solver is not None:
-            aux = self.solver.mkBool()
-            self.solver.add(aux == b)
-            return aux
-        return b
-    return new_method
 
 
 class Symbol(object):
@@ -113,7 +79,7 @@ class Symbol(object):
 
 
 class BitVec(Symbol):
-    ''' A symbolic bitvector '''
+    """ A symbolic bitvector """
 
     def __init__(self, size, value, *children, **kwargs):
         super(BitVec, self).__init__(value, *children, **kwargs)
@@ -160,39 +126,30 @@ class BitVec(Symbol):
     # __pow__() should be defined to accept an optional third argument if the
     # ternary version of the built-in pow() function is to be supported.
 
-    @goaux_bv
     def __add__(self, other):
         return BitVec(self.size, 'bvadd', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def __sub__(self, other):
         return BitVec(self.size, 'bvsub', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def __mul__(self, other):
         return BitVec(self.size, 'bvmul', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def __mod__(self, other):
         return BitVec(self.size, 'bvsmod', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def __lshift__(self, other):
         return BitVec(self.size, 'bvshl', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def __rshift__(self, other):
         return BitVec(self.size, 'bvlshr', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def __and__(self, other):
         return BitVec(self.size, 'bvand', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def __xor__(self, other):
         return BitVec(self.size, 'bvxor', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def __or__(self, other):
         return BitVec(self.size, 'bvor', self, self.cast(other), solver=self.solver)
 
@@ -202,11 +159,9 @@ class BitVec(Symbol):
     # defined, the object will not  support division in the alternate context;
     # TypeError will be raised instead.
 
-    @goaux_bv
     def __div__(self, other):
         return BitVec(self.size, 'bvsdiv', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def __truediv__(self, other):
         return BitVec(self.size, 'bvsdiv', self, self.cast(other), solver=self.solver)
 
@@ -218,51 +173,39 @@ class BitVec(Symbol):
     # where y is an instance of a class that has an __rsub__() method,
     # y.__rsub__(x) is called if x.__sub__(y) returns NotImplemented.
 
-    @goaux_bv
     def __radd__(self, other):
         return BitVec(self.size, 'bvadd', self.cast(other), self, solver=self.solver)
 
-    @goaux_bv
     def __rsub__(self, other):
         return BitVec(self.size, 'bvsub', self.cast(other), self, solver=self.solver)
 
-    @goaux_bv
     def __rmul__(self, other):
         return BitVec(self.size, 'bvmul', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def __rmod__(self, other):
         return BitVec(self.size, 'bvmod', self.cast(other), self, solver=self.solver)
 
-    @goaux_bv
     def __rtruediv__(self, other):
         return BitVec(self.size, 'bvsdiv', self.cast(other), self, solver=self.solver)
 
-    @goaux_bv
     def __rdiv__(self, other):
         return BitVec(self.size, 'bvsdiv', self.cast(other), self, solver=self.solver)
 
-    @goaux_bv
     def __rlshift__(self, other):
         return BitVec(self.size, 'bvshl', self.cast(other), self, solver=self.solver)
 
-    @goaux_bv
     def __rrshift__(self, other):
         return BitVec(self.size, 'bvlshr', self.cast(other), self, solver=self.solver)
 
-    @goaux_bv
     def __rand__(self, other):
         return BitVec(self.size, 'bvand', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def __rxor__(self, other):
         return BitVec(self.size, 'bvxor', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def __ror__(self, other):
         return BitVec(self.size, 'bvor', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def __invert__(self):
         return BitVec(self.size, 'bvnot', self, solver=self.solver)
 
@@ -273,67 +216,51 @@ class BitVec(Symbol):
     # x!=y and x<>y call x.__ne__(y), x>y calls x.__gt__(y), and x>=y calls
     # x.__ge__(y).
 
-    @goaux_bool
     def __lt__(self, other):
         return Bool('bvslt', self, self.cast(other), solver=self.solver)
 
-    @goaux_bool
     def __le__(self, other):
         return Bool('bvsle', self, self.cast(other), solver=self.solver)
 
-    @goaux_bool
     def __eq__(self, other):
         return Bool('=', self, self.cast(other), solver=self.solver)
 
-    @goaux_bool
     def __ne__(self, other):
         return Bool('not', self == other, solver=self.solver)
 
-    @goaux_bool
     def __gt__(self, other):
         return Bool('bvsgt', self, self.cast(other), solver=self.solver)
 
-    @goaux_bool
     def __ge__(self, other):
         return Bool('bvsge', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def __neg__(self):
         return BitVec(self.size, 'bvneg', self, solver=self.solver)
 
-    @goaux_bool
     def ugt(self, other):
         return Bool('bvugt', self, self.cast(other), solver=self.solver)
 
-    @goaux_bool
     def uge(self, other):
         return Bool('bvuge', self, self.cast(other), solver=self.solver)
 
-    @goaux_bool
     def ult(self, other):
         return Bool('bvult', self, self.cast(other), solver=self.solver)
 
-    @goaux_bool
     def ule(self, other):
         return Bool('bvule', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def udiv(self, other):
         return BitVec(self.size, 'bvudiv', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def rudiv(self, other):
         return BitVec(self.size, 'bvudiv', self.cast(other), self, solver=self.solver)
 
-    @goaux_bv
     def urem(self, other):
         return BitVec(self.size, 'bvurem', self, self.cast(other), solver=self.solver)
 
-    @goaux_bv
     def rrem(self, other):
         return BitVec(self.size, 'bvurem', self.cast(other), self, solver=self.solver)
 
-    @goaux_bv
     def smod(self, other):
         return BitVec(self.size, 'bvsmod', self.cast(other), self, solver=self.solver)
 
@@ -355,42 +282,33 @@ class Bool(Symbol):
     def declaration(self):
         return '(declare-fun %s () Bool)'%self.value
 
-    @goaux_bool
     def __invert__(self):
         return Bool('not', self, solver=self.solver)
 
-    @goaux_bool
     def __eq__(self, other):
         return Bool('=', self, self.cast(other), solver=self.solver)
 
-    @goaux_bool
     def __ne__(self, other):
         return Bool('not', self == other, solver=self.solver)
 
-    @goaux_bool
     def __xor__(self, other):
         return Bool('xor', self, self.cast(other), solver=self.solver)
 
     def __nonzero__(self):
         raise NotImplementedError()
 
-    @goaux_bool
     def __and__(self, other):
         return Bool('and', self, self.cast(other), solver=self.solver)
 
-    @goaux_bool
     def __or__(self, other):
         return Bool('or', self, self.cast(other), solver=self.solver)
 
-    @goaux_bool
     def __rand__(self, other):
         return Bool('and', self, self.cast(other), solver=self.solver)
 
-    @goaux_bool
     def __ror__(self, other):
         return Bool('or', self, self.cast(other), solver=self.solver)
 
-    @goaux_bool
     def __rxor__(self, other):
         return Bool('xor', self, self.cast(other), solver=self.solver)
 
@@ -438,11 +356,9 @@ class Array_(Symbol):
 
         return val
 
-    @goaux_bv
     def select(self, key):
         return BitVec(8, 'select', self, self.cast_key(key), solver=self.solver)
 
-    @goaux_bv
     def store(self, key, value):
         return Array_(self.size, '(store %s %s %s)'%(self, self.cast_key(key), self.cast_value(value)), solver=self.solver)
 
@@ -502,15 +418,15 @@ class Array(object):
 
 class Z3Solver(object):
     def __init__(self):
-        ''' Build a solver intance.
+        """ Build a solver intance.
             This is implemented using an external native solver via a subprocess.
-            Everytime a new symbol or assertion is added a smtlibv2 command is
+            Every time a new symbol or assertion is added a smtlibv2 command is
             sent to the solver.
-            The actual state is also mantained in memory to be able to save and
+            The actual state is also maintained in memory to be able to save and
             restore the state.
-            The analisys may be saved to disk and continued after a while or
+            The analysis may be saved to disk and continued after a while or
             forked in memory or even sent over the network.
-        '''
+        """
         self._status = 'unknown'
         self._sid = 0
         self._stack = []
@@ -572,19 +488,19 @@ class Z3Solver(object):
         self._proc = None
 
     def _get_sid(self):
-        ''' Returns an unique id. '''
+        """ Returns an unique id. """
         self._sid += 1
         return self._sid
 
     def _send(self, cmd):
-        ''' Send a string to the solver.
+        """ Send a string to the solver.
             @param cmd: a SMTLIBv2 command (ex. (check-sat))
-        '''
+        """
         # logger.debug('>%s', cmd)
         self._proc.stdin.writelines((str(cmd), '\n'))
 
     def _recv(self):
-        ''' Reads the response from the solver '''
+        """ Reads the response from the solver """
         def readline():
             buf = self._proc.stdout.readline()
             return buf, buf.count('('), buf.count(')')
@@ -608,7 +524,7 @@ class Z3Solver(object):
         return buf
 
     def __str__(self):
-        ''' Returns a smtlib representation of the current state '''
+        """ Returns a smtlib representation of the current state """
         buf = ''
         for d in self._declarations.values():
             buf += d.declaration +'\n'
@@ -617,7 +533,7 @@ class Z3Solver(object):
         return buf
 
     def getallvalues(self, x, maxcnt=30):
-        ''' Returns a list with all the possible values for the symbol x'''
+        """ Returns a list with all the possible values for the symbol x"""
         assert self.check() == 'sat'
         assert type(x) is BitVec
         result = []
@@ -626,7 +542,6 @@ class Z3Solver(object):
             aux = self.mkBitVec(x.size)
             self.add(aux == x)
             r = self.check()
-            val = None
             while r != 'unsat':
                 val = self.getvalue(aux)
                 result.append(val)
@@ -641,10 +556,10 @@ class Z3Solver(object):
         return result
 
     def max(self, X, M=10000):
-        ''' Iterativelly finds the maximum value for a symbol.
+        """ Iteratively finds the maximum value for a symbol.
             @param X: a symbol or expression
-            @param M: maximun number of iterations allowed
-        '''
+            @param M: maximum number of iterations allowed
+        """
         assert self.check() == 'sat'
         assert type(X) is BitVec
         self.push()
@@ -666,16 +581,16 @@ class Z3Solver(object):
                     i = i + 1
                 else:
                     raise Exception("solver failed %s"%r)
-                if (i > M):
+                if i > M:
                     raise Exception("Maximum not found, maximum number of iterations was reached")
         finally:
             self.pop()
 
     def min(self, X, M=10000):
-        ''' Iterativelly finds the minimum value for a symbol.
+        """ Iteratively finds the minimum value for a symbol.
             @param X: a symbol or expression
-            @param M: maximun number of iterations allowed
-        '''
+            @param M: maximum number of iterations allowed
+        """
         assert self.check() == 'sat'
         assert type(X) is BitVec
         self.push()
@@ -697,13 +612,13 @@ class Z3Solver(object):
                     i = i + 1
                 else:
                     raise Exception("solver failed")
-                if (i > M):
+                if i > M:
                     raise Exception("Maximum not found, maximum number of iterations was reached")
         finally:
             self.pop()
 
     def minmax(self, x, iters=10000):
-        ''' Returns the min and max possible values for x. '''
+        """ Returns the min and max possible values for x. """
         if isconcrete(x):
             return x, x
         m = self.min(x, iters)
@@ -711,7 +626,7 @@ class Z3Solver(object):
         return m, M
 
     def push(self):
-        ''' Pushes and save the current state.'''
+        """ Pushes and save the current state."""
         if self._status is None:
             self.reset()
         self._send('(push 1)')
@@ -720,13 +635,13 @@ class Z3Solver(object):
         self._constraints = copy.copy(self._constraints)
 
     def pop(self):
-        ''' Recall the last pushed state. '''
+        """ Recall the last pushed state. """
         self._send('(pop 1)')
         self._sid, self._declarations, self._constraints = self._stack.pop()
         self._status = 'unknown'
 
     def check(self):
-        ''' Check the satisfiability of the current state '''
+        """ Check the satisfiability of the current state """
         if self._status is None:
             self.reset()
         if self._status == 'unknown':
@@ -735,10 +650,10 @@ class Z3Solver(object):
         return self._status
 
     def getvalue(self, val):
-        ''' Ask the solver for one possible assigment for val using currrent set
+        """ Ask the solver for one possible assignment for val using current set
             of constraints.
             The current set of assertions must be sat.
-            @param val: an expression or symbol '''
+            @param val: an expression or symbol """
         if isconcrete(val):
             return val
         assert self.check() == 'sat'
@@ -748,10 +663,10 @@ class Z3Solver(object):
         return int(ret.split(' ')[-1][2:-2], 16)
 
     def getvaluebyname(self, name):
-        ''' Ask the solver for one possible assigment for val using currrent set
+        """ Ask the solver for one possible assignment for val using current set
             of constraints.
             The current set of assertions must be sat.
-            @param val: an expression or symbol '''
+        """
         val = self._declarations[name]
 
         assert self.check() == 'sat'
@@ -761,10 +676,10 @@ class Z3Solver(object):
         return int(ret.split(' ')[-1][2:-2], 16)
 
     def simplify(self, val):
-        ''' Ask the solver to try to simplify the expression val.
+        """ Ask the solver to try to simplify the expression val.
             This works only with z3.
             @param val: a symbol or expression.
-        '''
+        """
         if self._status is None:
             self.reset()
         #file('simplifications.txt','a').write('(simplify %s  :expand-select-store true :pull-cheap-ite true )'%val+'\n')
@@ -782,7 +697,7 @@ class Z3Solver(object):
             return {'false':False, 'true':True}.get(result, Bool(result, solver=val.solver))
 
     def mkBitVec(self, size, name='V', is_input=False):
-        ''' Creates a symbol in the constrains store and names it name'''
+        """ Creates a symbol in the constrains store and names it name"""
         assert size in [1, 8, 16, 32, 40, 64, 72, 128, 256]
         if name in self._declarations:
             return self._declarations[name]
@@ -797,7 +712,7 @@ class Z3Solver(object):
         return bv
 
     def mkArray(self, size=32, name='A', is_input=False, max_size=100):
-        ''' Creates a symbols array in the constrains store and names it name'''
+        """ Creates a symbols array in the constrains store and names it name"""
         assert size in [8, 16, 32, 64]
         if name in self._declarations:
             return self._declarations[name]
@@ -810,7 +725,7 @@ class Z3Solver(object):
         return arr
 
     def mkArrayNew(self, size=32, name='A'):
-        ''' Creates a symbols array in the constrains store and names it name'''
+        """ Creates a symbols array in the constrains store and names it name"""
         assert size in [8, 16, 32, 64]
 
         arr = Array(size, name, solver=self)
@@ -818,7 +733,7 @@ class Z3Solver(object):
         return arr
 
     def mkBool(self, name='B', is_input=False):
-        ''' Creates a symbols array in the constrains store and names it name'''
+        """ Creates a symbols array in the constrains store and names it name"""
         if name in self._declarations:
             name = '%s_%d'%(name, self._get_sid())
         b = Bool(name, solver=self)
@@ -861,15 +776,15 @@ class Z3Solver(object):
 
 class CVC4Solver(object):
     def __init__(self):
-        ''' Build a solver intance.
+        """ Build a solver instance.
             This is implemented using an external native solver via a subprocess.
-            Everytime a new symbol or assertion is added a smtlibv2 command is
+            Every time a new symbol or assertion is added a smtlibv2 command is
             sent to the solver.
-            The actual state is also mantained in memory to be able to save and
+            The actual state is also maintained in memory to be able to save and
             restore the state.
-            The analisys may be saved to disk and continued after a while or
+            The analysis may be saved to disk and continued after a while or
             forked in memory or even sent over the network.
-        '''
+        """
         self._status = 'unknown'
         self._sid = 0
         self._stack = []
@@ -930,19 +845,19 @@ class CVC4Solver(object):
         self._proc = None
 
     def _get_sid(self):
-        ''' Returns an unique id. '''
+        """ Returns an unique id. """
         self._sid += 1
         return self._sid
 
     def _send(self, cmd):
-        ''' Send a string to the solver.
+        """ Send a string to the solver.
             @param cmd: a SMTLIBv2 command (ex. (check-sat))
-        '''
+        """
         # logger.debug('>%s', cmd)
         self._proc.stdin.writelines((str(cmd), '\n'))
 
     def _recv(self):
-        ''' Reads the response from the solver '''
+        """ Reads the response from the solver """
         def readline():
             buf = self._proc.stdout.readline()
             return buf, buf.count('('), buf.count(')')
@@ -966,7 +881,7 @@ class CVC4Solver(object):
         return buf
 
     def __str__(self):
-        ''' Returns a smtlib representation of the current state '''
+        """ Returns a smtlib representation of the current state """
         buf = ''
         for d in self._declarations.values():
             buf += d.declaration +'\n'
@@ -975,7 +890,7 @@ class CVC4Solver(object):
         return buf
 
     def getallvalues(self, x, maxcnt=30):
-        ''' Returns a list with all the possible values for the symbol x'''
+        """ Returns a list with all the possible values for the symbol x"""
         assert self.check() == 'sat'
         assert type(x) is BitVec
         result = []
@@ -984,7 +899,6 @@ class CVC4Solver(object):
             aux = self.mkBitVec(x.size)
             self.add(aux == x)
             r = self.check()
-            val = None
             while r != 'unsat':
                 val = self.getvalue(aux)
                 result.append(val)
@@ -999,10 +913,10 @@ class CVC4Solver(object):
         return result
 
     def max(self, X, M=10000):
-        ''' Iterativelly finds the maximum value for a symbol.
+        """ Iteratively finds the maximum value for a symbol.
             @param X: a symbol or expression
-            @param M: maximun number of iterations allowed
-        '''
+            @param M: maximum number of iterations allowed
+        """
         assert self.check() == 'sat'
         assert type(X) is BitVec
         self.push()
@@ -1024,16 +938,16 @@ class CVC4Solver(object):
                     i = i + 1
                 else:
                     raise Exception("solver failed %s"%r)
-                if (i > M):
+                if i > M:
                     raise Exception("Maximum not found, maximum number of iterations was reached")
         finally:
             self.pop()
 
     def min(self, X, M=10000):
-        ''' Iterativelly finds the minimum value for a symbol.
+        """ Iteratively finds the minimum value for a symbol.
             @param X: a symbol or expression
-            @param M: maximun number of iterations allowed
-        '''
+            @param M: maximum number of iterations allowed
+        """
         assert self.check() == 'sat'
         assert type(X) is BitVec
         self.push()
@@ -1055,13 +969,13 @@ class CVC4Solver(object):
                     i = i + 1
                 else:
                     raise Exception("solver failed")
-                if (i > M):
+                if i > M:
                     raise Exception("Maximum not found, maximum number of iterations was reached")
         finally:
             self.pop()
 
     def minmax(self, x, iters=10000):
-        ''' Returns the min and max possible values for x. '''
+        """ Returns the min and max possible values for x. """
         if isconcrete(x):
             return x, x
         m = self.min(x, iters)
@@ -1069,7 +983,7 @@ class CVC4Solver(object):
         return m, M
 
     def push(self):
-        ''' Pushes and save the current state.'''
+        """ Pushes and save the current state."""
         if self._status is None:
             self.reset()
         self._send('(push 1)')
@@ -1078,13 +992,13 @@ class CVC4Solver(object):
         self._constraints = copy.copy(self._constraints)
 
     def pop(self):
-        ''' Recall the last pushed state. '''
+        """ Recall the last pushed state. """
         self._send('(pop 1)')
         self._sid, self._declarations, self._constraints = self._stack.pop()
         self._status = 'unknown'
 
     def check(self):
-        ''' Check the satisfiability of the current state '''
+        """ Check the satisfiability of the current state """
         if self._status is None:
             self.reset()
         if self._status == 'unknown':
@@ -1093,10 +1007,10 @@ class CVC4Solver(object):
         return self._status
 
     def getvalue(self, val):
-        ''' Ask the solver for one possible assigment for val using currrent set
+        """ Ask the solver for one possible assignment for val using current set
             of constraints.
             The current set of assertions must be sat.
-            @param val: an expression or symbol '''
+            @param val: an expression or symbol """
         if isconcrete(val):
             return val
         assert self.check() == 'sat'
@@ -1113,10 +1027,10 @@ class CVC4Solver(object):
         return value
 
     def getvaluebyname(self, name):
-        ''' Ask the solver for one possible assigment for val using currrent set
+        """ Ask the solver for one possible assignment for val using current set
             of constraints.
             The current set of assertions must be sat.
-            @param val: an expression or symbol '''
+        """
         val = self._declarations[name]
 
         assert self.check() == 'sat'
@@ -1137,10 +1051,10 @@ class CVC4Solver(object):
         return value
 
     def simplify(self, val):
-        ''' Ask the solver to try to simplify the expression val.
+        """ Ask the solver to try to simplify the expression val.
             This works only with z3.
             @param val: a symbol or expression.
-        '''
+        """
         if self._status is None:
             self.reset()
         if not isinstance(val, (BitVec, Bool)):
@@ -1156,7 +1070,7 @@ class CVC4Solver(object):
             return {'false':False, 'true':True}.get(result, Bool(result, solver=val.solver))
 
     def mkBitVec(self, size, name='V', is_input=False):
-        ''' Creates a symbol in the constrains store and names it name'''
+        """ Creates a symbol in the constrains store and names it name"""
         assert size in [1, 8, 16, 32, 40, 64, 72, 128, 256]
         if name in self._declarations:
             return self._declarations[name]
@@ -1171,7 +1085,7 @@ class CVC4Solver(object):
         return bv
 
     def mkArray(self, size=32, name='A', is_input=False, max_size=100):
-        ''' Creates a symbols array in the constrains store and names it name'''
+        """ Creates a symbols array in the constrains store and names it name"""
         assert size in [8, 16, 32, 64]
         if name in self._declarations:
             return self._declarations[name]
@@ -1184,7 +1098,7 @@ class CVC4Solver(object):
         return arr
 
     def mkArrayNew(self, size=32, name='A'):
-        ''' Creates a symbols array in the constrains store and names it name'''
+        """ Creates a symbols array in the constrains store and names it name"""
         assert size in [8, 16, 32, 64]
 
         arr = Array(size, name, solver=self)
@@ -1192,7 +1106,7 @@ class CVC4Solver(object):
         return arr
 
     def mkBool(self, name='B', is_input=False):
-        ''' Creates a symbols array in the constrains store and names it name'''
+        """ Creates a symbols array in the constrains store and names it name"""
         if name in self._declarations:
             name = '%s_%d'%(name, self._get_sid())
         b = Bool(name, solver=self)
