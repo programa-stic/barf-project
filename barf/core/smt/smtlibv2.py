@@ -36,7 +36,6 @@ logger = logging.getLogger("smtlibv2")
 
 
 class Symbol(object):
-
     def __init__(self, value, *children, **kwargs):
         assert type(value) in [int, long, str, bool]
         assert all([isinstance(x, Symbol) for x in children])
@@ -48,14 +47,16 @@ class Symbol(object):
             self._solver = lambda: None
 
         if len(children) > 0:
-            self._value = '('+ str(value) +' '+ ' '.join(map(str, children)) +')'
+            self._value = '(' + str(value) + ' ' + ' '.join(map(str, children)) + ')'
         else:
             self._value = str(value)
 
     def __getstate__(self):
-        state = {}
-        state['solver'] = self.solver
-        state['value'] = self.value
+        state = {
+            'solver': self.solver,
+            'value': self.value
+        }
+
         return state
 
     def __setstate__(self, state):
@@ -101,13 +102,13 @@ class BitVec(Symbol):
     def cast(self, val):
         if type(val) in (int, long):
             if self.size == 1:
-                return BitVec(self.size, '#'+bin(val&1)[1:], solver=self.solver)
-            return BitVec(self.size, '#x%0*x'%(self.size/4, val&((1<<self.size)-1)), solver=self.solver)
+                return BitVec(self.size, '#' + bin(val & 1)[1:], solver=self.solver)
+            return BitVec(self.size, '#x%0*x' % (self.size / 4, val & ((1 << self.size) - 1)), solver=self.solver)
         elif type(val) is Bool:
             raise NotImplementedError()
         elif type(val) is str:
             assert len(val) == 1 and self.size == 8
-            return BitVec(self.size, '#x%02x'%ord(val), solver=self.solver)
+            return BitVec(self.size, '#x%02x' % ord(val), solver=self.solver)
 
         assert type(val) == BitVec and val.size == self.size
 
@@ -115,7 +116,7 @@ class BitVec(Symbol):
 
     @property
     def declaration(self):
-        return '(declare-fun %s () (_ BitVec %d))'%(self.value, self.size)
+        return '(declare-fun %s () (_ BitVec %d))' % (self.value, self.size)
 
     # These methods are called to implement the binary arithmetic operations
     # (+, -, *, //, %, divmod(), pow(), **, <<, >>, &, ^, |). For instance, to
@@ -266,7 +267,6 @@ class BitVec(Symbol):
 
 
 class Bool(Symbol):
-
     def __init__(self, value, *children, **kwargs):
         super(Bool, self).__init__(value, *children, **kwargs)
 
@@ -280,7 +280,7 @@ class Bool(Symbol):
 
     @property
     def declaration(self):
-        return '(declare-fun %s () Bool)'%self.value
+        return '(declare-fun %s () Bool)' % self.value
 
     def __invert__(self):
         return Bool('not', self, solver=self.solver)
@@ -332,12 +332,12 @@ class Array_(Symbol):
 
     def cast_key(self, val):
         if type(val) in (int, long):
-            return BitVec(self.size, '#x%0*x'%(self.size/4, val&((1<<self.size)-1)), solver=self.solver)
+            return BitVec(self.size, '#x%0*x' % (self.size / 4, val & ((1 << self.size) - 1)), solver=self.solver)
         elif type(val) is Bool:
             raise NotImplementedError()
         elif type(val) is str:
             assert len(val) == 1 and self.size == 8
-            return BitVec(self.size, '#x%02x'%ord(val), solver=self.solver)
+            return BitVec(self.size, '#x%02x' % ord(val), solver=self.solver)
 
         assert type(val) == BitVec and val.size == self.size
 
@@ -345,12 +345,12 @@ class Array_(Symbol):
 
     def cast_value(self, val):
         if type(val) in (int, long):
-            return BitVec(8, '#x%02x'%(val&((1<<self.size)-1)), solver=self.solver)
+            return BitVec(8, '#x%02x' % (val & ((1 << self.size) - 1)), solver=self.solver)
         elif type(val) is Bool:
             raise NotImplementedError()
         elif type(val) is str:
             assert len(val) == 1
-            return BitVec(32, '#x%02x'%ord(val), solver=self.solver)
+            return BitVec(32, '#x%02x' % ord(val), solver=self.solver)
 
         assert type(val) == BitVec and val.size == 8
 
@@ -360,7 +360,8 @@ class Array_(Symbol):
         return BitVec(8, 'select', self, self.cast_key(key), solver=self.solver)
 
     def store(self, key, value):
-        return Array_(self.size, '(store %s %s %s)'%(self, self.cast_key(key), self.cast_value(value)), solver=self.solver)
+        return Array_(self.size, '(store %s %s %s)' % (self, self.cast_key(key), self.cast_value(value)),
+                      solver=self.solver)
 
     def __eq__(self, other):
         assert isinstance(other, Array_) and other.size == self.size
@@ -378,14 +379,15 @@ class Array(object):
         self.array = Array_(size, name, *children, **kwargs)
         self.name = name
         self.cache = {}
-        self.declaration = '(declare-fun %s () (Array (_ BitVec %d) (_ BitVec 8)))'%(name, size)
+        self.declaration = '(declare-fun %s () (Array (_ BitVec %d) (_ BitVec 8)))' % (name, size)
 
     def __getstate__(self):
-        state = {}
-        state['declaration'] = self.declaration
-        state['array'] = self.array
-        state['name'] = self.name
-        state['cache'] = self.cache
+        state = {
+            'declaration': self.declaration,
+            'array': self.array,
+            'name': self.name,
+            'cache': self.cache
+        }
 
         return state
 
@@ -440,12 +442,14 @@ class Z3Solver(object):
         self._send("(set-logic QF_AUFBV)")
 
     def __getstate__(self):
-        state = {}
-        state['sid'] = self._sid
-        state['declarations'] = self._declarations
-        state['constraints'] = self._constraints
-        state['stack'] = self._stack
-        state['input_symbols'] = self.input_symbols
+        state = {
+            'sid': self._sid,
+            'declarations': self._declarations,
+            'constraints': self._constraints,
+            'stack': self._stack,
+            'input_symbols': self.input_symbols
+        }
+
         return state
 
     def __setstate__(self, state):
@@ -501,9 +505,11 @@ class Z3Solver(object):
 
     def _recv(self):
         """ Reads the response from the solver """
+
         def readline():
             buf = self._proc.stdout.readline()
             return buf, buf.count('('), buf.count(')')
+
         bufl = []
         left = 0
         right = 0
@@ -520,16 +526,16 @@ class Z3Solver(object):
         # logger.debug('<%s', buf)
         if '(error' in bufl[0]:
             print("Error in simplify: %s" % str(buf))
-            raise Exception("Error in smtlib <"+str(self)+">")
+            raise Exception("Error in smtlib <" + str(self) + ">")
         return buf
 
     def __str__(self):
         """ Returns a smtlib representation of the current state """
         buf = ''
         for d in self._declarations.values():
-            buf += d.declaration +'\n'
+            buf += d.declaration + '\n'
         for a in self.constraints:
-            buf += '%s\n'%a
+            buf += '%s\n' % a
         return buf
 
     def getallvalues(self, x, maxcnt=30):
@@ -571,7 +577,7 @@ class Z3Solver(object):
             while True:
                 r = self.check()
                 if r == 'unsat':
-                    if last_value != None:
+                    if last_value is not None:
                         return last_value
                     else:
                         raise Exception("max failed")
@@ -580,7 +586,7 @@ class Z3Solver(object):
                     self.add(UGT(aux, last_value))
                     i = i + 1
                 else:
-                    raise Exception("solver failed %s"%r)
+                    raise Exception("solver failed %s" % r)
                 if i > M:
                     raise Exception("Maximum not found, maximum number of iterations was reached")
         finally:
@@ -602,7 +608,7 @@ class Z3Solver(object):
             while True:
                 r = self.check()
                 if r == 'unsat':
-                    if last_value != None:
+                    if last_value is not None:
                         return last_value
                     else:
                         raise Exception("max failed")
@@ -657,7 +663,7 @@ class Z3Solver(object):
         if isconcrete(val):
             return val
         assert self.check() == 'sat'
-        self._send('(get-value (%s))'%val)
+        self._send('(get-value (%s))' % val)
         ret = self._recv()
         assert ret.startswith('((') and ret.endswith('))')
         return int(ret.split(' ')[-1][2:-2], 16)
@@ -670,7 +676,7 @@ class Z3Solver(object):
         val = self._declarations[name]
 
         assert self.check() == 'sat'
-        self._send('(get-value (%s))'%val)
+        self._send('(get-value (%s))' % val)
         ret = self._recv()
         assert ret.startswith('((') and ret.endswith('))')
         return int(ret.split(' ')[-1][2:-2], 16)
@@ -682,19 +688,19 @@ class Z3Solver(object):
         """
         if self._status is None:
             self.reset()
-        #file('simplifications.txt','a').write('(simplify %s  :expand-select-store true :pull-cheap-ite true )'%val+'\n')
+        # file('simplifications.txt','a').write('(simplify %s  :expand-select-store true :pull-cheap-ite true )'%val+'\n')
         if not isinstance(val, (BitVec, Bool)):
             return val
-        self._send('(simplify %s  :expand-select-store true :pull-cheap-ite true )'%val)
+        self._send('(simplify %s  :expand-select-store true :pull-cheap-ite true )' % val)
         result = self._recv()
 
-        #TODO clean move casts somewhere else.  BitVec8, BitVec16, BitVec32, BitVec64, BitVec127 __new__() ?
+        # TODO clean move casts somewhere else.  BitVec8, BitVec16, BitVec32, BitVec64, BitVec127 __new__() ?
         if type(val) is BitVec:
             if result.startswith('#x'):
                 return int(result[2:], 16)
             return BitVec(val.size, result, solver=val.solver)
         elif type(val) is Bool:
-            return {'false':False, 'true':True}.get(result, Bool(result, solver=val.solver))
+            return {'false': False, 'true': True}.get(result, Bool(result, solver=val.solver))
 
     def mkBitVec(self, size, name='V', is_input=False):
         """ Creates a symbol in the constrains store and names it name"""
@@ -735,7 +741,7 @@ class Z3Solver(object):
     def mkBool(self, name='B', is_input=False):
         """ Creates a symbols array in the constrains store and names it name"""
         if name in self._declarations:
-            name = '%s_%d'%(name, self._get_sid())
+            name = '%s_%d' % (name, self._get_sid())
         b = Bool(name, solver=self)
         self._declarations[name] = b
         self._send(b.declaration)
@@ -757,9 +763,9 @@ class Z3Solver(object):
             return
         assert isinstance(constraint, Bool)
         if comment:
-            self._send('(assert %s) ; %s'%(constraint, comment))
+            self._send('(assert %s) ; %s' % (constraint, comment))
         else:
-            self._send('(assert %s)'%constraint)
+            self._send('(assert %s)' % constraint)
         self._constraints.append((constraint, comment))
         self._status = 'unknown'
 
@@ -768,9 +774,9 @@ class Z3Solver(object):
         constraints = []
         for c, comment in self._constraints:
             if comment:
-                constraints.append('(assert %s) ; %s'%(c, comment))
+                constraints.append('(assert %s) ; %s' % (c, comment))
             else:
-                constraints.append('(assert %s)'%c)
+                constraints.append('(assert %s)' % c)
         return constraints
 
 
@@ -798,18 +804,20 @@ class CVC4Solver(object):
         self._send("(set-option :produce-models true)")
 
     def __getstate__(self):
-        state = {}
-        state['sid'] = self._sid
-        state['declarations'] = self._declarations
-        state['constraints'] = self._constraints
-        state['stack'] = self._stack
-        state['input_symbols'] = self.input_symbols
+        state = {
+            'sid': self._sid,
+            'declarations': self._declarations,
+            'constraints': self._constraints,
+            'stack': self._stack,
+            'input_symbols': self.input_symbols
+        }
+
         return state
 
     def __setstate__(self, state):
         self._status = None
         self._sid = state['sid']
-        self._declarations = state['declarations'] #weakref.WeakValueDictionary(state['declarations'])
+        self._declarations = state['declarations']  # weakref.WeakValueDictionary(state['declarations'])
         self._constraints = state['constraints']
         self._stack = state['stack']
         self.input_symbols = state['input_symbols']
@@ -858,9 +866,11 @@ class CVC4Solver(object):
 
     def _recv(self):
         """ Reads the response from the solver """
+
         def readline():
             buf = self._proc.stdout.readline()
             return buf, buf.count('('), buf.count(')')
+
         bufl = []
         left = 0
         right = 0
@@ -877,16 +887,16 @@ class CVC4Solver(object):
         # logger.debug('<%s', buf)
         if '(error' in bufl[0]:
             print("Error in simplify: %s" % str(buf))
-            raise Exception("Error in smtlib <"+str(self)+">")
+            raise Exception("Error in smtlib <" + str(self) + ">")
         return buf
 
     def __str__(self):
         """ Returns a smtlib representation of the current state """
         buf = ''
         for d in self._declarations.values():
-            buf += d.declaration +'\n'
+            buf += d.declaration + '\n'
         for a in self.constraints:
-            buf += '%s\n'%a
+            buf += '%s\n' % a
         return buf
 
     def getallvalues(self, x, maxcnt=30):
@@ -928,7 +938,7 @@ class CVC4Solver(object):
             while True:
                 r = self.check()
                 if r == 'unsat':
-                    if last_value != None:
+                    if last_value is not None:
                         return last_value
                     else:
                         raise Exception("max failed")
@@ -937,7 +947,7 @@ class CVC4Solver(object):
                     self.add(UGT(aux, last_value))
                     i = i + 1
                 else:
-                    raise Exception("solver failed %s"%r)
+                    raise Exception("solver failed %s" % r)
                 if i > M:
                     raise Exception("Maximum not found, maximum number of iterations was reached")
         finally:
@@ -959,7 +969,7 @@ class CVC4Solver(object):
             while True:
                 r = self.check()
                 if r == 'unsat':
-                    if last_value != None:
+                    if last_value is not None:
                         return last_value
                     else:
                         raise Exception("max failed")
@@ -1014,14 +1024,14 @@ class CVC4Solver(object):
         if isconcrete(val):
             return val
         assert self.check() == 'sat'
-        self._send('(get-value (%s))'%val)
+        self._send('(get-value (%s))' % val)
         ret = self._recv()
         assert ret.startswith('((') and ret.endswith('))')
         ret = ret[2:-2]
         _, ret = ret[:ret.rfind('(')], ret[ret.rfind('('):]
         assert ret.startswith('(') and ret.endswith(')')
         index = ret.rfind('(')
-        var_value, _ = ret[index+3:-1].split(' ', 1)
+        var_value, _ = ret[index + 3:-1].split(' ', 1)
         assert var_value.startswith('bv')
         value = int(var_value[2:])
         return value
@@ -1034,7 +1044,7 @@ class CVC4Solver(object):
         val = self._declarations[name]
 
         assert self.check() == 'sat'
-        self._send('(get-value (%s))'%val)
+        self._send('(get-value (%s))' % val)
         ret = self._recv()
         assert ret.startswith('((') and ret.endswith('))')
 
@@ -1059,7 +1069,7 @@ class CVC4Solver(object):
             self.reset()
         if not isinstance(val, (BitVec, Bool)):
             return val
-        self._send('(simplify %s  :expand-select-store true :pull-cheap-ite true )'%val)
+        self._send('(simplify %s  :expand-select-store true :pull-cheap-ite true )' % val)
         result = self._recv()
 
         if type(val) is BitVec:
@@ -1067,7 +1077,7 @@ class CVC4Solver(object):
                 return int(result[2:], 16)
             return BitVec(val.size, result, solver=val.solver)
         elif type(val) is Bool:
-            return {'false':False, 'true':True}.get(result, Bool(result, solver=val.solver))
+            return {'false': False, 'true': True}.get(result, Bool(result, solver=val.solver))
 
     def mkBitVec(self, size, name='V', is_input=False):
         """ Creates a symbol in the constrains store and names it name"""
@@ -1091,7 +1101,7 @@ class CVC4Solver(object):
             return self._declarations[name]
 
         arr = Array(size, name, solver=self)
-        self._declarations[name] = arr #.array
+        self._declarations[name] = arr  # .array
         self._send(arr.declaration)
         if is_input:
             self.input_symbols.append((arr, max_size))
@@ -1108,7 +1118,7 @@ class CVC4Solver(object):
     def mkBool(self, name='B', is_input=False):
         """ Creates a symbols array in the constrains store and names it name"""
         if name in self._declarations:
-            name = '%s_%d'%(name, self._get_sid())
+            name = '%s_%d' % (name, self._get_sid())
         b = Bool(name, solver=self)
         self._declarations[name] = b
         self._send(b.declaration)
@@ -1129,7 +1139,7 @@ class CVC4Solver(object):
                 self._status = 'unsat'
             return
         assert isinstance(constraint, Bool)
-        self._send('(assert %s)'%constraint)
+        self._send('(assert %s)' % constraint)
         self._constraints.append(constraint)
         self._status = 'unknown'
 
@@ -1137,89 +1147,99 @@ class CVC4Solver(object):
     def constraints(self):
         constraints = []
         for c in self._constraints:
-            constraints.append('(assert %s)'%c)
+            constraints.append('(assert %s)' % c)
         return constraints
 
 
 def issymbolic(x):
     return isinstance(x, Symbol)
 
+
 def isconcrete(x):
     return not issymbolic(x)
+
 
 def AND(a, b):
     return a & b
 
+
 def OR(a, b):
     return a | b
 
+
 def UGT(a, b):
     return {
-        (int, int)       : lambda: a > b if a >= 0 and b >= 0 else None,
-        (long, int)      : lambda: a > b if a >= 0 and b >= 0 else None,
-        (int, long)      : lambda: a > b if a >= 0 and b >= 0 else None,
-        (long, long)     : lambda: a > b if a >= 0 and b >= 0 else None,
-        (BitVec, int)    : lambda: a.ugt(b),
-        (int, BitVec)    : lambda: b.ule(a) == False,
-        (BitVec, long)   : lambda: a.ugt(b),
-        (long, BitVec)   : lambda: b.ule(a) == False,
-        (BitVec, BitVec) : lambda: a.ugt(b),
+        (int, int): lambda: a > b if a >= 0 and b >= 0 else None,
+        (long, int): lambda: a > b if a >= 0 and b >= 0 else None,
+        (int, long): lambda: a > b if a >= 0 and b >= 0 else None,
+        (long, long): lambda: a > b if a >= 0 and b >= 0 else None,
+        (BitVec, int): lambda: a.ugt(b),
+        (int, BitVec): lambda: b.ule(a) == False,
+        (BitVec, long): lambda: a.ugt(b),
+        (long, BitVec): lambda: b.ule(a) == False,
+        (BitVec, BitVec): lambda: a.ugt(b),
     }[(type(a), type(b))]()
+
 
 def UGE(a, b):
     return {
-        (int, int)       : lambda: a >= b if a >= 0 and b >= 0 else None,
-        (long, int)      : lambda: a >= b if a >= 0 and b >= 0 else None,
-        (int, long)      : lambda: a >= b if a >= 0 and b >= 0 else None,
-        (long, long)     : lambda: a >= b if a >= 0 and b >= 0 else None,
-        (BitVec, int)    : lambda: a.uge(b),
-        (BitVec, long)   : lambda: a.uge(b),
-        (int, BitVec)    : lambda: b.ult(a) == False,
-        (long, BitVec)   : lambda: b.ult(a) == False,
-        (BitVec, BitVec) : lambda: a.uge(b),
+        (int, int): lambda: a >= b if a >= 0 and b >= 0 else None,
+        (long, int): lambda: a >= b if a >= 0 and b >= 0 else None,
+        (int, long): lambda: a >= b if a >= 0 and b >= 0 else None,
+        (long, long): lambda: a >= b if a >= 0 and b >= 0 else None,
+        (BitVec, int): lambda: a.uge(b),
+        (BitVec, long): lambda: a.uge(b),
+        (int, BitVec): lambda: b.ult(a) == False,
+        (long, BitVec): lambda: b.ult(a) == False,
+        (BitVec, BitVec): lambda: a.uge(b),
     }[(type(a), type(b))]()
+
 
 def ULT(a, b):
     return {
-        (int, int)       : lambda: a < b if a >= 0 and b >= 0 else None,
-        (long, int)      : lambda: a < b if a >= 0 and b >= 0 else None,
-        (int, long)      : lambda: a < b if a >= 0 and b >= 0 else None,
-        (long, long)     : lambda: a < b if a >= 0 and b >= 0 else None,
-        (BitVec, int)    : lambda: a.ult(b),
-        (BitVec, long)   : lambda: a.ult(b),
-        (int, BitVec)    : lambda: b.uge(a) == False,
-        (long, BitVec)   : lambda: b.uge(a) == False,
-        (BitVec, BitVec) : lambda: a.ult(b),
+        (int, int): lambda: a < b if a >= 0 and b >= 0 else None,
+        (long, int): lambda: a < b if a >= 0 and b >= 0 else None,
+        (int, long): lambda: a < b if a >= 0 and b >= 0 else None,
+        (long, long): lambda: a < b if a >= 0 and b >= 0 else None,
+        (BitVec, int): lambda: a.ult(b),
+        (BitVec, long): lambda: a.ult(b),
+        (int, BitVec): lambda: b.uge(a) == False,
+        (long, BitVec): lambda: b.uge(a) == False,
+        (BitVec, BitVec): lambda: a.ult(b),
     }[(type(a), type(b))]()
+
 
 def ULE(a, b):
     return {
-        (int, int)       : lambda: a <= b if a >= 0 and b >= 0 else None,
-        (long, int)      : lambda: a <= b if a >= 0 and b >= 0 else None,
-        (int, long)      : lambda: a <= b if a >= 0 and b >= 0 else None,
-        (long, long)     : lambda: a <= b if a >= 0 and b >= 0 else None,
-        (BitVec, int)    : lambda: a.ule(b),
-        (BitVec, long)   : lambda: a.ule(b),
-        (int, BitVec)    : lambda: b.ugt(a) == False,
-        (long, BitVec)   : lambda: b.ugt(a) == False,
-        (BitVec, BitVec) : lambda: a.ule(b),
+        (int, int): lambda: a <= b if a >= 0 and b >= 0 else None,
+        (long, int): lambda: a <= b if a >= 0 and b >= 0 else None,
+        (int, long): lambda: a <= b if a >= 0 and b >= 0 else None,
+        (long, long): lambda: a <= b if a >= 0 and b >= 0 else None,
+        (BitVec, int): lambda: a.ule(b),
+        (BitVec, long): lambda: a.ule(b),
+        (int, BitVec): lambda: b.ugt(a) == False,
+        (long, BitVec): lambda: b.ugt(a) == False,
+        (BitVec, BitVec): lambda: a.ule(b),
     }[(type(a), type(b))]()
+
 
 def ZEXTEND(x, size):
     if isinstance(x, (int, long)):
-        return x & ((1<<size)-1)
-    assert isinstance(x, BitVec) and size-x.size >= 0
-    if size-x.size != 0:
-        return BitVec(size, '(_ zero_extend %s)'%(size-x.size), x, solver=x.solver)
+        return x & ((1 << size) - 1)
+    assert isinstance(x, BitVec) and size - x.size >= 0
+    if size - x.size != 0:
+        return BitVec(size, '(_ zero_extend %s)' % (size - x.size), x, solver=x.solver)
     else:
         return x
 
+
 def SEXTEND(x, size_src, size_dest):
     if type(x) in (int, long):
-        if x > (1<<(size_src-1)):
-            x -= 1<<size_src
-        return x & ((1<<size_dest)-1)
-    return BitVec(size_dest, '(_ sign_extend %s)'%(size_dest-x.size), x, solver=x.solver)
+        if x > (1 << (size_src - 1)):
+            x -= 1 << size_src
+        return x & ((1 << size_dest) - 1)
+    return BitVec(size_dest, '(_ sign_extend %s)' % (size_dest - x.size), x, solver=x.solver)
+
 
 def UDIV(a, b):
     if type(a) is BitVec:
@@ -1228,7 +1248,8 @@ def UDIV(a, b):
         return a.rudiv(b)
     if a < 0 or b < 0:
         raise Exception()
-    return a/b
+    return a / b
+
 
 def UREM(a, b):
     if type(a) is BitVec:
@@ -1237,16 +1258,18 @@ def UREM(a, b):
         return b.rurem(a)
     if a < 0 or b < 0:
         raise Exception()
-    return a%b
+    return a % b
+
 
 def EXTRACT(s, offset, size):
     if isinstance(s, BitVec):
         if offset == 0 and size == s.size:
             return s
         else:
-            return BitVec(size, '(_ extract %d %d)'%(offset+size-1, offset), s, solver=s.solver)
+            return BitVec(size, '(_ extract %d %d)' % (offset + size - 1, offset), s, solver=s.solver)
     else:
-        return (s>>offset)&((1<<size)-1)
+        return (s >> offset) & ((1 << size) - 1)
+
 
 def ITEBV(size, cond, true, false):
     if type(cond) in (bool, int, long):
@@ -1257,15 +1280,16 @@ def ITEBV(size, cond, true, false):
     assert type(cond) is Bool
     if type(true) in (int, long):
         if size == 1:
-            true = BitVec(size, '#'+bin(true&1)[1:], solver=cond.solver)
+            true = BitVec(size, '#' + bin(true & 1)[1:], solver=cond.solver)
         else:
-            true = BitVec(size, '#x%0*x'%(size/4, true&((1<<size)-1)), solver=cond.solver)
+            true = BitVec(size, '#x%0*x' % (size / 4, true & ((1 << size) - 1)), solver=cond.solver)
     if type(false) in (int, long):
         if size == 1:
-            false = BitVec(size, '#'+bin(false&1)[1:], solver=cond.solver)
+            false = BitVec(size, '#' + bin(false & 1)[1:], solver=cond.solver)
         else:
-            false = BitVec(size, '#x%0*x'%(size/4, false&((1<<size)-1)), solver=cond.solver)
+            false = BitVec(size, '#x%0*x' % (size / 4, false & ((1 << size) - 1)), solver=cond.solver)
     return BitVec(size, 'ite', cond, true, false, solver=cond.solver)
+
 
 def CONCAT(size, *args):
     if any([isinstance(x, Symbol) for x in args]):
@@ -1276,22 +1300,27 @@ def CONCAT(size, *args):
                     solver = x.solver
                 if solver is not None:
                     break
+
             def cast(x):
                 if type(x) in (int, long):
                     if size == 1:
-                        return BitVec(size, '#'+bin(x&1)[1:], solver=solver)
-                    return BitVec(size, '#x%0*x'%(size/4, x&((1<<size)-1)), solver=solver)
+                        return BitVec(size, '#' + bin(x & 1)[1:], solver=solver)
+                    return BitVec(size, '#x%0*x' % (size / 4, x & ((1 << size) - 1)), solver=solver)
                 return x
-            return BitVec(size*len(args), 'concat', *map(cast, args), solver=solver)
+
+            return BitVec(size * len(args), 'concat', *map(cast, args), solver=solver)
         else:
             return args[0]
     else:
         result = 0
         for arg in args:
-            result = (result<<size) | arg
+            result = (result << size) | arg
         return result
 
+
 _ord = ord
+
+
 def ord(s):
     if isinstance(s, BitVec):
         if s.size == 8:
@@ -1299,11 +1328,14 @@ def ord(s):
         else:
             return BitVec(8, '(_ extract 7 0)', s, solver=s.solver)
     elif isinstance(s, int):
-        return s&0xff
+        return s & 0xff
     else:
         return _ord(s)
 
+
 _chr = chr
+
+
 def chr(s):
     if isinstance(s, BitVec):
         if s.size == 8:
@@ -1311,4 +1343,4 @@ def chr(s):
         else:
             return BitVec(8, '(_ extract 7 0)', s, solver=s.solver)
     else:
-        return _chr(s&0xff)
+        return _chr(s & 0xff)
