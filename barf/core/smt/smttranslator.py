@@ -35,7 +35,7 @@ as a parameter. It interacts with a SMT solver (through the **smtlibv2**
 module). When an instruction is translated, this translation is reflected
 in the state of the SMT solver (this means, each expression is asserted
 in the current context of SMT solver). Also, the translation is return
-in form of a expression of BitVect. For example, the translation of
+in form of a expression of BitVec. For example, the translation of
 "ADD t0 (32), t1 (32), t2 (32)" returns the SMT expression
 "(= t2_0 (bvadd t0_1 t1_0))". It also send the following commands to the
 solver:
@@ -47,7 +47,6 @@ solver:
 
 """
 import logging
-import traceback
 
 import barf.core.smt.smtlibv2 as smtlibv2
 
@@ -57,6 +56,7 @@ from barf.core.reil.reil import ReilRegisterOperand
 from barf.utils.utils import VariableNamer
 
 logger = logging.getLogger(__name__)
+
 
 class SmtTranslator(object):
 
@@ -86,7 +86,7 @@ class SmtTranslator(object):
         self._arch_regs_size = {}
         self._arch_alias_mapper = {}
 
-        # Intructions translators (from REIL to SMT expressions)
+        # Instructions translators (from REIL to SMT expressions)
         self._instr_translators = {
             # Arithmetic Instructions
             ReilMnemonic.ADD : self._translate_add,
@@ -175,6 +175,44 @@ class SmtTranslator(object):
 
         self._var_name_mappers = {}
 
+    def convert_to_bitvec(self, operand):
+        """Convert operand to a BitVec
+        """
+        if isinstance(operand, ReilRegisterOperand):
+
+            bitvec = self._solver.mkBitVec(operand.size, self.get_curr_name(operand.name))
+
+        elif isinstance(operand, ReilImmediateOperand):
+
+            bitvec = self._translate_immediate_oprnd(operand)
+
+        else:
+
+            self._raise_invalid_type_oprnd(operand)
+
+        return bitvec
+
+    def set_arch_alias_mapper(self, alias_mapper):
+        """Set native register alias mapper.
+
+        This is necessary as some architecture has register alias. For
+        example, in Intel x86 (32 bits), *ax* refers to the lower half
+        of the *eax* register, so when *ax* is modified so it is *eax*.
+        Then, this alias_mapper is a dictionary where its keys are
+        registers (names, only) and each associated value is a tuple
+        of the form (base register name, offset).
+        This information is used to modified the correct register at
+        the correct location (within the register) when a register alias
+        value is changed.
+
+        """
+        self._arch_alias_mapper = alias_mapper
+
+    def set_arch_registers_size(self, registers_size):
+        """Set registers.
+        """
+        self._arch_regs_size = registers_size
+
     # Auxiliary functions
     # ======================================================================== #
     def _register_name(self, name):
@@ -196,6 +234,16 @@ class SmtTranslator(object):
 
         return var_name
 
+    def _translate_immediate_oprnd(self, operand):
+        """Translate REIL immediate operand to SMT.
+        """
+        if operand.size >= 4:
+            fmt = "#x%" + "%0003d" % (operand.size / 4) + "x"
+        else:
+            fmt = "#b%1d"
+
+        return smtlibv2.BitVec(operand.size, fmt % operand.immediate)
+
     def _translate_src_oprnd(self, operand):
         """Translate source operand to a SMT expression.
         """
@@ -205,7 +253,7 @@ class SmtTranslator(object):
 
         elif isinstance(operand, ReilImmediateOperand):
 
-            ret_val = self.translate_immediate_oprnd(operand)
+            ret_val = self._translate_immediate_oprnd(operand)
 
         else:
 
@@ -227,7 +275,7 @@ class SmtTranslator(object):
         return ret_val, parent_reg_constrs
 
     def _translate_src_register_oprnd(self, operand):
-        """Translate source resgister operand to SMT expr.
+        """Translate source register operand to SMT expr.
         """
         reg_info = self._arch_alias_mapper.get(operand.name, None)
 
@@ -246,7 +294,7 @@ class SmtTranslator(object):
         return ret_val
 
     def _translate_dst_register_oprnd(self, operand):
-        """Translate destination resgister operand to SMT expr.
+        """Translate destination register operand to SMT expr.
         """
         reg_info = self._arch_alias_mapper.get(operand.name, None)
 
@@ -268,7 +316,7 @@ class SmtTranslator(object):
 
             constrs = []
 
-            if offset > 0 and offset < var_size - 1:
+            if 0 < offset < var_size - 1:
                 lower_expr_1 = smtlibv2.EXTRACT(ret_val_cpy, 0, offset)
                 lower_expr_2 = smtlibv2.EXTRACT(old_ret_val, 0, offset)
 
@@ -298,63 +346,12 @@ class SmtTranslator(object):
 
         return ret_val, parent_reg_constrs
 
-    def translate_immediate_oprnd(self, operand):
-        """Translate REIL immediate operand to SMT.
-        """
-        if operand.size >= 4:
-            fmt = "#x%" + "%0003d" % (operand.size / 4) + "x"
-        else:
-            fmt = "#b%1d"
-
-        return smtlibv2.BitVec(operand.size, fmt % operand.immediate)
-
     def _raise_invalid_type_oprnd(self, operand):
         """Raise exception for invalid operand type.
         """
         msg_fmt = "Invalid source type: {0} ({1})"
 
         raise Exception(msg_fmt.format(str(operand), type(operand)))
-
-    def convert_to_bitvec(self, operand):
-        """Convert operand to a BitVec
-        """
-        if isinstance(operand, ReilRegisterOperand):
-
-            bitvec = self._solver.mkBitVec(
-                operand.size,
-                self.get_curr_name(operand.name)
-            )
-
-        elif isinstance(operand, ReilImmediateOperand):
-
-            bitvec = self.translate_immediate_oprnd(operand)
-
-        else:
-
-            self._raise_invalid_type_oprnd(operand)
-
-        return bitvec
-
-    def set_arch_alias_mapper(self, alias_mapper):
-        """Set native register alias mapper.
-
-        This is necessary as some architecture has register alias. For
-        example, in Intel x86 (32 bits), *ax* refers to the lower half
-        of the *eax* register, so when *ax* is modified so it is *eax*.
-        Then, this alias_mapper is a dictionary where its keys are
-        registers (names, only) and each associated value is a tuple
-        of the form (base register name, offset).
-        This information is used to modified the correct register at
-        the correct location (within the register) when a register alias
-        value is changed.
-
-        """
-        self._arch_alias_mapper = alias_mapper
-
-    def set_arch_registers_size(self, registers_size):
-        """Set registers.
-        """
-        self._arch_regs_size = registers_size
 
     # Arithmetic Instructions
     # ======================================================================== #
@@ -670,8 +667,6 @@ class SmtTranslator(object):
 
         exprs = []
 
-        bytes_exprs = []
-        bytes_exprs_2 = []
         for i in reversed(xrange(0, size, 8)):
             bytes_exprs_1 = smtlibv2.ord(self._mem[where + i/8])
             bytes_exprs_2 = smtlibv2.EXTRACT(op3_var, i, 8)
@@ -718,8 +713,6 @@ class SmtTranslator(object):
         op1_var = self._translate_src_oprnd(oprnd1)
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
-        dst_size = op3_var.size
-
         constrs = []
 
         if oprnd1.size == oprnd3.size:
@@ -727,9 +720,9 @@ class SmtTranslator(object):
         elif oprnd1.size < oprnd3.size:
             expr = (op1_var == smtlibv2.EXTRACT(op3_var, 0, op1_var.size))
 
-			# Make sure that the values that can take dst operand
-			# do not exceed the range of the source operand.
-			# TODO: Find a better way to enforce this.
+            # Make sure that the values that can take dst operand
+            # do not exceed the range of the source operand.
+            # TODO: Find a better way to enforce this.
             fmt = "#b%0{0}d".format(op3_var.size - op1_var.size)
             imm = smtlibv2.BitVec(op3_var.size - op1_var.size, fmt % 0)
 
@@ -812,8 +805,6 @@ class SmtTranslator(object):
 
         op1_var = self._translate_src_oprnd(oprnd1)
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
-
-        dst_size = op3_var.size
 
         constrs = []
 
