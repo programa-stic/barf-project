@@ -36,6 +36,7 @@ logger = logging.getLogger("smtlibv2")
 
 
 class Symbol(object):
+
     def __init__(self, value, *children, **kwargs):
         assert type(value) in [int, long, str, bool]
         assert all([isinstance(x, Symbol) for x in children])
@@ -80,7 +81,7 @@ class Symbol(object):
 
 
 class BitVec(Symbol):
-    """ A symbolic bit vector """
+    """A symbolic bit vector"""
 
     def __init__(self, size, value, *children, **kwargs):
         super(BitVec, self).__init__(value, *children, **kwargs)
@@ -266,6 +267,7 @@ class BitVec(Symbol):
 
 
 class Bool(Symbol):
+
     def __init__(self, value, *children, **kwargs):
         super(Bool, self).__init__(value, *children, **kwargs)
 
@@ -313,6 +315,7 @@ class Bool(Symbol):
 
 
 class Array_(Symbol):
+
     def __init__(self, size, value, *children, **kwargs):
         super(Array_, self).__init__(value, *children, **kwargs)
 
@@ -374,6 +377,7 @@ class Array_(Symbol):
 
 
 class Array(object):
+
     def __init__(self, size, name, *children, **kwargs):
         self.array = Array_(size, name, *children, **kwargs)
         self.name = name
@@ -418,6 +422,7 @@ class Array(object):
 
 
 class Z3Solver(object):
+
     def __init__(self):
         """ Build a solver instance.
             This is implemented using an external native solver via a subprocess.
@@ -433,7 +438,7 @@ class Z3Solver(object):
         self._stack = []
         self._declarations = {}
         self._constraints = list()
-        self.input_symbols = list()
+
         self._proc = Popen('z3 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)
 
         # Fix z3 declaration scopes
@@ -446,7 +451,6 @@ class Z3Solver(object):
             'declarations': self._declarations,
             'constraints': self._constraints,
             'stack': self._stack,
-            'input_symbols': self.input_symbols
         }
 
         return state
@@ -454,10 +458,10 @@ class Z3Solver(object):
     def __setstate__(self, state):
         self._status = None
         self._sid = state['sid']
+        self._stack = state['stack']
         self._declarations = state['declarations']
         self._constraints = state['constraints']
-        self._stack = state['stack']
-        self.input_symbols = state['input_symbols']
+
         self._proc = Popen('z3 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)
 
     def reset(self, full=False):
@@ -475,7 +479,7 @@ class Z3Solver(object):
             self._stack = []
             self._declarations = {}
             self._constraints = list()
-            self.input_symbols = list()
+
             self._proc = Popen('z3 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)
 
             # Fix z3 declaration scopes
@@ -488,11 +492,13 @@ class Z3Solver(object):
     def __del__(self):
         self._proc.kill()
         self._proc.wait()
+
         self._proc = None
 
     def _get_sid(self):
         """ Returns an unique id. """
         self._sid += 1
+
         return self._sid
 
     def _send(self, cmd):
@@ -591,10 +597,14 @@ class Z3Solver(object):
             @param val: an expression or symbol """
         if isconcrete(val):
             return val
+
         assert self.check() == 'sat'
+
         self._send('(get-value (%s))' % val)
         ret = self._recv()
+
         assert ret.startswith('((') and ret.endswith('))')
+
         return int(ret.split(' ')[-1][2:-2], 16)
 
     def getvaluebyname(self, name):
@@ -605,9 +615,12 @@ class Z3Solver(object):
         val = self._declarations[name]
 
         assert self.check() == 'sat'
+
         self._send('(get-value (%s))' % val)
         ret = self._recv()
+
         assert ret.startswith('((') and ret.endswith('))')
+
         return int(ret.split(' ')[-1][2:-2], 16)
 
     def mkBitVec(self, size, name='V', is_input=False):
@@ -618,11 +631,9 @@ class Z3Solver(object):
             return self._declarations[name]
 
         bv = BitVec(size, name, solver=self)
+
         self._declarations[name] = bv
         self._send(bv.declaration)
-
-        if is_input:
-            self.input_symbols.append((bv,))
 
         return bv
 
@@ -634,11 +645,9 @@ class Z3Solver(object):
             return self._declarations[name]
 
         arr = Array(size, name, solver=self)
+
         self._declarations[name] = arr
         self._send(arr.declaration)
-
-        if is_input:
-            self.input_symbols.append((arr, max_size))
 
         return arr
 
@@ -656,11 +665,9 @@ class Z3Solver(object):
             name = '%s_%d' % (name, self._get_sid())
 
         b = Bool(name, solver=self)
+
         self._declarations[name] = b
         self._send(b.declaration)
-
-        if is_input:
-            self.input_symbols.append((b,))
 
         return b
 
@@ -676,11 +683,14 @@ class Z3Solver(object):
             if not constraint:
                 self._status = 'unsat'
             return
+
         assert isinstance(constraint, Bool)
+
         if comment:
             self._send('(assert %s) ; %s' % (constraint, comment))
         else:
             self._send('(assert %s)' % constraint)
+
         self._constraints.append((constraint, comment))
         self._status = 'unknown'
 
@@ -696,6 +706,7 @@ class Z3Solver(object):
 
 
 class CVC4Solver(object):
+
     def __init__(self):
         """ Build a solver instance.
             This is implemented using an external native solver via a subprocess.
@@ -711,7 +722,7 @@ class CVC4Solver(object):
         self._stack = []
         self._declarations = {}
         self._constraints = list()
-        self.input_symbols = list()
+
         self._proc = Popen('cvc4 --incremental --lang=smt2', shell=True, stdin=PIPE, stdout=PIPE)
 
         # Fix CVC4 declaration scopes
@@ -724,7 +735,6 @@ class CVC4Solver(object):
             'declarations': self._declarations,
             'constraints': self._constraints,
             'stack': self._stack,
-            'input_symbols': self.input_symbols
         }
 
         return state
@@ -732,10 +742,10 @@ class CVC4Solver(object):
     def __setstate__(self, state):
         self._status = None
         self._sid = state['sid']
+        self._stack = state['stack']
         self._declarations = state['declarations']
         self._constraints = state['constraints']
-        self._stack = state['stack']
-        self.input_symbols = state['input_symbols']
+
         self._proc = Popen('cvc4 --incremental --lang=smt2', shell=True, stdin=PIPE, stdout=PIPE)
 
         # Fix CVC4 declaration scopes
@@ -745,6 +755,7 @@ class CVC4Solver(object):
     def reset(self, full=False):
         self._proc.kill()
         self._proc.wait()
+
         self._proc = Popen('cvc4 --incremental --lang=smt2', shell=True, stdin=PIPE, stdout=PIPE)
 
         if full:
@@ -753,7 +764,6 @@ class CVC4Solver(object):
             self._stack = []
             self._declarations = {}
             self._constraints = list()
-            self.input_symbols = list()
 
         # Fix CVC4 declaration scopes
         self._send("(set-logic QF_AUFBV)")
@@ -765,11 +775,13 @@ class CVC4Solver(object):
     def __del__(self):
         self._proc.kill()
         self._proc.wait()
+
         self._proc = None
 
     def _get_sid(self):
         """ Returns an unique id. """
         self._sid += 1
+
         return self._sid
 
     def _send(self, cmd):
@@ -868,17 +880,26 @@ class CVC4Solver(object):
             @param val: an expression or symbol """
         if isconcrete(val):
             return val
+
         assert self.check() == 'sat'
+
         self._send('(get-value (%s))' % val)
         ret = self._recv()
+
         assert ret.startswith('((') and ret.endswith('))')
+
         ret = ret[2:-2]
         _, ret = ret[:ret.rfind('(')], ret[ret.rfind('('):]
+
         assert ret.startswith('(') and ret.endswith(')')
+
         index = ret.rfind('(')
         var_value, _ = ret[index + 3:-1].split(' ', 1)
+
         assert var_value.startswith('bv')
+
         value = int(var_value[2:])
+
         return value
 
     def getvaluebyname(self, name):
@@ -889,8 +910,10 @@ class CVC4Solver(object):
         val = self._declarations[name]
 
         assert self.check() == 'sat'
+
         self._send('(get-value (%s))' % val)
         ret = self._recv()
+
         assert ret.startswith('((') and ret.endswith('))')
 
         _, ret = ret[2:-2].split(' ', 1)
@@ -913,11 +936,9 @@ class CVC4Solver(object):
             return self._declarations[name]
 
         bv = BitVec(size, name, solver=self)
+
         self._declarations[name] = bv
         self._send(bv.declaration)
-
-        if is_input:
-            self.input_symbols.append((bv,))
 
         return bv
 
@@ -929,11 +950,9 @@ class CVC4Solver(object):
             return self._declarations[name]
 
         arr = Array(size, name, solver=self)
+
         self._declarations[name] = arr
         self._send(arr.declaration)
-
-        if is_input:
-            self.input_symbols.append((arr, max_size))
 
         return arr
 
@@ -951,11 +970,9 @@ class CVC4Solver(object):
             name = '%s_%d' % (name, self._get_sid())
 
         b = Bool(name, solver=self)
+
         self._declarations[name] = b
         self._send(b.declaration)
-
-        if is_input:
-            self.input_symbols.append((b,))
 
         return b
 
