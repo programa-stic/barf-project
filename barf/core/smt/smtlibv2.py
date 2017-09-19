@@ -464,6 +464,10 @@ class Z3Solver(object):
 
         self._proc = Popen('z3 -smt2 -in', shell=True, stdin=PIPE, stdout=PIPE)
 
+        # Fix z3 declaration scopes
+        self._send("(set-option :global-decls false)")
+        self._send("(set-logic QF_AUFBV)")
+
     def reset(self, full=False):
         self._send("(reset)")
         self._send("(set-option :global-decls false)")
@@ -487,6 +491,7 @@ class Z3Solver(object):
             self._send("(set-logic QF_AUFBV)")
 
         self._send(self)
+
         self._status = 'unknown'
 
     def __del__(self):
@@ -570,7 +575,9 @@ class Z3Solver(object):
         """ Pushes and save the current state."""
         if self._status is None:
             self.reset()
+
         self._send('(push 1)')
+
         self._stack.append((self._sid, self._declarations, self._constraints))
         self._declarations = copy.copy(self._declarations)
         self._constraints = copy.copy(self._constraints)
@@ -578,6 +585,7 @@ class Z3Solver(object):
     def pop(self):
         """ Recall the last pushed state. """
         self._send('(pop 1)')
+
         self._sid, self._declarations, self._constraints = self._stack.pop()
         self._status = 'unknown'
 
@@ -623,7 +631,7 @@ class Z3Solver(object):
 
         return int(ret.split(' ')[-1][2:-2], 16)
 
-    def mkBitVec(self, size, name='V', is_input=False):
+    def mkBitVec(self, size, name='V'):
         """ Creates a symbol in the constrains store and names it name"""
         assert size in [1, 8, 16, 32, 40, 64, 72, 128, 256]
 
@@ -637,7 +645,7 @@ class Z3Solver(object):
 
         return bv
 
-    def mkArray(self, size=32, name='A', is_input=False, max_size=100):
+    def mkArray(self, size=32, name='A'):
         """ Creates a symbols array in the constrains store and names it name"""
         assert size in [8, 16, 32, 64]
 
@@ -659,7 +667,7 @@ class Z3Solver(object):
 
         return arr
 
-    def mkBool(self, name='B', is_input=False):
+    def mkBool(self, name='B'):
         """ Creates a symbols array in the constrains store and names it name"""
         if name in self._declarations:
             name = '%s_%d' % (name, self._get_sid())
@@ -756,8 +764,6 @@ class CVC4Solver(object):
         self._proc.kill()
         self._proc.wait()
 
-        self._proc = Popen('cvc4 --incremental --lang=smt2', shell=True, stdin=PIPE, stdout=PIPE)
-
         if full:
             self._status = 'unknown'
             self._sid = 0
@@ -765,11 +771,14 @@ class CVC4Solver(object):
             self._declarations = {}
             self._constraints = list()
 
+        self._proc = Popen('cvc4 --incremental --lang=smt2', shell=True, stdin=PIPE, stdout=PIPE)
+
         # Fix CVC4 declaration scopes
         self._send("(set-logic QF_AUFBV)")
         self._send("(set-option :produce-models true)")
 
         self._send(self)
+
         self._status = 'unknown'
 
     def __del__(self):
@@ -853,7 +862,9 @@ class CVC4Solver(object):
         """ Pushes and save the current state."""
         if self._status is None:
             self.reset()
+
         self._send('(push 1)')
+
         self._stack.append((self._sid, self._declarations, self._constraints))
         self._declarations = copy.copy(self._declarations)
         self._constraints = copy.copy(self._constraints)
@@ -861,6 +872,7 @@ class CVC4Solver(object):
     def pop(self):
         """ Recall the last pushed state. """
         self._send('(pop 1)')
+
         self._sid, self._declarations, self._constraints = self._stack.pop()
         self._status = 'unknown'
 
@@ -928,7 +940,7 @@ class CVC4Solver(object):
 
         return value
 
-    def mkBitVec(self, size, name='V', is_input=False):
+    def mkBitVec(self, size, name='V'):
         """ Creates a symbol in the constrains store and names it name"""
         assert size in [1, 8, 16, 32, 40, 64, 72, 128, 256]
 
@@ -942,7 +954,7 @@ class CVC4Solver(object):
 
         return bv
 
-    def mkArray(self, size=32, name='A', is_input=False, max_size=100):
+    def mkArray(self, size=32, name='A'):
         """ Creates a symbols array in the constrains store and names it name"""
         assert size in [8, 16, 32, 64]
 
@@ -964,7 +976,7 @@ class CVC4Solver(object):
 
         return arr
 
-    def mkBool(self, name='B', is_input=False):
+    def mkBool(self, name='B'):
         """ Creates a symbols array in the constrains store and names it name"""
         if name in self._declarations:
             name = '%s_%d' % (name, self._get_sid())
