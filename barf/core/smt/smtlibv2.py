@@ -560,76 +560,6 @@ class Z3Solver(object):
             self.pop()
         return result
 
-    def max(self, X, M=10000):
-        """ Iteratively finds the maximum value for a symbol.
-            @param X: a symbol or expression
-            @param M: maximum number of iterations allowed
-        """
-        assert self.check() == 'sat'
-        assert type(X) is BitVec
-        self.push()
-        aux = self.mkBitVec(X.size)
-        self.add(aux == X)
-        try:
-            last_value = None
-            i = 0
-            while True:
-                r = self.check()
-                if r == 'unsat':
-                    if last_value is not None:
-                        return last_value
-                    else:
-                        raise Exception("max failed")
-                elif r == 'sat':
-                    last_value = self.getvalue(aux)
-                    self.add(UGT(aux, last_value))
-                    i = i + 1
-                else:
-                    raise Exception("solver failed %s" % r)
-                if i > M:
-                    raise Exception("Maximum not found, maximum number of iterations was reached")
-        finally:
-            self.pop()
-
-    def min(self, X, M=10000):
-        """ Iteratively finds the minimum value for a symbol.
-            @param X: a symbol or expression
-            @param M: maximum number of iterations allowed
-        """
-        assert self.check() == 'sat'
-        assert type(X) is BitVec
-        self.push()
-        aux = self.mkBitVec(X.size)
-        self.add(aux == X)
-        try:
-            last_value = None
-            i = 0
-            while True:
-                r = self.check()
-                if r == 'unsat':
-                    if last_value is not None:
-                        return last_value
-                    else:
-                        raise Exception("max failed")
-                elif r == 'sat':
-                    last_value = self.getvalue(aux)
-                    self.add(ULT(aux, last_value))
-                    i = i + 1
-                else:
-                    raise Exception("solver failed")
-                if i > M:
-                    raise Exception("Maximum not found, maximum number of iterations was reached")
-        finally:
-            self.pop()
-
-    def minmax(self, x, iters=10000):
-        """ Returns the min and max possible values for x. """
-        if isconcrete(x):
-            return x, x
-        m = self.min(x, iters)
-        M = self.max(x, iters)
-        return m, M
-
     def push(self):
         """ Pushes and save the current state."""
         if self._status is None:
@@ -680,32 +610,10 @@ class Z3Solver(object):
         assert ret.startswith('((') and ret.endswith('))')
         return int(ret.split(' ')[-1][2:-2], 16)
 
-    def simplify(self, val):
-        """ Ask the solver to try to simplify the expression val.
-            This works only with z3.
-            @param val: a symbol or expression.
-        """
-        if self._status is None:
-            self.reset()
-
-        if not isinstance(val, (BitVec, Bool)):
-            return val
-
-        self._send('(simplify %s  :expand-select-store true :pull-cheap-ite true )' % val)
-
-        result = self._recv()
-
-        # TODO clean move casts somewhere else.  BitVec8, BitVec16, BitVec32, BitVec64, BitVec127 __new__() ?
-        if type(val) is BitVec:
-            if result.startswith('#x'):
-                return int(result[2:], 16)
-            return BitVec(val.size, result, solver=val.solver)
-        elif type(val) is Bool:
-            return {'false': False, 'true': True}.get(result, Bool(result, solver=val.solver))
-
     def mkBitVec(self, size, name='V', is_input=False):
         """ Creates a symbol in the constrains store and names it name"""
         assert size in [1, 8, 16, 32, 40, 64, 72, 128, 256]
+
         if name in self._declarations:
             return self._declarations[name]
 
@@ -721,14 +629,17 @@ class Z3Solver(object):
     def mkArray(self, size=32, name='A', is_input=False, max_size=100):
         """ Creates a symbols array in the constrains store and names it name"""
         assert size in [8, 16, 32, 64]
+
         if name in self._declarations:
             return self._declarations[name]
 
         arr = Array(size, name, solver=self)
         self._declarations[name] = arr
         self._send(arr.declaration)
+
         if is_input:
             self.input_symbols.append((arr, max_size))
+
         return arr
 
     def mkArrayNew(self, size=32, name='A'):
@@ -743,11 +654,14 @@ class Z3Solver(object):
         """ Creates a symbols array in the constrains store and names it name"""
         if name in self._declarations:
             name = '%s_%d' % (name, self._get_sid())
+
         b = Bool(name, solver=self)
         self._declarations[name] = b
         self._send(b.declaration)
+
         if is_input:
             self.input_symbols.append((b,))
+
         return b
 
     @property
@@ -818,7 +732,7 @@ class CVC4Solver(object):
     def __setstate__(self, state):
         self._status = None
         self._sid = state['sid']
-        self._declarations = state['declarations']  # weakref.WeakValueDictionary(state['declarations'])
+        self._declarations = state['declarations']
         self._constraints = state['constraints']
         self._stack = state['stack']
         self.input_symbols = state['input_symbols']
@@ -923,76 +837,6 @@ class CVC4Solver(object):
             self.pop()
         return result
 
-    def max(self, X, M=10000):
-        """ Iteratively finds the maximum value for a symbol.
-            @param X: a symbol or expression
-            @param M: maximum number of iterations allowed
-        """
-        assert self.check() == 'sat'
-        assert type(X) is BitVec
-        self.push()
-        aux = self.mkBitVec(X.size)
-        self.add(aux == X)
-        try:
-            last_value = None
-            i = 0
-            while True:
-                r = self.check()
-                if r == 'unsat':
-                    if last_value is not None:
-                        return last_value
-                    else:
-                        raise Exception("max failed")
-                elif r == 'sat':
-                    last_value = self.getvalue(aux)
-                    self.add(UGT(aux, last_value))
-                    i = i + 1
-                else:
-                    raise Exception("solver failed %s" % r)
-                if i > M:
-                    raise Exception("Maximum not found, maximum number of iterations was reached")
-        finally:
-            self.pop()
-
-    def min(self, X, M=10000):
-        """ Iteratively finds the minimum value for a symbol.
-            @param X: a symbol or expression
-            @param M: maximum number of iterations allowed
-        """
-        assert self.check() == 'sat'
-        assert type(X) is BitVec
-        self.push()
-        aux = self.mkBitVec(X.size)
-        self.add(aux == X)
-        try:
-            last_value = None
-            i = 0
-            while True:
-                r = self.check()
-                if r == 'unsat':
-                    if last_value is not None:
-                        return last_value
-                    else:
-                        raise Exception("max failed")
-                elif r == 'sat':
-                    last_value = self.getvalue(aux)
-                    self.add(ULT(aux, last_value))
-                    i = i + 1
-                else:
-                    raise Exception("solver failed")
-                if i > M:
-                    raise Exception("Maximum not found, maximum number of iterations was reached")
-        finally:
-            self.pop()
-
-    def minmax(self, x, iters=10000):
-        """ Returns the min and max possible values for x. """
-        if isconcrete(x):
-            return x, x
-        m = self.min(x, iters)
-        M = self.max(x, iters)
-        return m, M
-
     def push(self):
         """ Pushes and save the current state."""
         if self._status is None:
@@ -1061,28 +905,10 @@ class CVC4Solver(object):
 
         return value
 
-    def simplify(self, val):
-        """ Ask the solver to try to simplify the expression val.
-            This works only with z3.
-            @param val: a symbol or expression.
-        """
-        if self._status is None:
-            self.reset()
-        if not isinstance(val, (BitVec, Bool)):
-            return val
-        self._send('(simplify %s  :expand-select-store true :pull-cheap-ite true )' % val)
-        result = self._recv()
-
-        if type(val) is BitVec:
-            if result.startswith('#x'):
-                return int(result[2:], 16)
-            return BitVec(val.size, result, solver=val.solver)
-        elif type(val) is Bool:
-            return {'false': False, 'true': True}.get(result, Bool(result, solver=val.solver))
-
     def mkBitVec(self, size, name='V', is_input=False):
         """ Creates a symbol in the constrains store and names it name"""
         assert size in [1, 8, 16, 32, 40, 64, 72, 128, 256]
+
         if name in self._declarations:
             return self._declarations[name]
 
@@ -1098,14 +924,17 @@ class CVC4Solver(object):
     def mkArray(self, size=32, name='A', is_input=False, max_size=100):
         """ Creates a symbols array in the constrains store and names it name"""
         assert size in [8, 16, 32, 64]
+
         if name in self._declarations:
             return self._declarations[name]
 
         arr = Array(size, name, solver=self)
-        self._declarations[name] = arr  # .array
+        self._declarations[name] = arr
         self._send(arr.declaration)
+
         if is_input:
             self.input_symbols.append((arr, max_size))
+
         return arr
 
     def mkArrayNew(self, size=32, name='A'):
@@ -1120,11 +949,14 @@ class CVC4Solver(object):
         """ Creates a symbols array in the constrains store and names it name"""
         if name in self._declarations:
             name = '%s_%d' % (name, self._get_sid())
+
         b = Bool(name, solver=self)
         self._declarations[name] = b
         self._send(b.declaration)
+
         if is_input:
             self.input_symbols.append((b,))
+
         return b
 
     @property
@@ -1158,14 +990,6 @@ def issymbolic(x):
 
 def isconcrete(x):
     return not issymbolic(x)
-
-
-def AND(a, b):
-    return a & b
-
-
-def OR(a, b):
-    return a | b
 
 
 def UGT(a, b):
