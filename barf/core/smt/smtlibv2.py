@@ -101,15 +101,7 @@ class BitVec(Symbol):
     def declaration(self):
         return '(declare-fun %s () (_ BitVec %d))' % (self.value, self.size)
 
-    # These methods are called to implement the binary arithmetic operations
-    # (+, -, *, //, %, divmod(), pow(), **, <<, >>, &, ^, |). For instance, to
-    # evaluate the expression x + y, where x is an instance of a class that
-    # has an __add__() method, x.__add__(y) is called. The __divmod__() method
-    # should be the equivalent to using __floordiv__() and __mod__(); it
-    # should not be related  to __truediv__() (described below). Note that
-    # __pow__() should be defined to accept an optional third argument if the
-    # ternary version of the built-in pow() function is to be supported.
-
+    # Arithmetic operators
     def __add__(self, other):
         return BitVec(self.size, 'bvadd', self, self.cast(other))
 
@@ -119,15 +111,16 @@ class BitVec(Symbol):
     def __mul__(self, other):
         return BitVec(self.size, 'bvmul', self, self.cast(other))
 
+    def __div__(self, other):
+        return BitVec(self.size, 'bvsdiv', self, self.cast(other))
+
+    def __truediv__(self, other):
+        return BitVec(self.size, 'bvsdiv', self, self.cast(other))
+
     def __mod__(self, other):
         return BitVec(self.size, 'bvsmod', self, self.cast(other))
 
-    def __lshift__(self, other):
-        return BitVec(self.size, 'bvshl', self, self.cast(other))
-
-    def __rshift__(self, other):
-        return BitVec(self.size, 'bvlshr', self, self.cast(other))
-
+    # Bitwise operators
     def __and__(self, other):
         return BitVec(self.size, 'bvand', self, self.cast(other))
 
@@ -137,26 +130,16 @@ class BitVec(Symbol):
     def __or__(self, other):
         return BitVec(self.size, 'bvor', self, self.cast(other))
 
-    # The division operator (/) is implemented by these methods. The
-    # __truediv__()  method is used when __future__.division is in effect,
-    # otherwise __div__()  is used. If only one of these two methods is
-    # defined, the object will not  support division in the alternate context;
-    # TypeError will be raised instead.
+    def __lshift__(self, other):
+        return BitVec(self.size, 'bvshl', self, self.cast(other))
 
-    def __div__(self, other):
-        return BitVec(self.size, 'bvsdiv', self, self.cast(other))
+    def __rshift__(self, other):
+        return BitVec(self.size, 'bvlshr', self, self.cast(other))
 
-    def __truediv__(self, other):
-        return BitVec(self.size, 'bvsdiv', self, self.cast(other))
+    def __invert__(self):
+        return BitVec(self.size, 'bvnot', self)
 
-    # These methods are called to implement the binary arithmetic operations
-    # (+, -, *, /, %, divmod(), pow(), **, <<, >>, &, ^, |) with reflected
-    # (swapped) operands. These functions are only called if the left operand
-    # does not support the corresponding operation and the operands are of
-    # different types. [2] For instance, to evaluate the expression x - y,
-    # where y is an instance of a class that has an __rsub__() method,
-    # y.__rsub__(x) is called if x.__sub__(y) returns NotImplemented.
-
+    # Reverse arithmetic operators
     def __radd__(self, other):
         return BitVec(self.size, 'bvadd', self.cast(other), self)
 
@@ -166,21 +149,16 @@ class BitVec(Symbol):
     def __rmul__(self, other):
         return BitVec(self.size, 'bvmul', self, self.cast(other))
 
-    def __rmod__(self, other):
-        return BitVec(self.size, 'bvmod', self.cast(other), self)
+    def __rdiv__(self, other):
+        return BitVec(self.size, 'bvsdiv', self.cast(other), self)
 
     def __rtruediv__(self, other):
         return BitVec(self.size, 'bvsdiv', self.cast(other), self)
 
-    def __rdiv__(self, other):
-        return BitVec(self.size, 'bvsdiv', self.cast(other), self)
+    def __rmod__(self, other):
+        return BitVec(self.size, 'bvmod', self.cast(other), self)
 
-    def __rlshift__(self, other):
-        return BitVec(self.size, 'bvshl', self.cast(other), self)
-
-    def __rrshift__(self, other):
-        return BitVec(self.size, 'bvlshr', self.cast(other), self)
-
+    # Reverse bitwise operators
     def __rand__(self, other):
         return BitVec(self.size, 'bvand', self, self.cast(other))
 
@@ -190,16 +168,13 @@ class BitVec(Symbol):
     def __ror__(self, other):
         return BitVec(self.size, 'bvor', self, self.cast(other))
 
-    def __invert__(self):
-        return BitVec(self.size, 'bvnot', self)
+    def __rlshift__(self, other):
+        return BitVec(self.size, 'bvshl', self.cast(other), self)
 
-    # These are the so-called "rich comparison" methods, and are called for
-    # comparison operators in preference to __cmp__() below. The
-    # correspondence between operator symbols and method names is as follows:
-    # x<y calls x.__lt__(y), x<=y calls x.__le__(y), x==y calls x.__eq__(y),
-    # x!=y and x<>y call x.__ne__(y), x>y calls x.__gt__(y), and x>=y calls
-    # x.__ge__(y).
+    def __rrshift__(self, other):
+        return BitVec(self.size, 'bvlshr', self.cast(other), self)
 
+    # Comparison operators (signed)
     def __lt__(self, other):
         return Bool('bvslt', self, self.cast(other))
 
@@ -221,30 +196,34 @@ class BitVec(Symbol):
     def __neg__(self):
         return BitVec(self.size, 'bvneg', self)
 
-    def ugt(self, other):
-        return Bool('bvugt', self, self.cast(other))
-
-    def uge(self, other):
-        return Bool('bvuge', self, self.cast(other))
-
+    # Comparison operators (unsigned)
     def ult(self, other):
         return Bool('bvult', self, self.cast(other))
 
     def ule(self, other):
         return Bool('bvule', self, self.cast(other))
 
+    def ugt(self, other):
+        return Bool('bvugt', self, self.cast(other))
+
+    def uge(self, other):
+        return Bool('bvuge', self, self.cast(other))
+
+    # Arithmetic operators (unsigned)
     def udiv(self, other):
         return BitVec(self.size, 'bvudiv', self, self.cast(other))
-
-    def rudiv(self, other):
-        return BitVec(self.size, 'bvudiv', self.cast(other), self)
 
     def urem(self, other):
         return BitVec(self.size, 'bvurem', self, self.cast(other))
 
-    def rrem(self, other):
+    # Reverse arithmetic operators (unsigned)
+    def rudiv(self, other):
+        return BitVec(self.size, 'bvudiv', self.cast(other), self)
+
+    def rurem(self, other):
         return BitVec(self.size, 'bvurem', self.cast(other), self)
 
+    # TODO __mod__ and smod use the same smtlib operator, which one is the correct one?
     def smod(self, other):
         return BitVec(self.size, 'bvsmod', self.cast(other), self)
 
@@ -266,27 +245,28 @@ class Bool(Symbol):
     def declaration(self):
         return '(declare-fun %s () Bool)' % self.value
 
+    # Operators
     def __invert__(self):
         return Bool('not', self)
 
+    # Comparison operators
     def __eq__(self, other):
         return Bool('=', self, self.cast(other))
 
     def __ne__(self, other):
         return Bool('not', self == other)
 
-    def __xor__(self, other):
-        return Bool('xor', self, self.cast(other))
-
-    def __nonzero__(self):
-        raise NotImplementedError()
-
+    # Logical operators
     def __and__(self, other):
         return Bool('and', self, self.cast(other))
 
     def __or__(self, other):
         return Bool('or', self, self.cast(other))
 
+    def __xor__(self, other):
+        return Bool('xor', self, self.cast(other))
+
+    # Reverse logical operators
     def __rand__(self, other):
         return Bool('and', self, self.cast(other))
 
@@ -295,6 +275,10 @@ class Bool(Symbol):
 
     def __rxor__(self, other):
         return Bool('xor', self, self.cast(other))
+
+    # Misc operator
+    def __nonzero__(self):
+        raise NotImplementedError()
 
 
 class Array_(Symbol):
@@ -347,6 +331,7 @@ class Array_(Symbol):
     def store(self, key, value):
         return Array_(self.size, '(store %s %s %s)' % (self, self.cast_key(key), self.cast_value(value)))
 
+    # Comparison operators
     def __eq__(self, other):
         assert isinstance(other, Array_) and other.size == self.size
 
@@ -392,6 +377,7 @@ class Array(object):
         self.cache = {}
         self.array = self.array.store(key, value)
 
+    # Comparison operators
     def __eq__(self, other):
         assert isinstance(other.array, Array_) and other.array.size == self.array.size
 
