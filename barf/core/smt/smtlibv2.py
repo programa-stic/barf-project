@@ -36,7 +36,7 @@ logger = logging.getLogger("smtlibv2")
 
 class Symbol(object):
 
-    def __init__(self, value, *children, **kwargs):
+    def __init__(self, value, *children):
         assert type(value) in [int, long, str, bool]
         assert all([isinstance(x, Symbol) for x in children])
 
@@ -66,8 +66,8 @@ class Symbol(object):
 class BitVec(Symbol):
     """A symbolic bit vector"""
 
-    def __init__(self, size, value, *children, **kwargs):
-        super(BitVec, self).__init__(value, *children, **kwargs)
+    def __init__(self, size, value, *children):
+        super(BitVec, self).__init__(value, *children)
 
         self.size = size
 
@@ -230,8 +230,8 @@ class BitVec(Symbol):
 
 class Bool(Symbol):
 
-    def __init__(self, value, *children, **kwargs):
-        super(Bool, self).__init__(value, *children, **kwargs)
+    def __init__(self, value, *children):
+        super(Bool, self).__init__(value, *children)
 
     def cast(self, val):
         if isinstance(val, (int, long, bool)):
@@ -283,8 +283,8 @@ class Bool(Symbol):
 
 class Array_(Symbol):
 
-    def __init__(self, size, value, *children, **kwargs):
-        super(Array_, self).__init__(value, *children, **kwargs)
+    def __init__(self, size, value, *children):
+        super(Array_, self).__init__(value, *children)
 
         self.size = size
 
@@ -345,8 +345,8 @@ class Array_(Symbol):
 
 class Array(object):
 
-    def __init__(self, size, name, *children, **kwargs):
-        self.array = Array_(size, name, *children, **kwargs)
+    def __init__(self, size, name, *children):
+        self.array = Array_(size, name, *children)
         self.name = name
         self.cache = {}
         self.declaration = '(declare-fun %s () (Array (_ BitVec %d) (_ BitVec 8)))' % (name, size)
@@ -606,7 +606,7 @@ class Z3Solver(object):
         if name in self._declarations:
             return self._declarations[name]
 
-        bv = BitVec(size, name, solver=self)
+        bv = BitVec(size, name)
 
         self._declarations[name] = bv
         self._send(bv.declaration)
@@ -620,7 +620,7 @@ class Z3Solver(object):
         if name in self._declarations:
             return self._declarations[name]
 
-        arr = Array(size, name, solver=self)
+        arr = Array(size, name)
 
         self._declarations[name] = arr
         self._send(arr.declaration)
@@ -631,7 +631,7 @@ class Z3Solver(object):
         """ Creates a symbols array in the constrains store and names it name"""
         assert size in [8, 16, 32, 64]
 
-        arr = Array(size, name, solver=self)
+        arr = Array(size, name)
 
         return arr
 
@@ -640,7 +640,7 @@ class Z3Solver(object):
         if name in self._declarations:
             name = '%s_%d' % (name, self._get_sid())
 
-        b = Bool(name, solver=self)
+        b = Bool(name)
 
         self._declarations[name] = b
         self._send(b.declaration)
@@ -915,7 +915,7 @@ class CVC4Solver(object):
         if name in self._declarations:
             return self._declarations[name]
 
-        bv = BitVec(size, name, solver=self)
+        bv = BitVec(size, name)
 
         self._declarations[name] = bv
         self._send(bv.declaration)
@@ -929,7 +929,7 @@ class CVC4Solver(object):
         if name in self._declarations:
             return self._declarations[name]
 
-        arr = Array(size, name, solver=self)
+        arr = Array(size, name)
 
         self._declarations[name] = arr
         self._send(arr.declaration)
@@ -940,7 +940,7 @@ class CVC4Solver(object):
         """ Creates a symbols array in the constrains store and names it name"""
         assert size in [8, 16, 32, 64]
 
-        arr = Array(size, name, solver=self)
+        arr = Array(size, name)
 
         return arr
 
@@ -949,7 +949,7 @@ class CVC4Solver(object):
         if name in self._declarations:
             name = '%s_%d' % (name, self._get_sid())
 
-        b = Bool(name, solver=self)
+        b = Bool(name)
 
         self._declarations[name] = b
         self._send(b.declaration)
