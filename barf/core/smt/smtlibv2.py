@@ -988,62 +988,6 @@ def isconcrete(x):
     return not issymbolic(x)
 
 
-def UGT(a, b):
-    return {
-        (int, int): lambda: a > b if a >= 0 and b >= 0 else None,
-        (long, int): lambda: a > b if a >= 0 and b >= 0 else None,
-        (int, long): lambda: a > b if a >= 0 and b >= 0 else None,
-        (long, long): lambda: a > b if a >= 0 and b >= 0 else None,
-        (BitVec, int): lambda: a.ugt(b),
-        (int, BitVec): lambda: not b.ule(a),
-        (BitVec, long): lambda: a.ugt(b),
-        (long, BitVec): lambda: not b.ule(a),
-        (BitVec, BitVec): lambda: a.ugt(b),
-    }[(type(a), type(b))]()
-
-
-def UGE(a, b):
-    return {
-        (int, int): lambda: a >= b if a >= 0 and b >= 0 else None,
-        (long, int): lambda: a >= b if a >= 0 and b >= 0 else None,
-        (int, long): lambda: a >= b if a >= 0 and b >= 0 else None,
-        (long, long): lambda: a >= b if a >= 0 and b >= 0 else None,
-        (BitVec, int): lambda: a.uge(b),
-        (BitVec, long): lambda: a.uge(b),
-        (int, BitVec): lambda: not b.ult(a),
-        (long, BitVec): lambda: not b.ult(a),
-        (BitVec, BitVec): lambda: a.uge(b),
-    }[(type(a), type(b))]()
-
-
-def ULT(a, b):
-    return {
-        (int, int): lambda: a < b if a >= 0 and b >= 0 else None,
-        (long, int): lambda: a < b if a >= 0 and b >= 0 else None,
-        (int, long): lambda: a < b if a >= 0 and b >= 0 else None,
-        (long, long): lambda: a < b if a >= 0 and b >= 0 else None,
-        (BitVec, int): lambda: a.ult(b),
-        (BitVec, long): lambda: a.ult(b),
-        (int, BitVec): lambda: not b.uge(a),
-        (long, BitVec): lambda: not b.uge(a),
-        (BitVec, BitVec): lambda: a.ult(b),
-    }[(type(a), type(b))]()
-
-
-def ULE(a, b):
-    return {
-        (int, int): lambda: a <= b if a >= 0 and b >= 0 else None,
-        (long, int): lambda: a <= b if a >= 0 and b >= 0 else None,
-        (int, long): lambda: a <= b if a >= 0 and b >= 0 else None,
-        (long, long): lambda: a <= b if a >= 0 and b >= 0 else None,
-        (BitVec, int): lambda: a.ule(b),
-        (BitVec, long): lambda: a.ule(b),
-        (int, BitVec): lambda: not b.ugt(a),
-        (long, BitVec): lambda: not b.ugt(a),
-        (BitVec, BitVec): lambda: a.ule(b),
-    }[(type(a), type(b))]()
-
-
 def ZEXTEND(x, size):
     if isinstance(x, (int, long)):
         return x & ((1 << size) - 1)
@@ -1060,26 +1004,6 @@ def SEXTEND(x, size_src, size_dest):
             x -= 1 << size_src
         return x & ((1 << size_dest) - 1)
     return BitVec(size_dest, '(_ sign_extend %s)' % (size_dest - x.size), x)
-
-
-def UDIV(a, b):
-    if type(a) is BitVec:
-        return a.udiv(b)
-    elif type(b) is BitVec:
-        return a.rudiv(b)
-    if a < 0 or b < 0:
-        raise Exception()
-    return a / b
-
-
-def UREM(a, b):
-    if type(a) is BitVec:
-        return a.urem(b)
-    elif type(b) is BitVec:
-        return b.rurem(a)
-    if a < 0 or b < 0:
-        raise Exception()
-    return a % b
 
 
 def EXTRACT(s, offset, size):
