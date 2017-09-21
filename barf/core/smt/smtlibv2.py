@@ -27,7 +27,6 @@
 
 import copy
 import logging
-import weakref
 
 from subprocess import PIPE
 from subprocess import Popen
@@ -41,12 +40,6 @@ class Symbol(object):
         assert type(value) in [int, long, str, bool]
         assert all([isinstance(x, Symbol) for x in children])
 
-        solver = kwargs.get('solver', None)
-        if solver is not None:
-            self._solver = weakref.ref(kwargs['solver'])
-        else:
-            self._solver = lambda: None
-
         if len(children) > 0:
             self._value = '(' + str(value) + ' ' + ' '.join(map(str, children)) + ')'
         else:
@@ -54,23 +47,13 @@ class Symbol(object):
 
     def __getstate__(self):
         state = {
-            'solver': self.solver,
             'value': self.value
         }
 
         return state
 
     def __setstate__(self, state):
-        solver = state['solver']
-        if solver is not None:
-            self._solver = weakref.ref(solver)
-        else:
-            self._solver = lambda: None
         self._value = state['value']
-
-    @property
-    def solver(self):
-        return self._solver()
 
     @property
     def value(self):
@@ -102,13 +85,13 @@ class BitVec(Symbol):
     def cast(self, val):
         if type(val) in (int, long):
             if self.size == 1:
-                return BitVec(self.size, '#' + bin(val & 1)[1:], solver=self.solver)
-            return BitVec(self.size, '#x%0*x' % (self.size / 4, val & ((1 << self.size) - 1)), solver=self.solver)
+                return BitVec(self.size, '#' + bin(val & 1)[1:])
+            return BitVec(self.size, '#x%0*x' % (self.size / 4, val & ((1 << self.size) - 1)))
         elif type(val) is Bool:
             raise NotImplementedError()
         elif type(val) is str:
             assert len(val) == 1 and self.size == 8
-            return BitVec(self.size, '#x%02x' % ord(val), solver=self.solver)
+            return BitVec(self.size, '#x%02x' % ord(val))
 
         assert type(val) == BitVec and val.size == self.size
 
@@ -128,31 +111,31 @@ class BitVec(Symbol):
     # ternary version of the built-in pow() function is to be supported.
 
     def __add__(self, other):
-        return BitVec(self.size, 'bvadd', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvadd', self, self.cast(other))
 
     def __sub__(self, other):
-        return BitVec(self.size, 'bvsub', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvsub', self, self.cast(other))
 
     def __mul__(self, other):
-        return BitVec(self.size, 'bvmul', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvmul', self, self.cast(other))
 
     def __mod__(self, other):
-        return BitVec(self.size, 'bvsmod', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvsmod', self, self.cast(other))
 
     def __lshift__(self, other):
-        return BitVec(self.size, 'bvshl', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvshl', self, self.cast(other))
 
     def __rshift__(self, other):
-        return BitVec(self.size, 'bvlshr', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvlshr', self, self.cast(other))
 
     def __and__(self, other):
-        return BitVec(self.size, 'bvand', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvand', self, self.cast(other))
 
     def __xor__(self, other):
-        return BitVec(self.size, 'bvxor', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvxor', self, self.cast(other))
 
     def __or__(self, other):
-        return BitVec(self.size, 'bvor', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvor', self, self.cast(other))
 
     # The division operator (/) is implemented by these methods. The
     # __truediv__()  method is used when __future__.division is in effect,
@@ -161,10 +144,10 @@ class BitVec(Symbol):
     # TypeError will be raised instead.
 
     def __div__(self, other):
-        return BitVec(self.size, 'bvsdiv', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvsdiv', self, self.cast(other))
 
     def __truediv__(self, other):
-        return BitVec(self.size, 'bvsdiv', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvsdiv', self, self.cast(other))
 
     # These methods are called to implement the binary arithmetic operations
     # (+, -, *, /, %, divmod(), pow(), **, <<, >>, &, ^, |) with reflected
@@ -175,40 +158,40 @@ class BitVec(Symbol):
     # y.__rsub__(x) is called if x.__sub__(y) returns NotImplemented.
 
     def __radd__(self, other):
-        return BitVec(self.size, 'bvadd', self.cast(other), self, solver=self.solver)
+        return BitVec(self.size, 'bvadd', self.cast(other), self)
 
     def __rsub__(self, other):
-        return BitVec(self.size, 'bvsub', self.cast(other), self, solver=self.solver)
+        return BitVec(self.size, 'bvsub', self.cast(other), self)
 
     def __rmul__(self, other):
-        return BitVec(self.size, 'bvmul', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvmul', self, self.cast(other))
 
     def __rmod__(self, other):
-        return BitVec(self.size, 'bvmod', self.cast(other), self, solver=self.solver)
+        return BitVec(self.size, 'bvmod', self.cast(other), self)
 
     def __rtruediv__(self, other):
-        return BitVec(self.size, 'bvsdiv', self.cast(other), self, solver=self.solver)
+        return BitVec(self.size, 'bvsdiv', self.cast(other), self)
 
     def __rdiv__(self, other):
-        return BitVec(self.size, 'bvsdiv', self.cast(other), self, solver=self.solver)
+        return BitVec(self.size, 'bvsdiv', self.cast(other), self)
 
     def __rlshift__(self, other):
-        return BitVec(self.size, 'bvshl', self.cast(other), self, solver=self.solver)
+        return BitVec(self.size, 'bvshl', self.cast(other), self)
 
     def __rrshift__(self, other):
-        return BitVec(self.size, 'bvlshr', self.cast(other), self, solver=self.solver)
+        return BitVec(self.size, 'bvlshr', self.cast(other), self)
 
     def __rand__(self, other):
-        return BitVec(self.size, 'bvand', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvand', self, self.cast(other))
 
     def __rxor__(self, other):
-        return BitVec(self.size, 'bvxor', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvxor', self, self.cast(other))
 
     def __ror__(self, other):
-        return BitVec(self.size, 'bvor', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvor', self, self.cast(other))
 
     def __invert__(self):
-        return BitVec(self.size, 'bvnot', self, solver=self.solver)
+        return BitVec(self.size, 'bvnot', self)
 
     # These are the so-called "rich comparison" methods, and are called for
     # comparison operators in preference to __cmp__() below. The
@@ -218,52 +201,52 @@ class BitVec(Symbol):
     # x.__ge__(y).
 
     def __lt__(self, other):
-        return Bool('bvslt', self, self.cast(other), solver=self.solver)
+        return Bool('bvslt', self, self.cast(other))
 
     def __le__(self, other):
-        return Bool('bvsle', self, self.cast(other), solver=self.solver)
+        return Bool('bvsle', self, self.cast(other))
 
     def __eq__(self, other):
-        return Bool('=', self, self.cast(other), solver=self.solver)
+        return Bool('=', self, self.cast(other))
 
     def __ne__(self, other):
-        return Bool('not', self == other, solver=self.solver)
+        return Bool('not', self == other)
 
     def __gt__(self, other):
-        return Bool('bvsgt', self, self.cast(other), solver=self.solver)
+        return Bool('bvsgt', self, self.cast(other))
 
     def __ge__(self, other):
-        return Bool('bvsge', self, self.cast(other), solver=self.solver)
+        return Bool('bvsge', self, self.cast(other))
 
     def __neg__(self):
-        return BitVec(self.size, 'bvneg', self, solver=self.solver)
+        return BitVec(self.size, 'bvneg', self)
 
     def ugt(self, other):
-        return Bool('bvugt', self, self.cast(other), solver=self.solver)
+        return Bool('bvugt', self, self.cast(other))
 
     def uge(self, other):
-        return Bool('bvuge', self, self.cast(other), solver=self.solver)
+        return Bool('bvuge', self, self.cast(other))
 
     def ult(self, other):
-        return Bool('bvult', self, self.cast(other), solver=self.solver)
+        return Bool('bvult', self, self.cast(other))
 
     def ule(self, other):
-        return Bool('bvule', self, self.cast(other), solver=self.solver)
+        return Bool('bvule', self, self.cast(other))
 
     def udiv(self, other):
-        return BitVec(self.size, 'bvudiv', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvudiv', self, self.cast(other))
 
     def rudiv(self, other):
-        return BitVec(self.size, 'bvudiv', self.cast(other), self, solver=self.solver)
+        return BitVec(self.size, 'bvudiv', self.cast(other), self)
 
     def urem(self, other):
-        return BitVec(self.size, 'bvurem', self, self.cast(other), solver=self.solver)
+        return BitVec(self.size, 'bvurem', self, self.cast(other))
 
     def rrem(self, other):
-        return BitVec(self.size, 'bvurem', self.cast(other), self, solver=self.solver)
+        return BitVec(self.size, 'bvurem', self.cast(other), self)
 
     def smod(self, other):
-        return BitVec(self.size, 'bvsmod', self.cast(other), self, solver=self.solver)
+        return BitVec(self.size, 'bvsmod', self.cast(other), self)
 
 
 class Bool(Symbol):
@@ -273,7 +256,7 @@ class Bool(Symbol):
 
     def cast(self, val):
         if isinstance(val, (int, long, bool)):
-            return Bool(str(bool(val)).lower(), solver=self.solver)
+            return Bool(str(bool(val)).lower())
 
         assert isinstance(val, Bool)
 
@@ -284,34 +267,34 @@ class Bool(Symbol):
         return '(declare-fun %s () Bool)' % self.value
 
     def __invert__(self):
-        return Bool('not', self, solver=self.solver)
+        return Bool('not', self)
 
     def __eq__(self, other):
-        return Bool('=', self, self.cast(other), solver=self.solver)
+        return Bool('=', self, self.cast(other))
 
     def __ne__(self, other):
-        return Bool('not', self == other, solver=self.solver)
+        return Bool('not', self == other)
 
     def __xor__(self, other):
-        return Bool('xor', self, self.cast(other), solver=self.solver)
+        return Bool('xor', self, self.cast(other))
 
     def __nonzero__(self):
         raise NotImplementedError()
 
     def __and__(self, other):
-        return Bool('and', self, self.cast(other), solver=self.solver)
+        return Bool('and', self, self.cast(other))
 
     def __or__(self, other):
-        return Bool('or', self, self.cast(other), solver=self.solver)
+        return Bool('or', self, self.cast(other))
 
     def __rand__(self, other):
-        return Bool('and', self, self.cast(other), solver=self.solver)
+        return Bool('and', self, self.cast(other))
 
     def __ror__(self, other):
-        return Bool('or', self, self.cast(other), solver=self.solver)
+        return Bool('or', self, self.cast(other))
 
     def __rxor__(self, other):
-        return Bool('xor', self, self.cast(other), solver=self.solver)
+        return Bool('xor', self, self.cast(other))
 
 
 class Array_(Symbol):
@@ -334,12 +317,12 @@ class Array_(Symbol):
 
     def cast_key(self, val):
         if type(val) in (int, long):
-            return BitVec(self.size, '#x%0*x' % (self.size / 4, val & ((1 << self.size) - 1)), solver=self.solver)
+            return BitVec(self.size, '#x%0*x' % (self.size / 4, val & ((1 << self.size) - 1)))
         elif type(val) is Bool:
             raise NotImplementedError()
         elif type(val) is str:
             assert len(val) == 1 and self.size == 8
-            return BitVec(self.size, '#x%02x' % ord(val), solver=self.solver)
+            return BitVec(self.size, '#x%02x' % ord(val))
 
         assert type(val) == BitVec and val.size == self.size
 
@@ -347,33 +330,32 @@ class Array_(Symbol):
 
     def cast_value(self, val):
         if type(val) in (int, long):
-            return BitVec(8, '#x%02x' % (val & ((1 << self.size) - 1)), solver=self.solver)
+            return BitVec(8, '#x%02x' % (val & ((1 << self.size) - 1)))
         elif type(val) is Bool:
             raise NotImplementedError()
         elif type(val) is str:
             assert len(val) == 1
-            return BitVec(32, '#x%02x' % ord(val), solver=self.solver)
+            return BitVec(32, '#x%02x' % ord(val))
 
         assert type(val) == BitVec and val.size == 8
 
         return val
 
     def select(self, key):
-        return BitVec(8, 'select', self, self.cast_key(key), solver=self.solver)
+        return BitVec(8, 'select', self, self.cast_key(key))
 
     def store(self, key, value):
-        return Array_(self.size, '(store %s %s %s)' % (self, self.cast_key(key), self.cast_value(value)),
-                      solver=self.solver)
+        return Array_(self.size, '(store %s %s %s)' % (self, self.cast_key(key), self.cast_value(value)))
 
     def __eq__(self, other):
         assert isinstance(other, Array_) and other.size == self.size
 
-        return Bool('=', self, other, solver=self.solver)
+        return Bool('=', self, other)
 
     def __neq__(self, other):
         assert isinstance(other, Array_) and other.size == self.size
 
-        return Bool('not', self.__eq__(other), solver=self.solver)
+        return Bool('not', self.__eq__(other))
 
 
 class Array(object):
@@ -413,12 +395,12 @@ class Array(object):
     def __eq__(self, other):
         assert isinstance(other.array, Array_) and other.array.size == self.array.size
 
-        return Bool('=', self.array, other.array, solver=self.array.solver)
+        return Bool('=', self.array, other.array)
 
     def __neq__(self, other):
         assert isinstance(other.array, Array_) and other.array.size == self.array.size
 
-        return Bool('not', self.__eq__(other), solver=self.array.solver)
+        return Bool('not', self.__eq__(other))
 
 
 class Z3Solver(object):
@@ -1082,7 +1064,7 @@ def ZEXTEND(x, size):
         return x & ((1 << size) - 1)
     assert isinstance(x, BitVec) and size - x.size >= 0
     if size - x.size != 0:
-        return BitVec(size, '(_ zero_extend %s)' % (size - x.size), x, solver=x.solver)
+        return BitVec(size, '(_ zero_extend %s)' % (size - x.size), x)
     else:
         return x
 
@@ -1092,7 +1074,7 @@ def SEXTEND(x, size_src, size_dest):
         if x > (1 << (size_src - 1)):
             x -= 1 << size_src
         return x & ((1 << size_dest) - 1)
-    return BitVec(size_dest, '(_ sign_extend %s)' % (size_dest - x.size), x, solver=x.solver)
+    return BitVec(size_dest, '(_ sign_extend %s)' % (size_dest - x.size), x)
 
 
 def UDIV(a, b):
@@ -1120,7 +1102,7 @@ def EXTRACT(s, offset, size):
         if offset == 0 and size == s.size:
             return s
         else:
-            return BitVec(size, '(_ extract %d %d)' % (offset + size - 1, offset), s, solver=s.solver)
+            return BitVec(size, '(_ extract %d %d)' % (offset + size - 1, offset), s)
     else:
         return (s >> offset) & ((1 << size) - 1)
 
@@ -1134,35 +1116,28 @@ def ITEBV(size, cond, true, false):
     assert type(cond) is Bool
     if type(true) in (int, long):
         if size == 1:
-            true = BitVec(size, '#' + bin(true & 1)[1:], solver=cond.solver)
+            true = BitVec(size, '#' + bin(true & 1)[1:])
         else:
-            true = BitVec(size, '#x%0*x' % (size / 4, true & ((1 << size) - 1)), solver=cond.solver)
+            true = BitVec(size, '#x%0*x' % (size / 4, true & ((1 << size) - 1)))
     if type(false) in (int, long):
         if size == 1:
-            false = BitVec(size, '#' + bin(false & 1)[1:], solver=cond.solver)
+            false = BitVec(size, '#' + bin(false & 1)[1:])
         else:
-            false = BitVec(size, '#x%0*x' % (size / 4, false & ((1 << size) - 1)), solver=cond.solver)
-    return BitVec(size, 'ite', cond, true, false, solver=cond.solver)
+            false = BitVec(size, '#x%0*x' % (size / 4, false & ((1 << size) - 1)))
+    return BitVec(size, 'ite', cond, true, false)
 
 
 def CONCAT(size, *args):
     if any([isinstance(x, Symbol) for x in args]):
         if len(args) > 1:
-            solver = None
-            for x in args:
-                if isinstance(x, Symbol):
-                    solver = x.solver
-                if solver is not None:
-                    break
-
             def cast(e):
                 if type(e) in (int, long):
                     if size == 1:
-                        return BitVec(size, '#' + bin(e & 1)[1:], solver=solver)
-                    return BitVec(size, '#x%0*x' % (size / 4, e & ((1 << size) - 1)), solver=solver)
+                        return BitVec(size, '#' + bin(e & 1)[1:])
+                    return BitVec(size, '#x%0*x' % (size / 4, e & ((1 << size) - 1)))
                 return e
 
-            return BitVec(size * len(args), 'concat', *map(cast, args), solver=solver)
+            return BitVec(size * len(args), 'concat', *map(cast, args))
         else:
             return args[0]
     else:
@@ -1180,7 +1155,7 @@ def ord(s):
         if s.size == 8:
             return s
         else:
-            return BitVec(8, '(_ extract 7 0)', s, solver=s.solver)
+            return BitVec(8, '(_ extract 7 0)', s)
     elif isinstance(s, int):
         return s & 0xff
     else:
@@ -1195,6 +1170,6 @@ def chr(s):
         if s.size == 8:
             return s
         else:
-            return BitVec(8, '(_ extract 7 0)', s, solver=s.solver)
+            return BitVec(8, '(_ extract 7 0)', s)
     else:
         return _chr(s & 0xff)
