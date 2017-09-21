@@ -245,10 +245,6 @@ class Bool(Symbol):
     def declaration(self):
         return '(declare-fun %s () Bool)' % self.value
 
-    # Operators
-    def __invert__(self):
-        return Bool('not', self)
-
     # Comparison operators
     def __eq__(self, other):
         return Bool('=', self, self.cast(other))
@@ -265,6 +261,9 @@ class Bool(Symbol):
 
     def __xor__(self, other):
         return Bool('xor', self, self.cast(other))
+
+    def __invert__(self):
+        return Bool('not', self)
 
     # Reverse logical operators
     def __rand__(self, other):
