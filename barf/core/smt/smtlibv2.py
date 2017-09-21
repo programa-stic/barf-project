@@ -1056,10 +1056,7 @@ def CONCAT(size, *args):
         return result
 
 
-_ord = ord
-
-
-def ord(s):
+def ORD(s):
     if isinstance(s, BitVec):
         if s.size == 8:
             return s
@@ -1068,17 +1065,4 @@ def ord(s):
     elif isinstance(s, int):
         return s & 0xff
     else:
-        return _ord(s)
-
-
-_chr = chr
-
-
-def chr(s):
-    if isinstance(s, BitVec):
-        if s.size == 8:
-            return s
-        else:
-            return BitVec(8, '(_ extract 7 0)', s)
-    else:
-        return _chr(s & 0xff)
+        return ord(s)
