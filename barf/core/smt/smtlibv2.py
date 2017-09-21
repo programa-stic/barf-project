@@ -420,6 +420,7 @@ class Z3Solver(object):
 
     def __setstate__(self, state):
         self._status = None
+
         self._sid = state['sid']
         self._stack = state['stack']
         self._declarations = state['declarations']
@@ -518,7 +519,7 @@ class Z3Solver(object):
         result = []
         self.push()
         try:
-            aux = self.mkBitVec(x.size)
+            aux = self.mkBitVec(x.size, "aux")
             self.add(aux == x)
             r = self.check()
             while r != 'unsat':
@@ -556,9 +557,11 @@ class Z3Solver(object):
         """ Check the satisfiability of the current state """
         if self._status is None:
             self.reset()
+
         if self._status == 'unknown':
             self._send('(check-sat)')
             self._status = self._recv()
+
         return self._status
 
     def getvalue(self, val):
@@ -594,7 +597,7 @@ class Z3Solver(object):
 
         return int(ret.split(' ')[-1][2:-2], 16)
 
-    def mkBitVec(self, size, name='V'):
+    def mkBitVec(self, size, name):
         """ Creates a symbol in the constrains store and names it name"""
         assert size in [1, 8, 16, 32, 40, 64, 72, 128, 256]
 
@@ -608,7 +611,7 @@ class Z3Solver(object):
 
         return bv
 
-    def mkArray(self, size, name='A'):
+    def mkArray(self, size, name):
         """ Creates a symbols array in the constrains store and names it name"""
         assert size in [32, 64]
 
@@ -622,29 +625,21 @@ class Z3Solver(object):
 
         return arr
 
-    def mkBool(self, name='B'):
-        """ Creates a symbols array in the constrains store and names it name"""
-        if name in self._declarations:
-            name = '%s_%d' % (name, self._get_sid())
-
-        b = Bool(name)
-
-        self._declarations[name] = b
-        self._send(b.declaration)
-
-        return b
-
     @property
     def declarations(self):
         declarations = []
+
         for _, var in self._declarations.items():
             declarations.append(var)
+
         return declarations
 
     def add(self, constraint, comment=None):
+        # TODO Remove comment parameter.
         if isinstance(constraint, bool):
             if not constraint:
                 self._status = 'unsat'
+
             return
 
         assert isinstance(constraint, Bool)
@@ -659,12 +654,15 @@ class Z3Solver(object):
 
     @property
     def constraints(self):
+        # TODO Remove comment parameter.
         constraints = []
+
         for c, comment in self._constraints:
             if comment:
                 constraints.append('(assert %s) ; %s' % (c, comment))
             else:
                 constraints.append('(assert %s)' % c)
+
         return constraints
 
 
@@ -704,6 +702,7 @@ class CVC4Solver(object):
 
     def __setstate__(self, state):
         self._status = None
+
         self._sid = state['sid']
         self._stack = state['stack']
         self._declarations = state['declarations']
@@ -797,7 +796,7 @@ class CVC4Solver(object):
         result = []
         self.push()
         try:
-            aux = self.mkBitVec(x.size)
+            aux = self.mkBitVec(x.size, "aux")
             self.add(aux == x)
             r = self.check()
             while r != 'unsat':
@@ -835,9 +834,11 @@ class CVC4Solver(object):
         """ Check the satisfiability of the current state """
         if self._status is None:
             self.reset()
+
         if self._status == 'unknown':
             self._send('(check-sat)')
             self._status = self._recv()
+
         return self._status
 
     def getvalue(self, val):
@@ -895,7 +896,7 @@ class CVC4Solver(object):
 
         return value
 
-    def mkBitVec(self, size, name='V'):
+    def mkBitVec(self, size, name):
         """ Creates a symbol in the constrains store and names it name"""
         assert size in [1, 8, 16, 32, 40, 64, 72, 128, 256]
 
@@ -909,7 +910,7 @@ class CVC4Solver(object):
 
         return bv
 
-    def mkArray(self, size, name='A'):
+    def mkArray(self, size, name):
         """ Creates a symbols array in the constrains store and names it name"""
         assert size in [32, 64]
 
@@ -923,40 +924,36 @@ class CVC4Solver(object):
 
         return arr
 
-    def mkBool(self, name='B'):
-        """ Creates a symbols array in the constrains store and names it name"""
-        if name in self._declarations:
-            name = '%s_%d' % (name, self._get_sid())
-
-        b = Bool(name)
-
-        self._declarations[name] = b
-        self._send(b.declaration)
-
-        return b
-
     @property
     def declarations(self):
         declarations = []
+
         for _, var in self._declarations.items():
             declarations.append(var)
+
         return declarations
 
     def add(self, constraint):
         if isinstance(constraint, bool):
             if not constraint:
                 self._status = 'unsat'
+
             return
+
         assert isinstance(constraint, Bool)
+
         self._send('(assert %s)' % constraint)
+
         self._constraints.append(constraint)
         self._status = 'unknown'
 
     @property
     def constraints(self):
         constraints = []
+
         for c in self._constraints:
             constraints.append('(assert %s)' % c)
+
         return constraints
 
 
