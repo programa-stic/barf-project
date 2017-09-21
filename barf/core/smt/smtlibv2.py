@@ -302,7 +302,7 @@ class Array_(Symbol):
         elif type(val) is Bool:
             raise NotImplementedError()
         elif type(val) is str:
-            assert len(val) == 1 and self.size == 8
+            assert len(val) == 1
             val = cast_char(val, self.size)
 
         assert type(val) == BitVec and val.size == self.size
@@ -345,15 +345,13 @@ class Array(object):
     def __init__(self, size, name, *children):
         self.array = Array_(size, name, *children)
         self.name = name
-        self.cache = {}
-        self.declaration = '(declare-fun %s () (Array (_ BitVec %d) (_ BitVec 8)))' % (name, size)
+        self.size = size
 
     def __getstate__(self):
         state = {
-            'declaration': self.declaration,
             'array': self.array,
             'name': self.name,
-            'cache': self.cache
+            'size': self.size,
         }
 
         return state
@@ -361,17 +359,17 @@ class Array(object):
     def __setstate__(self, state):
         self.array = state['array']
         self.name = state['name']
-        self.cache = state['cache']
-        self.declaration = state['declaration']
+        self.size = state['size']
 
+    @property
+    def declaration(self):
+        return '(declare-fun %s () (Array (_ BitVec %d) (_ BitVec 8)))' % (self.name, self.size)
+
+    # Index operators
     def __getitem__(self, key):
-        if key not in self.cache:
-            self.cache[key] = self.array.select(key)
-
-        return self.cache[key]
+        return self.array.select(key)
 
     def __setitem__(self, key, value):
-        self.cache = {}
         self.array = self.array.store(key, value)
 
     # Comparison operators
@@ -612,7 +610,7 @@ class Z3Solver(object):
 
     def mkArray(self, size=32, name='A'):
         """ Creates a symbols array in the constrains store and names it name"""
-        assert size in [8, 16, 32, 64]
+        assert size in [32, 64]
 
         if name in self._declarations:
             return self._declarations[name]
@@ -626,7 +624,7 @@ class Z3Solver(object):
 
     def mkArrayNew(self, size=32, name='A'):
         """ Creates a symbols array in the constrains store and names it name"""
-        assert size in [8, 16, 32, 64]
+        assert size in [32, 64]
 
         arr = Array(size, name)
 
@@ -921,7 +919,7 @@ class CVC4Solver(object):
 
     def mkArray(self, size=32, name='A'):
         """ Creates a symbols array in the constrains store and names it name"""
-        assert size in [8, 16, 32, 64]
+        assert size in [32, 64]
 
         if name in self._declarations:
             return self._declarations[name]
@@ -935,7 +933,7 @@ class CVC4Solver(object):
 
     def mkArrayNew(self, size=32, name='A'):
         """ Creates a symbols array in the constrains store and names it name"""
-        assert size in [8, 16, 32, 64]
+        assert size in [32, 64]
 
         arr = Array(size, name)
 
