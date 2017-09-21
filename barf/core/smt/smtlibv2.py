@@ -84,14 +84,12 @@ class BitVec(Symbol):
 
     def cast(self, val):
         if type(val) in (int, long):
-            if self.size == 1:
-                return BitVec(self.size, '#' + bin(val & 1)[1:])
-            return BitVec(self.size, '#x%0*x' % (self.size / 4, val & ((1 << self.size) - 1)))
+            val = cast_int(val, self.size)
         elif type(val) is Bool:
             raise NotImplementedError()
         elif type(val) is str:
             assert len(val) == 1 and self.size == 8
-            return BitVec(self.size, '#x%02x' % ord(val))
+            val = cast_char(val, self.size)
 
         assert type(val) == BitVec and val.size == self.size
 
@@ -300,12 +298,12 @@ class Array_(Symbol):
 
     def cast_key(self, val):
         if type(val) in (int, long):
-            return BitVec(self.size, '#x%0*x' % (self.size / 4, val & ((1 << self.size) - 1)))
+            val = cast_int(val, self.size)
         elif type(val) is Bool:
             raise NotImplementedError()
         elif type(val) is str:
             assert len(val) == 1 and self.size == 8
-            return BitVec(self.size, '#x%02x' % ord(val))
+            val = cast_char(val, self.size)
 
         assert type(val) == BitVec and val.size == self.size
 
@@ -313,12 +311,12 @@ class Array_(Symbol):
 
     def cast_value(self, val):
         if type(val) in (int, long):
-            return BitVec(8, '#x%02x' % (val & ((1 << self.size) - 1)))
+            val = cast_int(val, 8)
         elif type(val) is Bool:
             raise NotImplementedError()
         elif type(val) is str:
             assert len(val) == 1
-            return BitVec(32, '#x%02x' % ord(val))
+            val = cast_char(val, 8)
 
         assert type(val) == BitVec and val.size == 8
 
@@ -988,6 +986,17 @@ def isconcrete(x):
     return not issymbolic(x)
 
 
+def cast_int(value, size):
+    if size == 1:
+        return BitVec(size, '#' + bin(value & 1)[1:])
+    else:
+        return BitVec(size, '#x%0*x' % (size / 4, value & ((1 << size) - 1)))
+
+
+def cast_char(value, size):
+    return cast_int(ord(value), size)
+
+
 def ZEXTEND(x, size):
     if isinstance(x, (int, long)):
         return x & ((1 << size) - 1)
@@ -1018,21 +1027,16 @@ def EXTRACT(s, offset, size):
 
 def ITEBV(size, cond, true, false):
     if type(cond) in (bool, int, long):
-        if cond:
-            return true
-        else:
-            return false
+        return true if cond else false
+
     assert type(cond) is Bool
+
     if type(true) in (int, long):
-        if size == 1:
-            true = BitVec(size, '#' + bin(true & 1)[1:])
-        else:
-            true = BitVec(size, '#x%0*x' % (size / 4, true & ((1 << size) - 1)))
+        true = cast_int(true, size)
+
     if type(false) in (int, long):
-        if size == 1:
-            false = BitVec(size, '#' + bin(false & 1)[1:])
-        else:
-            false = BitVec(size, '#x%0*x' % (size / 4, false & ((1 << size) - 1)))
+        false = cast_int(false, size)
+
     return BitVec(size, 'ite', cond, true, false)
 
 
@@ -1041,10 +1045,9 @@ def CONCAT(size, *args):
         if len(args) > 1:
             def cast(e):
                 if type(e) in (int, long):
-                    if size == 1:
-                        return BitVec(size, '#' + bin(e & 1)[1:])
-                    return BitVec(size, '#x%0*x' % (size / 4, e & ((1 << size) - 1)))
-                return e
+                    return cast_int(e, size)
+                else:
+                    return e
 
             return BitVec(size * len(args), 'concat', *map(cast, args))
         else:
