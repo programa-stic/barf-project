@@ -608,7 +608,7 @@ class Z3Solver(object):
 
         return bv
 
-    def mkArray(self, size=32, name='A'):
+    def mkArray(self, size, name='A'):
         """ Creates a symbols array in the constrains store and names it name"""
         assert size in [32, 64]
 
@@ -619,14 +619,6 @@ class Z3Solver(object):
 
         self._declarations[name] = arr
         self._send(arr.declaration)
-
-        return arr
-
-    def mkArrayNew(self, size=32, name='A'):
-        """ Creates a symbols array in the constrains store and names it name"""
-        assert size in [32, 64]
-
-        arr = Array(size, name)
 
         return arr
 
@@ -917,7 +909,7 @@ class CVC4Solver(object):
 
         return bv
 
-    def mkArray(self, size=32, name='A'):
+    def mkArray(self, size, name='A'):
         """ Creates a symbols array in the constrains store and names it name"""
         assert size in [32, 64]
 
@@ -928,14 +920,6 @@ class CVC4Solver(object):
 
         self._declarations[name] = arr
         self._send(arr.declaration)
-
-        return arr
-
-    def mkArrayNew(self, size=32, name='A'):
-        """ Creates a symbols array in the constrains store and names it name"""
-        assert size in [32, 64]
-
-        arr = Array(size, name)
 
         return arr
 
@@ -984,11 +968,15 @@ def isconcrete(x):
     return not issymbolic(x)
 
 
+def truncate_int(value, size):
+    return value & ((1 << size) - 1)
+
+
 def cast_int(value, size):
     if size == 1:
         return BitVec(size, '#' + bin(value & 1)[1:])
     else:
-        return BitVec(size, '#x%0*x' % (size / 4, value & ((1 << size) - 1)))
+        return BitVec(size, '#x%0*x' % (size / 4, truncate_int(value, size)))
 
 
 def cast_char(value, size):
@@ -997,8 +985,10 @@ def cast_char(value, size):
 
 def ZEXTEND(x, size):
     if isinstance(x, (int, long)):
-        return x & ((1 << size) - 1)
+        return truncate_int(x, size)
+
     assert isinstance(x, BitVec) and size - x.size >= 0
+
     if size - x.size != 0:
         return BitVec(size, '(_ zero_extend %s)' % (size - x.size), x)
     else:
@@ -1009,7 +999,9 @@ def SEXTEND(x, size_src, size_dest):
     if type(x) in (int, long):
         if x > (1 << (size_src - 1)):
             x -= 1 << size_src
-        return x & ((1 << size_dest) - 1)
+
+        return truncate_int(x, size_dest)
+
     return BitVec(size_dest, '(_ sign_extend %s)' % (size_dest - x.size), x)
 
 
@@ -1020,7 +1012,7 @@ def EXTRACT(s, offset, size):
         else:
             return BitVec(size, '(_ extract %d %d)' % (offset + size - 1, offset), s)
     else:
-        return (s >> offset) & ((1 << size) - 1)
+        return truncate_int(s >> offset, size)
 
 
 def ITEBV(size, cond, true, false):
@@ -1039,22 +1031,16 @@ def ITEBV(size, cond, true, false):
 
 
 def CONCAT(size, *args):
-    if any([isinstance(x, Symbol) for x in args]):
-        if len(args) > 1:
-            def cast(e):
-                if type(e) in (int, long):
-                    return cast_int(e, size)
-                else:
-                    return e
+    if len(args) > 1:
+        def cast(e):
+            if type(e) in (int, long):
+                return cast_int(e, size)
+            else:
+                return e
 
-            return BitVec(size * len(args), 'concat', *map(cast, args))
-        else:
-            return args[0]
+        return BitVec(size * len(args), 'concat', *map(cast, args))
     else:
-        result = 0
-        for arg in args:
-            result = (result << size) | arg
-        return result
+        return args[0]
 
 
 def ORD(s):

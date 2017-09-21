@@ -77,7 +77,7 @@ class SmtTranslator(object):
         self._mem = self._solver.mkArray(address_size, "MEM_0")
         self._mem_instance = 0
 
-        self._mem_init = self._solver.mkArrayNew(address_size, "MEM_0")
+        self._mem_init = smtlibv2.Array(address_size, "MEM_0")
 
         # A variable name mapper maps variable names to its current
         # 'version' of the variable, e.i., 'eax' -> 'eax_3'
@@ -171,7 +171,7 @@ class SmtTranslator(object):
         self._mem = self._solver.mkArray(self._address_size, "MEM_0")
         self._mem_instance = 0
 
-        self._mem_init = self._solver.mkArrayNew(self._address_size, "MEM_0")
+        self._mem_init = smtlibv2.Array(self._address_size, "MEM_0")
 
         self._var_name_mappers = {}
 
