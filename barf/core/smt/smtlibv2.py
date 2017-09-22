@@ -390,7 +390,6 @@ class Z3Solver(object):
             forked in memory or even sent over the network.
         """
         self._status = 'unknown'
-        self._sid = 0
         self._stack = []
         self._declarations = {}
         self._constraints = list()
@@ -403,7 +402,6 @@ class Z3Solver(object):
 
     def __getstate__(self):
         state = {
-            'sid': self._sid,
             'declarations': self._declarations,
             'constraints': self._constraints,
             'stack': self._stack,
@@ -414,7 +412,6 @@ class Z3Solver(object):
     def __setstate__(self, state):
         self._status = None
 
-        self._sid = state['sid']
         self._stack = state['stack']
         self._declarations = state['declarations']
         self._constraints = state['constraints']
@@ -436,7 +433,6 @@ class Z3Solver(object):
             self._proc = None
 
             self._status = 'unknown'
-            self._sid = 0
             self._stack = []
             self._declarations = {}
             self._constraints = list()
@@ -456,12 +452,6 @@ class Z3Solver(object):
         self._proc.wait()
 
         self._proc = None
-
-    def _get_sid(self):
-        """ Returns an unique id. """
-        self._sid += 1
-
-        return self._sid
 
     def _send(self, cmd):
         """ Send a string to the solver.
@@ -535,7 +525,7 @@ class Z3Solver(object):
 
         self._send('(push 1)')
 
-        self._stack.append((self._sid, self._declarations, self._constraints))
+        self._stack.append((self._declarations, self._constraints))
         self._declarations = copy.copy(self._declarations)
         self._constraints = copy.copy(self._constraints)
 
@@ -543,7 +533,7 @@ class Z3Solver(object):
         """ Recall the last pushed state. """
         self._send('(pop 1)')
 
-        self._sid, self._declarations, self._constraints = self._stack.pop()
+        self._declarations, self._constraints = self._stack.pop()
         self._status = 'unknown'
 
     def check(self):
@@ -672,7 +662,6 @@ class CVC4Solver(object):
             forked in memory or even sent over the network.
         """
         self._status = 'unknown'
-        self._sid = 0
         self._stack = []
         self._declarations = {}
         self._constraints = list()
@@ -685,7 +674,6 @@ class CVC4Solver(object):
 
     def __getstate__(self):
         state = {
-            'sid': self._sid,
             'declarations': self._declarations,
             'constraints': self._constraints,
             'stack': self._stack,
@@ -696,7 +684,6 @@ class CVC4Solver(object):
     def __setstate__(self, state):
         self._status = None
 
-        self._sid = state['sid']
         self._stack = state['stack']
         self._declarations = state['declarations']
         self._constraints = state['constraints']
@@ -713,7 +700,6 @@ class CVC4Solver(object):
 
         if full:
             self._status = 'unknown'
-            self._sid = 0
             self._stack = []
             self._declarations = {}
             self._constraints = list()
@@ -733,12 +719,6 @@ class CVC4Solver(object):
         self._proc.wait()
 
         self._proc = None
-
-    def _get_sid(self):
-        """ Returns an unique id. """
-        self._sid += 1
-
-        return self._sid
 
     def _send(self, cmd):
         """ Send a string to the solver.
@@ -812,7 +792,7 @@ class CVC4Solver(object):
 
         self._send('(push 1)')
 
-        self._stack.append((self._sid, self._declarations, self._constraints))
+        self._stack.append((self._declarations, self._constraints))
         self._declarations = copy.copy(self._declarations)
         self._constraints = copy.copy(self._constraints)
 
@@ -820,7 +800,7 @@ class CVC4Solver(object):
         """ Recall the last pushed state. """
         self._send('(pop 1)')
 
-        self._sid, self._declarations, self._constraints = self._stack.pop()
+        self._declarations, self._constraints = self._stack.pop()
         self._status = 'unknown'
 
     def check(self):
