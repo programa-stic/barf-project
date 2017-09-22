@@ -458,6 +458,7 @@ class Z3Solver(object):
             @param cmd: a SMTLIBv2 command (ex. (check-sat))
         """
         # logger.debug('>%s', cmd)
+
         self._proc.stdin.writelines((str(cmd), '\n'))
 
     def _recv(self):
@@ -725,6 +726,7 @@ class CVC4Solver(object):
             @param cmd: a SMTLIBv2 command (ex. (check-sat))
         """
         # logger.debug('>%s', cmd)
+
         self._proc.stdin.writelines((str(cmd), '\n'))
 
     def _recv(self):
@@ -906,7 +908,8 @@ class CVC4Solver(object):
 
         return declarations
 
-    def add(self, constraint):
+    def add(self, constraint, comment=None):
+        # TODO Remove comment parameter.
         if isinstance(constraint, bool):
             if not constraint:
                 self._status = 'unsat'
@@ -915,17 +918,24 @@ class CVC4Solver(object):
 
         assert isinstance(constraint, Bool)
 
-        self._send('(assert %s)' % constraint)
+        if comment:
+            self._send('(assert %s) ; %s' % (constraint, comment))
+        else:
+            self._send('(assert %s)' % constraint)
 
-        self._constraints.append(constraint)
+        self._constraints.append((constraint, comment))
         self._status = 'unknown'
 
     @property
     def constraints(self):
+        # TODO Remove comment parameter.
         constraints = []
 
-        for c in self._constraints:
-            constraints.append('(assert %s)' % c)
+        for c, comment in self._constraints:
+            if comment:
+                constraints.append('(assert %s) ; %s' % (c, comment))
+            else:
+                constraints.append('(assert %s)' % c)
 
         return constraints
 
