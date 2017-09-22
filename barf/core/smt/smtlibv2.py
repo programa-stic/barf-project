@@ -82,18 +82,21 @@ class BitVec(Symbol):
 
         self.size = state['size']
 
-    def cast(self, val):
-        if type(val) in (int, long):
-            val = cast_int(val, self.size)
-        elif type(val) is Bool:
-            raise NotImplementedError()
-        elif type(val) is str:
-            assert len(val) == 1 and self.size == 8
-            val = cast_char(val, self.size)
+    def cast(self, value):
+        if type(value) in (int, long):
+            value = cast_int(value, self.size)
+        elif type(value) is str:
+            assert len(value) == 1
 
-        assert type(val) == BitVec and val.size == self.size
+            value = cast_char(value, self.size)
+        elif type(value) is BitVec:
+            assert value.size == self.size
+        else:
+            raise Exception("Invalid value type.")
 
-        return val
+        assert type(value) == BitVec
+
+        return value
 
     @property
     def declaration(self):
@@ -231,13 +234,13 @@ class Bool(Symbol):
     def __init__(self, value, *children):
         super(Bool, self).__init__(value, *children)
 
-    def cast(self, val):
-        if isinstance(val, (int, long, bool)):
-            return Bool(str(bool(val)).lower())
+    def cast(self, value):
+        if type(value) in (int, long, bool):
+            value = Bool(str(bool(value)).lower())
 
-        assert isinstance(val, Bool)
+        assert type(value) == Bool
 
-        return val
+        return value
 
     @property
     def declaration(self):
@@ -296,37 +299,27 @@ class Array_(Symbol):
 
         self.size = state['size']
 
-    def cast_key(self, val):
-        if type(val) in (int, long):
-            val = cast_int(val, self.size)
-        elif type(val) is Bool:
-            raise NotImplementedError()
-        elif type(val) is str:
-            assert len(val) == 1
-            val = cast_char(val, self.size)
+    def cast(self, value, size):
+        if type(value) in (int, long):
+            value = cast_int(value, size)
+        elif type(value) is str:
+            assert len(value) == 1
 
-        assert type(val) == BitVec and val.size == self.size
+            value = cast_char(value, size)
+        elif type(value) is BitVec:
+            assert value.size == size
+        else:
+            raise Exception("Invalid value type.")
 
-        return val
+        assert type(value) == BitVec
 
-    def cast_value(self, val):
-        if type(val) in (int, long):
-            val = cast_int(val, 8)
-        elif type(val) is Bool:
-            raise NotImplementedError()
-        elif type(val) is str:
-            assert len(val) == 1
-            val = cast_char(val, 8)
-
-        assert type(val) == BitVec and val.size == 8
-
-        return val
+        return value
 
     def select(self, key):
-        return BitVec(8, 'select', self, self.cast_key(key))
+        return BitVec(8, 'select', self, self.cast(key, self.size))
 
     def store(self, key, value):
-        return Array_(self.size, '(store %s %s %s)' % (self, self.cast_key(key), self.cast_value(value)))
+        return Array_(self.size, '(store %s %s %s)' % (self, self.cast(key, self.size), self.cast(value, 8)))
 
     # Comparison operators
     def __eq__(self, other):
