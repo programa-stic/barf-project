@@ -25,7 +25,8 @@
 import unittest
 
 from barf.core.reil import ReilParser
-from barf.core.smt.smtlibv2 import Z3Solver as SmtSolver
+from barf.core.smt.smtsolver import Z3Solver as SmtSolver
+# from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
 

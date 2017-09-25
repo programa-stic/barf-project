@@ -51,8 +51,8 @@ from core.reil import ReilContainer
 from core.reil import ReilContainerInvalidAddressError
 from core.reil import ReilEmulator
 from core.reil import ReilSequence
-from core.smt.smtlibv2 import CVC4Solver
-from core.smt.smtlibv2 import Z3Solver
+from core.smt.smtsolver import CVC4Solver
+from core.smt.smtsolver import Z3Solver
 from core.smt.smttranslator import SmtTranslator
 from utils.utils import ExecutionCache
 from utils.utils import InvalidAddressError
