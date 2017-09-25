@@ -431,21 +431,18 @@ class CodeAnalyzer(object):
 
         return mem
 
-    def add_instruction(self, reil_instruction, comment=None):
+    def add_instruction(self, reil_instruction):
         """Add an instruction for analysis.
         """
         smt_exprs = self._translator.translate(reil_instruction)
 
-        for idx, smt_expr in enumerate(smt_exprs):
-            if idx == 0:
-                self._solver.add(smt_expr, comment)
-            else:
-                self._solver.add(smt_expr)
+        for smt_expr in smt_exprs:
+            self._solver.add(smt_expr)
 
-    def add_constraint(self, constraint, comment=None):
+    def add_constraint(self, constraint):
         """Add constraint to the current set of formulas.
         """
-        self._solver.add(constraint, comment)
+        self._solver.add(constraint)
 
     def set_preconditions(self, conditions):
         """Add preconditions to the analyzer.

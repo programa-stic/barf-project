@@ -82,8 +82,7 @@ class Z3Solver(object):
 
         return "\n".join(declarations + constraints)
 
-    def add(self, constraint, comment=None):
-        # TODO Remove comment parameter.
+    def add(self, constraint):
         assert isinstance(constraint, Bool)
 
         self._write("(assert {})".format(constraint))
@@ -213,8 +212,7 @@ class CVC4Solver(object):
 
         return "\n".join(declarations + constraints)
 
-    def add(self, constraint, comment=None):
-        # TODO Remove comment parameter.
+    def add(self, constraint):
         assert isinstance(constraint, Bool)
 
         self._write("(assert {})".format(constraint))
