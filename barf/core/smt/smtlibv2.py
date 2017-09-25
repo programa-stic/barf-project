@@ -78,165 +78,142 @@ class BitVec(Symbol):
 
         self.size = state['size']
 
-    def cast(self, value):
-        if type(value) in (int, long):
-            value = cast_int(value, self.size)
-        elif type(value) is str:
-            assert len(value) == 1
-
-            value = cast_char(value, self.size)
-        elif type(value) is BitVec:
-            assert value.size == self.size
-        else:
-            raise Exception("Invalid value type.")
-
-        assert type(value) == BitVec
-
-        return value
-
     @property
     def declaration(self):
         return '(declare-fun %s () (_ BitVec %d))' % (self.value, self.size)
 
     # Arithmetic operators
     def __add__(self, other):
-        return BitVec(self.size, 'bvadd', self, self.cast(other))
+        return BitVec(self.size, 'bvadd', self, cast_to_bitvec(other, self.size))
 
     def __sub__(self, other):
-        return BitVec(self.size, 'bvsub', self, self.cast(other))
+        return BitVec(self.size, 'bvsub', self, cast_to_bitvec(other, self.size))
 
     def __mul__(self, other):
-        return BitVec(self.size, 'bvmul', self, self.cast(other))
+        return BitVec(self.size, 'bvmul', self, cast_to_bitvec(other, self.size))
 
     def __div__(self, other):
-        return BitVec(self.size, 'bvsdiv', self, self.cast(other))
+        return BitVec(self.size, 'bvsdiv', self, cast_to_bitvec(other, self.size))
 
     def __truediv__(self, other):
-        return BitVec(self.size, 'bvsdiv', self, self.cast(other))
+        return BitVec(self.size, 'bvsdiv', self, cast_to_bitvec(other, self.size))
 
     def __mod__(self, other):
-        return BitVec(self.size, 'bvsmod', self, self.cast(other))
+        return BitVec(self.size, 'bvsmod', self, cast_to_bitvec(other, self.size))
 
     # Bitwise operators
     def __and__(self, other):
-        return BitVec(self.size, 'bvand', self, self.cast(other))
+        return BitVec(self.size, 'bvand', self, cast_to_bitvec(other, self.size))
 
     def __xor__(self, other):
-        return BitVec(self.size, 'bvxor', self, self.cast(other))
+        return BitVec(self.size, 'bvxor', self, cast_to_bitvec(other, self.size))
 
     def __or__(self, other):
-        return BitVec(self.size, 'bvor', self, self.cast(other))
+        return BitVec(self.size, 'bvor', self, cast_to_bitvec(other, self.size))
 
     def __lshift__(self, other):
-        return BitVec(self.size, 'bvshl', self, self.cast(other))
+        return BitVec(self.size, 'bvshl', self, cast_to_bitvec(other, self.size))
 
     def __rshift__(self, other):
-        return BitVec(self.size, 'bvlshr', self, self.cast(other))
+        return BitVec(self.size, 'bvlshr', self, cast_to_bitvec(other, self.size))
 
     def __invert__(self):
         return BitVec(self.size, 'bvnot', self)
 
     # Reverse arithmetic operators
     def __radd__(self, other):
-        return BitVec(self.size, 'bvadd', self.cast(other), self)
+        return BitVec(self.size, 'bvadd', cast_to_bitvec(other, self.size), self)
 
     def __rsub__(self, other):
-        return BitVec(self.size, 'bvsub', self.cast(other), self)
+        return BitVec(self.size, 'bvsub', cast_to_bitvec(other, self.size), self)
 
     def __rmul__(self, other):
-        return BitVec(self.size, 'bvmul', self, self.cast(other))
+        return BitVec(self.size, 'bvmul', self, cast_to_bitvec(other, self.size))
 
     def __rdiv__(self, other):
-        return BitVec(self.size, 'bvsdiv', self.cast(other), self)
+        return BitVec(self.size, 'bvsdiv', cast_to_bitvec(other, self.size), self)
 
     def __rtruediv__(self, other):
-        return BitVec(self.size, 'bvsdiv', self.cast(other), self)
+        return BitVec(self.size, 'bvsdiv', cast_to_bitvec(other, self.size), self)
 
     def __rmod__(self, other):
-        return BitVec(self.size, 'bvmod', self.cast(other), self)
+        return BitVec(self.size, 'bvmod', cast_to_bitvec(other, self.size), self)
 
     # Reverse bitwise operators
     def __rand__(self, other):
-        return BitVec(self.size, 'bvand', self, self.cast(other))
+        return BitVec(self.size, 'bvand', self, cast_to_bitvec(other, self.size))
 
     def __rxor__(self, other):
-        return BitVec(self.size, 'bvxor', self, self.cast(other))
+        return BitVec(self.size, 'bvxor', self, cast_to_bitvec(other, self.size))
 
     def __ror__(self, other):
-        return BitVec(self.size, 'bvor', self, self.cast(other))
+        return BitVec(self.size, 'bvor', self, cast_to_bitvec(other, self.size))
 
     def __rlshift__(self, other):
-        return BitVec(self.size, 'bvshl', self.cast(other), self)
+        return BitVec(self.size, 'bvshl', cast_to_bitvec(other, self.size), self)
 
     def __rrshift__(self, other):
-        return BitVec(self.size, 'bvlshr', self.cast(other), self)
+        return BitVec(self.size, 'bvlshr', cast_to_bitvec(other, self.size), self)
 
     # Comparison operators (signed)
     def __lt__(self, other):
-        return Bool('bvslt', self, self.cast(other))
+        return Bool('bvslt', self, cast_to_bitvec(other, self.size))
 
     def __le__(self, other):
-        return Bool('bvsle', self, self.cast(other))
+        return Bool('bvsle', self, cast_to_bitvec(other, self.size))
 
     def __eq__(self, other):
-        return Bool('=', self, self.cast(other))
+        return Bool('=', self, cast_to_bitvec(other, self.size))
 
     def __ne__(self, other):
         return Bool('not', self == other)
 
     def __gt__(self, other):
-        return Bool('bvsgt', self, self.cast(other))
+        return Bool('bvsgt', self, cast_to_bitvec(other, self.size))
 
     def __ge__(self, other):
-        return Bool('bvsge', self, self.cast(other))
+        return Bool('bvsge', self, cast_to_bitvec(other, self.size))
 
     def __neg__(self):
         return BitVec(self.size, 'bvneg', self)
 
     # Comparison operators (unsigned)
     def ult(self, other):
-        return Bool('bvult', self, self.cast(other))
+        return Bool('bvult', self, cast_to_bitvec(other, self.size))
 
     def ule(self, other):
-        return Bool('bvule', self, self.cast(other))
+        return Bool('bvule', self, cast_to_bitvec(other, self.size))
 
     def ugt(self, other):
-        return Bool('bvugt', self, self.cast(other))
+        return Bool('bvugt', self, cast_to_bitvec(other, self.size))
 
     def uge(self, other):
-        return Bool('bvuge', self, self.cast(other))
+        return Bool('bvuge', self, cast_to_bitvec(other, self.size))
 
     # Arithmetic operators (unsigned)
     def udiv(self, other):
-        return BitVec(self.size, 'bvudiv', self, self.cast(other))
+        return BitVec(self.size, 'bvudiv', self, cast_to_bitvec(other, self.size))
 
     def urem(self, other):
-        return BitVec(self.size, 'bvurem', self, self.cast(other))
+        return BitVec(self.size, 'bvurem', self, cast_to_bitvec(other, self.size))
 
     # Reverse arithmetic operators (unsigned)
     def rudiv(self, other):
-        return BitVec(self.size, 'bvudiv', self.cast(other), self)
+        return BitVec(self.size, 'bvudiv', cast_to_bitvec(other, self.size), self)
 
     def rurem(self, other):
-        return BitVec(self.size, 'bvurem', self.cast(other), self)
+        return BitVec(self.size, 'bvurem', cast_to_bitvec(other, self.size), self)
 
     # TODO __mod__ and smod use the same smtlib operator, which one is the correct one?
     def smod(self, other):
-        return BitVec(self.size, 'bvsmod', self.cast(other), self)
+        return BitVec(self.size, 'bvsmod', cast_to_bitvec(other, self.size), self)
 
 
 class Bool(Symbol):
+    """A symbolic bool"""
 
     def __init__(self, value, *children):
         super(Bool, self).__init__(value, *children)
-
-    def cast(self, value):
-        if type(value) in (int, long, bool):
-            value = Bool(str(bool(value)).lower())
-
-        assert type(value) == Bool
-
-        return value
 
     @property
     def declaration(self):
@@ -244,37 +221,33 @@ class Bool(Symbol):
 
     # Comparison operators
     def __eq__(self, other):
-        return Bool('=', self, self.cast(other))
+        return Bool('=', self, cast_to_bool(other))
 
     def __ne__(self, other):
         return Bool('not', self == other)
 
     # Logical operators
     def __and__(self, other):
-        return Bool('and', self, self.cast(other))
+        return Bool('and', self, cast_to_bool(other))
 
     def __or__(self, other):
-        return Bool('or', self, self.cast(other))
+        return Bool('or', self, cast_to_bool(other))
 
     def __xor__(self, other):
-        return Bool('xor', self, self.cast(other))
+        return Bool('xor', self, cast_to_bool(other))
 
     def __invert__(self):
         return Bool('not', self)
 
     # Reverse logical operators
     def __rand__(self, other):
-        return Bool('and', self, self.cast(other))
+        return Bool('and', self, cast_to_bool(other))
 
     def __ror__(self, other):
-        return Bool('or', self, self.cast(other))
+        return Bool('or', self, cast_to_bool(other))
 
     def __rxor__(self, other):
-        return Bool('xor', self, self.cast(other))
-
-    # Misc operator
-    def __nonzero__(self):
-        raise NotImplementedError()
+        return Bool('xor', self, cast_to_bool(other))
 
 
 class Array_(Symbol):
@@ -295,27 +268,11 @@ class Array_(Symbol):
 
         self.size = state['size']
 
-    def cast(self, value, size):
-        if type(value) in (int, long):
-            value = cast_int(value, size)
-        elif type(value) is str:
-            assert len(value) == 1
-
-            value = cast_char(value, size)
-        elif type(value) is BitVec:
-            assert value.size == size
-        else:
-            raise Exception("Invalid value type.")
-
-        assert type(value) == BitVec
-
-        return value
-
     def select(self, key):
-        return BitVec(8, 'select', self, self.cast(key, self.size))
+        return BitVec(8, 'select', self, cast_to_bitvec(key, self.size))
 
     def store(self, key, value):
-        return Array_(self.size, '(store %s %s %s)' % (self, self.cast(key, self.size), self.cast(value, 8)))
+        return Array_(self.size, '(store %s %s %s)' % (self, cast_to_bitvec(key, self.size), cast_to_bitvec(value, 8)))
 
     # Comparison operators
     def __eq__(self, other):
@@ -373,16 +330,30 @@ class Array(object):
         return Bool('not', self.__eq__(other))
 
 
-def issymbolic(x):
-    return isinstance(x, Symbol)
+def cast_to_bool(value):
+    if type(value) in (int, long, bool):
+        value = Bool(str(bool(value)).lower())
+
+    assert type(value) == Bool
+
+    return value
 
 
-def isconcrete(x):
-    return not issymbolic(x)
+def cast_to_bitvec(value, size):
+    if type(value) in (int, long):
+        value = cast_int(value, size)
+    elif type(value) is str:
+        assert len(value) == 1
 
+        value = cast_char(value, size)
+    elif type(value) is BitVec:
+        assert value.size == size
+    else:
+        raise Exception("Invalid value type.")
 
-def truncate_int(value, size):
-    return value & ((1 << size) - 1)
+    assert type(value) == BitVec
+
+    return value
 
 
 def cast_int(value, size):
@@ -394,6 +365,10 @@ def cast_int(value, size):
 
 def cast_char(value, size):
     return cast_int(ord(value), size)
+
+
+def truncate_int(value, size):
+    return value & ((1 << size) - 1)
 
 
 def ZEXTEND(x, size):
