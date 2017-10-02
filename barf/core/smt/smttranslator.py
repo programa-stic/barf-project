@@ -50,6 +50,7 @@ import logging
 
 import barf.core.smt.smtfunction as smtfunction
 import barf.core.smt.smtlibv2 as smtlibv2
+import barf.core.smt.smtsymbol as smtsymbol
 
 from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
@@ -78,7 +79,7 @@ class SmtTranslator(object):
         self._mem = self._solver.make_array(address_size, "MEM_0")
         self._mem_instance = 0
 
-        self._mem_init = smtlibv2.Array(address_size, "MEM_0")
+        self._mem_init = smtsymbol.BitVecArray(address_size, 8, "MEM_0")
 
         # A variable name mapper maps variable names to its current
         # 'version' of the variable, e.i., 'eax' -> 'eax_3'
@@ -172,7 +173,7 @@ class SmtTranslator(object):
         self._mem = self._solver.make_array(self._address_size, "MEM_0")
         self._mem_instance = 0
 
-        self._mem_init = smtlibv2.Array(self._address_size, "MEM_0")
+        self._mem_init = smtsymbol.BitVecArray(self._address_size, 8, "MEM_0")
 
         self._var_name_mappers = {}
 

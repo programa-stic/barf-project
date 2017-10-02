@@ -28,9 +28,9 @@ import re
 from subprocess import PIPE
 from subprocess import Popen
 
-from barf.core.smt.smtlibv2 import Array
 from barf.core.smt.smtlibv2 import BitVec
 from barf.core.smt.smtlibv2 import Bool
+from barf.core.smt.smtsymbol import BitVecArray
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +157,7 @@ class Z3Solver(object):
         if name in self._declarations:
             return self._declarations[name]
 
-        arr = Array(size, name)
+        arr = BitVecArray(size, 8, name)
 
         self._declarations[name] = arr
         self._write(arr.declaration)
@@ -287,7 +287,7 @@ class CVC4Solver(object):
         if name in self._declarations:
             return self._declarations[name]
 
-        arr = Array(size, name)
+        arr = BitVecArray(size, 8, name)
 
         self._declarations[name] = arr
         self._write(arr.declaration)
