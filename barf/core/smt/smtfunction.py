@@ -29,9 +29,8 @@ from barf.core.smt.smtlibv2 import Bool
 def zero_extend(s, size):
     assert type(s) == BitVec and size - s.size >= 0
 
-    if isinstance(s, BitVec):
-        if size == s.size:
-            return s
+    if size == s.size:
+        return s
 
     return BitVec(size, "(_ zero_extend {})".format(size - s.size), s)
 
@@ -39,9 +38,8 @@ def zero_extend(s, size):
 def sign_extend(s, size):
     assert type(s) == BitVec and size - s.size >= 0
 
-    if isinstance(s, BitVec):
-        if size == s.size:
-            return s
+    if size == s.size:
+        return s
 
     return BitVec(size, "(_ sign_extend {})".format(size - s.size), s)
 
@@ -49,9 +47,8 @@ def sign_extend(s, size):
 def extract(s, offset, size):
     assert type(s) == BitVec
 
-    if isinstance(s, BitVec):
-        if offset == 0 and size == s.size:
-            return s
+    if offset == 0 and size == s.size:
+        return s
 
     return BitVec(size, "(_ extract {} {})".format(offset + size - 1, offset), s)
 
