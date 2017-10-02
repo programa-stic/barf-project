@@ -24,6 +24,7 @@
 
 import logging
 
+import barf.core.smt.smtfunction as smtfunction
 import barf.core.smt.smtlibv2 as smtlibv2
 
 from barf.core.reil import ReilImmediateOperand
@@ -394,7 +395,7 @@ class CodeAnalyzer(object):
             var_size = self._arch_info.registers_size[var_base_name]
 
             ret_val = self._translator._solver.make_bitvec(var_size, var_name)
-            ret_val = smtlibv2.EXTRACT(
+            ret_val = smtfunction.extract(
                 ret_val,
                 offset,
                 self._arch_info.registers_size[register_name]
@@ -417,7 +418,7 @@ class CodeAnalyzer(object):
         for index in xrange(0, size):
             bytes_exprs.append(mem[address + index])
 
-        return smtlibv2.CONCAT(8, *reversed(bytes_exprs))
+        return smtfunction.concat(8, *reversed(bytes_exprs))
 
     def get_memory(self, mode):
         """Return a smt bit vector that represents a memory location.
