@@ -28,9 +28,9 @@ import re
 from subprocess import PIPE
 from subprocess import Popen
 
-from barf.core.smt.smtlibv2 import BitVec
-from barf.core.smt.smtlibv2 import Bool
+from barf.core.smt.smtsymbol import BitVec
 from barf.core.smt.smtsymbol import BitVecArray
+from barf.core.smt.smtsymbol import Bool
 
 logger = logging.getLogger(__name__)
 

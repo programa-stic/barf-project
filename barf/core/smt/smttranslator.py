@@ -29,16 +29,14 @@ SMTLIB language.
 SmtTranslator
 -------------
 
-This class provides functionalities for REIL to SMT expressions
-translation. The main method is **translate**, which takes a instruction
-as a parameter. It interacts with a SMT solver (through the **smtlibv2**
-module). When an instruction is translated, this translation is reflected
-in the state of the SMT solver (this means, each expression is asserted
-in the current context of SMT solver). Also, the translation is return
-in form of a expression of BitVec. For example, the translation of
-"ADD t0 (32), t1 (32), t2 (32)" returns the SMT expression
-"(= t2_0 (bvadd t0_1 t1_0))". It also send the following commands to the
-solver:
+This class provides functionality for REIL to SMT expressions translation. The
+main method is **translate**, which takes a instruction as a parameter. It
+interacts with a SMT solver. When an instruction is translated, this
+translation is reflected in the state of the SMT solver (this means, each
+expression is asserted in the current context of SMT solver). Also, the
+translation is return in form of a expression of BitVec. For example, the
+translation of "ADD t0 (32), t1 (32), t2 (32)" returns the SMT expression "(=
+t2_0 (bvadd t0_1 t1_0))". It also send the following commands to the solver:
 
 (declare-fun t0_0 () (_ BitVec 32))
 (declare-fun t1_0 () (_ BitVec 32))
@@ -49,7 +47,6 @@ solver:
 import logging
 
 import barf.core.smt.smtfunction as smtfunction
-import barf.core.smt.smtlibv2 as smtlibv2
 import barf.core.smt.smtsymbol as smtsymbol
 
 from barf.core.reil.reil import ReilImmediateOperand
@@ -244,7 +241,7 @@ class SmtTranslator(object):
         else:
             fmt = "#b%1d"
 
-        return smtlibv2.BitVec(operand.size, fmt % operand.immediate)
+        return smtsymbol.BitVec(operand.size, fmt % operand.immediate)
 
     def _translate_src_oprnd(self, operand):
         """Translate source operand to a SMT expression.
@@ -523,7 +520,7 @@ class SmtTranslator(object):
         op2_var = self._translate_src_oprnd(oprnd2)
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
-        expr = (op3_var == (op2_var.smod(op1_var)))
+        expr = (op3_var == (op1_var % op2_var))
 
         rv = [expr]
 
@@ -726,7 +723,7 @@ class SmtTranslator(object):
             # do not exceed the range of the source operand.
             # TODO: Find a better way to enforce this.
             fmt = "#b%0{0}d".format(op3_var.size - op1_var.size)
-            imm = smtlibv2.BitVec(op3_var.size - op1_var.size, fmt % 0)
+            imm = smtsymbol.BitVec(op3_var.size - op1_var.size, fmt % 0)
 
             constrs = [(imm == smtfunction.extract(op3_var, op1_var.size, op3_var.size - op1_var.size))]
         else:
@@ -752,7 +749,7 @@ class SmtTranslator(object):
         op1_var = self._translate_src_oprnd(oprnd1)
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
-        ite = smtfunction.ite(oprnd3.size, op1_var == 0x0, smtlibv2.cast_int(0x1, oprnd3.size), smtlibv2.cast_int(0x0, oprnd3.size))
+        ite = smtfunction.ite(oprnd3.size, op1_var == 0x0, smtsymbol.cast_int(0x1, oprnd3.size), smtsymbol.cast_int(0x0, oprnd3.size))
 
         rv = [(op3_var == ite)]
 
@@ -821,7 +818,7 @@ class SmtTranslator(object):
 
             # TODO: This should not be needed any more.
             # fmt = "#b%0{0}d".format(op3_var.size - op1_var.size)
-            # imm = smtlibv2.BitVec(op3_var.size - op1_var.size, fmt % 0)
+            # imm = smtsymbol.BitVec(op3_var.size - op1_var.size, fmt % 0)
 
             # constrs = [(imm == smtfunction.EXTRACT(op3_var, op1_var.size, op3_var.size - op1_var.size))]
         else:

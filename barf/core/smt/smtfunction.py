@@ -22,8 +22,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from barf.core.smt.smtlibv2 import BitVec
-from barf.core.smt.smtlibv2 import Bool
+from barf.core.smt.smtsymbol import BitVec
+from barf.core.smt.smtsymbol import Bool
 
 
 def zero_extend(s, size):
