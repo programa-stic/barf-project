@@ -429,15 +429,3 @@ def CONCAT(size, *args):
         return BitVec(size * len(args), 'concat', *map(cast, args))
     else:
         return args[0]
-
-
-def ORD(s):
-    if isinstance(s, BitVec):
-        if s.size == 8:
-            return s
-        else:
-            return BitVec(8, '(_ extract 7 0)', s)
-    elif isinstance(s, int):
-        return s & 0xff
-    else:
-        return ord(s)

@@ -668,7 +668,7 @@ class SmtTranslator(object):
         exprs = []
 
         for i in reversed(xrange(0, size, 8)):
-            bytes_exprs_1 = smtlibv2.ORD(self._mem[where + i/8])
+            bytes_exprs_1 = self._mem[where + i/8]
             bytes_exprs_2 = smtlibv2.EXTRACT(op3_var, i, 8)
 
             exprs += [bytes_exprs_1 == bytes_exprs_2]
