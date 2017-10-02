@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 
 class SmtTranslator(object):
 
-    """SMT Translator. This class provides functionalities for REIL to
+    """SMT Translator. This class provides functionality for REIL to
     SMT expressions translation.
 
     """
