@@ -174,23 +174,6 @@ class SmtTranslator(object):
 
         self._var_name_mappers = {}
 
-    def convert_to_bitvec(self, operand):
-        """Convert operand to a BitVec
-        """
-        if isinstance(operand, ReilRegisterOperand):
-
-            bitvec = self._solver.make_bitvec(operand.size, self.get_curr_name(operand.name))
-
-        elif isinstance(operand, ReilImmediateOperand):
-
-            bitvec = self._translate_immediate_oprnd(operand)
-
-        else:
-
-            self._raise_invalid_type_oprnd(operand)
-
-        return bitvec
-
     def set_arch_alias_mapper(self, alias_mapper):
         """Set native register alias mapper.
 

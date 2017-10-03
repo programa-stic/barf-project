@@ -25,6 +25,7 @@
 import logging
 
 import barf.core.smt.smtfunction as smtfunction
+import barf.core.smt.smtsymbol as smtsymbol
 
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilMnemonic
@@ -378,7 +379,7 @@ class CodeAnalyzer(object):
     def get_immediate_expr(self, immediate, size):
         """Return a smt bit vector that represents an immediate value.
         """
-        return self._translator.convert_to_bitvec(ReilImmediateOperand(immediate, size))
+        return smtsymbol.cast_int(immediate, size)
 
     def get_register_expr(self, register_name, mode="post"):
         """Return a smt bit vector that represents a register.
