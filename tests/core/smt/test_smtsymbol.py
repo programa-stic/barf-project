@@ -330,6 +330,24 @@ class BitVecTests(unittest.TestCase):
         self.assertEqual(z.value, "(bvuge x y)")
         self.assertEqual(v.value, "(bvuge x #x00000001)")
 
+    def test_udiv(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = x.udiv(y)
+        v = x.udiv(1)
+
+        self.assertEqual(z.value, "(bvudiv x y)")
+        self.assertEqual(v.value, "(bvudiv x #x00000001)")
+
+    def test_umod(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = x.umod(y)
+        v = x.umod(1)
+
+        self.assertEqual(z.value, "(bvurem x y)")
+        self.assertEqual(v.value, "(bvurem x #x00000001)")
+
 
 class BitVecArrayTests(unittest.TestCase):
 
