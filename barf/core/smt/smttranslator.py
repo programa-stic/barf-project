@@ -216,16 +216,6 @@ class SmtTranslator(object):
 
         return var_name
 
-    def _translate_immediate_oprnd(self, operand):
-        """Translate REIL immediate operand to SMT.
-        """
-        if operand.size >= 4:
-            fmt = "#x%" + "%0003d" % (operand.size / 4) + "x"
-        else:
-            fmt = "#b%1d"
-
-        return smtsymbol.BitVec(operand.size, fmt % operand.immediate)
-
     def _translate_src_oprnd(self, operand):
         """Translate source operand to a SMT expression.
         """
@@ -235,7 +225,7 @@ class SmtTranslator(object):
 
         elif isinstance(operand, ReilImmediateOperand):
 
-            ret_val = self._translate_immediate_oprnd(operand)
+            ret_val = smtsymbol.cast_int(operand.immediate, operand.size)
 
         else:
 
