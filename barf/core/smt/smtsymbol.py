@@ -53,7 +53,7 @@ def cast_to_bitvec(value, size):
     if type(value) in (int, long):
         value = cast_int(value, size)
 
-    assert type(value) == BitVec and value.size = size
+    assert type(value) == BitVec and value.size == size
 
     return value
 
