@@ -235,7 +235,7 @@ class BitVec(Symbol):
         return BitVec(self.size, "bvudiv", self, cast_to_bitvec(other, self.size))
 
     def umod(self, other):
-        return BitVec(self.size, "bvumod", self, cast_to_bitvec(other, self.size))
+        return BitVec(self.size, "bvurem", self, cast_to_bitvec(other, self.size))
 
 
 class Array(Symbol):

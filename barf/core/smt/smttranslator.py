@@ -493,12 +493,12 @@ class SmtTranslator(object):
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
         if oprnd1.size == oprnd3.size:
-            expr = [(op3_var == (op1_var % op2_var))]
+            expr = [(op3_var == (op1_var.umod(op2_var)))]
         elif oprnd3.size > oprnd1.size:
             op1_var_zx = smtfunction.zero_extend(op1_var, oprnd3.size)
             op2_var_zx = smtfunction.zero_extend(op2_var, oprnd3.size)
 
-            expr = [(op3_var == (op1_var_zx % op2_var_zx))]
+            expr = [(op3_var == (op1_var_zx.umod(op2_var_zx)))]
         else:
             raise Exception("Error")
 
