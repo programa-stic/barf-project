@@ -23,45 +23,39 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+def cast_bool(value):
+    return Bool(str(value).lower())
+
+
 def cast_to_bool(value):
-    if type(value) in (int, long, bool):
-        value = Bool(str(bool(value)).lower())
+    if type(value) is bool:
+        value = cast_bool(value)
 
     assert type(value) == Bool
 
     return value
 
 
+def cast_int(value, size):
+    # Truncate value.
+    value = value & ((1 << size) - 1)
+
+    # Format number, choose between binary and hexadecimal notation.
+    if size < 8:
+        value_str = "#b{0:0{fill}b}".format(value, fill=size / 1)
+    else:
+        value_str = "#x{0:0{fill}x}".format(value, fill=size / 4)
+
+    return BitVec(size, value_str)
+
+
 def cast_to_bitvec(value, size):
     if type(value) in (int, long):
         value = cast_int(value, size)
-    elif type(value) is str:
-        assert len(value) == 1
 
-        value = cast_char(value, size)
-    elif type(value) is BitVec:
-        assert value.size == size
-    else:
-        raise Exception("Invalid value type.")
-
-    assert type(value) == BitVec
+    assert type(value) == BitVec and value.size = size
 
     return value
-
-
-def cast_int(value, size):
-    if size == 1:
-        return BitVec(size, '#' + bin(value & 1)[1:])
-    else:
-        return BitVec(size, '#x%0*x' % (size / 4, truncate_int(value, size)))
-
-
-def cast_char(value, size):
-    return cast_int(ord(value), size)
-
-
-def truncate_int(value, size):
-    return value & ((1 << size) - 1)
 
 
 class Symbol(object):
