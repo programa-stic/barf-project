@@ -52,9 +52,12 @@ class Smtlibv2Tests(unittest.TestCase):
                 self._solver.add(form)
 
         # Add constraints
+        eax_pre = self._solver.make_bitvec(32, self._translator.get_init_name("eax"))
+        eax_post = self._solver.make_bitvec(32, self._translator.get_curr_name("eax"))
+
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_init_name("eax")) != 42,     # Precondition
-            self._solver.make_bitvec(32, self._translator.get_curr_name("eax")) == 42,     # Postcondition
+            eax_pre != 42,      # Precondition
+            eax_post == 42,     # Postcondition
         ]
 
         for constr in constraints:
@@ -62,8 +65,8 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Assertions
         self.assertEqual(self._solver.check(), 'sat')
-        self.assertNotEqual(self._solver.get_value_by_name(self._translator.get_init_name("eax")), 42)
-        self.assertEqual(self._solver.get_value_by_name(self._translator.get_curr_name("eax")), 42)
+        self.assertNotEqual(self._solver.get_value(eax_pre), 42)
+        self.assertEqual(self._solver.get_value(eax_post), 42)
 
     def test_add_reg_mem(self):
         # add eax, [ebx]
@@ -79,9 +82,12 @@ class Smtlibv2Tests(unittest.TestCase):
                 self._solver.add(form)
 
         # Add constraints
+        eax_pre = self._solver.make_bitvec(32, self._translator.get_init_name("eax"))
+        eax_post = self._solver.make_bitvec(32, self._translator.get_curr_name("eax"))
+
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_init_name("eax")) != 42,     # Precondition
-            self._solver.make_bitvec(32, self._translator.get_curr_name("eax")) == 42,     # Postcondition
+            eax_pre != 42,      # Precondition
+            eax_post == 42,     # Postcondition
         ]
 
         for constr in constraints:
@@ -89,8 +95,8 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Assertions
         self.assertEqual(self._solver.check(), 'sat')
-        self.assertNotEqual(self._solver.get_value_by_name(self._translator.get_init_name("eax")), 42)
-        self.assertEqual(self._solver.get_value_by_name(self._translator.get_curr_name("eax")), 42)
+        self.assertNotEqual(self._solver.get_value(eax_pre), 42)
+        self.assertEqual(self._solver.get_value(eax_post), 42)
 
     def test_add_mem_reg(self):
         # add [eax], ebx
