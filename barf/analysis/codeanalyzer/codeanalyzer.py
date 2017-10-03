@@ -25,7 +25,6 @@
 import logging
 
 import barf.core.smt.smtfunction as smtfunction
-import barf.core.smt.smtlibv2 as smtlibv2
 
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilMnemonic
