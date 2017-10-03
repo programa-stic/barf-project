@@ -100,17 +100,15 @@ class Z3Solver(object):
 
         return self._status
 
-    def reset(self, full=False):
+    def reset(self):
+        self._stop_solver()
+
         self._status = "unknown"
 
-        if full:
-            self._declarations = {}
-            self._constraints = []
+        self._declarations = {}
+        self._constraints = []
 
-        self._stop_solver()
         self._start_solver()
-
-        self._write(str(self))
 
     def get_value(self, expr):
         assert self.check() == "sat"
@@ -230,17 +228,15 @@ class CVC4Solver(object):
 
         return self._status
 
-    def reset(self, full=False):
+    def reset(self):
+        self._stop_solver()
+
         self._status = "unknown"
 
-        if full:
-            self._declarations = {}
-            self._constraints = []
+        self._declarations = {}
+        self._constraints = []
 
-        self._stop_solver()
         self._start_solver()
-
-        self._write(str(self))
 
     def get_value(self, expr):
         assert self.check() == "sat"

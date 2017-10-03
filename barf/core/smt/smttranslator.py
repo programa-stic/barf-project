@@ -164,7 +164,7 @@ class SmtTranslator(object):
     def reset(self):
         """Reset internal state.
         """
-        self._solver.reset(full=True)
+        self._solver.reset()
 
         # Memory versioning.
         self._mem = self._solver.make_array(self._address_size, "MEM_0")

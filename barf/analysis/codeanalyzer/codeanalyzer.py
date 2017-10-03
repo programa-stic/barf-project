@@ -274,8 +274,6 @@ class CodeAnalyzer(object):
     def check_path_satisfiability(self, path, start_address):
         """Check satisfiability of a basic block path.
         """
-        self._solver.reset()
-
         start_instr_found = False
         sat = False
 
@@ -353,7 +351,7 @@ class CodeAnalyzer(object):
     def reset(self, full=False):
         """Reset current state of the analyzer.
         """
-        self._solver.reset(full)
+        self._solver.reset()
 
         if full:
             self._translator.reset()
