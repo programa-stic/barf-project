@@ -31,6 +31,11 @@ from barf.core.smt.smtsymbol import BitVecArray
 
 class BoolTests(unittest.TestCase):
 
+    def test_declaration(self):
+        x = Bool("x")
+
+        self.assertEqual(x.declaration, "(declare-fun x () Bool)")
+
     def test_and(self):
         x = Bool("x")
         y = Bool("y")
@@ -94,6 +99,11 @@ class BoolTests(unittest.TestCase):
 
 
 class BitVecTests(unittest.TestCase):
+
+    def test_declaration(self):
+        x = BitVec(32, "x")
+
+        self.assertEqual(x.declaration, "(declare-fun x () (_ BitVec 32))")
 
     # Arithmetic operators
     def test_add(self):
@@ -342,6 +352,11 @@ class BitVecTests(unittest.TestCase):
 
 
 class BitVecArrayTests(unittest.TestCase):
+
+    def test_declaration(self):
+        a = BitVecArray(32, 8, "a")
+
+        self.assertEqual(a.declaration, "(declare-fun a () (Array (_ BitVec 32) (_ BitVec 8)))")
 
     def test_store(self):
         a = BitVecArray(32, 8, "a")
