@@ -79,8 +79,7 @@ class BoolTests(unittest.TestCase):
 
         self.assertEqual(z.value, "(= x y)")
         self.assertEqual(v.value, "(= x true)")
-        # TODO Fix
-        # self.assertEqual(w.value, "(= true x)")
+        self.assertEqual(w.value, "(= x true)")
 
     def test_not_equal(self):
         x = Bool("x")
@@ -91,8 +90,7 @@ class BoolTests(unittest.TestCase):
 
         self.assertEqual(z.value, "(not (= x y))")
         self.assertEqual(v.value, "(not (= x true))")
-        # TODO Fix
-        # self.assertEqual(w.value, "(not (= true x))")
+        self.assertEqual(w.value, "(not (= x true))")
 
 
 class BitVecTests(unittest.TestCase):
@@ -231,8 +229,7 @@ class BitVecTests(unittest.TestCase):
 
         self.assertEqual(z.value, "(bvslt x y)")
         self.assertEqual(v.value, "(bvslt x #x00000001)")
-        # TODO Fix
-        # self.assertEqual(w.value, "(bvslt #x00000001 x)")
+        self.assertEqual(w.value, "(bvsgt x #x00000001)")
 
     def test_less_than_equal(self):
         x = BitVec(32, "x")
@@ -243,8 +240,7 @@ class BitVecTests(unittest.TestCase):
 
         self.assertEqual(z.value, "(bvsle x y)")
         self.assertEqual(v.value, "(bvsle x #x00000001)")
-        # TODO Fix
-        # self.assertEqual(w.value, "(bvsle #x00000001 x)")
+        self.assertEqual(w.value, "(bvsge x #x00000001)")
 
     def test_equal(self):
         x = BitVec(32, "x")
@@ -255,8 +251,7 @@ class BitVecTests(unittest.TestCase):
 
         self.assertEqual(z.value, "(= x y)")
         self.assertEqual(v.value, "(= x #x00000001)")
-        # TODO Fix
-        # self.assertEqual(w.value, "(= #x00000001 x)")
+        self.assertEqual(w.value, "(= x #x00000001)")
 
     def test_not_equal(self):
         x = BitVec(32, "x")
@@ -267,8 +262,7 @@ class BitVecTests(unittest.TestCase):
 
         self.assertEqual(z.value, "(not (= x y))")
         self.assertEqual(v.value, "(not (= x #x00000001))")
-        # TODO Fix
-        # self.assertEqual(w.value, "(not (= #x00000001 x))")
+        self.assertEqual(w.value, "(not (= x #x00000001))")
 
     def test_greater_than(self):
         x = BitVec(32, "x")
@@ -279,8 +273,7 @@ class BitVecTests(unittest.TestCase):
 
         self.assertEqual(z.value, "(bvsgt x y)")
         self.assertEqual(v.value, "(bvsgt x #x00000001)")
-        # TODO Fix
-        # self.assertEqual(w.value, "(bvsgt #x00000001 x)")
+        self.assertEqual(w.value, "(bvslt x #x00000001)")
 
     def test_greater_than_equal(self):
         x = BitVec(32, "x")
@@ -291,8 +284,7 @@ class BitVecTests(unittest.TestCase):
 
         self.assertEqual(z.value, "(bvsge x y)")
         self.assertEqual(v.value, "(bvsge x #x00000001)")
-        # TODO Fix
-        # self.assertEqual(w.value, "(bvsge #x00000001 x)")
+        self.assertEqual(w.value, "(bvsle x #x00000001)")
 
     def test_less_than_unsigned(self):
         x = BitVec(32, "x")
