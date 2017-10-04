@@ -73,7 +73,8 @@ class SmtTranslator(object):
         self._address_size = address_size
 
         # A SMT array that represents the memory.
-        self._mem = self._solver.make_array(address_size, "MEM_0")
+        self._mem = smtsymbol.BitVecArray(address_size, 8, "MEM_0")
+        self._solver.declare_fun(self._mem)
         self._mem_instance = 0
 
         self._mem_init = smtsymbol.BitVecArray(address_size, 8, "MEM_0")
@@ -167,7 +168,8 @@ class SmtTranslator(object):
         self._solver.reset()
 
         # Memory versioning.
-        self._mem = self._solver.make_array(self._address_size, "MEM_0")
+        self._mem = smtsymbol.BitVecArray(self._address_size, 8, "MEM_0")
+        self._solver.declare_fun(self._mem)
         self._mem_instance = 0
 
         self._mem_init = smtsymbol.BitVecArray(self._address_size, 8, "MEM_0")
@@ -671,7 +673,8 @@ class SmtTranslator(object):
         self._mem_instance += 1
 
         mem_old = self._mem
-        mem_new = self._solver.make_array(self._address_size, "MEM_" + str(self._mem_instance))
+        mem_new = smtsymbol.BitVecArray(self._address_size, 8, "MEM_" + str(self._mem_instance))
+        self._solver.declare_fun(mem_new)
 
         self._mem = mem_new
 

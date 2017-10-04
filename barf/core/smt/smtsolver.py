@@ -148,19 +148,12 @@ class Z3Solver(object):
 
         return bv
 
-    def make_array(self, size, name):
-        # TODO Refactor this method
-        assert size in [32, 64]
+    def declare_fun(self, fun):
+        if fun.name in self._declarations:
+            raise Exception("Symbol already declare.")
 
-        if name in self._declarations:
-            return self._declarations[name]
-
-        arr = BitVecArray(size, 8, name)
-
-        self._declarations[name] = arr
-        self._write(arr.declaration)
-
-        return arr
+        self._declarations[fun.name] = fun
+        self._write(fun.declaration)
 
 
 class CVC4Solver(object):
@@ -276,16 +269,9 @@ class CVC4Solver(object):
 
         return bv
 
-    def make_array(self, size, name):
-        # TODO Refactor this method
-        assert size in [32, 64]
+    def declare_fun(self, fun):
+        if fun.name in self._declarations:
+            raise Exception("Symbol already declare.")
 
-        if name in self._declarations:
-            return self._declarations[name]
-
-        arr = BitVecArray(size, 8, name)
-
-        self._declarations[name] = arr
-        self._write(arr.declaration)
-
-        return arr
+        self._declarations[fun.name] = fun
+        self._write(fun.declaration)
