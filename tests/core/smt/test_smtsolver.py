@@ -52,8 +52,8 @@ class Smtlibv2Tests(unittest.TestCase):
                 self._solver.add(form)
 
         # Add constraints
-        eax_pre = self._solver.make_bitvec(32, self._translator.get_init_name("eax"))
-        eax_post = self._solver.make_bitvec(32, self._translator.get_curr_name("eax"))
+        eax_pre = self._translator._make_bitvec(32, self._translator.get_init_name("eax"))
+        eax_post = self._translator._make_bitvec(32, self._translator.get_curr_name("eax"))
 
         constraints = [
             eax_pre != 42,      # Precondition
@@ -82,8 +82,8 @@ class Smtlibv2Tests(unittest.TestCase):
                 self._solver.add(form)
 
         # Add constraints
-        eax_pre = self._solver.make_bitvec(32, self._translator.get_init_name("eax"))
-        eax_post = self._solver.make_bitvec(32, self._translator.get_curr_name("eax"))
+        eax_pre = self._translator._make_bitvec(32, self._translator.get_init_name("eax"))
+        eax_post = self._translator._make_bitvec(32, self._translator.get_curr_name("eax"))
 
         constraints = [
             eax_pre != 42,      # Precondition
@@ -112,7 +112,7 @@ class Smtlibv2Tests(unittest.TestCase):
                 self._solver.add(form)
 
         # Add constraints
-        eax = self._solver.make_bitvec(32, self._translator.get_init_name("eax"))
+        eax = self._translator._make_bitvec(32, self._translator.get_init_name("eax"))
 
         mem_before = self._translator.get_memory_init()
         mem_after = self._translator.get_memory()
@@ -145,7 +145,7 @@ class Smtlibv2Tests(unittest.TestCase):
                 self._solver.add(form)
 
         # Add constraints
-        eax = self._solver.make_bitvec(32, self._translator.get_init_name("eax"))
+        eax = self._translator._make_bitvec(32, self._translator.get_init_name("eax"))
         off = BitVec(32, "#x%08x" % 0x1000)
 
         mem_before = self._translator.get_memory_init()
@@ -176,8 +176,8 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_init_name("t0")) != 0,   # Precondition
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t0")) == 0,   # Postcondition
+            self._translator._make_bitvec(32, self._translator.get_init_name("t0")) != 0,   # Precondition
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t0")) == 0,   # Postcondition
         ]
 
         for constr in constraints:
@@ -198,7 +198,7 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t1")) != 0x2,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t1")) != 0x2,
         ]
 
         for constr in constraints:
@@ -219,7 +219,7 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t1")) != 0x7fffffff,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t1")) != 0x7fffffff,
         ]
 
         for constr in constraints:
@@ -240,7 +240,7 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t1")) != 0x2,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t1")) != 0x2,
         ]
 
         for constr in constraints:
@@ -261,7 +261,7 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t1")) != 0xfffffffe,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t1")) != 0xfffffffe,
         ]
 
         for constr in constraints:
@@ -282,7 +282,7 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t1")) != 0xffffffff,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t1")) != 0xffffffff,
         ]
 
         for constr in constraints:
@@ -303,7 +303,7 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t1")) != 0x1,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t1")) != 0x1,
         ]
 
         for constr in constraints:
@@ -324,8 +324,8 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
-            self._solver.make_bitvec(64, self._translator.get_curr_name("t2")) != 0x0000ffffffff0000,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
+            self._translator._make_bitvec(64, self._translator.get_curr_name("t2")) != 0x0000ffffffff0000,
         ]
 
         for constr in constraints:
@@ -346,8 +346,8 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t2")) != 0xffff0000,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t2")) != 0xffff0000,
         ]
 
         for constr in constraints:
@@ -368,8 +368,8 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
-            self._solver.make_bitvec(16, self._translator.get_curr_name("t2")) != 0x0000,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
+            self._translator._make_bitvec(16, self._translator.get_curr_name("t2")) != 0x0000,
         ]
 
         for constr in constraints:
@@ -390,8 +390,8 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
-            self._solver.make_bitvec(64, self._translator.get_curr_name("t2")) != 0x000000000000ffff,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
+            self._translator._make_bitvec(64, self._translator.get_curr_name("t2")) != 0x000000000000ffff,
         ]
 
         for constr in constraints:
@@ -412,8 +412,8 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t2")) != 0x0000ffff,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t2")) != 0x0000ffff,
         ]
 
         for constr in constraints:
@@ -434,8 +434,8 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
-            self._solver.make_bitvec(16, self._translator.get_curr_name("t2")) != 0xffff,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t1")) == 0xffffffff,
+            self._translator._make_bitvec(16, self._translator.get_curr_name("t2")) != 0xffff,
         ]
 
         for constr in constraints:
@@ -457,7 +457,7 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t1")) != 0xffffffff,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t1")) != 0xffffffff,
         ]
 
         for constr in constraints:
@@ -478,7 +478,7 @@ class Smtlibv2Tests(unittest.TestCase):
 
         # Add constraints
         constraints = [
-            self._solver.make_bitvec(32, self._translator.get_curr_name("t1")) != 0x00007fff,
+            self._translator._make_bitvec(32, self._translator.get_curr_name("t1")) != 0x00007fff,
         ]
 
         for constr in constraints:

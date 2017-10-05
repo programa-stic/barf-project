@@ -134,20 +134,6 @@ class Z3Solver(object):
 
         return int(match, 16)
 
-    def make_bitvec(self, size, name):
-        # TODO Refactor this method
-        assert size in [1, 8, 16, 32, 40, 64, 72, 128, 256]
-
-        if name in self._declarations:
-            return self._declarations[name]
-
-        bv = BitVec(size, name)
-
-        self._declarations[name] = bv
-        self._write(bv.declaration)
-
-        return bv
-
     def declare_fun(self, name, fun):
         if name in self._declarations:
             raise Exception("Symbol already declare.")
@@ -259,23 +245,13 @@ class CVC4Solver(object):
 
         return int(match)
 
-    def make_bitvec(self, size, name):
-        # TODO Refactor this method
-        assert size in [1, 8, 16, 32, 40, 64, 72, 128, 256]
-
+    def declare_fun(self, name, fun):
         if name in self._declarations:
-            return self._declarations[name]
-
-        bv = BitVec(size, name)
-
-        self._declarations[name] = bv
-        self._write(bv.declaration)
-
-        return bv
-
-    def declare_fun(self, fun):
-        if fun.name in self._declarations:
             raise Exception("Symbol already declare.")
 
-        self._declarations[fun.name] = fun
+        self._declarations[name] = fun
         self._write(fun.declaration)
+
+    @property
+    def declarations(self):
+        return self._declarations
