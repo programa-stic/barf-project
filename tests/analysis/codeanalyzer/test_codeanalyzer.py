@@ -25,7 +25,6 @@
 import unittest
 
 from barf.analysis.basicblock import CFGRecoverer
-from barf.analysis.basicblock import ControlFlowGraph
 from barf.analysis.basicblock import RecursiveDescent
 from barf.analysis.basicblock.basicblock import ControlFlowGraph
 from barf.analysis.codeanalyzer.codeanalyzer import CodeAnalyzer
@@ -40,8 +39,6 @@ from barf.core.bi import Memory
 from barf.core.smt.smtsolver import Z3Solver as SmtSolver
 # from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
-
-VERBOSE = False
 
 
 class CodeAnalyzerTests(unittest.TestCase):
@@ -59,9 +56,6 @@ class CodeAnalyzerTests(unittest.TestCase):
         self._bb_builder = CFGRecoverer(RecursiveDescent(self._disasm, self._memory, self._ir_translator, self._arch_info))
 
     def test_check_path_satisfiability(self):
-        if VERBOSE:
-            print "[+] Test: test_check_path_satisfiability"
-
         # binary : stack1
         bin_start_address, bin_end_address = 0x08048ec0, 0x8048f02
 
@@ -88,61 +82,42 @@ class CodeAnalyzerTests(unittest.TestCase):
         self._memory.add_vma(bin_start_address, bytearray(binary))
 
         start = 0x08048ec0
-        # start = 0x08048ec6
-        # end = 0x08048efc
         end = 0x08048f01
 
         registers = {
-            "eax" : GenericRegister("eax", 32, 0xffffd0ec),
-            "ecx" : GenericRegister("ecx", 32, 0x00000001),
-            "edx" : GenericRegister("edx", 32, 0xffffd0e4),
-            "ebx" : GenericRegister("ebx", 32, 0x00000000),
-            "esp" : GenericRegister("esp", 32, 0xffffd05c),
-            "ebp" : GenericRegister("ebp", 32, 0x08049580),
-            "esi" : GenericRegister("esi", 32, 0x00000000),
-            "edi" : GenericRegister("edi", 32, 0x08049620),
-            "eip" : GenericRegister("eip", 32, 0x08048ec0),
+            "eax": GenericRegister("eax", 32, 0xffffd0ec),
+            "ecx": GenericRegister("ecx", 32, 0x00000001),
+            "edx": GenericRegister("edx", 32, 0xffffd0e4),
+            "ebx": GenericRegister("ebx", 32, 0x00000000),
+            "esp": GenericRegister("esp", 32, 0xffffd05c),
+            "ebp": GenericRegister("ebp", 32, 0x08049580),
+            "esi": GenericRegister("esi", 32, 0x00000000),
+            "edi": GenericRegister("edi", 32, 0x08049620),
+            "eip": GenericRegister("eip", 32, 0x08048ec0),
         }
 
         flags = {
-            "af" : GenericFlag("af", 0x0),
-            "cf" : GenericFlag("cf", 0x0),
-            "of" : GenericFlag("of", 0x0),
-            "pf" : GenericFlag("pf", 0x1),
-            "sf" : GenericFlag("sf", 0x0),
-            "zf" : GenericFlag("zf", 0x1),
-        }
-
-        memory = {
+            "af": GenericFlag("af", 0x0),
+            "cf": GenericFlag("cf", 0x0),
+            "of": GenericFlag("of", 0x0),
+            "pf": GenericFlag("pf", 0x1),
+            "sf": GenericFlag("sf", 0x0),
+            "zf": GenericFlag("zf", 0x1),
         }
 
         bb_list, calls = self._bb_builder.build(bin_start_address, bin_end_address)
+
         bb_graph = ControlFlowGraph(bb_list)
 
-        codeAnalyzer = CodeAnalyzer(self._smt_solver, self._smt_translator, self._arch_info)
+        code_analyzer = CodeAnalyzer(self._smt_solver, self._smt_translator, self._arch_info)
 
-        codeAnalyzer.set_context(GenericContext(registers, flags, memory))
+        code_analyzer.set_context(GenericContext(registers, flags, {}))
 
-        for bb_path in bb_graph.all_simple_bb_paths(start, end):
-            if VERBOSE:
-                print "[+] Checking path satisfiability :"
-                print "      From : %s" % hex(start)
-                print "      To : %s" % hex(end)
-                print "      Path : %s" % " -> ".join((map(lambda o : hex(o.address), bb_path)))
+        bb_paths = list(bb_graph.all_simple_bb_paths(start, end))
 
-            is_sat = codeAnalyzer.check_path_satisfiability(bb_path, start)
+        self.assertTrue(code_analyzer.check_path_satisfiability(bb_paths[0], start))
+        self.assertTrue(code_analyzer.check_path_satisfiability(bb_paths[1], start))
 
-            if VERBOSE:
-                print "[+] Satisfiability : %s" % str(is_sat)
-
-            self.assertTrue(is_sat)
-
-            if is_sat and VERBOSE:
-                print codeAnalyzer.get_context()
-
-            if VERBOSE:
-                print ":" * 80
-                print ""
 
 def main():
     unittest.main()
