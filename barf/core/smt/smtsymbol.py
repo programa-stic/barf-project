@@ -23,13 +23,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-def cast_bool(value):
-    return Bool(str(value).lower())
-
-
 def cast_to_bool(value):
     if type(value) is bool:
-        value = cast_bool(value)
+        value = Bool(str(value).lower())
 
     assert type(value) == Bool
 
