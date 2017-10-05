@@ -24,18 +24,32 @@
 
 import logging
 import re
-
-from subprocess import PIPE
-from subprocess import Popen
+import subprocess
 
 from barf.core.smt.smtsymbol import Bool
 
 logger = logging.getLogger(__name__)
 
 
+def _check_solver_installation(solver):
+    found = True
+    try:
+        _ = subprocess.check_output(["which", solver])
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 0x1:
+            found = False
+    return found
+
+
+class SmtSolverNotFound(Exception):
+    pass
+
+
 class Z3Solver(object):
 
     def __init__(self):
+        self._name = "z3"
+
         self._status = "unknown"
 
         self._declarations = {}
@@ -43,10 +57,16 @@ class Z3Solver(object):
 
         self._process = None
 
+        self._check_solver()
+
         self._start_solver()
 
+    def _check_solver(self):
+        if not _check_solver_installation(self._name):
+            raise SmtSolverNotFound("{} solver is not installed".format(self._name))
+
     def _start_solver(self):
-        self._process = Popen("z3 -smt2 -in", shell=True, stdin=PIPE, stdout=PIPE)
+        self._process = subprocess.Popen("z3 -smt2 -in", shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
         # Set z3 declaration scopes.
         self._write("(set-option :global-decls false)")
@@ -135,6 +155,8 @@ class Z3Solver(object):
 class CVC4Solver(object):
 
     def __init__(self):
+        self._name = "cvc4"
+
         self._status = "unknown"
 
         self._declarations = {}
@@ -142,10 +164,17 @@ class CVC4Solver(object):
 
         self._process = None
 
+        self._check_solver()
+
         self._start_solver()
 
+    def _check_solver(self):
+        if not _check_solver_installation(self._name):
+            raise SmtSolverNotFound("{} solver is not installed".format(self._name))
+
     def _start_solver(self):
-        self._process = Popen("cvc4 --incremental --lang=smt2", shell=True, stdin=PIPE, stdout=PIPE)
+        self._process = subprocess.Popen("cvc4 --incremental --lang=smt2", shell=True,
+                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
         # Set CVC4 declaration scopes.
         self._write("(set-logic QF_AUFBV)")

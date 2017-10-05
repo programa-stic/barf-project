@@ -27,8 +27,6 @@ BARF : Binary Analysis Framework.
 
 """
 import logging
-import subprocess
-
 import pefile
 
 import arch
@@ -51,7 +49,7 @@ from core.reil import ReilContainer
 from core.reil import ReilContainerInvalidAddressError
 from core.reil import ReilEmulator
 from core.reil import ReilSequence
-from core.smt.smtsolver import CVC4Solver
+from core.smt.smtsolver import CVC4Solver, SmtSolverNotFound
 from core.smt.smtsolver import Z3Solver
 from core.smt.smttranslator import SmtTranslator
 from utils.utils import ExecutionCache
@@ -67,16 +65,6 @@ logger = logging.getLogger(__name__)
 SMT_SOLVER = "Z3"
 # SMT_SOLVER = "CVC4"
 # SMT_SOLVER = None
-
-
-def _check_solver_installation(solver):
-    found = True
-    try:
-        _ = subprocess.check_output(["which", solver])
-    except subprocess.CalledProcessError as e:
-        if e.returncode == 0x1:
-            found = False
-    return found
 
 
 class BARF(object):
@@ -194,18 +182,16 @@ class BARF(object):
             # Set SMT Solver.
             self.smt_solver = None
 
-            if SMT_SOLVER == "Z3":
-                if _check_solver_installation("z3"):
+            if SMT_SOLVER not in ("Z3", "CVC4"):
+                raise Exception("{} SMT solver not supported.".format(SMT_SOLVER))
+
+            try:
+                if SMT_SOLVER == "Z3":
                     self.smt_solver = Z3Solver()
-                else:
-                    logger.warn("z3 solver is not installed. Run 'barf-install-solvers.sh' to install it.")
-            elif SMT_SOLVER == "CVC4":
-                if _check_solver_installation("cvc4"):
+                elif SMT_SOLVER == "CVC4":
                     self.smt_solver = CVC4Solver()
-                else:
-                    logger.warn("cvc4 solver is not installed. Run 'barf-install-solvers.sh' to install it.")
-            elif SMT_SOLVER is not None:
-                raise Exception("Invalid SMT solver.")
+            except SmtSolverNotFound:
+                logger.warn("{} Solver is not installed. Run 'barf-install-solvers.sh' to install it.".format(SMT_SOLVER))
 
             # Set SMT translator.
             self.smt_translator = None
