@@ -381,7 +381,7 @@ class CodeAnalyzer(object):
     def get_immediate_expr(self, immediate, size):
         """Return a smt bit vector that represents an immediate value.
         """
-        return smtsymbol.cast_int(immediate, size)
+        return smtsymbol.Constant(size, immediate)
 
     def get_register_expr(self, register_name, mode="post"):
         """Return a smt bit vector that represents a register.

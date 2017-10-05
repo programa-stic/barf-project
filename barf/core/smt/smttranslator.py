@@ -226,7 +226,7 @@ class SmtTranslator(object):
 
         elif isinstance(operand, ReilImmediateOperand):
 
-            ret_val = smtsymbol.cast_int(operand.immediate, operand.size)
+            ret_val = smtsymbol.Constant(operand.size, operand.immediate)
 
         else:
 
@@ -749,7 +749,7 @@ class SmtTranslator(object):
         op1_var = self._translate_src_oprnd(oprnd1)
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
-        ite = smtfunction.ite(oprnd3.size, op1_var == 0x0, smtsymbol.cast_int(0x1, oprnd3.size), smtsymbol.cast_int(0x0, oprnd3.size))
+        ite = smtfunction.ite(oprnd3.size, op1_var == 0x0, smtsymbol.Constant(oprnd3.size, 0x1), smtsymbol.Constant(oprnd3.size, 0x0))
 
         rv = [(op3_var == ite)]
 

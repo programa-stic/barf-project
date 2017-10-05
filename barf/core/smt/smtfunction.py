@@ -24,10 +24,11 @@
 
 from barf.core.smt.smtsymbol import BitVec
 from barf.core.smt.smtsymbol import Bool
+from barf.core.smt.smtsymbol import Constant
 
 
 def zero_extend(s, size):
-    assert type(s) == BitVec and size - s.size >= 0
+    assert type(s) in (Constant, BitVec) and size - s.size >= 0
 
     if size == s.size:
         return s
@@ -36,7 +37,7 @@ def zero_extend(s, size):
 
 
 def sign_extend(s, size):
-    assert type(s) == BitVec and size - s.size >= 0
+    assert type(s) in (Constant, BitVec) and size - s.size >= 0
 
     if size == s.size:
         return s
@@ -45,7 +46,7 @@ def sign_extend(s, size):
 
 
 def extract(s, offset, size):
-    assert type(s) == BitVec
+    assert type(s) in (Constant, BitVec)
 
     if offset == 0 and size == s.size:
         return s

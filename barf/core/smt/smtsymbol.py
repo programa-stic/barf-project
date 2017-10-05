@@ -36,24 +36,11 @@ def cast_to_bool(value):
     return value
 
 
-def cast_int(value, size):
-    # Truncate value.
-    value = value & ((1 << size) - 1)
-
-    # Format number, choose between binary and hexadecimal notation.
-    if size < 8:
-        value_str = "#b{0:0{fill}b}".format(value, fill=size / 1)
-    else:
-        value_str = "#x{0:0{fill}x}".format(value, fill=size / 4)
-
-    return BitVec(size, value_str)
-
-
 def cast_to_bitvec(value, size):
     if type(value) in (int, long):
-        value = cast_int(value, size)
+        value = Constant(size, value)
 
-    assert type(value) == BitVec and value.size == size
+    assert type(value) in (Constant, BitVec) and value.size == size
 
     return value
 
@@ -230,6 +217,26 @@ class BitVec(Symbol):
 
     def umod(self, other):
         return BitVec(self.size, "bvurem", self, cast_to_bitvec(other, self.size))
+
+
+class Constant(BitVec):
+
+    def __init__(self, size, value, *children):
+        super(Constant, self).__init__(size, self._cast_value(value, size), *children)
+
+        self.size = size
+
+    def _cast_value(self, value, size):
+        # Truncate value.
+        value = value & ((1 << size) - 1)
+
+        # Format number, choose between binary and hexadecimal notation.
+        if size < 8:
+            value_str = "#b{0:0{fill}b}".format(value, fill=size / 1)
+        else:
+            value_str = "#x{0:0{fill}x}".format(value, fill=size / 4)
+
+        return value_str
 
 
 class Array(Symbol):
