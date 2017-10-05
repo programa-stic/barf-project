@@ -195,6 +195,30 @@ class SmtTranslator(object):
         """
         self._arch_regs_size = registers_size
 
+    def make_bitvec(self, size, name):
+        assert size in [1, 8, 16, 32, 40, 64, 72, 128, 256]
+
+        if name in self._solver.declarations:
+            return self._solver.declarations[name]
+
+        bv = smtsymbol.BitVec(size, name)
+
+        self._solver.declare_fun(name, bv)
+
+        return bv
+
+    def make_array(self, size, name):
+        assert size in [32, 64]
+
+        if name in self._solver.declarations:
+            return self._solver.declarations[name]
+
+        arr = smtsymbol.BitVecArray(size, 8, name)
+
+        self._solver.declare_fun(name, arr)
+
+        return arr
+
     # Auxiliary functions
     # ======================================================================== #
     def _register_name(self, name):
@@ -326,30 +350,6 @@ class SmtTranslator(object):
         msg_fmt = "Invalid source type: {0} ({1})"
 
         raise Exception(msg_fmt.format(str(operand), type(operand)))
-
-    def make_bitvec(self, size, name):
-        assert size in [1, 8, 16, 32, 40, 64, 72, 128, 256]
-
-        if name in self._solver.declarations:
-            return self._solver.declarations[name]
-
-        bv = smtsymbol.BitVec(size, name)
-
-        self._solver.declare_fun(name, bv)
-
-        return bv
-
-    def make_array(self, size, name):
-        assert size in [32, 64]
-
-        if name in self._solver.declarations:
-            return self._solver.declarations[name]
-
-        arr = smtsymbol.BitVecArray(size, 8, name)
-
-        self._solver.declare_fun(name, arr)
-
-        return arr
 
     # Arithmetic Instructions
     # ======================================================================== #
@@ -760,20 +760,18 @@ class SmtTranslator(object):
     def _translate_jcc(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a JCC instruction.
         """
-        # raise Exception("Unsupported instruction : JCC")
+        raise Exception("Unsupported instruction : JCC")
 
-        return []
+        # return []
 
     # Other Instructions
     # ======================================================================== #
     def _translate_undef(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a UNDEF instruction.
         """
-        # TODO: Support somehow.
+        raise Exception("Unsupported instruction : UNDEF")
 
-        # raise Exception("Unsupported instruction : UNDEF")
-
-        return []
+        # return []
 
     def _translate_unkn(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a UNKN instruction.
@@ -792,7 +790,7 @@ class SmtTranslator(object):
         """
         # raise Exception("Unsupported instruction : RET")
 
-        return []
+        # return []
 
     # Extension
     # ======================================================================== #
