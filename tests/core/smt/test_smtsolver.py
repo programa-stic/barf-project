@@ -31,7 +31,7 @@ from barf.core.smt.smtsolver import Z3Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
 
-class Smtlibv2Tests(unittest.TestCase):
+class SmtSolverTests(unittest.TestCase):
 
     def setUp(self):
         self._address_size = 32
