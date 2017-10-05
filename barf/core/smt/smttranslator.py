@@ -73,7 +73,7 @@ class SmtTranslator(object):
         self._address_size = address_size
 
         # A SMT array that represents the memory.
-        self._mem = self._make_array(self._address_size, "MEM_0")
+        self._mem = self.make_array(self._address_size, "MEM_0")
 
         self._mem_instance = 0
 
@@ -168,7 +168,7 @@ class SmtTranslator(object):
         self._solver.reset()
 
         # Memory versioning.
-        self._mem = self._make_array(self._address_size, "MEM_0")
+        self._mem = self.make_array(self._address_size, "MEM_0")
         self._mem_instance = 0
 
         self._mem_init = smtsymbol.BitVecArray(self._address_size, 8, "MEM_0")
@@ -261,7 +261,7 @@ class SmtTranslator(object):
             var_size = operand.size
 
         var_name = self._get_var_name(var_base_name)
-        ret_val = self._make_bitvec(var_size, var_name)
+        ret_val = self.make_bitvec(var_size, var_name)
 
         if reg_info:
             ret_val = smtfunction.extract(ret_val, offset, operand.size)
@@ -281,13 +281,13 @@ class SmtTranslator(object):
             var_name = self._get_var_name(var_base_name, fresh=True)
             var_size = self._arch_regs_size[var_base_name]
 
-            ret_val = self._make_bitvec(var_size, var_name)
+            ret_val = self.make_bitvec(var_size, var_name)
 
             ret_val_cpy = ret_val
 
             ret_val = smtfunction.extract(ret_val, offset, operand.size)
 
-            old_ret_val = self._make_bitvec(var_size, old_var_name)
+            old_ret_val = self.make_bitvec(var_size, old_var_name)
 
             constrs = []
 
@@ -315,7 +315,7 @@ class SmtTranslator(object):
             parent_reg_constrs = constrs
         else:
             var_name = self._get_var_name(operand.name, fresh=True)
-            ret_val = self._make_bitvec(operand.size, var_name)
+            ret_val = self.make_bitvec(operand.size, var_name)
 
             parent_reg_constrs = None
 
@@ -328,7 +328,7 @@ class SmtTranslator(object):
 
         raise Exception(msg_fmt.format(str(operand), type(operand)))
 
-    def _make_bitvec(self, size, name):
+    def make_bitvec(self, size, name):
         assert size in [1, 8, 16, 32, 40, 64, 72, 128, 256]
 
         if name in self._solver.declarations:
@@ -340,7 +340,7 @@ class SmtTranslator(object):
 
         return bv
 
-    def _make_array(self, size, name):
+    def make_array(self, size, name):
         assert size in [32, 64]
 
         if name in self._solver.declarations:
@@ -698,7 +698,7 @@ class SmtTranslator(object):
         self._mem_instance += 1
 
         mem_old = self._mem
-        mem_new = self._make_array(self._address_size, "MEM_" + str(self._mem_instance))
+        mem_new = self.make_array(self._address_size, "MEM_" + str(self._mem_instance))
 
         self._mem = mem_new
 
