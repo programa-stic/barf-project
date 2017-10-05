@@ -760,18 +760,18 @@ class SmtTranslator(object):
     def _translate_jcc(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a JCC instruction.
         """
-        raise Exception("Unsupported instruction : JCC")
+        # raise Exception("Unsupported instruction : JCC")
 
-        # return []
+        return []
 
     # Other Instructions
     # ======================================================================== #
     def _translate_undef(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a UNDEF instruction.
         """
-        raise Exception("Unsupported instruction : UNDEF")
+        # raise Exception("Unsupported instruction : UNDEF")
 
-        # return []
+        return []
 
     def _translate_unkn(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a UNKN instruction.
@@ -790,7 +790,7 @@ class SmtTranslator(object):
         """
         # raise Exception("Unsupported instruction : RET")
 
-        # return []
+        return []
 
     # Extension
     # ======================================================================== #
