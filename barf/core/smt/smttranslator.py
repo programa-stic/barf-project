@@ -73,11 +73,10 @@ class SmtTranslator(object):
         self._address_size = address_size
 
         # A SMT array that represents the memory.
-        self._mem = self.make_array(self._address_size, "MEM_0")
-
         self._mem_instance = 0
 
         self._mem_init = smtsymbol.BitVecArray(address_size, 8, "MEM_0")
+        self._mem_curr = self.make_array(self._address_size, "MEM_{}".format(self._mem_instance))
 
         # A variable name mapper maps variable names to its current
         # 'version' of the variable, e.i., 'eax' -> 'eax_3'
@@ -155,7 +154,7 @@ class SmtTranslator(object):
     def get_memory(self):
         """Get SMT memory representation.
         """
-        return self._mem
+        return self._mem_curr
 
     def get_memory_init(self):
         """Get SMT memory representation.
@@ -168,10 +167,10 @@ class SmtTranslator(object):
         self._solver.reset()
 
         # Memory versioning.
-        self._mem = self.make_array(self._address_size, "MEM_0")
         self._mem_instance = 0
 
         self._mem_init = smtsymbol.BitVecArray(self._address_size, 8, "MEM_0")
+        self._mem_curr = self.make_array(self._address_size, "MEM_{}".format(self._mem_instance))
 
         self._var_name_mappers = {}
 
@@ -667,7 +666,7 @@ class SmtTranslator(object):
         exprs = []
 
         for i in reversed(xrange(0, size, 8)):
-            bytes_exprs_1 = self._mem[where + i/8]
+            bytes_exprs_1 = self._mem_curr[where + i/8]
             bytes_exprs_2 = smtfunction.extract(op3_var, i, 8)
 
             exprs += [bytes_exprs_1 == bytes_exprs_2]
@@ -692,15 +691,15 @@ class SmtTranslator(object):
         size = oprnd1.size
 
         for i in xrange(0, size, 8):
-            self._mem[where + i/8] = smtfunction.extract(op1_var, i, 8)
+            self._mem_curr[where + i/8] = smtfunction.extract(op1_var, i, 8)
 
         # Memory versioning.
         self._mem_instance += 1
 
-        mem_old = self._mem
-        mem_new = self.make_array(self._address_size, "MEM_" + str(self._mem_instance))
+        mem_old = self._mem_curr
+        mem_new = self.make_array(self._address_size, "MEM_{}".format(self._mem_instance))
 
-        self._mem = mem_new
+        self._mem_curr = mem_new
 
         return [mem_new == mem_old]
 
