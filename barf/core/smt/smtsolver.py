@@ -148,12 +148,16 @@ class Z3Solver(object):
 
         return bv
 
-    def declare_fun(self, fun):
-        if fun.name in self._declarations:
+    def declare_fun(self, name, fun):
+        if name in self._declarations:
             raise Exception("Symbol already declare.")
 
-        self._declarations[fun.name] = fun
+        self._declarations[name] = fun
         self._write(fun.declaration)
+
+    @property
+    def declarations(self):
+        return self._declarations
 
 
 class CVC4Solver(object):
