@@ -248,7 +248,8 @@ class CodeAnalyzer(object):
         registers = {}
 
         for reg_name, gen_reg in self._context.registers.items():
-            value = self._solver.get_value_by_name(self._translator.get_curr_name(reg_name))
+            symbol = self._solver.declarations[self._translator.get_curr_name(reg_name)]
+            value = self._solver.get_value(symbol)
             registers[reg_name] = GenericRegister(reg_name, gen_reg.size, value)
 
         # Get final values from the SMT solver for the flags set in the
@@ -257,7 +258,8 @@ class CodeAnalyzer(object):
         flags = {}
 
         for flag_name, _ in self._context.flags.items():
-            value = self._solver.get_value_by_name(self._translator.get_curr_name(flag_name))
+            symbol = self._solver.declarations[self._translator.get_curr_name(flag_name)]
+            value = self._solver.get_value(symbol)
             flags[flag_name] = GenericFlag(flag_name, value)
 
         # Get final values from the SMT solver for the memory locations

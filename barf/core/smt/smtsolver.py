@@ -28,8 +28,6 @@ import re
 from subprocess import PIPE
 from subprocess import Popen
 
-from barf.core.smt.smtsymbol import BitVec
-from barf.core.smt.smtsymbol import BitVecArray
 from barf.core.smt.smtsymbol import Bool
 
 logger = logging.getLogger(__name__)
@@ -118,18 +116,6 @@ class Z3Solver(object):
         response = self._read()
 
         regex = r"\(\(([^\s]+|\(.*\))\s#x([^\s]+)\)\)"
-        match = re.search(regex, response).groups()[1]
-
-        return int(match, 16)
-
-    def get_value_by_name(self, name):
-        assert self.check() == "sat"
-
-        self._write("(get-value ({}))".format(self._declarations[name]))
-
-        response = self._read()
-
-        regex = r"\(\(([^\s]*)\s#x([^\s]*)\)\)"
         match = re.search(regex, response).groups()[1]
 
         return int(match, 16)
@@ -229,18 +215,6 @@ class CVC4Solver(object):
         response = self._read()
 
         regex = r"\(\(([^\s]+|\(.*\))\s\(_\sbv([0-9]*)\s[0-9]*\)\)\)"
-        match = re.search(regex, response).groups()[1]
-
-        return int(match)
-
-    def get_value_by_name(self, name):
-        assert self.check() == "sat"
-
-        self._write("(get-value ({}))".format(self._declarations[name]))
-
-        response = self._read()
-
-        regex = r"\(\(([^\s]*)\s\(_\sbv([0-9]*)\s[0-9]*\)\)\)"
         match = re.search(regex, response).groups()[1]
 
         return int(match)
