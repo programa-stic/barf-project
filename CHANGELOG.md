@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 ### Security
 
-## [0.4.0]
+## [0.4.0] - 2017-04-10
 ### Added
 - Update `README` to include new command line options for all BARF tools.
 - Add initial support for x86 `AVX` instruction set.
