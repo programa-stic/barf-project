@@ -370,7 +370,7 @@ class CodeAnalyzer(object):
             else:
                 # Process temporal registers (t0, t1, etc.)
                 var_name = self._get_var_name(operand.name, mode)
-                expr = self._translator.make_bitvec(size, var_name)
+                expr = self._translator.make_bitvec(operand.size, var_name)
         elif isinstance(operand, ReilImmediateOperand):
             expr = self.get_immediate_expr(operand.immediate, operand.size)
         else:
