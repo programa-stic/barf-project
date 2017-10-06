@@ -326,9 +326,7 @@ class CodeAnalyzer(object):
                             continue
 
                         # Add branch condition goal constraint.
-                        branch_var = self.get_operand_var(reil_instr.operands[0])
-
-                        self.add_constraint(branch_var == branch_var_goal)
+                        self.add_constraint(self.get_operand_var(reil_instr.operands[0]) == branch_var_goal)
 
                         # The JCC instruction was the last within the
                         # current basic block. End this iteration and
@@ -351,13 +349,10 @@ class CodeAnalyzer(object):
         # Return satisfiability.
         return sat
 
-    def reset(self, full=False):
+    def reset(self):
         """Reset current state of the analyzer.
         """
-        self._solver.reset()
-
-        if full:
-            self._translator.reset()
+        self._translator.reset()
 
     def get_operand_var(self, operand):
         return self._translator._translate_src_oprnd(operand)

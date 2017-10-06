@@ -96,7 +96,7 @@ class GadgetVerifier(object):
         """Verify gadget.
         """
         # Add instructions to the analyzer
-        self.analyzer.reset(full=True)
+        self.analyzer.reset()
 
         for reil_instr in gadget.get_ir_instrs():
             self.analyzer.add_instruction(reil_instr)
