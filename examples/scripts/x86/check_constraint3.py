@@ -64,7 +64,7 @@ def check_path_satisfiability(code_analyzer, path, start_address):
                             continue
 
                         # Add branch condition goal constraint.
-                        code_analyzer.add_constraint(code_analyzer.get_operand_var(reil_instr.operands[0]) == branch_var_goal)
+                        code_analyzer.add_constraint(code_analyzer.get_operand_expr(reil_instr.operands[0]) == branch_var_goal)
 
                         # The JCC instruction was the last within the
                         # current basic block. End this iteration and

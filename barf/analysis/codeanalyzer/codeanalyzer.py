@@ -52,12 +52,12 @@ class CodeAnalyzer(object):
     def reset(self):
         """Reset current state of the analyzer.
         """
-        self._translator.reset()
-
-    def get_operand_var(self, operand):
-        return self._translator._translate_src_oprnd(operand)
+        self._translator.reset()    # It also resets the solver.
 
     def get_operand_expr(self, operand, mode="post"):
+        """Return a smt bit vector that represents a register (architectural or
+        temporal).
+        """
         if isinstance(operand, ReilRegisterOperand):
             if operand.name in self._arch_info.registers_all:
                 # Process architectural registers (eax, ebx, etc.)
@@ -67,19 +67,15 @@ class CodeAnalyzer(object):
                 var_name = self._get_var_name(operand.name, mode)
                 expr = self._translator.make_bitvec(operand.size, var_name)
         elif isinstance(operand, ReilImmediateOperand):
-            expr = self.get_immediate_expr(operand.immediate, operand.size)
+            expr = smtsymbol.Constant(operand.size, operand.immediate)
         else:
             raise Exception("Invalid operand: %s" % str(operand))
 
         return expr
 
-    def get_immediate_expr(self, immediate, size):
-        """Return a smt bit vector that represents an immediate value.
-        """
-        return smtsymbol.Constant(size, immediate)
-
     def get_register_expr(self, register_name, mode="post"):
-        """Return a smt bit vector that represents a register.
+        """Return a smt bit vector that represents an architectural (native)
+        register.
         """
         reg_info = self._arch_info.alias_mapper.get(register_name, None)
 
