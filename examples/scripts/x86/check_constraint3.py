@@ -30,49 +30,40 @@ if __name__ == "__main__":
     start_addr = 0x80483ed
     end_addr = 0x8048420
 
-    # Recover control flow graph
     print("[+] Recovering function CFG...")
 
     cfg = barf.recover_cfg(start_addr, end_addr)
 
-    # Set stack
-    esp = barf.code_analyzer.get_register_expr("esp")
+    print("[+] Checking path satisfiability...")
 
-    barf.code_analyzer.set_preconditions([esp == 0xffffceec])
+    # Preconditions: set stack
+    # Note: this isn't strictly necessary but it helps reduce the time it
+    # takes the solver find a solution.
+    esp = barf.code_analyzer.get_register_expr("esp", mode="pre")
+
+    barf.code_analyzer.add_constraint(esp == 0xffffceec)
 
     # Traverse paths and check satisfiability
-    print("Checking path satisfiability...")
-
     for bb_path in cfg.all_simple_bb_paths(start_addr, end_addr):
-        path_addrs = [hex(bb.address) for bb in bb_path]
+        print("[+] Path: {0}".format(" -> ".join([hex(bb.address) for bb in bb_path])))
 
-        print("[+] Path : {0}".format(" -> ".join(path_addrs)))
+        if barf.code_analyzer.check_path_satisfiability(bb_path, start_addr):
+            print("[+] Satisfiable! Possible assignments:")
 
-        is_sat = barf.code_analyzer.check_path_satisfiability(bb_path, start_addr)
-
-        print("    Satisfiable? : {0}".format(is_sat))
-
-        if is_sat:
-            ebp = barf.code_analyzer.get_register_expr("ebp")
-
-            rv = barf.code_analyzer.get_memory_expr(ebp-0x10, 4)
-            cookie1 = barf.code_analyzer.get_memory_expr(ebp-0xc, 4)
-            cookie2 = barf.code_analyzer.get_memory_expr(ebp-0x8, 4)
-            cookie3 = barf.code_analyzer.get_memory_expr(ebp-0x4, 4)
-
-            esp_val = barf.code_analyzer.get_expr_value(esp)
-            ebp_val = barf.code_analyzer.get_expr_value(ebp)
+            ebp = barf.code_analyzer.get_register_expr("ebp", mode="post")
+            rv = barf.code_analyzer.get_memory_expr(ebp-0x10, 4, mode="post")
+            cookie1 = barf.code_analyzer.get_memory_expr(ebp-0xc, 4, mode="post")
+            cookie2 = barf.code_analyzer.get_memory_expr(ebp-0x8, 4, mode="post")
+            cookie3 = barf.code_analyzer.get_memory_expr(ebp-0x4, 4, mode="post")
 
             rv_val = barf.code_analyzer.get_expr_value(rv)
             cookie1_val = barf.code_analyzer.get_expr_value(cookie1)
             cookie2_val = barf.code_analyzer.get_expr_value(cookie2)
             cookie3_val = barf.code_analyzer.get_expr_value(cookie3)
 
-            print("      esp: 0x{0:08x}".format(esp_val))
-            print("      ebp: 0x{0:08x}".format(ebp_val))
-
-            print("      cookie1: 0x{0:08x} ({0})".format(cookie1_val))
-            print("      cookie2: 0x{0:08x} ({0})".format(cookie2_val))
-            print("      cookie3: 0x{0:08x} ({0})".format(cookie3_val))
-
-            print("      rv: 0x{0:08x} ({0})".format(rv_val))
+            print("- cookie1: 0x{0:08x} ({0})".format(cookie1_val))
+            print("- cookie2: 0x{0:08x} ({0})".format(cookie2_val))
+            print("- cookie3: 0x{0:08x} ({0})".format(cookie3_val))
+            print("- rv:      0x{0:08x} ({0})".format(rv_val))
+        else:
+            print("[-] Unsatisfiable!")

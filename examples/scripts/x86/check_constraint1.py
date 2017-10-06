@@ -24,57 +24,46 @@ if __name__ == "__main__":
     # 8048404:       c9                      leave
     # 8048405:       c3                      ret
 
-    start_addr = 0x80483ed
-    end_addr = 0x8048401
-
-    # Add instructions to analyze
     print("[+] Adding instructions to the analyzer...")
 
-    for addr, asm_instr, reil_instrs in barf.translate(start_addr, end_addr):
+    for addr, asm_instr, reil_instrs in barf.translate(start=0x80483ed, end=0x8048401):
         print("0x{0:08x} : {1}".format(addr, asm_instr))
 
         for reil_instr in reil_instrs:
-            print("{0:14}{1}".format("", reil_instr))
-
             barf.code_analyzer.add_instruction(reil_instr)
 
-    # Get smt expressions and set pre and post conditions
     print("[+] Adding pre and post conditions to the analyzer...")
 
-    # Get smt expression for eax and ebp registers
-    eax = barf.code_analyzer.get_register_expr("eax")
-    ebp = barf.code_analyzer.get_register_expr("ebp")
+    ebp = barf.code_analyzer.get_register_expr("ebp", mode="post")
 
-    # Get smt expressions for memory locations (each one of 4 bytes)
-    a = barf.code_analyzer.get_memory_expr(ebp-0x8, 4)
-    b = barf.code_analyzer.get_memory_expr(ebp-0xc, 4)
-    c = barf.code_analyzer.get_memory_expr(ebp-0x4, 4)
+    # Preconditions: set range for variable a and b
+    a = barf.code_analyzer.get_memory_expr(ebp-0x8, 4, mode="pre")
+    b = barf.code_analyzer.get_memory_expr(ebp-0xc, 4, mode="pre")
 
-    # Set range for variable a and b
-    barf.code_analyzer.set_preconditions([a >= 2, a <= 100])
-    barf.code_analyzer.set_preconditions([b >= 2, b <= 100])
+    for constr in [a >= 2, a <= 100, b >= 2, b <= 100]:
+        barf.code_analyzer.add_constraint(constr)
 
-    # Set desired value for the result
-    barf.code_analyzer.set_postconditions([c >= 26, c <= 28])
+    # Postconditions: set desired value for the result
+    c = barf.code_analyzer.get_memory_expr(ebp-0x4, 4, mode="post")
 
-    # Check satisfiability
+    for constr in [c >= 26, c <= 28]:
+        barf.code_analyzer.add_constraint(constr)
+
     print("[+] Check for satisfiability...")
 
     if barf.code_analyzer.check() == 'sat':
-        print("    SAT! :: Possible assignments : ")
+        print("[+] Satisfiable! Possible assignments:")
 
         # Get concrete value for expressions
-        eax_val = barf.code_analyzer.get_expr_value(eax)
         a_val = barf.code_analyzer.get_expr_value(a)
         b_val = barf.code_analyzer.get_expr_value(b)
         c_val = barf.code_analyzer.get_expr_value(c)
 
         # Print values
-        print("    eax : 0x{0:08x} ({0})".format(eax_val))
-        print("      a : 0x{0:08x} ({0})".format(a_val))
-        print("      b : 0x{0:08x} ({0})".format(b_val))
-        print("      c : 0x{0:08x} ({0})".format(c_val))
+        print("- a: {0:#010x} ({0})".format(a_val))
+        print("- b: {0:#010x} ({0})".format(b_val))
+        print("- c: {0:#010x} ({0})".format(c_val))
 
-        assert(a_val + b_val + 5 == c_val)
+        assert a_val + b_val + 5 == c_val
     else:
-        print("    UNSAT!")
+        print("[-] Unsatisfiable!")

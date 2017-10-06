@@ -390,21 +390,16 @@ class CodeAnalyzer(object):
 
         if reg_info:
             var_base_name, offset = reg_info
-
-            var_name = self._get_var_name(var_base_name, mode)
-            var_size = self._arch_info.registers_size[var_base_name]
-
-            ret_val = self._translator.make_bitvec(var_size, var_name)
-            ret_val = smtfunction.extract(
-                ret_val,
-                offset,
-                self._arch_info.registers_size[register_name]
-            )
         else:
-            var_name = self._get_var_name(register_name, mode)
-            var_size = self._arch_info.registers_size[register_name]
+            var_base_name = register_name
 
-            ret_val = self._translator.make_bitvec(var_size, var_name)
+        var_name = self._get_var_name(var_base_name, mode)
+        var_size = self._arch_info.registers_size[var_base_name]
+
+        ret_val = self._translator.make_bitvec(var_size, var_name)
+
+        if reg_info:
+            ret_val = smtfunction.extract(ret_val, offset, self._arch_info.registers_size[register_name])
 
         return ret_val
 
@@ -413,49 +408,28 @@ class CodeAnalyzer(object):
         """
         mem = self.get_memory(mode)
 
-        bytes_exprs = []
-
-        for index in xrange(0, size):
-            bytes_exprs.append(mem[address + index])
-
-        return smtfunction.concat(8, *reversed(bytes_exprs))
+        return smtfunction.concat(8, *reversed([mem[address + i] for i in xrange(size)]))
 
     def get_memory(self, mode):
         """Return a smt bit vector that represents a memory location.
         """
-        if mode == "pre":
-            mem = self._translator.get_memory_init()
-        elif mode == "post":
-            mem = self._translator.get_memory()
-        else:
-            raise Exception()
+        mem = {
+            "pre": self._translator.get_memory_init(),
+            "post": self._translator.get_memory(),
+        }
 
-        return mem
+        return mem[mode]
 
     def add_instruction(self, reil_instruction):
         """Add an instruction for analysis.
         """
-        smt_exprs = self._translator.translate(reil_instruction)
-
-        for smt_expr in smt_exprs:
-            self._solver.add(smt_expr)
+        for expr in self._translator.translate(reil_instruction):
+            self._solver.add(expr)
 
     def add_constraint(self, constraint):
         """Add constraint to the current set of formulas.
         """
         self._solver.add(constraint)
-
-    def set_preconditions(self, conditions):
-        """Add preconditions to the analyzer.
-        """
-        for cond in conditions:
-            self._solver.add(cond)
-
-    def set_postconditions(self, conditions):
-        """Add postconditions to the analyzer.
-        """
-        for cond in conditions:
-            self._solver.add(cond)
 
     def check(self):
         """Check if the instructions and restrictions added so far are
@@ -474,11 +448,9 @@ class CodeAnalyzer(object):
     def _get_var_name(self, register_name, mode):
         """Get variable name for a register considering pre and post mode.
         """
-        if mode == "pre":
-            var_name = self._translator.get_init_name(register_name)
-        elif mode == "post":
-            var_name = self._translator.get_curr_name(register_name)
-        else:
-            raise Exception()
+        var_name = {
+            "pre": self._translator.get_init_name(register_name),
+            "post": self._translator.get_curr_name(register_name),
+        }
 
-        return var_name
+        return var_name[mode]
