@@ -24,7 +24,8 @@
 
 import logging
 
-import barf.core.smt.smtlibv2 as smtlibv2
+import barf.core.smt.smtfunction as smtfunction
+import barf.core.smt.smtsymbol as smtsymbol
 
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilMnemonic
@@ -221,14 +222,14 @@ class CodeAnalyzer(object):
         # Add each register and its value to the context of the SMT
         # solver as an assertion.
         for _, gen_reg in self._context.registers.items():
-            smt_reg = self._solver.mkBitVec(gen_reg.size, self._translator.get_init_name(gen_reg.name))
+            smt_reg = self._translator.make_bitvec(gen_reg.size, self._translator.get_init_name(gen_reg.name))
             self._solver.add(smt_reg == gen_reg.value)
 
         # Add each flag and its value to the context of the SMT solver
         # as an assertion.
         # TODO: Flag size should be 1 bit.
         for _, gen_flag in self._context.flags.items():
-            smt_flag = self._solver.mkBitVec(32, self._translator.get_init_name(gen_flag.name))
+            smt_flag = self._translator.make_bitvec(32, self._translator.get_init_name(gen_flag.name))
 
             self._solver.add(smt_flag == gen_flag.value)
 
@@ -247,7 +248,8 @@ class CodeAnalyzer(object):
         registers = {}
 
         for reg_name, gen_reg in self._context.registers.items():
-            value = self._solver.getvaluebyname(self._translator.get_curr_name(reg_name))
+            symbol = self._solver.declarations[self._translator.get_curr_name(reg_name)]
+            value = self._solver.get_value(symbol)
             registers[reg_name] = GenericRegister(reg_name, gen_reg.size, value)
 
         # Get final values from the SMT solver for the flags set in the
@@ -256,7 +258,8 @@ class CodeAnalyzer(object):
         flags = {}
 
         for flag_name, _ in self._context.flags.items():
-            value = self._solver.getvaluebyname(self._translator.get_curr_name(flag_name))
+            symbol = self._solver.declarations[self._translator.get_curr_name(flag_name)]
+            value = self._solver.get_value(symbol)
             flags[flag_name] = GenericFlag(flag_name, value)
 
         # Get final values from the SMT solver for the memory locations
@@ -266,7 +269,7 @@ class CodeAnalyzer(object):
         mem = self._translator.get_memory()
 
         for addr, _ in self._context.memory.items():
-            value = self._solver.getvalue(mem[addr])
+            value = self._solver.get_value(mem[addr])
             memory[addr] = value
 
         return GenericContext(registers, flags, memory)
@@ -274,8 +277,6 @@ class CodeAnalyzer(object):
     def check_path_satisfiability(self, path, start_address):
         """Check satisfiability of a basic block path.
         """
-        self._solver.reset()
-
         start_instr_found = False
         sat = False
 
@@ -353,7 +354,7 @@ class CodeAnalyzer(object):
     def reset(self, full=False):
         """Reset current state of the analyzer.
         """
-        self._solver.reset(full)
+        self._solver.reset()
 
         if full:
             self._translator.reset()
@@ -368,8 +369,8 @@ class CodeAnalyzer(object):
                 expr = self.get_register_expr(operand.name, mode=mode)
             else:
                 # Process temporal registers (t0, t1, etc.)
-                var_name = self._get_var_name(name, mode)
-                expr = self._solver.mkBitVec(size, var_name)
+                var_name = self._get_var_name(operand.name, mode)
+                expr = self._translator.make_bitvec(size, var_name)
         elif isinstance(operand, ReilImmediateOperand):
             expr = self.get_immediate_expr(operand.immediate, operand.size)
         else:
@@ -380,7 +381,7 @@ class CodeAnalyzer(object):
     def get_immediate_expr(self, immediate, size):
         """Return a smt bit vector that represents an immediate value.
         """
-        return self._translator.convert_to_bitvec(ReilImmediateOperand(immediate, size))
+        return smtsymbol.Constant(size, immediate)
 
     def get_register_expr(self, register_name, mode="post"):
         """Return a smt bit vector that represents a register.
@@ -393,8 +394,8 @@ class CodeAnalyzer(object):
             var_name = self._get_var_name(var_base_name, mode)
             var_size = self._arch_info.registers_size[var_base_name]
 
-            ret_val = self._translator._solver.mkBitVec(var_size, var_name)
-            ret_val = smtlibv2.EXTRACT(
+            ret_val = self._translator.make_bitvec(var_size, var_name)
+            ret_val = smtfunction.extract(
                 ret_val,
                 offset,
                 self._arch_info.registers_size[register_name]
@@ -403,7 +404,7 @@ class CodeAnalyzer(object):
             var_name = self._get_var_name(register_name, mode)
             var_size = self._arch_info.registers_size[register_name]
 
-            ret_val = self._solver.mkBitVec(var_size, var_name)
+            ret_val = self._translator.make_bitvec(var_size, var_name)
 
         return ret_val
 
@@ -417,7 +418,7 @@ class CodeAnalyzer(object):
         for index in xrange(0, size):
             bytes_exprs.append(mem[address + index])
 
-        return smtlibv2.CONCAT(8, *reversed(bytes_exprs))
+        return smtfunction.concat(8, *reversed(bytes_exprs))
 
     def get_memory(self, mode):
         """Return a smt bit vector that represents a memory location.
@@ -431,21 +432,18 @@ class CodeAnalyzer(object):
 
         return mem
 
-    def add_instruction(self, reil_instruction, comment=None):
+    def add_instruction(self, reil_instruction):
         """Add an instruction for analysis.
         """
         smt_exprs = self._translator.translate(reil_instruction)
 
-        for idx, smt_expr in enumerate(smt_exprs):
-            if idx == 0:
-                self._solver.add(smt_expr, comment)
-            else:
-                self._solver.add(smt_expr)
+        for smt_expr in smt_exprs:
+            self._solver.add(smt_expr)
 
-    def add_constraint(self, constraint, comment=None):
+    def add_constraint(self, constraint):
         """Add constraint to the current set of formulas.
         """
-        self._solver.add(constraint, comment)
+        self._solver.add(constraint)
 
     def set_preconditions(self, conditions):
         """Add preconditions to the analyzer.
@@ -469,7 +467,7 @@ class CodeAnalyzer(object):
     def get_expr_value(self, expr):
         """Get a value for an expression.
         """
-        return self._solver.getvalue(expr)
+        return self._solver.get_value(expr)
 
     # Auxiliary methods
     # ======================================================================== #

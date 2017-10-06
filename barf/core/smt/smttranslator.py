@@ -29,16 +29,14 @@ SMTLIB language.
 SmtTranslator
 -------------
 
-This class provides functionalities for REIL to SMT expressions
-translation. The main method is **translate**, which takes a instruction
-as a parameter. It interacts with a SMT solver (through the **smtlibv2**
-module). When an instruction is translated, this translation is reflected
-in the state of the SMT solver (this means, each expression is asserted
-in the current context of SMT solver). Also, the translation is return
-in form of a expression of BitVec. For example, the translation of
-"ADD t0 (32), t1 (32), t2 (32)" returns the SMT expression
-"(= t2_0 (bvadd t0_1 t1_0))". It also send the following commands to the
-solver:
+This class provides functionality for REIL to SMT expressions translation. The
+main method is **translate**, which takes a instruction as a parameter. It
+interacts with a SMT solver. When an instruction is translated, this
+translation is reflected in the state of the SMT solver (this means, each
+expression is asserted in the current context of SMT solver). Also, the
+translation is return in form of a expression of BitVec. For example, the
+translation of "ADD t0 (32), t1 (32), t2 (32)" returns the SMT expression "(=
+t2_0 (bvadd t0_1 t1_0))". It also send the following commands to the solver:
 
 (declare-fun t0_0 () (_ BitVec 32))
 (declare-fun t1_0 () (_ BitVec 32))
@@ -48,7 +46,8 @@ solver:
 """
 import logging
 
-import barf.core.smt.smtlibv2 as smtlibv2
+import barf.core.smt.smtfunction as smtfunction
+import barf.core.smt.smtsymbol as smtsymbol
 
 from barf.core.reil.reil import ReilImmediateOperand
 from barf.core.reil.reil import ReilMnemonic
@@ -60,7 +59,7 @@ logger = logging.getLogger(__name__)
 
 class SmtTranslator(object):
 
-    """SMT Translator. This class provides functionalities for REIL to
+    """SMT Translator. This class provides functionality for REIL to
     SMT expressions translation.
 
     """
@@ -74,10 +73,10 @@ class SmtTranslator(object):
         self._address_size = address_size
 
         # A SMT array that represents the memory.
-        self._mem = self._solver.mkArray(address_size, "MEM_0")
         self._mem_instance = 0
 
-        self._mem_init = self._solver.mkArrayNew(address_size, "MEM_0")
+        self._mem_init = smtsymbol.BitVecArray(address_size, 8, "MEM_0")
+        self._mem_curr = self.make_array(self._address_size, "MEM_{}".format(self._mem_instance))
 
         # A variable name mapper maps variable names to its current
         # 'version' of the variable, e.i., 'eax' -> 'eax_3'
@@ -155,7 +154,7 @@ class SmtTranslator(object):
     def get_memory(self):
         """Get SMT memory representation.
         """
-        return self._mem
+        return self._mem_curr
 
     def get_memory_init(self):
         """Get SMT memory representation.
@@ -165,32 +164,15 @@ class SmtTranslator(object):
     def reset(self):
         """Reset internal state.
         """
-        self._solver.reset(full=True)
+        self._solver.reset()
 
         # Memory versioning.
-        self._mem = self._solver.mkArray(self._address_size, "MEM_0")
         self._mem_instance = 0
 
-        self._mem_init = self._solver.mkArrayNew(self._address_size, "MEM_0")
+        self._mem_init = smtsymbol.BitVecArray(self._address_size, 8, "MEM_0")
+        self._mem_curr = self.make_array(self._address_size, "MEM_{}".format(self._mem_instance))
 
         self._var_name_mappers = {}
-
-    def convert_to_bitvec(self, operand):
-        """Convert operand to a BitVec
-        """
-        if isinstance(operand, ReilRegisterOperand):
-
-            bitvec = self._solver.mkBitVec(operand.size, self.get_curr_name(operand.name))
-
-        elif isinstance(operand, ReilImmediateOperand):
-
-            bitvec = self._translate_immediate_oprnd(operand)
-
-        else:
-
-            self._raise_invalid_type_oprnd(operand)
-
-        return bitvec
 
     def set_arch_alias_mapper(self, alias_mapper):
         """Set native register alias mapper.
@@ -213,6 +195,30 @@ class SmtTranslator(object):
         """
         self._arch_regs_size = registers_size
 
+    def make_bitvec(self, size, name):
+        assert size in [1, 8, 16, 32, 40, 64, 72, 128, 256]
+
+        if name in self._solver.declarations:
+            return self._solver.declarations[name]
+
+        bv = smtsymbol.BitVec(size, name)
+
+        self._solver.declare_fun(name, bv)
+
+        return bv
+
+    def make_array(self, size, name):
+        assert size in [32, 64]
+
+        if name in self._solver.declarations:
+            return self._solver.declarations[name]
+
+        arr = smtsymbol.BitVecArray(size, 8, name)
+
+        self._solver.declare_fun(name, arr)
+
+        return arr
+
     # Auxiliary functions
     # ======================================================================== #
     def _register_name(self, name):
@@ -234,16 +240,6 @@ class SmtTranslator(object):
 
         return var_name
 
-    def _translate_immediate_oprnd(self, operand):
-        """Translate REIL immediate operand to SMT.
-        """
-        if operand.size >= 4:
-            fmt = "#x%" + "%0003d" % (operand.size / 4) + "x"
-        else:
-            fmt = "#b%1d"
-
-        return smtlibv2.BitVec(operand.size, fmt % operand.immediate)
-
     def _translate_src_oprnd(self, operand):
         """Translate source operand to a SMT expression.
         """
@@ -253,7 +249,7 @@ class SmtTranslator(object):
 
         elif isinstance(operand, ReilImmediateOperand):
 
-            ret_val = self._translate_immediate_oprnd(operand)
+            ret_val = smtsymbol.Constant(operand.size, operand.immediate)
 
         else:
 
@@ -282,14 +278,16 @@ class SmtTranslator(object):
         if reg_info:
             var_base_name, offset = reg_info
 
-            var_name = self._get_var_name(var_base_name)
             var_size = self._arch_regs_size[var_base_name]
-
-            ret_val = self._solver.mkBitVec(var_size, var_name)
-            ret_val = smtlibv2.EXTRACT(ret_val, offset, operand.size)
         else:
-            var_name = self._get_var_name(operand.name)
-            ret_val = self._solver.mkBitVec(operand.size, var_name)
+            var_base_name = operand.name
+            var_size = operand.size
+
+        var_name = self._get_var_name(var_base_name)
+        ret_val = self.make_bitvec(var_size, var_name)
+
+        if reg_info:
+            ret_val = smtfunction.extract(ret_val, offset, operand.size)
 
         return ret_val
 
@@ -306,41 +304,41 @@ class SmtTranslator(object):
             var_name = self._get_var_name(var_base_name, fresh=True)
             var_size = self._arch_regs_size[var_base_name]
 
-            ret_val = self._solver.mkBitVec(var_size, var_name)
+            ret_val = self.make_bitvec(var_size, var_name)
 
             ret_val_cpy = ret_val
 
-            ret_val = smtlibv2.EXTRACT(ret_val, offset, operand.size)
+            ret_val = smtfunction.extract(ret_val, offset, operand.size)
 
-            old_ret_val = self._solver.mkBitVec(var_size, old_var_name)
+            old_ret_val = self.make_bitvec(var_size, old_var_name)
 
             constrs = []
 
             if 0 < offset < var_size - 1:
-                lower_expr_1 = smtlibv2.EXTRACT(ret_val_cpy, 0, offset)
-                lower_expr_2 = smtlibv2.EXTRACT(old_ret_val, 0, offset)
+                lower_expr_1 = smtfunction.extract(ret_val_cpy, 0, offset)
+                lower_expr_2 = smtfunction.extract(old_ret_val, 0, offset)
 
                 constrs += [lower_expr_1 == lower_expr_2]
 
-                upper_expr_1 = smtlibv2.EXTRACT(ret_val_cpy, offset+operand.size, var_size - offset - operand.size)
-                upper_expr_2 = smtlibv2.EXTRACT(old_ret_val, offset+operand.size, var_size - offset - operand.size)
+                upper_expr_1 = smtfunction.extract(ret_val_cpy, offset + operand.size, var_size - offset - operand.size)
+                upper_expr_2 = smtfunction.extract(old_ret_val, offset + operand.size, var_size - offset - operand.size)
 
                 constrs += [upper_expr_1 == upper_expr_2]
             elif offset == 0:
-                upper_expr_1 = smtlibv2.EXTRACT(ret_val_cpy, offset+operand.size, var_size - offset - operand.size)
-                upper_expr_2 = smtlibv2.EXTRACT(old_ret_val, offset+operand.size, var_size - offset - operand.size)
+                upper_expr_1 = smtfunction.extract(ret_val_cpy, offset + operand.size, var_size - offset - operand.size)
+                upper_expr_2 = smtfunction.extract(old_ret_val, offset + operand.size, var_size - offset - operand.size)
 
                 constrs += [upper_expr_1 == upper_expr_2]
             elif offset == var_size-1:
-                lower_expr_1 = smtlibv2.EXTRACT(ret_val_cpy, 0, offset)
-                lower_expr_2 = smtlibv2.EXTRACT(old_ret_val, 0, offset)
+                lower_expr_1 = smtfunction.extract(ret_val_cpy, 0, offset)
+                lower_expr_2 = smtfunction.extract(old_ret_val, 0, offset)
 
                 constrs += [lower_expr_1 == lower_expr_2]
 
             parent_reg_constrs = constrs
         else:
             var_name = self._get_var_name(operand.name, fresh=True)
-            ret_val = self._solver.mkBitVec(operand.size, var_name)
+            ret_val = self.make_bitvec(operand.size, var_name)
 
             parent_reg_constrs = None
 
@@ -366,12 +364,12 @@ class SmtTranslator(object):
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
         if oprnd3.size > oprnd1.size:
-            op1_var_zx = smtlibv2.ZEXTEND(op1_var, oprnd3.size)
-            op2_var_zx = smtlibv2.ZEXTEND(op2_var, oprnd3.size)
+            op1_var_zx = smtfunction.zero_extend(op1_var, oprnd3.size)
+            op2_var_zx = smtfunction.zero_extend(op2_var, oprnd3.size)
 
             expr = (op3_var == (op1_var_zx + op2_var_zx))
         elif oprnd3.size < oprnd1.size:
-            sum_extract = smtlibv2.EXTRACT(op1_var + op2_var, 0, oprnd3.size)
+            sum_extract = smtfunction.extract(op1_var + op2_var, 0, oprnd3.size)
 
             expr = (op3_var == sum_extract)
         else:
@@ -395,12 +393,12 @@ class SmtTranslator(object):
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
         if oprnd3.size > oprnd1.size:
-            op1_var_zx = smtlibv2.ZEXTEND(op1_var, oprnd3.size)
-            op2_var_zx = smtlibv2.ZEXTEND(op2_var, oprnd3.size)
+            op1_var_zx = smtfunction.zero_extend(op1_var, oprnd3.size)
+            op2_var_zx = smtfunction.zero_extend(op2_var, oprnd3.size)
 
             expr = (op3_var == (op1_var_zx - op2_var_zx))
         elif oprnd3.size < oprnd1.size:
-            sub_extract = smtlibv2.EXTRACT(op1_var - op2_var, 0, oprnd3.size)
+            sub_extract = smtfunction.extract(op1_var - op2_var, 0, oprnd3.size)
 
             expr = (op3_var == sub_extract)
         else:
@@ -424,12 +422,12 @@ class SmtTranslator(object):
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
         if oprnd3.size > oprnd1.size:
-            op1_var_zx = smtlibv2.ZEXTEND(op1_var, oprnd3.size)
-            op2_var_zx = smtlibv2.ZEXTEND(op2_var, oprnd3.size)
+            op1_var_zx = smtfunction.zero_extend(op1_var, oprnd3.size)
+            op2_var_zx = smtfunction.zero_extend(op2_var, oprnd3.size)
 
             expr = (op3_var == op1_var_zx * op2_var_zx)
         elif oprnd3.size < oprnd1.size:
-            mul_extract = smtlibv2.EXTRACT(op1_var * op2_var, 0, oprnd3.size)
+            mul_extract = smtfunction.extract(op1_var * op2_var, 0, oprnd3.size)
 
             expr = (op3_var == mul_extract)
         else:
@@ -494,12 +492,12 @@ class SmtTranslator(object):
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
         if oprnd1.size == oprnd3.size:
-            expr = [(op3_var == (op1_var % op2_var))]
+            expr = [(op3_var == (op1_var.umod(op2_var)))]
         elif oprnd3.size > oprnd1.size:
-            op1_var_zx = smtlibv2.ZEXTEND(op1_var, oprnd3.size)
-            op2_var_zx = smtlibv2.ZEXTEND(op2_var, oprnd3.size)
+            op1_var_zx = smtfunction.zero_extend(op1_var, oprnd3.size)
+            op2_var_zx = smtfunction.zero_extend(op2_var, oprnd3.size)
 
-            expr = [(op3_var == (op1_var_zx % op2_var_zx))]
+            expr = [(op3_var == (op1_var_zx.umod(op2_var_zx)))]
         else:
             raise Exception("Error")
 
@@ -521,7 +519,7 @@ class SmtTranslator(object):
         op2_var = self._translate_src_oprnd(oprnd2)
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
-        expr = (op3_var == (op2_var.smod(op1_var)))
+        expr = (op3_var == (op1_var % op2_var))
 
         rv = [expr]
 
@@ -541,22 +539,22 @@ class SmtTranslator(object):
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
         if oprnd3.size > oprnd1.size:
-            op1_var_zx = smtlibv2.ZEXTEND(op1_var, oprnd3.size)
-            op2_var_zx = smtlibv2.ZEXTEND(op2_var, oprnd3.size)
+            op1_var_zx = smtfunction.zero_extend(op1_var, oprnd3.size)
+            op2_var_zx = smtfunction.zero_extend(op2_var, oprnd3.size)
 
             op2_var_neg = (-op2_var)
-            op2_var_neg_sx = smtlibv2.SEXTEND(op2_var_neg, oprnd2.size, oprnd3.size)
+            op2_var_neg_sx = smtfunction.sign_extend(op2_var_neg, oprnd3.size)
 
-            shr = smtlibv2.EXTRACT(op1_var_zx >> op2_var_neg_sx, 0, op3_var.size)
-            shl = smtlibv2.EXTRACT(op1_var_zx << op2_var_zx, 0, op3_var.size)
+            shr = smtfunction.extract(op1_var_zx >> op2_var_neg_sx, 0, op3_var.size)
+            shl = smtfunction.extract(op1_var_zx << op2_var_zx, 0, op3_var.size)
         elif oprnd3.size < oprnd1.size:
-            shr = smtlibv2.EXTRACT(op1_var >> (-op2_var), 0, op3_var.size)
-            shl = smtlibv2.EXTRACT(op1_var << op2_var, 0, op3_var.size)
+            shr = smtfunction.extract(op1_var >> (-op2_var), 0, op3_var.size)
+            shl = smtfunction.extract(op1_var << op2_var, 0, op3_var.size)
         else:
             shr = op1_var >> (-op2_var)
             shl = op1_var << op2_var
 
-        expr = (op3_var == smtlibv2.ITEBV(oprnd3.size, op2_var >= 0, shl, shr))
+        expr = (op3_var == smtfunction.ite(oprnd3.size, op2_var >= 0, shl, shr))
 
         rv = [expr]
 
@@ -578,11 +576,11 @@ class SmtTranslator(object):
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
         if oprnd1.size < oprnd3.size:
-            and_zx = smtlibv2.ZEXTEND(op1_var & op2_var, oprnd3.size)
+            and_zx = smtfunction.zero_extend(op1_var & op2_var, oprnd3.size)
 
             expr = (op3_var == and_zx)
         elif oprnd1.size > oprnd3.size:
-            and_extract = smtlibv2.EXTRACT(op1_var & op2_var, 0, oprnd3.size)
+            and_extract = smtfunction.extract(op1_var & op2_var, 0, oprnd3.size)
 
             expr = (op3_var == and_extract)
         else:
@@ -606,11 +604,11 @@ class SmtTranslator(object):
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
         if oprnd1.size < oprnd3.size:
-            or_zx = smtlibv2.ZEXTEND(op1_var | op2_var, oprnd3.size)
+            or_zx = smtfunction.zero_extend(op1_var | op2_var, oprnd3.size)
 
             expr = (op3_var == or_zx)
         elif oprnd1.size > oprnd3.size:
-            or_extract = smtlibv2.EXTRACT(op1_var | op2_var, 0, oprnd3.size)
+            or_extract = smtfunction.extract(op1_var | op2_var, 0, oprnd3.size)
 
             expr = (op3_var == or_extract)
         else:
@@ -634,11 +632,11 @@ class SmtTranslator(object):
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
         if oprnd1.size < oprnd3.size:
-            xor_zx = smtlibv2.ZEXTEND(op1_var ^ op2_var, oprnd3.size)
+            xor_zx = smtfunction.zero_extend(op1_var ^ op2_var, oprnd3.size)
 
             expr = (op3_var == xor_zx)
         elif oprnd1.size > oprnd3.size:
-            xor_extract = smtlibv2.EXTRACT(op1_var ^ op2_var, 0, oprnd3.size)
+            xor_extract = smtfunction.extract(op1_var ^ op2_var, 0, oprnd3.size)
 
             expr = (op3_var == xor_extract)
         else:
@@ -668,8 +666,8 @@ class SmtTranslator(object):
         exprs = []
 
         for i in reversed(xrange(0, size, 8)):
-            bytes_exprs_1 = smtlibv2.ord(self._mem[where + i/8])
-            bytes_exprs_2 = smtlibv2.EXTRACT(op3_var, i, 8)
+            bytes_exprs_1 = self._mem_curr[where + i/8]
+            bytes_exprs_2 = smtfunction.extract(op3_var, i, 8)
 
             exprs += [bytes_exprs_1 == bytes_exprs_2]
 
@@ -693,15 +691,15 @@ class SmtTranslator(object):
         size = oprnd1.size
 
         for i in xrange(0, size, 8):
-            self._mem[where + i/8] = smtlibv2.EXTRACT(op1_var, i, 8)
+            self._mem_curr[where + i/8] = smtfunction.extract(op1_var, i, 8)
 
         # Memory versioning.
         self._mem_instance += 1
 
-        mem_old = self._mem
-        mem_new = self._solver.mkArray(self._address_size, "MEM_" + str(self._mem_instance))
+        mem_old = self._mem_curr
+        mem_new = self.make_array(self._address_size, "MEM_{}".format(self._mem_instance))
 
-        self._mem = mem_new
+        self._mem_curr = mem_new
 
         return [mem_new == mem_old]
 
@@ -718,17 +716,17 @@ class SmtTranslator(object):
         if oprnd1.size == oprnd3.size:
             expr = (op1_var == op3_var)
         elif oprnd1.size < oprnd3.size:
-            expr = (op1_var == smtlibv2.EXTRACT(op3_var, 0, op1_var.size))
+            expr = (op1_var == smtfunction.extract(op3_var, 0, op1_var.size))
 
             # Make sure that the values that can take dst operand
             # do not exceed the range of the source operand.
             # TODO: Find a better way to enforce this.
             fmt = "#b%0{0}d".format(op3_var.size - op1_var.size)
-            imm = smtlibv2.BitVec(op3_var.size - op1_var.size, fmt % 0)
+            imm = smtsymbol.BitVec(op3_var.size - op1_var.size, fmt % 0)
 
-            constrs = [(imm == smtlibv2.EXTRACT(op3_var, op1_var.size, op3_var.size - op1_var.size))]
+            constrs = [(imm == smtfunction.extract(op3_var, op1_var.size, op3_var.size - op1_var.size))]
         else:
-            expr = (smtlibv2.EXTRACT(op1_var, 0, op3_var.size) == op3_var)
+            expr = (smtfunction.extract(op1_var, 0, op3_var.size) == op3_var)
 
         rv = [expr]
 
@@ -750,7 +748,7 @@ class SmtTranslator(object):
         op1_var = self._translate_src_oprnd(oprnd1)
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
-        ite = smtlibv2.ITEBV(oprnd3.size, op1_var == 0x0, 0x1, 0x0)
+        ite = smtfunction.ite(oprnd3.size, op1_var == 0x0, smtsymbol.Constant(oprnd3.size, 0x1), smtsymbol.Constant(oprnd3.size, 0x0))
 
         rv = [(op3_var == ite)]
 
@@ -771,8 +769,6 @@ class SmtTranslator(object):
     def _translate_undef(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a UNDEF instruction.
         """
-        # TODO: Support somehow.
-
         # raise Exception("Unsupported instruction : UNDEF")
 
         return []
@@ -811,7 +807,7 @@ class SmtTranslator(object):
         if oprnd1.size == oprnd3.size:
             expr = (op1_var == op3_var)
         elif oprnd1.size < oprnd3.size:
-            expr = (op3_var == smtlibv2.SEXTEND(op1_var, op1_var.size, op3_var.size))
+            expr = (op3_var == smtfunction.sign_extend(op1_var, op3_var.size))
 
             # Make sure that the values that can take dst operand
             # do not exceed the range of the source operand.
@@ -819,9 +815,9 @@ class SmtTranslator(object):
 
             # TODO: This should not be needed any more.
             # fmt = "#b%0{0}d".format(op3_var.size - op1_var.size)
-            # imm = smtlibv2.BitVec(op3_var.size - op1_var.size, fmt % 0)
+            # imm = smtsymbol.BitVec(op3_var.size - op1_var.size, fmt % 0)
 
-            # constrs = [(imm == smtlibv2.EXTRACT(op3_var, op1_var.size, op3_var.size - op1_var.size))]
+            # constrs = [(imm == smtfunction.EXTRACT(op3_var, op1_var.size, op3_var.size - op1_var.size))]
         else:
             raise Exception("Invalid operand size: %d" % str(oprnd3))
 

@@ -25,7 +25,8 @@
 import unittest
 
 from barf.core.reil import ReilParser
-from barf.core.smt.smtlibv2 import Z3Solver as SmtSolver
+from barf.core.smt.smtsolver import Z3Solver as SmtSolver
+# from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
 
@@ -98,13 +99,12 @@ class SmtTranslatorTests(unittest.TestCase):
         self.assertEqual(len(form), 1)
         self.assertEqual(form[0].value, "(= t2_1 (bvsdiv t0_0 t1_0))")
 
-    # FIX It generates a bvsmod expression when it should generate a bvmod one.
-    # def test_translate_mod(self):
-    #     instr = self._parser.parse(["mod [BYTE t0, BYTE t1, BYTE t2]"])[0]
-    #     form = self._translator.translate(instr)
+    def test_translate_mod(self):
+        instr = self._parser.parse(["mod [BYTE t0, BYTE t1, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-    #     self.assertEqual(len(form), 1)
-    #     self.assertEqual(form[0].value, "(= t2_1 (bvmod t0_0 t1_0))")
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (bvurem t0_0 t1_0))")
 
     def test_translate_smod(self):
         instr = self._parser.parse(["smod [BYTE t0, BYTE t1, BYTE t2]"])[0]
