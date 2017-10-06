@@ -1,6 +1,89 @@
 #! /usr/bin/env python
 
+import logging
+
 from barf import BARF
+
+from barf.core.reil import ReilMnemonic
+
+logger = logging.getLogger(__name__)
+
+
+def check_path_satisfiability(code_analyzer, path, start_address):
+        """Check satisfiability of a basic block path.
+        """
+        start_instr_found = False
+        sat = False
+
+        # Traverse basic blocks, translate its instructions to SMT
+        # expressions and add them as assertions.
+        for bb_curr, bb_next in zip(path[:-1], path[1:]):
+            logger.info("BB @ {:#x}".format(bb_curr.address))
+
+            # For each dual instruction...
+            for dinstr in bb_curr:
+                # If the start instruction have not been found, keep
+                # looking...
+                if not start_instr_found:
+                    if dinstr.address == start_address:
+                        start_instr_found = True
+                    else:
+                        continue
+
+                logger.info("{:#x} {}".format(dinstr.address, dinstr.asm_instr))
+
+                # For each REIL instruction...
+                for reil_instr in dinstr.ir_instrs:
+                    logger.info("{:#x} {:02d} {}".format(reil_instr.address >> 0x8, reil_instr.address & 0xff,
+                                                         reil_instr))
+
+                    if reil_instr.mnemonic == ReilMnemonic.JCC:
+                        # Check that the JCC is the last instruction of
+                        # the basic block (skip CALL instructions.)
+                        if dinstr.address + dinstr.asm_instr.size - 1 != bb_curr.end_address:
+                            logger.error("Unexpected JCC instruction: {:#x} {} ({})".format(dinstr.address,
+                                                                                            dinstr.asm_instr,
+                                                                                            reil_instr))
+
+                            # raise Exception()
+
+                            continue
+
+                        # Make sure branch target address from current
+                        # basic block is the start address of the next.
+                        assert(bb_curr.taken_branch == bb_next.address or
+                               bb_curr.not_taken_branch == bb_next.address or
+                               bb_curr.direct_branch == bb_next.address)
+
+                        # Set branch condition accordingly.
+                        if bb_curr.taken_branch == bb_next.address:
+                            branch_var_goal = 0x1
+                        elif bb_curr.not_taken_branch == bb_next.address:
+                            branch_var_goal = 0x0
+                        else:
+                            continue
+
+                        # Add branch condition goal constraint.
+                        code_analyzer.add_constraint(code_analyzer.get_operand_var(reil_instr.operands[0]) == branch_var_goal)
+
+                        # The JCC instruction was the last within the
+                        # current basic block. End this iteration and
+                        # start next one.
+                        break
+
+                    # Translate and add SMT expressions to the solver.
+                    code_analyzer.add_instruction(reil_instr)
+
+            sat = code_analyzer.check() == 'sat'
+
+            logger.info("BB @ {:#x} sat? {}".format(bb_curr.address, sat))
+
+            if not sat:
+                break
+
+        # Return satisfiability.
+        return sat
+
 
 if __name__ == "__main__":
     #
@@ -47,7 +130,7 @@ if __name__ == "__main__":
     for bb_path in cfg.all_simple_bb_paths(start_addr, end_addr):
         print("[+] Path: {0}".format(" -> ".join([hex(bb.address) for bb in bb_path])))
 
-        if barf.code_analyzer.check_path_satisfiability(bb_path, start_addr):
+        if check_path_satisfiability(barf.code_analyzer, bb_path, start_addr):
             print("[+] Satisfiable! Possible assignments:")
 
             ebp = barf.code_analyzer.get_register_expr("ebp", mode="post")

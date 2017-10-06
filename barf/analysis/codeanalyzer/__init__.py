@@ -23,6 +23,3 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from codeanalyzer import CodeAnalyzer
-from codeanalyzer import GenericContext
-from codeanalyzer import GenericFlag
-from codeanalyzer import GenericRegister
