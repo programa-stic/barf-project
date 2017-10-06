@@ -23,7 +23,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-def cast_to_bool(value):
+def _cast_to_bool(value):
     if type(value) is bool:
         value = Bool(str(value).lower())
 
@@ -32,7 +32,7 @@ def cast_to_bool(value):
     return value
 
 
-def cast_to_bitvec(value, size):
+def _cast_to_bitvec(value, size):
     if type(value) in (int, long):
         value = Constant(size, value)
 
@@ -65,33 +65,33 @@ class Bool(Symbol):
 
     # Comparison operators
     def __eq__(self, other):
-        return Bool("=", self, cast_to_bool(other))
+        return Bool("=", self, _cast_to_bool(other))
 
     def __ne__(self, other):
         return Bool("not", self == other)
 
     # Logical operators
     def __and__(self, other):
-        return Bool("and", self, cast_to_bool(other))
+        return Bool("and", self, _cast_to_bool(other))
 
     def __or__(self, other):
-        return Bool("or", self, cast_to_bool(other))
+        return Bool("or", self, _cast_to_bool(other))
 
     def __xor__(self, other):
-        return Bool("xor", self, cast_to_bool(other))
+        return Bool("xor", self, _cast_to_bool(other))
 
     def __invert__(self):
         return Bool("not", self)
 
     # Reverse logical operators
     def __rand__(self, other):
-        return Bool("and", cast_to_bool(other), self)
+        return Bool("and", _cast_to_bool(other), self)
 
     def __ror__(self, other):
-        return Bool("or", cast_to_bool(other), self)
+        return Bool("or", _cast_to_bool(other), self)
 
     def __rxor__(self, other):
-        return Bool("xor", cast_to_bool(other), self)
+        return Bool("xor", _cast_to_bool(other), self)
 
 
 class BitVec(Symbol):
@@ -107,112 +107,112 @@ class BitVec(Symbol):
 
     # Arithmetic operators
     def __add__(self, other):
-        return BitVec(self.size, "bvadd", self, cast_to_bitvec(other, self.size))
+        return BitVec(self.size, "bvadd", self, _cast_to_bitvec(other, self.size))
 
     def __sub__(self, other):
-        return BitVec(self.size, "bvsub", self, cast_to_bitvec(other, self.size))
+        return BitVec(self.size, "bvsub", self, _cast_to_bitvec(other, self.size))
 
     def __mul__(self, other):
-        return BitVec(self.size, "bvmul", self, cast_to_bitvec(other, self.size))
+        return BitVec(self.size, "bvmul", self, _cast_to_bitvec(other, self.size))
 
     def __div__(self, other):
-        return BitVec(self.size, "bvsdiv", self, cast_to_bitvec(other, self.size))
+        return BitVec(self.size, "bvsdiv", self, _cast_to_bitvec(other, self.size))
 
     def __mod__(self, other):
-        return BitVec(self.size, "bvsmod", self, cast_to_bitvec(other, self.size))
+        return BitVec(self.size, "bvsmod", self, _cast_to_bitvec(other, self.size))
 
     def __neg__(self):
         return BitVec(self.size, "bvneg", self)
 
     # Reverse arithmetic operators
     def __radd__(self, other):
-        return BitVec(self.size, "bvadd", cast_to_bitvec(other, self.size), self)
+        return BitVec(self.size, "bvadd", _cast_to_bitvec(other, self.size), self)
 
     def __rsub__(self, other):
-        return BitVec(self.size, "bvsub", cast_to_bitvec(other, self.size), self)
+        return BitVec(self.size, "bvsub", _cast_to_bitvec(other, self.size), self)
 
     def __rmul__(self, other):
-        return BitVec(self.size, "bvmul", cast_to_bitvec(other, self.size), self)
+        return BitVec(self.size, "bvmul", _cast_to_bitvec(other, self.size), self)
 
     def __rdiv__(self, other):
-        return BitVec(self.size, "bvsdiv", cast_to_bitvec(other, self.size), self)
+        return BitVec(self.size, "bvsdiv", _cast_to_bitvec(other, self.size), self)
 
     def __rmod__(self, other):
-        return BitVec(self.size, "bvsmod", cast_to_bitvec(other, self.size), self)
+        return BitVec(self.size, "bvsmod", _cast_to_bitvec(other, self.size), self)
 
     # Bitwise operators
     def __and__(self, other):
-        return BitVec(self.size, "bvand", self, cast_to_bitvec(other, self.size))
+        return BitVec(self.size, "bvand", self, _cast_to_bitvec(other, self.size))
 
     def __xor__(self, other):
-        return BitVec(self.size, "bvxor", self, cast_to_bitvec(other, self.size))
+        return BitVec(self.size, "bvxor", self, _cast_to_bitvec(other, self.size))
 
     def __or__(self, other):
-        return BitVec(self.size, "bvor", self, cast_to_bitvec(other, self.size))
+        return BitVec(self.size, "bvor", self, _cast_to_bitvec(other, self.size))
 
     def __lshift__(self, other):
-        return BitVec(self.size, "bvshl", self, cast_to_bitvec(other, self.size))
+        return BitVec(self.size, "bvshl", self, _cast_to_bitvec(other, self.size))
 
     def __rshift__(self, other):
-        return BitVec(self.size, "bvlshr", self, cast_to_bitvec(other, self.size))
+        return BitVec(self.size, "bvlshr", self, _cast_to_bitvec(other, self.size))
 
     def __invert__(self):
         return BitVec(self.size, "bvnot", self)
 
     # Reverse bitwise operators
     def __rand__(self, other):
-        return BitVec(self.size, "bvand", cast_to_bitvec(other, self.size), self)
+        return BitVec(self.size, "bvand", _cast_to_bitvec(other, self.size), self)
 
     def __rxor__(self, other):
-        return BitVec(self.size, "bvxor", cast_to_bitvec(other, self.size), self)
+        return BitVec(self.size, "bvxor", _cast_to_bitvec(other, self.size), self)
 
     def __ror__(self, other):
-        return BitVec(self.size, "bvor", cast_to_bitvec(other, self.size), self)
+        return BitVec(self.size, "bvor", _cast_to_bitvec(other, self.size), self)
 
     def __rlshift__(self, other):
-        return BitVec(self.size, "bvshl", cast_to_bitvec(other, self.size), self)
+        return BitVec(self.size, "bvshl", _cast_to_bitvec(other, self.size), self)
 
     def __rrshift__(self, other):
-        return BitVec(self.size, "bvlshr", cast_to_bitvec(other, self.size), self)
+        return BitVec(self.size, "bvlshr", _cast_to_bitvec(other, self.size), self)
 
     # Comparison operators (signed)
     def __lt__(self, other):
-        return Bool("bvslt", self, cast_to_bitvec(other, self.size))
+        return Bool("bvslt", self, _cast_to_bitvec(other, self.size))
 
     def __le__(self, other):
-        return Bool("bvsle", self, cast_to_bitvec(other, self.size))
+        return Bool("bvsle", self, _cast_to_bitvec(other, self.size))
 
     def __eq__(self, other):
-        return Bool("=", self, cast_to_bitvec(other, self.size))
+        return Bool("=", self, _cast_to_bitvec(other, self.size))
 
     def __ne__(self, other):
         return Bool("not", self == other)
 
     def __gt__(self, other):
-        return Bool("bvsgt", self, cast_to_bitvec(other, self.size))
+        return Bool("bvsgt", self, _cast_to_bitvec(other, self.size))
 
     def __ge__(self, other):
-        return Bool("bvsge", self, cast_to_bitvec(other, self.size))
+        return Bool("bvsge", self, _cast_to_bitvec(other, self.size))
 
     # Comparison operators (unsigned)
     def ult(self, other):
-        return Bool("bvult", self, cast_to_bitvec(other, self.size))
+        return Bool("bvult", self, _cast_to_bitvec(other, self.size))
 
     def ule(self, other):
-        return Bool("bvule", self, cast_to_bitvec(other, self.size))
+        return Bool("bvule", self, _cast_to_bitvec(other, self.size))
 
     def ugt(self, other):
-        return Bool("bvugt", self, cast_to_bitvec(other, self.size))
+        return Bool("bvugt", self, _cast_to_bitvec(other, self.size))
 
     def uge(self, other):
-        return Bool("bvuge", self, cast_to_bitvec(other, self.size))
+        return Bool("bvuge", self, _cast_to_bitvec(other, self.size))
 
     # Arithmetic operators (unsigned)
     def udiv(self, other):
-        return BitVec(self.size, "bvudiv", self, cast_to_bitvec(other, self.size))
+        return BitVec(self.size, "bvudiv", self, _cast_to_bitvec(other, self.size))
 
     def umod(self, other):
-        return BitVec(self.size, "bvurem", self, cast_to_bitvec(other, self.size))
+        return BitVec(self.size, "bvurem", self, _cast_to_bitvec(other, self.size))
 
 
 class Constant(BitVec):
@@ -258,12 +258,12 @@ class BitVecArray(object):
                                                                                 self.value_size)
 
     def select(self, key):
-        return BitVec(self.value_size, "select", self.array, cast_to_bitvec(key, self.key_size))
+        return BitVec(self.value_size, "select", self.array, _cast_to_bitvec(key, self.key_size))
 
     def store(self, key, value):
         return Array(self.key_size, self.value_size, "(store {} {} {})".format(self.array,
-                                                                               cast_to_bitvec(key, self.key_size),
-                                                                               cast_to_bitvec(value, self.value_size)))
+                                                                               _cast_to_bitvec(key, self.key_size),
+                                                                               _cast_to_bitvec(value, self.value_size)))
 
     # Index operators
     def __getitem__(self, key):
