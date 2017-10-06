@@ -340,7 +340,7 @@ class SmtTranslator(object):
             var_name = self._get_var_name(operand.name, fresh=True)
             ret_val = self.make_bitvec(operand.size, var_name)
 
-            parent_reg_constrs = None
+            parent_reg_constrs = []
 
         return ret_val, parent_reg_constrs
 
@@ -375,12 +375,7 @@ class SmtTranslator(object):
         else:
             expr = (op3_var == (op1_var + op2_var))
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [expr] + parent_reg_constrs
 
     def _translate_sub(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of an SUB instruction.
@@ -404,12 +399,7 @@ class SmtTranslator(object):
         else:
             expr = (op3_var == (op1_var - op2_var))
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [expr] + parent_reg_constrs
 
     def _translate_mul(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of an MUL instruction.
@@ -433,12 +423,7 @@ class SmtTranslator(object):
         else:
             expr = (op3_var == (op1_var * op2_var))
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [expr] + parent_reg_constrs
 
     def _translate_div(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of an DIV instruction.
@@ -453,12 +438,7 @@ class SmtTranslator(object):
 
         expr = (op3_var == (op1_var.udiv(op2_var)))
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [expr] + parent_reg_constrs
 
     def _translate_sdiv(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of an DIV instruction.
@@ -473,12 +453,7 @@ class SmtTranslator(object):
 
         expr = (op3_var == (op1_var / op2_var))
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [expr] + parent_reg_constrs
 
     def _translate_mod(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of an MOD instruction.
@@ -492,21 +467,16 @@ class SmtTranslator(object):
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
         if oprnd1.size == oprnd3.size:
-            expr = [(op3_var == (op1_var.umod(op2_var)))]
+            expr = (op3_var == (op1_var.umod(op2_var)))
         elif oprnd3.size > oprnd1.size:
             op1_var_zx = smtfunction.zero_extend(op1_var, oprnd3.size)
             op2_var_zx = smtfunction.zero_extend(op2_var, oprnd3.size)
 
-            expr = [(op3_var == (op1_var_zx.umod(op2_var_zx)))]
+            expr = (op3_var == (op1_var_zx.umod(op2_var_zx)))
         else:
             raise Exception("Error")
 
-        rv = expr
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [expr] + parent_reg_constrs
 
     def _translate_smod(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of an MOD instruction.
@@ -521,12 +491,7 @@ class SmtTranslator(object):
 
         expr = (op3_var == (op1_var % op2_var))
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [expr] + parent_reg_constrs
 
     def _translate_bsh(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a BSH instruction.
@@ -556,12 +521,7 @@ class SmtTranslator(object):
 
         expr = (op3_var == smtfunction.ite(oprnd3.size, op2_var >= 0, shl, shr))
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [expr] + parent_reg_constrs
 
     # Bitwise Instructions
     # ======================================================================== #
@@ -586,12 +546,7 @@ class SmtTranslator(object):
         else:
             expr = (op3_var == (op1_var & op2_var))
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [expr] + parent_reg_constrs
 
     def _translate_or(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a OR instruction.
@@ -614,12 +569,7 @@ class SmtTranslator(object):
         else:
             expr = (op3_var == (op1_var | op2_var))
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [expr] + parent_reg_constrs
 
     def _translate_xor(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a AND instruction.
@@ -642,12 +592,7 @@ class SmtTranslator(object):
         else:
             expr = (op3_var == (op1_var ^ op2_var))
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [expr] + parent_reg_constrs
 
     # Data transfer Instructions
     # ======================================================================== #
@@ -671,12 +616,7 @@ class SmtTranslator(object):
 
             exprs += [bytes_exprs_1 == bytes_exprs_2]
 
-        rv = exprs
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return exprs
+        return exprs + parent_reg_constrs
 
     def _translate_stm(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a STM instruction.
@@ -728,15 +668,7 @@ class SmtTranslator(object):
         else:
             expr = (smtfunction.extract(op1_var, 0, op3_var.size) == op3_var)
 
-        rv = [expr]
-
-        if constrs:
-            rv += constrs
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [expr] + constrs + parent_reg_constrs
 
     # Conditional Instructions
     # ======================================================================== #
@@ -750,12 +682,9 @@ class SmtTranslator(object):
 
         ite = smtfunction.ite(oprnd3.size, op1_var == 0x0, smtsymbol.Constant(oprnd3.size, 0x1), smtsymbol.Constant(oprnd3.size, 0x0))
 
-        rv = [(op3_var == ite)]
+        expr = (op3_var == ite)
 
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [expr] + parent_reg_constrs
 
     def _translate_jcc(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a JCC instruction.
@@ -821,12 +750,4 @@ class SmtTranslator(object):
         else:
             raise Exception("Invalid operand size: %d" % str(oprnd3))
 
-        rv = [expr]
-
-        if constrs:
-            rv += constrs
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [expr] + constrs + parent_reg_constrs
