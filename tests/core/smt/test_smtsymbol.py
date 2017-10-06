@@ -380,3 +380,11 @@ class BitVecArrayTests(unittest.TestCase):
 
         self.assertEqual(b.value, "(select a k)")
         self.assertEqual(c.value, "(select a #x00000001)")
+
+
+def main():
+    unittest.main()
+
+
+if __name__ == '__main__':
+    main()

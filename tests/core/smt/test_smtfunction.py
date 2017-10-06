@@ -79,3 +79,11 @@ class SmtFunctionTests(unittest.TestCase):
 
         self.assertEqual(z.value, "(concat x y)")
         self.assertEqual(v.value, "x")
+
+
+def main():
+    unittest.main()
+
+
+if __name__ == '__main__':
+    main()
