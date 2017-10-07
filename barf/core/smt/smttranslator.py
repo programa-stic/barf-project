@@ -611,10 +611,7 @@ class SmtTranslator(object):
         exprs = []
 
         for i in reversed(xrange(0, size, 8)):
-            bytes_exprs_1 = self._mem_curr[where + i/8]
-            bytes_exprs_2 = smtfunction.extract(op3_var, i, 8)
-
-            exprs += [bytes_exprs_1 == bytes_exprs_2]
+            exprs += [self._mem_curr[where + i / 8] == smtfunction.extract(op3_var, i, 8)]
 
         return exprs + parent_reg_constrs
 
@@ -651,24 +648,14 @@ class SmtTranslator(object):
         op1_var = self._translate_src_oprnd(oprnd1)
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
-        constrs = []
-
         if oprnd1.size == oprnd3.size:
             expr = (op1_var == op3_var)
         elif oprnd1.size < oprnd3.size:
-            expr = (op1_var == smtfunction.extract(op3_var, 0, op1_var.size))
-
-            # Make sure that the values that can take dst operand
-            # do not exceed the range of the source operand.
-            # TODO: Find a better way to enforce this.
-            fmt = "#b%0{0}d".format(op3_var.size - op1_var.size)
-            imm = smtsymbol.BitVec(op3_var.size - op1_var.size, fmt % 0)
-
-            constrs = [(imm == smtfunction.extract(op3_var, op1_var.size, op3_var.size - op1_var.size))]
+            expr = (op3_var == smtfunction.zero_extend(op1_var, op3_var.size))
         else:
             expr = (smtfunction.extract(op1_var, 0, op3_var.size) == op3_var)
 
-        return [expr] + constrs + parent_reg_constrs
+        return [expr] + parent_reg_constrs
 
     # Conditional Instructions
     # ======================================================================== #
@@ -731,23 +718,11 @@ class SmtTranslator(object):
         op1_var = self._translate_src_oprnd(oprnd1)
         op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
 
-        constrs = []
-
         if oprnd1.size == oprnd3.size:
             expr = (op1_var == op3_var)
         elif oprnd1.size < oprnd3.size:
             expr = (op3_var == smtfunction.sign_extend(op1_var, op3_var.size))
-
-            # Make sure that the values that can take dst operand
-            # do not exceed the range of the source operand.
-            # TODO: Find a better way to enforce this.
-
-            # TODO: This should not be needed any more.
-            # fmt = "#b%0{0}d".format(op3_var.size - op1_var.size)
-            # imm = smtsymbol.BitVec(op3_var.size - op1_var.size, fmt % 0)
-
-            # constrs = [(imm == smtfunction.EXTRACT(op3_var, op1_var.size, op3_var.size - op1_var.size))]
         else:
             raise Exception("Invalid operand size: %d" % str(oprnd3))
 
-        return [expr] + constrs + parent_reg_constrs
+        return [expr] + parent_reg_constrs
