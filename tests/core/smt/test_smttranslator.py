@@ -183,7 +183,8 @@ class SmtTranslatorTests(unittest.TestCase):
         instr = self._parser.parse(["jcc [BIT t0, empty, DWORD t2]"])[0]
         form = self._translator.translate(instr)
 
-        self.assertEqual(len(form), 0)
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(not (= t0_0 #b0))")
 
     # Other Instructions
     def test_translate_undef(self):
