@@ -408,28 +408,6 @@ class SmtTranslator(object):
 
         return [op3_var == operation] + op3_var_constrs
 
-    def _translate_sdiv(self, oprnd1, oprnd2, oprnd3):
-        """Return a formula representation of an DIV instruction.
-        """
-        assert oprnd1.size and oprnd2.size and oprnd3.size
-        assert oprnd1.size == oprnd2.size
-
-        op1_var = self._translate_src_oprnd(oprnd1)
-        op2_var = self._translate_src_oprnd(oprnd2)
-        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
-
-        if oprnd3.size > oprnd1.size:
-            op1_var_sx = smtfunction.sign_extend(op1_var, oprnd3.size)
-            op2_var_sx = smtfunction.sign_extend(op2_var, oprnd3.size)
-
-            operation = op1_var_sx / op2_var_sx
-        elif oprnd3.size < oprnd1.size:
-            operation = smtfunction.extract(op1_var / op2_var, 0, oprnd3.size)
-        else:
-            operation = op1_var / op2_var
-
-        return [op3_var == operation] + op3_var_constrs
-
     def _translate_mod(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of an MOD instruction.
         """
@@ -449,28 +427,6 @@ class SmtTranslator(object):
             operation = smtfunction.extract(op1_var.umod(op2_var), 0, oprnd3.size)
         else:
             operation = op1_var.umod(op2_var)
-
-        return [op3_var == operation] + op3_var_constrs
-
-    def _translate_smod(self, oprnd1, oprnd2, oprnd3):
-        """Return a formula representation of an MOD instruction.
-        """
-        assert oprnd1.size and oprnd2.size and oprnd3.size
-        assert oprnd1.size == oprnd2.size
-
-        op1_var = self._translate_src_oprnd(oprnd1)
-        op2_var = self._translate_src_oprnd(oprnd2)
-        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
-
-        if oprnd3.size > oprnd1.size:
-            op1_var_sx = smtfunction.sign_extend(op1_var, oprnd3.size)
-            op2_var_sx = smtfunction.sign_extend(op2_var, oprnd3.size)
-
-            operation = op1_var_sx % op2_var_sx
-        elif oprnd3.size < oprnd1.size:
-            operation = smtfunction.extract(op1_var % op2_var, 0, oprnd3.size)
-        else:
-            operation = op1_var % op2_var
 
         return [op3_var == operation] + op3_var_constrs
 
@@ -643,15 +599,15 @@ class SmtTranslator(object):
 
     # Other Instructions
     # ======================================================================== #
-    def _translate_undef(self, oprnd1, oprnd2, oprnd3):
-        """Return a formula representation of a UNDEF instruction.
-        """
-        raise Exception("Unsupported instruction : UNDEF")
-
     def _translate_unkn(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a UNKN instruction.
         """
         raise Exception("Unsupported instruction : UNKN")
+
+    def _translate_undef(self, oprnd1, oprnd2, oprnd3):
+        """Return a formula representation of a UNDEF instruction.
+        """
+        raise Exception("Unsupported instruction : UNDEF")
 
     def _translate_nop(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a NOP instruction.
@@ -681,5 +637,49 @@ class SmtTranslator(object):
             raise Exception("Operands size mismatch.")
         else:
             operation = op1_var
+
+        return [op3_var == operation] + op3_var_constrs
+
+    def _translate_sdiv(self, oprnd1, oprnd2, oprnd3):
+        """Return a formula representation of an DIV instruction.
+        """
+        assert oprnd1.size and oprnd2.size and oprnd3.size
+        assert oprnd1.size == oprnd2.size
+
+        op1_var = self._translate_src_oprnd(oprnd1)
+        op2_var = self._translate_src_oprnd(oprnd2)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
+
+        if oprnd3.size > oprnd1.size:
+            op1_var_sx = smtfunction.sign_extend(op1_var, oprnd3.size)
+            op2_var_sx = smtfunction.sign_extend(op2_var, oprnd3.size)
+
+            operation = op1_var_sx / op2_var_sx
+        elif oprnd3.size < oprnd1.size:
+            operation = smtfunction.extract(op1_var / op2_var, 0, oprnd3.size)
+        else:
+            operation = op1_var / op2_var
+
+        return [op3_var == operation] + op3_var_constrs
+
+    def _translate_smod(self, oprnd1, oprnd2, oprnd3):
+        """Return a formula representation of an MOD instruction.
+        """
+        assert oprnd1.size and oprnd2.size and oprnd3.size
+        assert oprnd1.size == oprnd2.size
+
+        op1_var = self._translate_src_oprnd(oprnd1)
+        op2_var = self._translate_src_oprnd(oprnd2)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
+
+        if oprnd3.size > oprnd1.size:
+            op1_var_sx = smtfunction.sign_extend(op1_var, oprnd3.size)
+            op2_var_sx = smtfunction.sign_extend(op2_var, oprnd3.size)
+
+            operation = op1_var_sx % op2_var_sx
+        elif oprnd3.size < oprnd1.size:
+            operation = smtfunction.extract(op1_var % op2_var, 0, oprnd3.size)
+        else:
+            operation = op1_var % op2_var
 
         return [op3_var == operation] + op3_var_constrs
