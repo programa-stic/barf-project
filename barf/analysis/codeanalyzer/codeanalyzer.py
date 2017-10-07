@@ -106,7 +106,7 @@ class CodeAnalyzer(object):
         """
         mem = {
             "pre": self._translator.get_memory_init(),
-            "post": self._translator.get_memory(),
+            "post": self._translator.get_memory_curr(),
         }
 
         return mem[mode]
@@ -140,8 +140,8 @@ class CodeAnalyzer(object):
         """Get variable name for a register considering pre and post mode.
         """
         var_name = {
-            "pre": self._translator.get_init_name(register_name),
-            "post": self._translator.get_curr_name(register_name),
+            "pre": self._translator.get_name_init(register_name),
+            "post": self._translator.get_name_curr(register_name),
         }
 
         return var_name[mode]

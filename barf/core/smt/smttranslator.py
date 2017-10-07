@@ -88,39 +88,39 @@ class SmtTranslator(object):
         # Instructions translators (from REIL to SMT expressions)
         self._instr_translators = {
             # Arithmetic Instructions
-            ReilMnemonic.ADD : self._translate_add,
-            ReilMnemonic.SUB : self._translate_sub,
-            ReilMnemonic.MUL : self._translate_mul,
-            ReilMnemonic.DIV : self._translate_div,
-            ReilMnemonic.SDIV : self._translate_sdiv,
-            ReilMnemonic.MOD : self._translate_mod,
-            ReilMnemonic.SMOD : self._translate_smod,
-            ReilMnemonic.BSH : self._translate_bsh,
+            ReilMnemonic.ADD: self._translate_add,
+            ReilMnemonic.SUB: self._translate_sub,
+            ReilMnemonic.MUL: self._translate_mul,
+            ReilMnemonic.DIV: self._translate_div,
+            ReilMnemonic.SDIV: self._translate_sdiv,
+            ReilMnemonic.MOD: self._translate_mod,
+            ReilMnemonic.SMOD: self._translate_smod,
+            ReilMnemonic.BSH: self._translate_bsh,
 
             # Bitwise Instructions
-            ReilMnemonic.AND : self._translate_and,
-            ReilMnemonic.OR  : self._translate_or,
-            ReilMnemonic.XOR : self._translate_xor,
+            ReilMnemonic.AND: self._translate_and,
+            ReilMnemonic.OR: self._translate_or,
+            ReilMnemonic.XOR: self._translate_xor,
 
             # Data Transfer Instructions
-            ReilMnemonic.LDM : self._translate_ldm,
-            ReilMnemonic.STM : self._translate_stm,
-            ReilMnemonic.STR : self._translate_str,
+            ReilMnemonic.LDM: self._translate_ldm,
+            ReilMnemonic.STM: self._translate_stm,
+            ReilMnemonic.STR: self._translate_str,
 
             # Conditional Instructions
-            ReilMnemonic.BISZ : self._translate_bisz,
-            ReilMnemonic.JCC  : self._translate_jcc,
+            ReilMnemonic.BISZ: self._translate_bisz,
+            ReilMnemonic.JCC: self._translate_jcc,
 
             # Other Instructions
-            ReilMnemonic.UNDEF : self._translate_undef,
-            ReilMnemonic.UNKN  : self._translate_unkn,
-            ReilMnemonic.NOP   : self._translate_nop,
+            ReilMnemonic.UNDEF: self._translate_undef,
+            ReilMnemonic.UNKN: self._translate_unkn,
+            ReilMnemonic.NOP: self._translate_nop,
 
             # Ad hoc Instructions
-            ReilMnemonic.RET : self._translate_ret,
+            ReilMnemonic.RET: self._translate_ret,
 
             # Extensions
-            ReilMnemonic.SEXT : self._translate_sext,
+            ReilMnemonic.SEXT: self._translate_sext,
         }
 
     def translate(self, instr):
@@ -130,26 +130,26 @@ class SmtTranslator(object):
             translator = self._instr_translators[instr.mnemonic]
 
             return translator(*instr.operands)
-        except:
+        except Exception:
             logger.error("Failed to translate instruction: %s", instr, exc_info=True)
 
             raise
 
-    def get_init_name(self, name):
+    def get_name_init(self, name):
         """Get initial name of symbol.
         """
         self._register_name(name)
 
         return self._var_name_mappers[name].get_init()
 
-    def get_curr_name(self, name):
+    def get_name_curr(self, name):
         """Get current name of symbol.
         """
         self._register_name(name)
 
         return self._var_name_mappers[name].get_current()
 
-    def get_memory(self):
+    def get_memory_curr(self):
         """Get SMT memory representation.
         """
         return self._mem_curr
@@ -242,23 +242,19 @@ class SmtTranslator(object):
         """Translate source operand to a SMT expression.
         """
         if isinstance(operand, ReilRegisterOperand):
-            ret_val = self._translate_src_register_oprnd(operand)
+            return self._translate_src_register_oprnd(operand)
         elif isinstance(operand, ReilImmediateOperand):
-            ret_val = smtsymbol.Constant(operand.size, operand.immediate)
+            return smtsymbol.Constant(operand.size, operand.immediate)
         else:
             raise Exception("Invalid operand type")
-
-        return ret_val
 
     def _translate_dst_oprnd(self, operand):
         """Translate destination operand to a SMT expression.
         """
         if isinstance(operand, ReilRegisterOperand):
-            ret_val, parent_reg_constrs = self._translate_dst_register_oprnd(operand)
+            return self._translate_dst_register_oprnd(operand)
         else:
             raise Exception("Invalid operand type")
-
-        return ret_val, parent_reg_constrs
 
     def _translate_src_register_oprnd(self, operand):
         """Translate source register operand to SMT expr.
@@ -584,7 +580,8 @@ class SmtTranslator(object):
         op1_var = self._translate_src_oprnd(oprnd1)
         op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
-        operation = smtfunction.ite(oprnd3.size, op1_var == 0x0, smtsymbol.Constant(oprnd3.size, 0x1), smtsymbol.Constant(oprnd3.size, 0x0))
+        operation = smtfunction.ite(oprnd3.size, op1_var == 0x0, smtsymbol.Constant(oprnd3.size, 0x1),
+                                    smtsymbol.Constant(oprnd3.size, 0x0))
 
         return [op3_var == operation] + op3_var_constrs
 

@@ -120,7 +120,7 @@ class GadgetVerifier(object):
         """
         # Constraints on memory locations.
         # mem_constrs = [self.analyzer.get_memory("pre") != self.analyzer.get_memory("post")]
-        mem_constrs = [self.analyzer.get_memory("pre").__neq__(self.analyzer.get_memory("post"))]
+        mem_constrs = [self.analyzer.get_memory_curr("pre").__neq__(self.analyzer.get_memory_curr("post"))]
 
         # Constraints on flags.
         flags_constrs = []
