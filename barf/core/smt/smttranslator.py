@@ -75,7 +75,7 @@ class SmtTranslator(object):
         # A SMT array that represents the memory.
         self._mem_instance = 0
 
-        self._mem_init = smtsymbol.BitVecArray(address_size, 8, "MEM_0")
+        self._mem_init = smtsymbol.BitVecArray(address_size, 8, "MEM_{}".format(self._mem_instance))
         self._mem_curr = self.make_array(self._address_size, "MEM_{}".format(self._mem_instance))
 
         # A variable name mapper maps variable names to its current
@@ -88,39 +88,39 @@ class SmtTranslator(object):
         # Instructions translators (from REIL to SMT expressions)
         self._instr_translators = {
             # Arithmetic Instructions
-            ReilMnemonic.ADD : self._translate_add,
-            ReilMnemonic.SUB : self._translate_sub,
-            ReilMnemonic.MUL : self._translate_mul,
-            ReilMnemonic.DIV : self._translate_div,
-            ReilMnemonic.SDIV : self._translate_sdiv,
-            ReilMnemonic.MOD : self._translate_mod,
-            ReilMnemonic.SMOD : self._translate_smod,
-            ReilMnemonic.BSH : self._translate_bsh,
+            ReilMnemonic.ADD: self._translate_add,
+            ReilMnemonic.SUB: self._translate_sub,
+            ReilMnemonic.MUL: self._translate_mul,
+            ReilMnemonic.DIV: self._translate_div,
+            ReilMnemonic.SDIV: self._translate_sdiv,
+            ReilMnemonic.MOD: self._translate_mod,
+            ReilMnemonic.SMOD: self._translate_smod,
+            ReilMnemonic.BSH: self._translate_bsh,
 
             # Bitwise Instructions
-            ReilMnemonic.AND : self._translate_and,
-            ReilMnemonic.OR  : self._translate_or,
-            ReilMnemonic.XOR : self._translate_xor,
+            ReilMnemonic.AND: self._translate_and,
+            ReilMnemonic.OR: self._translate_or,
+            ReilMnemonic.XOR: self._translate_xor,
 
             # Data Transfer Instructions
-            ReilMnemonic.LDM : self._translate_ldm,
-            ReilMnemonic.STM : self._translate_stm,
-            ReilMnemonic.STR : self._translate_str,
+            ReilMnemonic.LDM: self._translate_ldm,
+            ReilMnemonic.STM: self._translate_stm,
+            ReilMnemonic.STR: self._translate_str,
 
             # Conditional Instructions
-            ReilMnemonic.BISZ : self._translate_bisz,
-            ReilMnemonic.JCC  : self._translate_jcc,
+            ReilMnemonic.BISZ: self._translate_bisz,
+            ReilMnemonic.JCC: self._translate_jcc,
 
             # Other Instructions
-            ReilMnemonic.UNDEF : self._translate_undef,
-            ReilMnemonic.UNKN  : self._translate_unkn,
-            ReilMnemonic.NOP   : self._translate_nop,
+            ReilMnemonic.UNDEF: self._translate_undef,
+            ReilMnemonic.UNKN: self._translate_unkn,
+            ReilMnemonic.NOP: self._translate_nop,
 
             # Ad hoc Instructions
-            ReilMnemonic.RET : self._translate_ret,
+            ReilMnemonic.RET: self._translate_ret,
 
             # Extensions
-            ReilMnemonic.SEXT : self._translate_sext,
+            ReilMnemonic.SEXT: self._translate_sext,
         }
 
     def translate(self, instr):
@@ -130,28 +130,26 @@ class SmtTranslator(object):
             translator = self._instr_translators[instr.mnemonic]
 
             return translator(*instr.operands)
-        except:
-            error_msg = "Failed to translate instruction: %s"
-
-            logger.error(error_msg, instr, exc_info=True)
+        except Exception:
+            logger.error("Failed to translate instruction: %s", instr, exc_info=True)
 
             raise
 
-    def get_init_name(self, name):
+    def get_name_init(self, name):
         """Get initial name of symbol.
         """
         self._register_name(name)
 
         return self._var_name_mappers[name].get_init()
 
-    def get_curr_name(self, name):
+    def get_name_curr(self, name):
         """Get current name of symbol.
         """
         self._register_name(name)
 
         return self._var_name_mappers[name].get_current()
 
-    def get_memory(self):
+    def get_memory_curr(self):
         """Get SMT memory representation.
         """
         return self._mem_curr
@@ -169,7 +167,7 @@ class SmtTranslator(object):
         # Memory versioning.
         self._mem_instance = 0
 
-        self._mem_init = smtsymbol.BitVecArray(self._address_size, 8, "MEM_0")
+        self._mem_init = smtsymbol.BitVecArray(self._address_size, 8, "MEM_{}".format(self._mem_instance))
         self._mem_curr = self.make_array(self._address_size, "MEM_{}".format(self._mem_instance))
 
         self._var_name_mappers = {}
@@ -244,31 +242,19 @@ class SmtTranslator(object):
         """Translate source operand to a SMT expression.
         """
         if isinstance(operand, ReilRegisterOperand):
-
-            ret_val = self._translate_src_register_oprnd(operand)
-
+            return self._translate_src_register_oprnd(operand)
         elif isinstance(operand, ReilImmediateOperand):
-
-            ret_val = smtsymbol.Constant(operand.size, operand.immediate)
-
+            return smtsymbol.Constant(operand.size, operand.immediate)
         else:
-
-            self._raise_invalid_type_oprnd(operand)
-
-        return ret_val
+            raise Exception("Invalid operand type")
 
     def _translate_dst_oprnd(self, operand):
         """Translate destination operand to a SMT expression.
         """
         if isinstance(operand, ReilRegisterOperand):
-
-            ret_val, parent_reg_constrs = self._translate_dst_register_oprnd(operand)
-
+            return self._translate_dst_register_oprnd(operand)
         else:
-
-            self._raise_invalid_type_oprnd(operand)
-
-        return ret_val, parent_reg_constrs
+            raise Exception("Invalid operand type")
 
     def _translate_src_register_oprnd(self, operand):
         """Translate source register operand to SMT expr.
@@ -296,60 +282,46 @@ class SmtTranslator(object):
         """
         reg_info = self._arch_alias_mapper.get(operand.name, None)
 
+        parent_reg_constrs = []
+
         if reg_info:
             var_base_name, offset = reg_info
 
-            old_var_name = self._get_var_name(var_base_name, fresh=False)
-
-            var_name = self._get_var_name(var_base_name, fresh=True)
+            var_name_old = self._get_var_name(var_base_name, fresh=False)
+            var_name_new = self._get_var_name(var_base_name, fresh=True)
             var_size = self._arch_regs_size[var_base_name]
 
-            ret_val = self.make_bitvec(var_size, var_name)
+            ret_val_old = self.make_bitvec(var_size, var_name_old)
+            ret_val_new = self.make_bitvec(var_size, var_name_new)
 
-            ret_val_cpy = ret_val
-
-            ret_val = smtfunction.extract(ret_val, offset, operand.size)
-
-            old_ret_val = self.make_bitvec(var_size, old_var_name)
-
-            constrs = []
+            ret_val = smtfunction.extract(ret_val_new, offset, operand.size)
 
             if 0 < offset < var_size - 1:
-                lower_expr_1 = smtfunction.extract(ret_val_cpy, 0, offset)
-                lower_expr_2 = smtfunction.extract(old_ret_val, 0, offset)
+                lower_expr_1 = smtfunction.extract(ret_val_new, 0, offset)
+                lower_expr_2 = smtfunction.extract(ret_val_old, 0, offset)
 
-                constrs += [lower_expr_1 == lower_expr_2]
+                parent_reg_constrs += [lower_expr_1 == lower_expr_2]
 
-                upper_expr_1 = smtfunction.extract(ret_val_cpy, offset + operand.size, var_size - offset - operand.size)
-                upper_expr_2 = smtfunction.extract(old_ret_val, offset + operand.size, var_size - offset - operand.size)
+                upper_expr_1 = smtfunction.extract(ret_val_new, offset + operand.size, var_size - offset - operand.size)
+                upper_expr_2 = smtfunction.extract(ret_val_old, offset + operand.size, var_size - offset - operand.size)
 
-                constrs += [upper_expr_1 == upper_expr_2]
+                parent_reg_constrs += [upper_expr_1 == upper_expr_2]
             elif offset == 0:
-                upper_expr_1 = smtfunction.extract(ret_val_cpy, offset + operand.size, var_size - offset - operand.size)
-                upper_expr_2 = smtfunction.extract(old_ret_val, offset + operand.size, var_size - offset - operand.size)
+                upper_expr_1 = smtfunction.extract(ret_val_new, offset + operand.size, var_size - offset - operand.size)
+                upper_expr_2 = smtfunction.extract(ret_val_old, offset + operand.size, var_size - offset - operand.size)
 
-                constrs += [upper_expr_1 == upper_expr_2]
+                parent_reg_constrs += [upper_expr_1 == upper_expr_2]
             elif offset == var_size-1:
-                lower_expr_1 = smtfunction.extract(ret_val_cpy, 0, offset)
-                lower_expr_2 = smtfunction.extract(old_ret_val, 0, offset)
+                lower_expr_1 = smtfunction.extract(ret_val_new, 0, offset)
+                lower_expr_2 = smtfunction.extract(ret_val_old, 0, offset)
 
-                constrs += [lower_expr_1 == lower_expr_2]
-
-            parent_reg_constrs = constrs
+                parent_reg_constrs += [lower_expr_1 == lower_expr_2]
         else:
-            var_name = self._get_var_name(operand.name, fresh=True)
-            ret_val = self.make_bitvec(operand.size, var_name)
+            var_name_new = self._get_var_name(operand.name, fresh=True)
 
-            parent_reg_constrs = None
+            ret_val = self.make_bitvec(operand.size, var_name_new)
 
         return ret_val, parent_reg_constrs
-
-    def _raise_invalid_type_oprnd(self, operand):
-        """Raise exception for invalid operand type.
-        """
-        msg_fmt = "Invalid source type: {0} ({1})"
-
-        raise Exception(msg_fmt.format(str(operand), type(operand)))
 
     # Arithmetic Instructions
     # ======================================================================== #
@@ -361,26 +333,16 @@ class SmtTranslator(object):
 
         op1_var = self._translate_src_oprnd(oprnd1)
         op2_var = self._translate_src_oprnd(oprnd2)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
         if oprnd3.size > oprnd1.size:
-            op1_var_zx = smtfunction.zero_extend(op1_var, oprnd3.size)
-            op2_var_zx = smtfunction.zero_extend(op2_var, oprnd3.size)
-
-            expr = (op3_var == (op1_var_zx + op2_var_zx))
+            result = smtfunction.zero_extend(op1_var, oprnd3.size) + smtfunction.zero_extend(op2_var, oprnd3.size)
         elif oprnd3.size < oprnd1.size:
-            sum_extract = smtfunction.extract(op1_var + op2_var, 0, oprnd3.size)
-
-            expr = (op3_var == sum_extract)
+            result = smtfunction.extract(op1_var + op2_var, 0, oprnd3.size)
         else:
-            expr = (op3_var == (op1_var + op2_var))
+            result = op1_var + op2_var
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [op3_var == result] + op3_var_constrs
 
     def _translate_sub(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of an SUB instruction.
@@ -390,26 +352,16 @@ class SmtTranslator(object):
 
         op1_var = self._translate_src_oprnd(oprnd1)
         op2_var = self._translate_src_oprnd(oprnd2)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
         if oprnd3.size > oprnd1.size:
-            op1_var_zx = smtfunction.zero_extend(op1_var, oprnd3.size)
-            op2_var_zx = smtfunction.zero_extend(op2_var, oprnd3.size)
-
-            expr = (op3_var == (op1_var_zx - op2_var_zx))
+            result = smtfunction.zero_extend(op1_var, oprnd3.size) - smtfunction.zero_extend(op2_var, oprnd3.size)
         elif oprnd3.size < oprnd1.size:
-            sub_extract = smtfunction.extract(op1_var - op2_var, 0, oprnd3.size)
-
-            expr = (op3_var == sub_extract)
+            result = smtfunction.extract(op1_var - op2_var, 0, oprnd3.size)
         else:
-            expr = (op3_var == (op1_var - op2_var))
+            result = op1_var - op2_var
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [op3_var == result] + op3_var_constrs
 
     def _translate_mul(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of an MUL instruction.
@@ -419,114 +371,60 @@ class SmtTranslator(object):
 
         op1_var = self._translate_src_oprnd(oprnd1)
         op2_var = self._translate_src_oprnd(oprnd2)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
         if oprnd3.size > oprnd1.size:
-            op1_var_zx = smtfunction.zero_extend(op1_var, oprnd3.size)
-            op2_var_zx = smtfunction.zero_extend(op2_var, oprnd3.size)
-
-            expr = (op3_var == op1_var_zx * op2_var_zx)
+            result = smtfunction.zero_extend(op1_var, oprnd3.size) * smtfunction.zero_extend(op2_var, oprnd3.size)
         elif oprnd3.size < oprnd1.size:
-            mul_extract = smtfunction.extract(op1_var * op2_var, 0, oprnd3.size)
-
-            expr = (op3_var == mul_extract)
+            result = smtfunction.extract(op1_var * op2_var, 0, oprnd3.size)
         else:
-            expr = (op3_var == (op1_var * op2_var))
+            result = op1_var * op2_var
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [op3_var == result] + op3_var_constrs
 
     def _translate_div(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of an DIV instruction.
         """
         assert oprnd1.size and oprnd2.size and oprnd3.size
         assert oprnd1.size == oprnd2.size
-        assert oprnd2.size == oprnd3.size
 
         op1_var = self._translate_src_oprnd(oprnd1)
         op2_var = self._translate_src_oprnd(oprnd2)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
-        expr = (op3_var == (op1_var.udiv(op2_var)))
+        if oprnd3.size > oprnd1.size:
+            op1_var_zx = smtfunction.zero_extend(op1_var, oprnd3.size)
+            op2_var_zx = smtfunction.zero_extend(op2_var, oprnd3.size)
 
-        rv = [expr]
+            result = op1_var_zx.udiv(op2_var_zx)
+        elif oprnd3.size < oprnd1.size:
+            result = smtfunction.extract(op1_var.udiv(op2_var), 0, oprnd3.size)
+        else:
+            result = op1_var.udiv(op2_var)
 
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
-
-    def _translate_sdiv(self, oprnd1, oprnd2, oprnd3):
-        """Return a formula representation of an DIV instruction.
-        """
-        assert oprnd1.size and oprnd2.size and oprnd3.size
-        assert oprnd1.size == oprnd2.size
-        assert oprnd2.size == oprnd3.size
-
-        op1_var = self._translate_src_oprnd(oprnd1)
-        op2_var = self._translate_src_oprnd(oprnd2)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
-
-        expr = (op3_var == (op1_var / op2_var))
-
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [op3_var == result] + op3_var_constrs
 
     def _translate_mod(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of an MOD instruction.
         """
         assert oprnd1.size and oprnd2.size and oprnd3.size
         assert oprnd1.size == oprnd2.size
-        # assert oprnd2.size == oprnd3.size
 
         op1_var = self._translate_src_oprnd(oprnd1)
         op2_var = self._translate_src_oprnd(oprnd2)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
-        if oprnd1.size == oprnd3.size:
-            expr = [(op3_var == (op1_var.umod(op2_var)))]
-        elif oprnd3.size > oprnd1.size:
+        if oprnd3.size > oprnd1.size:
             op1_var_zx = smtfunction.zero_extend(op1_var, oprnd3.size)
             op2_var_zx = smtfunction.zero_extend(op2_var, oprnd3.size)
 
-            expr = [(op3_var == (op1_var_zx.umod(op2_var_zx)))]
+            result = op1_var_zx.umod(op2_var_zx)
+        elif oprnd3.size < oprnd1.size:
+            result = smtfunction.extract(op1_var.umod(op2_var), 0, oprnd3.size)
         else:
-            raise Exception("Error")
+            result = op1_var.umod(op2_var)
 
-        rv = expr
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
-
-    def _translate_smod(self, oprnd1, oprnd2, oprnd3):
-        """Return a formula representation of an MOD instruction.
-        """
-        assert oprnd1.size and oprnd2.size and oprnd3.size
-        assert oprnd1.size == oprnd2.size
-        assert oprnd2.size == oprnd3.size
-
-        op1_var = self._translate_src_oprnd(oprnd1)
-        op2_var = self._translate_src_oprnd(oprnd2)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
-
-        expr = (op3_var == (op1_var % op2_var))
-
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [op3_var == result] + op3_var_constrs
 
     def _translate_bsh(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a BSH instruction.
@@ -536,32 +434,25 @@ class SmtTranslator(object):
 
         op1_var = self._translate_src_oprnd(oprnd1)
         op2_var = self._translate_src_oprnd(oprnd2)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
         if oprnd3.size > oprnd1.size:
             op1_var_zx = smtfunction.zero_extend(op1_var, oprnd3.size)
             op2_var_zx = smtfunction.zero_extend(op2_var, oprnd3.size)
-
-            op2_var_neg = (-op2_var)
-            op2_var_neg_sx = smtfunction.sign_extend(op2_var_neg, oprnd3.size)
+            op2_var_neg_sx = smtfunction.sign_extend(-op2_var, oprnd3.size)
 
             shr = smtfunction.extract(op1_var_zx >> op2_var_neg_sx, 0, op3_var.size)
             shl = smtfunction.extract(op1_var_zx << op2_var_zx, 0, op3_var.size)
         elif oprnd3.size < oprnd1.size:
-            shr = smtfunction.extract(op1_var >> (-op2_var), 0, op3_var.size)
+            shr = smtfunction.extract(op1_var >> -op2_var, 0, op3_var.size)
             shl = smtfunction.extract(op1_var << op2_var, 0, op3_var.size)
         else:
-            shr = op1_var >> (-op2_var)
+            shr = op1_var >> -op2_var
             shl = op1_var << op2_var
 
-        expr = (op3_var == smtfunction.ite(oprnd3.size, op2_var >= 0, shl, shr))
+        result = smtfunction.ite(oprnd3.size, op2_var >= 0, shl, shr)
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [op3_var == result] + op3_var_constrs
 
     # Bitwise Instructions
     # ======================================================================== #
@@ -573,25 +464,16 @@ class SmtTranslator(object):
 
         op1_var = self._translate_src_oprnd(oprnd1)
         op2_var = self._translate_src_oprnd(oprnd2)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
-        if oprnd1.size < oprnd3.size:
-            and_zx = smtfunction.zero_extend(op1_var & op2_var, oprnd3.size)
-
-            expr = (op3_var == and_zx)
-        elif oprnd1.size > oprnd3.size:
-            and_extract = smtfunction.extract(op1_var & op2_var, 0, oprnd3.size)
-
-            expr = (op3_var == and_extract)
+        if oprnd3.size > oprnd1.size:
+            result = smtfunction.zero_extend(op1_var & op2_var, oprnd3.size)
+        elif oprnd3.size < oprnd1.size:
+            result = smtfunction.extract(op1_var & op2_var, 0, oprnd3.size)
         else:
-            expr = (op3_var == (op1_var & op2_var))
+            result = op1_var & op2_var
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [op3_var == result] + op3_var_constrs
 
     def _translate_or(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a OR instruction.
@@ -601,25 +483,16 @@ class SmtTranslator(object):
 
         op1_var = self._translate_src_oprnd(oprnd1)
         op2_var = self._translate_src_oprnd(oprnd2)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
-        if oprnd1.size < oprnd3.size:
-            or_zx = smtfunction.zero_extend(op1_var | op2_var, oprnd3.size)
-
-            expr = (op3_var == or_zx)
-        elif oprnd1.size > oprnd3.size:
-            or_extract = smtfunction.extract(op1_var | op2_var, 0, oprnd3.size)
-
-            expr = (op3_var == or_extract)
+        if oprnd3.size > oprnd1.size:
+            result = smtfunction.zero_extend(op1_var | op2_var, oprnd3.size)
+        elif oprnd3.size < oprnd1.size:
+            result = smtfunction.extract(op1_var | op2_var, 0, oprnd3.size)
         else:
-            expr = (op3_var == (op1_var | op2_var))
+            result = op1_var | op2_var
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [op3_var == result] + op3_var_constrs
 
     def _translate_xor(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a AND instruction.
@@ -629,54 +502,34 @@ class SmtTranslator(object):
 
         op1_var = self._translate_src_oprnd(oprnd1)
         op2_var = self._translate_src_oprnd(oprnd2)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
-        if oprnd1.size < oprnd3.size:
-            xor_zx = smtfunction.zero_extend(op1_var ^ op2_var, oprnd3.size)
-
-            expr = (op3_var == xor_zx)
-        elif oprnd1.size > oprnd3.size:
-            xor_extract = smtfunction.extract(op1_var ^ op2_var, 0, oprnd3.size)
-
-            expr = (op3_var == xor_extract)
+        if oprnd3.size > oprnd1.size:
+            result = smtfunction.zero_extend(op1_var ^ op2_var, oprnd3.size)
+        elif oprnd3.size < oprnd1.size:
+            result = smtfunction.extract(op1_var ^ op2_var, 0, oprnd3.size)
         else:
-            expr = (op3_var == (op1_var ^ op2_var))
+            result = op1_var ^ op2_var
 
-        rv = [expr]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [op3_var == result] + op3_var_constrs
 
     # Data transfer Instructions
     # ======================================================================== #
     def _translate_ldm(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a LDM instruction.
         """
+        assert oprnd1.size and oprnd3.size
         assert oprnd1.size == self._address_size
-        assert oprnd3.size
 
         op1_var = self._translate_src_oprnd(oprnd1)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
-
-        size = oprnd3.size
-        where = op1_var
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
         exprs = []
 
-        for i in reversed(xrange(0, size, 8)):
-            bytes_exprs_1 = self._mem_curr[where + i/8]
-            bytes_exprs_2 = smtfunction.extract(op3_var, i, 8)
+        for i in reversed(xrange(0, oprnd3.size, 8)):
+            exprs += [self._mem_curr[op1_var + i / 8] == smtfunction.extract(op3_var, i, 8)]
 
-            exprs += [bytes_exprs_1 == bytes_exprs_2]
-
-        rv = exprs
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return exprs
+        return exprs + op3_var_constrs
 
     def _translate_stm(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a STM instruction.
@@ -687,11 +540,8 @@ class SmtTranslator(object):
         op1_var = self._translate_src_oprnd(oprnd1)
         op3_var = self._translate_src_oprnd(oprnd3)
 
-        where = op3_var
-        size = oprnd1.size
-
-        for i in xrange(0, size, 8):
-            self._mem_curr[where + i/8] = smtfunction.extract(op1_var, i, 8)
+        for i in xrange(0, oprnd1.size, 8):
+            self._mem_curr[op3_var + i/8] = smtfunction.extract(op1_var, i, 8)
 
         # Memory versioning.
         self._mem_instance += 1
@@ -709,34 +559,16 @@ class SmtTranslator(object):
         assert oprnd1.size and oprnd3.size
 
         op1_var = self._translate_src_oprnd(oprnd1)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
-        constrs = []
-
-        if oprnd1.size == oprnd3.size:
-            expr = (op1_var == op3_var)
-        elif oprnd1.size < oprnd3.size:
-            expr = (op1_var == smtfunction.extract(op3_var, 0, op1_var.size))
-
-            # Make sure that the values that can take dst operand
-            # do not exceed the range of the source operand.
-            # TODO: Find a better way to enforce this.
-            fmt = "#b%0{0}d".format(op3_var.size - op1_var.size)
-            imm = smtsymbol.BitVec(op3_var.size - op1_var.size, fmt % 0)
-
-            constrs = [(imm == smtfunction.extract(op3_var, op1_var.size, op3_var.size - op1_var.size))]
+        if oprnd3.size > oprnd1.size:
+            result = smtfunction.zero_extend(op1_var, op3_var.size)
+        elif oprnd3.size < oprnd1.size:
+            result = smtfunction.extract(op1_var, 0, op3_var.size)
         else:
-            expr = (smtfunction.extract(op1_var, 0, op3_var.size) == op3_var)
+            result = op1_var
 
-        rv = [expr]
-
-        if constrs:
-            rv += constrs
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [op3_var == result] + op3_var_constrs
 
     # Conditional Instructions
     # ======================================================================== #
@@ -746,37 +578,33 @@ class SmtTranslator(object):
         assert oprnd1.size and oprnd3.size
 
         op1_var = self._translate_src_oprnd(oprnd1)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
-        ite = smtfunction.ite(oprnd3.size, op1_var == 0x0, smtsymbol.Constant(oprnd3.size, 0x1), smtsymbol.Constant(oprnd3.size, 0x0))
+        result = smtfunction.ite(oprnd3.size, op1_var == 0x0, smtsymbol.Constant(oprnd3.size, 0x1),
+                                    smtsymbol.Constant(oprnd3.size, 0x0))
 
-        rv = [(op3_var == ite)]
-
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
-
-        return rv
+        return [op3_var == result] + op3_var_constrs
 
     def _translate_jcc(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a JCC instruction.
         """
-        # raise Exception("Unsupported instruction : JCC")
+        assert oprnd1.size and oprnd3.size
 
-        return []
+        op1_var = self._translate_src_oprnd(oprnd1)
+
+        return [op1_var != 0x0]
 
     # Other Instructions
     # ======================================================================== #
-    def _translate_undef(self, oprnd1, oprnd2, oprnd3):
-        """Return a formula representation of a UNDEF instruction.
-        """
-        # raise Exception("Unsupported instruction : UNDEF")
-
-        return []
-
     def _translate_unkn(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a UNKN instruction.
         """
         raise Exception("Unsupported instruction : UNKN")
+
+    def _translate_undef(self, oprnd1, oprnd2, oprnd3):
+        """Return a formula representation of a UNDEF instruction.
+        """
+        raise Exception("Unsupported instruction : UNDEF")
 
     def _translate_nop(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a NOP instruction.
@@ -788,9 +616,7 @@ class SmtTranslator(object):
     def _translate_ret(self, oprnd1, oprnd2, oprnd3):
         """Return a formula representation of a RET instruction.
         """
-        # raise Exception("Unsupported instruction : RET")
-
-        return []
+        raise Exception("Unsupported instruction : RET")
 
     # Extension
     # ======================================================================== #
@@ -800,33 +626,57 @@ class SmtTranslator(object):
         assert oprnd1.size and oprnd3.size
 
         op1_var = self._translate_src_oprnd(oprnd1)
-        op3_var, parent_reg_constrs = self._translate_dst_oprnd(oprnd3)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
-        constrs = []
-
-        if oprnd1.size == oprnd3.size:
-            expr = (op1_var == op3_var)
-        elif oprnd1.size < oprnd3.size:
-            expr = (op3_var == smtfunction.sign_extend(op1_var, op3_var.size))
-
-            # Make sure that the values that can take dst operand
-            # do not exceed the range of the source operand.
-            # TODO: Find a better way to enforce this.
-
-            # TODO: This should not be needed any more.
-            # fmt = "#b%0{0}d".format(op3_var.size - op1_var.size)
-            # imm = smtsymbol.BitVec(op3_var.size - op1_var.size, fmt % 0)
-
-            # constrs = [(imm == smtfunction.EXTRACT(op3_var, op1_var.size, op3_var.size - op1_var.size))]
+        if oprnd3.size > oprnd1.size:
+            result = smtfunction.sign_extend(op1_var, op3_var.size)
+        elif oprnd3.size < oprnd1.size:
+            raise Exception("Operands size mismatch.")
         else:
-            raise Exception("Invalid operand size: %d" % str(oprnd3))
+            result = op1_var
 
-        rv = [expr]
+        return [op3_var == result] + op3_var_constrs
 
-        if constrs:
-            rv += constrs
+    def _translate_sdiv(self, oprnd1, oprnd2, oprnd3):
+        """Return a formula representation of an DIV instruction.
+        """
+        assert oprnd1.size and oprnd2.size and oprnd3.size
+        assert oprnd1.size == oprnd2.size
 
-        if parent_reg_constrs:
-            rv += parent_reg_constrs
+        op1_var = self._translate_src_oprnd(oprnd1)
+        op2_var = self._translate_src_oprnd(oprnd2)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
 
-        return rv
+        if oprnd3.size > oprnd1.size:
+            op1_var_sx = smtfunction.sign_extend(op1_var, oprnd3.size)
+            op2_var_sx = smtfunction.sign_extend(op2_var, oprnd3.size)
+
+            result = op1_var_sx / op2_var_sx
+        elif oprnd3.size < oprnd1.size:
+            result = smtfunction.extract(op1_var / op2_var, 0, oprnd3.size)
+        else:
+            result = op1_var / op2_var
+
+        return [op3_var == result] + op3_var_constrs
+
+    def _translate_smod(self, oprnd1, oprnd2, oprnd3):
+        """Return a formula representation of an MOD instruction.
+        """
+        assert oprnd1.size and oprnd2.size and oprnd3.size
+        assert oprnd1.size == oprnd2.size
+
+        op1_var = self._translate_src_oprnd(oprnd1)
+        op2_var = self._translate_src_oprnd(oprnd2)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
+
+        if oprnd3.size > oprnd1.size:
+            op1_var_sx = smtfunction.sign_extend(op1_var, oprnd3.size)
+            op2_var_sx = smtfunction.sign_extend(op2_var, oprnd3.size)
+
+            result = op1_var_sx % op2_var_sx
+        elif oprnd3.size < oprnd1.size:
+            result = smtfunction.extract(op1_var % op2_var, 0, oprnd3.size)
+        else:
+            result = op1_var % op2_var
+
+        return [op3_var == result] + op3_var_constrs

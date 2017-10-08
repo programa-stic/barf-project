@@ -24,6 +24,8 @@
 
 import unittest
 
+from barf.arch.x86.x86base import X86ArchitectureInformation
+from barf.arch import ARCH_X86_MODE_32
 from barf.core.reil import ReilParser
 from barf.core.smt.smtsolver import Z3Solver as SmtSolver
 # from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
@@ -37,6 +39,11 @@ class SmtTranslatorTests(unittest.TestCase):
         self._parser = ReilParser()
         self._solver = SmtSolver()
         self._translator = SmtTranslator(self._solver, self._address_size)
+
+        self._arch_info = X86ArchitectureInformation(ARCH_X86_MODE_32)
+
+        self._translator.set_arch_alias_mapper(self._arch_info.alias_mapper)
+        self._translator.set_arch_registers_size(self._arch_info.registers_size)
 
     # Arithmetic Instructions
     def test_translate_add_1(self):
@@ -113,6 +120,13 @@ class SmtTranslatorTests(unittest.TestCase):
         self.assertEqual(len(form), 1)
         self.assertEqual(form[0].value, "(= t2_1 (bvsmod t0_0 t1_0))")
 
+    def test_translate_bsh(self):
+        instr = self._parser.parse(["bsh [DWORD t0, DWORD t1, DWORD t2]"])[0]
+        form = self._translator.translate(instr)
+
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (ite (bvsge t1_0 #x00000000) (bvshl t0_0 t1_0) (bvlshr t0_0 (bvneg t1_0))))")
+
     # Bitwise Instructions
     def test_translate_and(self):
         instr = self._parser.parse(["and [BYTE t0, BYTE t1, BYTE t2]"])[0]
@@ -155,7 +169,7 @@ class SmtTranslatorTests(unittest.TestCase):
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t0_0 t2_1)")
+        self.assertEqual(form[0].value, "(= t2_1 t0_0)")
 
     # Conditional Instructions
     def test_translate_bisz(self):
@@ -169,25 +183,40 @@ class SmtTranslatorTests(unittest.TestCase):
         instr = self._parser.parse(["jcc [BIT t0, empty, DWORD t2]"])[0]
         form = self._translator.translate(instr)
 
-        self.assertEqual(len(form), 0)
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(not (= t0_0 #b0))")
 
     # Other Instructions
     def test_translate_undef(self):
         instr = self._parser.parse(["undef [empty, empty, DWORD t2]"])[0]
-        form = self._translator.translate(instr)
 
-        self.assertEqual(len(form), 0)
+        with self.assertRaises(Exception) as context:
+            self._translator.translate(instr)
+
+        self.assertTrue("Unsupported instruction : UNDEF" in context.exception)
 
     def test_translate_unkn(self):
-        instr = self._parser.parse(["undef [empty, empty, empty]"])[0]
+        instr = self._parser.parse(["unkn [empty, empty, empty]"])[0]
 
-        self.assertRaises(Exception, self._translator.translate(instr))
+        with self.assertRaises(Exception) as context:
+            self._translator.translate(instr)
+
+        self.assertTrue("Unsupported instruction : UNKN" in context.exception)
 
     def test_translate_nop(self):
         instr = self._parser.parse(["nop [empty, empty, empty]"])[0]
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 0)
+
+    # Ad-hoc Instructions
+    def test_translate_ret(self):
+        instr = self._parser.parse(["ret [empty, empty, empty]"])[0]
+
+        with self.assertRaises(Exception) as context:
+            self._translator.translate(instr)
+
+        self.assertTrue("Unsupported instruction : RET" in context.exception)
 
     # Extensions
     def test_translate_sext(self):
@@ -196,6 +225,21 @@ class SmtTranslatorTests(unittest.TestCase):
 
         self.assertEqual(len(form), 1)
         self.assertEqual(form[0].value, "(= t2_1 ((_ sign_extend 8) t0_0))")
+
+    # def test_translate_sext_2(self):
+    #     instr = self._parser.parse(["sext [BYTE al, empty, WORD bx]"])[0]
+    #     form = self._translator.translate(instr)
+
+    #     for f in form:
+    #         print(str(f))
+
+    # def test_translate_str_2(self):
+    #     instr = self._parser.parse(["str [BYTE al, empty, WORD bx]"])[0]
+    #     form = self._translator.translate(instr)
+
+    #     for f in form:
+    #         print(str(f))
+
 
 
 def main():

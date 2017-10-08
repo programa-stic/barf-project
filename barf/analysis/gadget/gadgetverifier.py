@@ -96,7 +96,7 @@ class GadgetVerifier(object):
         """Verify gadget.
         """
         # Add instructions to the analyzer
-        self.analyzer.reset(full=True)
+        self.analyzer.reset()
 
         for reil_instr in gadget.get_ir_instrs():
             self.analyzer.add_instruction(reil_instr)
@@ -120,7 +120,7 @@ class GadgetVerifier(object):
         """
         # Constraints on memory locations.
         # mem_constrs = [self.analyzer.get_memory("pre") != self.analyzer.get_memory("post")]
-        mem_constrs = [self.analyzer.get_memory("pre").__neq__(self.analyzer.get_memory("post"))]
+        mem_constrs = [self.analyzer.get_memory_curr("pre").__neq__(self.analyzer.get_memory_curr("post"))]
 
         # Constraints on flags.
         flags_constrs = []
@@ -186,7 +186,7 @@ class GadgetVerifier(object):
         # possibles assigments of *dst*.
 
         dst = self.analyzer.get_register_expr(gadget.destination[0].name, mode="post")
-        src = self.analyzer.get_immediate_expr(gadget.sources[0].immediate, gadget.sources[0].size)
+        src = gadget.sources[0].immediate
 
         # Check all non-modified registers don't change.
         constrs_mod = []
@@ -240,11 +240,11 @@ class GadgetVerifier(object):
         if isinstance(gadget.sources[0], ReilRegisterOperand) and \
             not isinstance(gadget.sources[0], ReilEmptyOperand):
             base_addr = self.analyzer.get_register_expr(gadget.sources[0].name, mode="pre")
-            offset = self.analyzer.get_immediate_expr(gadget.sources[1].immediate, gadget.sources[1].size)
+            offset = gadget.sources[1].immediate
 
             addr = base_addr + offset
         else:
-            addr = self.analyzer.get_immediate_expr(gadget.sources[1].immediate, gadget.sources[1].size)
+            addr = gadget.sources[1].immediate
 
         constrs = []
 
@@ -275,11 +275,11 @@ class GadgetVerifier(object):
         if isinstance(gadget.destination[0], ReilRegisterOperand) and \
             not isinstance(gadget.destination[0], ReilEmptyOperand):
             base_addr = self.analyzer.get_register_expr(gadget.destination[0].name, mode="pre")
-            offset = self.analyzer.get_immediate_expr(gadget.destination[1].immediate, gadget.destination[1].size)
+            offset = gadget.destination[1].immediate
 
             addr = base_addr + offset
         else:
-            addr = self.analyzer.get_immediate_expr(gadget.destination[1].immediate, gadget.destination[1].size)
+            addr = gadget.destination[1].immediate
 
         src = self.analyzer.get_register_expr(gadget.sources[0].name, mode="pre")
         size = gadget.sources[0].size
@@ -317,11 +317,11 @@ class GadgetVerifier(object):
         if isinstance(gadget.sources[1], ReilRegisterOperand) and \
             not isinstance(gadget.sources[1], ReilEmptyOperand):
             base_addr = self.analyzer.get_register_expr(gadget.sources[1].name, mode="pre")
-            offset = self.analyzer.get_immediate_expr(gadget.sources[2].immediate, gadget.sources[2].size)
+            offset = gadget.sources[2].immediate
 
             addr = base_addr + offset
         else:
-            addr = self.analyzer.get_immediate_expr(gadget.sources[2].immediate, gadget.sources[2].size)
+            addr = gadget.sources[2].immediate
 
         src1 = self.analyzer.get_register_expr(gadget.sources[0].name, mode="pre")
         src2 = self.analyzer.get_memory_expr(addr, size/8)
@@ -357,11 +357,11 @@ class GadgetVerifier(object):
         if isinstance(gadget.sources[0], ReilRegisterOperand) and \
             not isinstance(gadget.sources[0], ReilEmptyOperand):
             base_addr = self.analyzer.get_register_expr(gadget.sources[0].name, mode="pre")
-            offset = self.analyzer.get_immediate_expr(gadget.sources[1].immediate, gadget.sources[1].size)
+            offset = gadget.sources[1].immediate
 
             addr = base_addr + offset
         else:
-            addr = self.analyzer.get_immediate_expr(gadget.sources[1].immediate, gadget.sources[1].size)
+            addr = gadget.sources[1].immediate
 
         op = self._arithmetic_ops[gadget.operation]
         size = gadget.sources[2].size
