@@ -35,6 +35,7 @@ import pefile
 
 logger = logging.getLogger(__name__)
 
+
 class SectionRequest(object):
 
     def __init__(self, name):
@@ -93,7 +94,7 @@ class Memory(object):
                 # Read memory one byte at a time.
                 for addr in range(key.start, key.stop, step):
                     chunck.append(self._read_byte(addr))
-            except IndexError as reason:
+            except IndexError:
                 logger.warn("Address out of range: {:#x}".format(addr))
                 raise InvalidAddressError()
 
@@ -191,7 +192,7 @@ class BinaryFile(object):
     def file_format(self):
         """Get file format.
         """
-        pass
+        raise NotImplementedError()
 
     @property
     def text_section(self):
@@ -226,11 +227,10 @@ class BinaryFile(object):
         elif signature[:2] == b'\x4d\x5a':
             self._open_pe(filename)
         else:
-            raise Exception("Unkown file format: {}".format(filename))
-
+            raise Exception("Unknown file format: {}".format(filename))
 
     @staticmethod
-    def _extract_section(sect_req, elffile, mem = None):
+    def _extract_section(sect_req, elffile, mem=None):
         """
             :sect_req dictionary of section names as strings and SectionRequest objects
             :mem if mem is not null, it serves as an accumulator rather than using the memory
@@ -249,7 +249,6 @@ class BinaryFile(object):
                 else:
                     request.memory.add_vma(section.header.sh_addr, bytearray(section.data()))
 
-
     def _open_elf(self, filename):
         f = open(filename, 'rb')
 
@@ -266,7 +265,9 @@ class BinaryFile(object):
         #     if len(segment.data()) > 0:
         #         m.add_vma(segment.header.p_vaddr, bytearray(segment.data()))
 
-        sections = { ".text": SectionRequest(".text") }
+        sections = {
+            ".text": SectionRequest(".text")
+        }
 
         BinaryFile._extract_section(sections, elffile)
         text = sections[".text"]
@@ -274,17 +275,18 @@ class BinaryFile(object):
         if not text.found:
             raise Exception("Error loading ELF file.")
 
-        sections = { ".data": SectionRequest(".data"),
-                     ".rodata": SectionRequest(".rodata"),
-                     ".got": SectionRequest(".got"),
-                     ".got.plt": SectionRequest(".got.plt")}
+        sections = {
+            ".data": SectionRequest(".data"),
+            ".rodata": SectionRequest(".rodata"),
+            ".got": SectionRequest(".got"),
+            ".got.plt": SectionRequest(".got.plt")
+        }
+
         m = Memory()
-        BinaryFile._extract_section(sections,
-                                    elffile,
-                                    mem = m)
+        BinaryFile._extract_section(sections, elffile, mem=m)
 
         data_addrs_start = []
-        data_addrs_ends  = []
+        data_addrs_ends = []
         for k, v in sections.items():
             if v.found:
                 start, size = v.get_sect_properties()
@@ -367,7 +369,7 @@ class BinaryFile(object):
         if pe_file.FILE_HEADER.Machine == pefile.MACHINE_TYPE['IMAGE_FILE_MACHINE_I386']:
             return arch.ARCH_X86
         elif pe_file.FILE_HEADER.Machine == pefile.MACHINE_TYPE['IMAGE_FILE_MACHINE_AMD64']:
-            return  arch.ARCH_X86
+            return arch.ARCH_X86
         elif pe_file.FILE_HEADER.Machine == pefile.MACHINE_TYPE['IMAGE_FILE_MACHINE_ARM']:
             return arch.ARCH_ARM
         elif pe_file.FILE_HEADER.Machine == pefile.MACHINE_TYPE['IMAGE_FILE_MACHINE_THUMB']:
@@ -390,21 +392,21 @@ class BinaryFile(object):
 
     def _map_architecture(self, bfd_arch_name):
         arch_map = {
-            "Intel 386" : arch.ARCH_X86,
-            "ARM"       : arch.ARCH_ARM,
+            "Intel 386": arch.ARCH_X86,
+            "ARM":       arch.ARCH_ARM,
         }
 
         return arch_map[bfd_arch_name]
 
     def _map_architecture_mode(self, bfd_arch_name, bfd_arch_size):
         arch_mode_map = {
-            "Intel 386" : {
-                32 : arch.ARCH_X86_MODE_32,
-                64 : arch.ARCH_X86_MODE_64
+            "Intel 386": {
+                32: arch.ARCH_X86_MODE_32,
+                64: arch.ARCH_X86_MODE_64
             },
             # TODO: Distinguish between ARM or THUMB state.
-            "ARM" : {
-                32 : None,
+            "ARM": {
+                32: None,
             },
         }
 

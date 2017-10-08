@@ -53,10 +53,8 @@ import copy
 import logging
 
 from pyparsing import alphanums
-from pyparsing import alphas
 from pyparsing import Combine
 from pyparsing import Literal
-from pyparsing import nums
 from pyparsing import Optional
 from pyparsing import Or
 from pyparsing import Suppress
@@ -70,27 +68,28 @@ from barf.core.reil.reil import ReilRegisterOperand
 
 logger = logging.getLogger(__name__)
 
+
 def parse_operand(string, location, tokens):
     """Parse instruction operand.
     """
     sizes = {
-        "dqword"  : 128,
-        "pointer" : 72,
-        "qword"   : 64,
-        "pointer" : 40,
-        "dword"   : 32,
-        "word"    : 16,
-        "byte"    : 8,
-        "bit"     : 1,
+        "dqword":  128,
+        "pointer": 72,
+        "qword":   64,
+        "pointer": 40,
+        "dword":   32,
+        "word":    16,
+        "byte":    8,
+        "bit":     1,
     }
 
     if "immediate" in tokens:
         imm_str = "".join(tokens["immediate"])
         base = 16 if imm_str.startswith("0x") or imm_str.startswith("-0x") else 10
 
-        immediate = int(imm_str, base)
+        imm = int(imm_str, base)
 
-        oprnd = ReilImmediateOperand(immediate)
+        oprnd = ReilImmediateOperand(imm)
 
     if "register" in tokens:
         if tokens["register"] in ["e", "empty"]:
@@ -103,16 +102,15 @@ def parse_operand(string, location, tokens):
             oprnd = ReilRegisterOperand(name)
 
     if "size" in tokens:
-        size = int(sizes[tokens["size"]])
-
-        oprnd.size = size
+        oprnd.size = int(sizes[tokens["size"]])
 
     return [oprnd]
+
 
 def parse_instruction(string, location, tokens):
     """Parse instruction.
     """
-    mnemonic = ReilMnemonic.from_string(tokens["mnemonic"])
+    mnemonic_str = ReilMnemonic.from_string(tokens["mnemonic"])
 
     oprnd1 = tokens["fst_operand"][0]
     oprnd2 = tokens["snd_operand"][0]
@@ -120,16 +118,16 @@ def parse_instruction(string, location, tokens):
 
     ins_builder = ReilInstructionBuilder()
 
-    return ins_builder.build(mnemonic, oprnd1, oprnd2, oprnd3)
+    return ins_builder.build(mnemonic_str, oprnd1, oprnd2, oprnd3)
+
 
 # ============================================================================ #
-
 comma = Literal(",")
 
 hex_num = Combine("0x" + Word("0123456789abcdef"))
 dec_num = Word("0123456789")
 
-immediate = Optional("-") +  Or([hex_num, dec_num])
+immediate = Optional("-") + Or([hex_num, dec_num])
 register = Word(alphanums)
 
 mnemonic = Or([
@@ -182,6 +180,7 @@ instruction = (
     Suppress("]")
 ).setParseAction(parse_instruction)
 
+
 class ReilParser(object):
 
     """Reil Instruction Parser."""
@@ -203,7 +202,7 @@ class ReilParser(object):
 
                 # If the instruction to parsed is not in the cache,
                 # parse it and add it to the cache.
-                if not instr_lower in self._cache:
+                if instr_lower not in self._cache:
                     self._cache[instr_lower] = instruction.parseString(
                         instr_lower)[0]
 
@@ -211,8 +210,6 @@ class ReilParser(object):
                 # it.
                 instrs_reil += [copy.deepcopy(self._cache[instr_lower])]
         except:
-            instr_reil = None
-
             error_msg = "Failed to parse instruction: %s"
 
             logger.error(error_msg, instr, exc_info=True)

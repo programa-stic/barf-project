@@ -105,39 +105,39 @@ class ReilMnemonic(object):
         """
         strings = {
             # Arithmetic Instructions
-            ReilMnemonic.ADD : "add",
-            ReilMnemonic.SUB : "sub",
-            ReilMnemonic.MUL : "mul",
-            ReilMnemonic.DIV : "div",
-            ReilMnemonic.MOD : "mod",
-            ReilMnemonic.BSH : "bsh",
+            ReilMnemonic.ADD: "add",
+            ReilMnemonic.SUB: "sub",
+            ReilMnemonic.MUL: "mul",
+            ReilMnemonic.DIV: "div",
+            ReilMnemonic.MOD: "mod",
+            ReilMnemonic.BSH: "bsh",
 
             # Bitwise Instructions
-            ReilMnemonic.AND : "and",
-            ReilMnemonic.OR : "or",
-            ReilMnemonic.XOR : "xor",
+            ReilMnemonic.AND: "and",
+            ReilMnemonic.OR:  "or",
+            ReilMnemonic.XOR: "xor",
 
             # Data Transfer Instructions
-            ReilMnemonic.LDM : "ldm",
-            ReilMnemonic.STM : "stm",
-            ReilMnemonic.STR : "str",
+            ReilMnemonic.LDM: "ldm",
+            ReilMnemonic.STM: "stm",
+            ReilMnemonic.STR: "str",
 
             # Conditional Instructions
-            ReilMnemonic.BISZ : "bisz",
-            ReilMnemonic.JCC : "jcc",
+            ReilMnemonic.BISZ: "bisz",
+            ReilMnemonic.JCC:  "jcc",
 
             # Other Instructions
-            ReilMnemonic.UNKN  : "unkn" ,
-            ReilMnemonic.UNDEF : "undef" ,
-            ReilMnemonic.NOP : "nop" ,
+            ReilMnemonic.UNKN:  "unkn",
+            ReilMnemonic.UNDEF: "undef",
+            ReilMnemonic.NOP:   "nop",
 
             # Added Instructions
-            ReilMnemonic.RET : "ret",
+            ReilMnemonic.RET: "ret",
 
             # Extensions
-            ReilMnemonic.SEXT : "sext",
-            ReilMnemonic.SDIV : "sdiv",
-            ReilMnemonic.SMOD : "smod",
+            ReilMnemonic.SEXT: "sext",
+            ReilMnemonic.SDIV: "sdiv",
+            ReilMnemonic.SMOD: "smod",
         }
 
         return strings[mnemonic]
@@ -148,39 +148,39 @@ class ReilMnemonic(object):
         """
         mnemonics = {
             # Arithmetic Instructions
-            "add" : ReilMnemonic.ADD,
-            "sub" : ReilMnemonic.SUB,
-            "mul" : ReilMnemonic.MUL,
-            "div" : ReilMnemonic.DIV,
-            "mod" : ReilMnemonic.MOD,
-            "bsh" : ReilMnemonic.BSH,
+            "add": ReilMnemonic.ADD,
+            "sub": ReilMnemonic.SUB,
+            "mul": ReilMnemonic.MUL,
+            "div": ReilMnemonic.DIV,
+            "mod": ReilMnemonic.MOD,
+            "bsh": ReilMnemonic.BSH,
 
             # Bitwise Instructions
-            "and" : ReilMnemonic.AND,
-            "or" : ReilMnemonic.OR,
-            "xor" : ReilMnemonic.XOR,
+            "and": ReilMnemonic.AND,
+            "or":  ReilMnemonic.OR,
+            "xor": ReilMnemonic.XOR,
 
             # Data Transfer Instructions
-            "ldm" : ReilMnemonic.LDM,
-            "stm" : ReilMnemonic.STM,
-            "str" : ReilMnemonic.STR,
+            "ldm": ReilMnemonic.LDM,
+            "stm": ReilMnemonic.STM,
+            "str": ReilMnemonic.STR,
 
             # Conditional Instructions
-            "bisz" : ReilMnemonic.BISZ,
-            "jcc" : ReilMnemonic.JCC,
+            "bisz": ReilMnemonic.BISZ,
+            "jcc":  ReilMnemonic.JCC,
 
             # Other Instructions
-            "unkn" : ReilMnemonic.UNKN,
-            "undef" : ReilMnemonic.UNDEF,
-            "nop" : ReilMnemonic.NOP,
+            "unkn":  ReilMnemonic.UNKN,
+            "undef": ReilMnemonic.UNDEF,
+            "nop":   ReilMnemonic.NOP,
 
             # Added Instructions
-            "ret" : ReilMnemonic.RET,
+            "ret": ReilMnemonic.RET,
 
             # Added Instructions
-            "sext" : ReilMnemonic.SEXT,
-            "sdiv" : ReilMnemonic.SDIV,
-            "smod" : ReilMnemonic.SMOD,
+            "sext": ReilMnemonic.SEXT,
+            "sdiv": ReilMnemonic.SDIV,
+            "smod": ReilMnemonic.SMOD,
         }
 
         return mnemonics[string]
@@ -315,16 +315,16 @@ class ReilInstruction(object):
             oprnd_str = str(oprnd)
 
             sizes = {
-                256 : "DDQWORD",
-                128 : "DQWORD",
-                72  : "POINTER",
-                64  : "QWORD",
-                40  : "POINTER",
-                32  : "DWORD",
-                16  : "WORD",
-                8   : "BYTE",
-                1   : "BIT",
-                ""  : "UNK",
+                256: "DDQWORD",
+                128: "DQWORD",
+                72:  "POINTER",
+                64:  "QWORD",
+                40:  "POINTER",
+                32:  "DWORD",
+                16:  "WORD",
+                8:   "BYTE",
+                1:   "BIT",
+                "":  "UNK",
             }
 
             if isinstance(oprnd, ReilEmptyOperand):
@@ -387,7 +387,7 @@ class ReilOperand(object):
         self._size = value
 
     def __eq__(self, other):
-        return  type(other) is type(self) and \
+        return type(other) is type(self) and \
                 self._size == other.size
 
     def __ne__(self, other):
@@ -438,7 +438,7 @@ class ReilImmediateOperand(ReilOperand):
         return string[:-1] if string[-1] == 'L' else string
 
     def __eq__(self, other):
-        return  type(other) is type(self) and \
+        return type(other) is type(self) and \
                 self._size == other.size and \
                 self._immediate == other.immediate
 
@@ -480,7 +480,7 @@ class ReilRegisterOperand(ReilOperand):
         return self._name
 
     def __eq__(self, other):
-        return  type(other) is type(self) and \
+        return type(other) is type(self) and \
                 self._size == other.size and \
                 self._name == other.name
 
@@ -698,7 +698,7 @@ class DualInstruction(object):
         return self._ir_instrs
 
     def __eq__(self, other):
-        return  self.address == other.address and \
+        return self.address == other.address and \
                 self.asm_instr == other.asm_instr
 
     def __ne__(self, other):
@@ -818,7 +818,7 @@ class ReilContainer(object):
 def check_operands_size(instr, arch_size):
     """Enforce operands' size."""
 
-    if instr.mnemonic in [  ReilMnemonic.ADD, ReilMnemonic.SUB,
+    if instr.mnemonic in [ReilMnemonic.ADD, ReilMnemonic.SUB,
                             ReilMnemonic.MUL, ReilMnemonic.DIV,
                             ReilMnemonic.MOD, ReilMnemonic.BSH,
                             ReilMnemonic.AND, ReilMnemonic.OR,

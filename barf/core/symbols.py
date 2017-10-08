@@ -46,6 +46,7 @@ def load_symbols_pe(filename):
 
     return {}
 
+
 def load_symbols_elf(filename):
     """ Load the symbol tables contained in the file
     """
@@ -74,11 +75,11 @@ def load_symbols_elf(filename):
     f.close()
 
     symbols_by_addr = {
-        addr : (name, size, True)
-            for addr, size, name in symbols
+        addr: (name, size, True) for addr, size, name in symbols
     }
 
     return symbols_by_addr
+
 
 def load_symbols(filename):
     try:
@@ -93,6 +94,6 @@ def load_symbols(filename):
     elif signature[:2] == b'\x4d\x5a':
         symbols = load_symbols_pe(filename)
     else:
-        raise Exception("Unkown file format.")
+        raise Exception("Unknown file format.")
 
     return symbols

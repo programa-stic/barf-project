@@ -158,7 +158,7 @@ class ReilMemoryEx(ReilMemory):
 
         """
         addr_candidates = [addr for addr, val in self._memory.items() if val == (value & 0xff)]
-        addr_matchings = []
+        addr_matches = []
 
         for addr in addr_candidates:
             match = True
@@ -174,9 +174,9 @@ class ReilMemoryEx(ReilMemory):
                     break
 
             if match:
-                addr_matchings += [addr]
+                addr_matches += [addr]
 
-        return addr_matchings
+        return addr_matches
 
     def try_read(self, address, size):
         """Try to read memory content at specified address.
@@ -310,39 +310,39 @@ class ReilCpu(object):
         # Instruction implementation.
         self.__executors = {
             # Arithmetic Instructions
-            ReilMnemonic.ADD  : self.__execute_binary_op,
-            ReilMnemonic.SUB  : self.__execute_binary_op,
-            ReilMnemonic.MUL  : self.__execute_binary_op,
-            ReilMnemonic.DIV  : self.__execute_binary_op,
-            ReilMnemonic.SDIV : self.__execute_binary_op,
-            ReilMnemonic.MOD  : self.__execute_binary_op,
-            ReilMnemonic.SMOD : self.__execute_binary_op,
-            ReilMnemonic.BSH  : self.__execute_bsh,
+            ReilMnemonic.ADD: self.__execute_binary_op,
+            ReilMnemonic.SUB: self.__execute_binary_op,
+            ReilMnemonic.MUL: self.__execute_binary_op,
+            ReilMnemonic.DIV: self.__execute_binary_op,
+            ReilMnemonic.MOD: self.__execute_binary_op,
+            ReilMnemonic.BSH: self.__execute_bsh,
 
             # Bitwise Instructions
-            ReilMnemonic.AND : self.__execute_binary_op,
-            ReilMnemonic.OR  : self.__execute_binary_op,
-            ReilMnemonic.XOR : self.__execute_binary_op,
+            ReilMnemonic.AND: self.__execute_binary_op,
+            ReilMnemonic.OR:  self.__execute_binary_op,
+            ReilMnemonic.XOR: self.__execute_binary_op,
 
             # Data Transfer Instructions
-            ReilMnemonic.LDM : self.__execute_ldm,
-            ReilMnemonic.STM : self.__execute_stm,
-            ReilMnemonic.STR : self.__execute_str,
+            ReilMnemonic.LDM: self.__execute_ldm,
+            ReilMnemonic.STM: self.__execute_stm,
+            ReilMnemonic.STR: self.__execute_str,
 
             # Conditional Instructions
-            ReilMnemonic.BISZ : self.__execute_bisz,
-            ReilMnemonic.JCC  : self.__execute_jcc,
+            ReilMnemonic.BISZ: self.__execute_bisz,
+            ReilMnemonic.JCC:  self.__execute_jcc,
 
             # Other Instructions
-            ReilMnemonic.UNDEF : self.__execute_undef,
-            ReilMnemonic.UNKN  : self.__execute_unkn,
-            ReilMnemonic.NOP   : self.__execute_skip,
+            ReilMnemonic.UNDEF: self.__execute_undef,
+            ReilMnemonic.UNKN:  self.__execute_unkn,
+            ReilMnemonic.NOP:   self.__execute_skip,
 
             # Ad hoc Instructions
-            ReilMnemonic.RET : self.__execute_skip,
+            ReilMnemonic.RET: self.__execute_skip,
 
             # Extensions
-            ReilMnemonic.SEXT : self.__execute_sext,
+            ReilMnemonic.SEXT: self.__execute_sext,
+            ReilMnemonic.SDIV: self.__execute_binary_op,
+            ReilMnemonic.SMOD: self.__execute_binary_op,
         }
 
         self.__set_default_handlers()
@@ -401,11 +401,11 @@ class ReilCpu(object):
 
     # Instruction's handler methods
     # ======================================================================== #
-    def set_instruction_pre_handler(self, function, parameter):
-        self.__instr_handler_pre = (function, parameter)
+    def set_instruction_pre_handler(self, func, parameter):
+        self.__instr_handler_pre = (func, parameter)
 
-    def set_instruction_post_handler(self, function, parameter):
-        self.__instr_handler_post = (function, parameter)
+    def set_instruction_post_handler(self, func, parameter):
+        self.__instr_handler_post = (func, parameter)
 
     # Instruction's handler auxiliary methods
     # ======================================================================== #
@@ -502,12 +502,12 @@ class ReilCpu(object):
         taint = "T" if self.__tainter.get_register_taint(register) else "-"
 
         params = {
-            "indent"        : " "*10,
-            "register"      : register,
-            "value"         : value,
-            "base_register" : base_register,
-            "base_value"    : base_value,
-            "taint"         : taint
+            "indent":        " " * 10,
+            "register":      register,
+            "value":         value,
+            "base_register": base_register,
+            "base_value":    base_value,
+            "taint":         taint
         }
 
         fmt = "{indent}r{{ {register:s} = {value:08x} [{taint:s}] " + \
@@ -520,12 +520,12 @@ class ReilCpu(object):
         taint = "T" if self.__tainter.get_register_taint(register) else "-"
 
         params = {
-            "indent"        : " "*10,
-            "register"      : register,
-            "value"         : value,
-            "base_register" : base_register,
-            "base_value"    : base_value,
-            "taint"         : taint
+            "indent":        " " * 10,
+            "register":      register,
+            "value":         value,
+            "base_register": base_register,
+            "base_value":    base_value,
+            "taint":         taint
         }
 
         fmt = "{indent}w{{ {register:s} = {value:08x} [{taint:s}] " + \
@@ -537,10 +537,10 @@ class ReilCpu(object):
         taint = "T" if self.__tainter.get_memory_taint(address, size) else "-"
 
         params = {
-            "indent"  : " "*10,
-            "address" : address,
-            "value"   : value,
-            "taint"   : taint
+            "indent":  " " * 10,
+            "address": address,
+            "value":   value,
+            "taint":   taint
         }
 
         fmt = "{indent}r{{ m[{address:08x}] = {value:08x} [{taint:s}]}}"
@@ -551,10 +551,10 @@ class ReilCpu(object):
         taint = "T" if self.__tainter.get_memory_taint(address, size) else "-"
 
         params = {
-            "indent"  : " "*10,
-            "address" : address,
-            "value"   : value,
-            "taint"   : taint
+            "indent":  " " * 10,
+            "address": address,
+            "value":   value,
+            "taint":   taint
         }
 
         fmt = "{indent}w{{ m[{address:08x}] = {value:08x} [{taint:s}]}}"
@@ -625,22 +625,21 @@ class ReilCpu(object):
 
     def __execute_binary_op(self, instr):
         op_map = {
-            ReilMnemonic.ADD : lambda a, b: a + b,
-            ReilMnemonic.SUB : lambda a, b: a - b,
-            ReilMnemonic.MUL : lambda a, b: a * b,  # unsigned multiplication
-            ReilMnemonic.DIV : lambda a, b: a / b,  # unsigned division
-            ReilMnemonic.MOD : lambda a, b: a % b,  # unsigned modulo
+            ReilMnemonic.ADD: lambda a, b: a + b,
+            ReilMnemonic.SUB: lambda a, b: a - b,
+            ReilMnemonic.MUL: lambda a, b: a * b,  # unsigned multiplication
+            ReilMnemonic.DIV: lambda a, b: a / b,  # unsigned division
+            ReilMnemonic.MOD: lambda a, b: a % b,  # unsigned modulo
 
-            ReilMnemonic.AND : lambda a, b: a & b,
-            ReilMnemonic.OR  : lambda a, b: a | b,
-            ReilMnemonic.XOR : lambda a, b: a ^ b,
+            ReilMnemonic.AND: lambda a, b: a & b,
+            ReilMnemonic.OR:  lambda a, b: a | b,
+            ReilMnemonic.XOR: lambda a, b: a ^ b,
         }
 
         op0_val = self.read_operand(instr.operands[0])
         op1_val = self.read_operand(instr.operands[1])
 
-        if instr.mnemonic in [ReilMnemonic.DIV, ReilMnemonic.MOD] and \
-            op1_val == 0:
+        if instr.mnemonic in [ReilMnemonic.DIV, ReilMnemonic.MOD] and op1_val == 0:
             raise ReilCpuZeroDivisionError()
 
         if instr.mnemonic in [ReilMnemonic.SDIV]:
@@ -773,39 +772,39 @@ class ReilEmulatorTainter(object):
         # Taint function lookup table.
         self.__tainter = {
             # Arithmetic Instructions
-            ReilMnemonic.ADD  : self.__taint_binary_op,
-            ReilMnemonic.SUB  : self.__taint_binary_op,
-            ReilMnemonic.MUL  : self.__taint_binary_op,
-            ReilMnemonic.DIV  : self.__taint_binary_op,
-            ReilMnemonic.SDIV : self.__taint_binary_op,
-            ReilMnemonic.MOD  : self.__taint_binary_op,
-            ReilMnemonic.SMOD : self.__taint_binary_op,
-            ReilMnemonic.BSH  : self.__taint_binary_op,
+            ReilMnemonic.ADD: self.__taint_binary_op,
+            ReilMnemonic.SUB: self.__taint_binary_op,
+            ReilMnemonic.MUL: self.__taint_binary_op,
+            ReilMnemonic.DIV: self.__taint_binary_op,
+            ReilMnemonic.MOD: self.__taint_binary_op,
+            ReilMnemonic.BSH: self.__taint_binary_op,
 
             # Bitwise Instructions
-            ReilMnemonic.AND : self.__taint_binary_op,
-            ReilMnemonic.OR  : self.__taint_binary_op,
-            ReilMnemonic.XOR : self.__taint_binary_op,
+            ReilMnemonic.AND: self.__taint_binary_op,
+            ReilMnemonic.OR:  self.__taint_binary_op,
+            ReilMnemonic.XOR: self.__taint_binary_op,
 
             # Data Transfer Instructions
-            ReilMnemonic.LDM : self.__taint_load,
-            ReilMnemonic.STM : self.__taint_store,
-            ReilMnemonic.STR : self.__taint_move,
+            ReilMnemonic.LDM: self.__taint_load,
+            ReilMnemonic.STM: self.__taint_store,
+            ReilMnemonic.STR: self.__taint_move,
 
             # Conditional Instructions
-            ReilMnemonic.BISZ : self.__taint_move,
-            ReilMnemonic.JCC  : self.__taint_nothing,
+            ReilMnemonic.BISZ: self.__taint_move,
+            ReilMnemonic.JCC:  self.__taint_nothing,
 
             # Other Instructions
-            ReilMnemonic.UNDEF : self.__taint_undef,
-            ReilMnemonic.UNKN  : self.__taint_nothing,
-            ReilMnemonic.NOP   : self.__taint_nothing,
+            ReilMnemonic.UNDEF: self.__taint_undef,
+            ReilMnemonic.UNKN:  self.__taint_nothing,
+            ReilMnemonic.NOP:   self.__taint_nothing,
 
             # Ad hoc Instructions
-            ReilMnemonic.RET : self.__taint_nothing,
+            ReilMnemonic.RET: self.__taint_nothing,
 
             # Extensions
-            ReilMnemonic.SEXT : self.__taint_move,
+            ReilMnemonic.SEXT: self.__taint_move,
+            ReilMnemonic.SDIV: self.__taint_binary_op,
+            ReilMnemonic.SMOD: self.__taint_binary_op,
         }
 
     def taint(self, instruction):
@@ -1012,11 +1011,11 @@ class ReilEmulator(object):
 
     # Handler methods
     # ======================================================================== #
-    def set_instruction_pre_handler(self, function, parameter):
-        self.__cpu.set_instruction_pre_handler(function, parameter)
+    def set_instruction_pre_handler(self, func, parameter):
+        self.__cpu.set_instruction_pre_handler(func, parameter)
 
-    def set_instruction_post_handler(self, function, parameter):
-        self.__cpu.set_instruction_post_handler(function, parameter)
+    def set_instruction_post_handler(self, func, parameter):
+        self.__cpu.set_instruction_post_handler(func, parameter)
 
     # Read/Write methods
     # ======================================================================== #
