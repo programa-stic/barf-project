@@ -147,9 +147,9 @@ class CallGraph(object):
         return graph
 
     def __getstate__(self):
-        state = {}
-
-        state['_cfgs'] = self._cfgs
+        state = {
+            '_cfgs': self._cfgs
+        }
 
         return state
 
@@ -184,35 +184,35 @@ class CGSimpleRenderer(CGRenderer):
     # fontname = 'Ubuntu Condensed'
 
     graph_format = {
-        'graph_type' : 'digraph',
-        'rankdir'    : 'TB',
-        'splines'    : 'ortho',
-        'nodesep'    : '1.2',
+        'graph_type': 'digraph',
+        'rankdir':    'TB',
+        'splines':    'ortho',
+        'nodesep':    '1.2',
     }
 
     node_format = {
-        'shape'     : 'plaintext',
-        'rankdir'   : 'LR',
-        'fontname'  : fontname,
-        'fontsize'  : 9.0,
-        'penwidth'  : 0.5,
+        'shape':    'plaintext',
+        'rankdir':  'LR',
+        'fontname': fontname,
+        'fontsize': 9.0,
+        'penwidth': 0.5,
     }
 
     edge_format = {
-        'fontname'  : fontname,
-        'fontsize'  : 8.0,
-        'penwidth'  : 0.5,
-        'arrowsize' : 0.6,
-        'arrowhead' : 'vee',
+        'fontname':  fontname,
+        'fontsize':  8.0,
+        'penwidth':  0.5,
+        'arrowsize': 0.6,
+        'arrowhead': 'vee',
     }
 
     edge_color = {
-        'direct'   : 'blue',
-        'indirect' : 'red',
+        'direct':   'blue',
+        'indirect': 'red',
     }
 
     # Templates.
-    node_tpl  = '<'
+    node_tpl = '<'
     node_tpl += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
     node_tpl += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
     node_tpl += '  <tr><td align="left" cellspacing="1">{label}</td></tr>'
@@ -241,8 +241,8 @@ class CGSimpleRenderer(CGRenderer):
                     dot_graph.add_edge(edge)
 
             dot_graph.write("{}.{}".format(filename, format), format=format)
-        except Exception as err:
-           logger.error("Failed to save call graph: %s (%s)", filename, format, exc_info=True)
+        except Exception:
+            logger.error("Failed to save call graph: %s (%s)", filename, format, exc_info=True)
 
     def _create_node(self, cfg_addr, cf):
         if cfg_addr != "unknown":

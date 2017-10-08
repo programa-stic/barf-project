@@ -43,6 +43,7 @@ from barf.core.reil import ReilEmptyOperand
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
 
+
 class GadgetClassifier(object):
 
     """Gadget Classifier.
@@ -55,35 +56,35 @@ class GadgetClassifier(object):
 
         # Classifiers ordered by gadget type.
         self._classifiers = {
-            GadgetType.NoOperation     : self._classify_no_operation,
-            GadgetType.Jump            : self._classify_jump,
-            GadgetType.MoveRegister    : self._classify_move_register,
-            GadgetType.LoadConstant    : self._classify_load_constant,
-            GadgetType.Arithmetic      : self._classify_arithmetic,
-            GadgetType.LoadMemory      : self._classify_load_memory,
-            GadgetType.StoreMemory     : self._classify_store_memory,
-            GadgetType.ArithmeticLoad  : self._classify_arithmetic_load,
-            GadgetType.ArithmeticStore : self._classify_arithmetic_store,
+            GadgetType.NoOperation:     self._classify_no_operation,
+            GadgetType.Jump:            self._classify_jump,
+            GadgetType.MoveRegister:    self._classify_move_register,
+            GadgetType.LoadConstant:    self._classify_load_constant,
+            GadgetType.Arithmetic:      self._classify_arithmetic,
+            GadgetType.LoadMemory:      self._classify_load_memory,
+            GadgetType.StoreMemory:     self._classify_store_memory,
+            GadgetType.ArithmeticLoad:  self._classify_arithmetic_load,
+            GadgetType.ArithmeticStore: self._classify_arithmetic_store,
         }
 
         # Supported arithmetic and logical operations for arithmetic
         # gadgets.
         self._binary_ops = {
             # Arithmetic
-            "+"  : lambda x, y : x + y,
-            "-"  : lambda x, y : x - y,
+            "+": lambda x, y: x + y,
+            "-": lambda x, y: x - y,
 
-            # "*"  : lambda x, y : x * y,
-            # "/"  : lambda x, y : x / y,
-            # "%"  : lambda x, y : x % y,
+            # "*": lambda x, y: x * y,
+            # "/": lambda x, y: x / y,
+            # "%": lambda x, y: x % y,
 
             # Bitwise
-            "&"  : lambda x, y : x & y,
-            "^"  : lambda x, y : x ^ y,
-            "|"  : lambda x, y : x | y,
+            "&": lambda x, y: x & y,
+            "^": lambda x, y: x ^ y,
+            "|": lambda x, y: x | y,
 
-            # "<<" : lambda x, y : x << y,
-            # ">>" : lambda x, y : x >> y,
+            # "<<": lambda x, y: x << y,
+            # ">>": lambda x, y: x >> y,
         }
 
         # Architecture information.
@@ -122,7 +123,7 @@ class GadgetClassifier(object):
         """
         # TODO: Flags should be taken into account
 
-        matchings = []
+        matches = []
 
         # Check that registers didn't change their value.
         regs_changed = any(regs_init[r] != regs_fini[r] for r in regs_init)
@@ -134,25 +135,25 @@ class GadgetClassifier(object):
         mem_changed = mem_fini.get_write_count() != 0
 
         if not regs_changed and not flags_changed and not mem_changed:
-            matchings.append({
-                "op" : "nop",
+            matches.append({
+                "op": "nop",
             })
 
-        return matchings
+        return matches
 
     def _classify_jump(self, regs_init, regs_fini, mem_fini, written_regs, read_regs):
         """Classify jump gadgets.
         """
         # TODO: Implement.
 
-        matchings = []
+        matches = []
 
-        return matchings
+        return matches
 
     def _classify_move_register(self, regs_init, regs_fini, mem_fini, written_regs, read_regs):
         """Classify move-register gadgets.
         """
-        matchings = []
+        matches = []
 
         regs_init_inv = self._invert_dictionary(regs_init)
 
@@ -180,17 +181,17 @@ class GadgetClassifier(object):
                 src_reg_ir = ReilRegisterOperand(src_reg, self._arch_regs_size[src_reg])
                 dst_reg_ir = ReilRegisterOperand(dst_reg, self._arch_regs_size[dst_reg])
 
-                matchings.append({
-                    "src" : [src_reg_ir],
-                    "dst" : [dst_reg_ir]
+                matches.append({
+                    "src": [src_reg_ir],
+                    "dst": [dst_reg_ir]
                 })
 
-        return matchings
+        return matches
 
     def _classify_load_constant(self, regs_init, regs_fini, mem_fini, written_regs, read_regs):
         """Classify load-constant gadgets.
         """
-        matchings = []
+        matches = []
 
         # Check for "dst_reg <- constant" pattern.
         for dst_reg, dst_val in regs_fini.items():
@@ -205,25 +206,25 @@ class GadgetClassifier(object):
             dst_val_ir = ReilImmediateOperand(dst_val, self._arch_regs_size[dst_reg])
             dst_reg_ir = ReilRegisterOperand(dst_reg, self._arch_regs_size[dst_reg])
 
-            matchings.append({
-                "src" : [dst_val_ir],
-                "dst" : [dst_reg_ir]
+            matches.append({
+                "src": [dst_val_ir],
+                "dst": [dst_reg_ir]
             })
 
-        return matchings
+        return matches
 
     def _classify_arithmetic(self, regs_init, regs_fini, mem_fini, written_regs, read_regs):
         """Classify binary-operation gadgets.
         """
-        matchings = []
+        matches = []
 
         # TODO: Review these restrictions.
         op_restrictions = {
-            "+" : lambda x, y : False,
-            "-" : lambda x, y : x == y,
-            "|" : lambda x, y : x == y,
-            "&" : lambda x, y : x == y,
-            "^" : lambda x, y : x == y,
+            "+": lambda x, y: False,
+            "-": lambda x, y: x == y,
+            "|": lambda x, y: x == y,
+            "&": lambda x, y: x == y,
+            "^": lambda x, y: x == y,
         }
 
         # Check for "dst_reg <- src1_reg OP src2_reg" pattern.
@@ -264,18 +265,18 @@ class GadgetClassifier(object):
 
                             dst_reg_ir = ReilRegisterOperand(dst_reg, self._arch_regs_size[dst_reg])
 
-                            matchings.append({
-                                "src" : src_ir,
-                                "dst" : [dst_reg_ir],
-                                "op"  : op_name
+                            matches.append({
+                                "src": src_ir,
+                                "dst": [dst_reg_ir],
+                                "op":  op_name
                             })
 
-        return matchings
+        return matches
 
     def _classify_load_memory(self, regs_init, regs_fini, mem_fini, written_regs, read_regs):
         """Classify load-memory gadgets.
         """
-        matchings = []
+        matches = []
 
         regs_init_inv = self._invert_dictionary(regs_init)
 
@@ -307,9 +308,9 @@ class GadgetClassifier(object):
                     src_off_ir = ReilImmediateOperand(offset, self._arch_regs_size[src_reg])
                     dst_reg_ir = ReilRegisterOperand(dst_reg, self._arch_regs_size[dst_reg])
 
-                    matchings.append({
-                        "src" : [src_reg_ir, src_off_ir],
-                        "dst" : [dst_reg_ir]
+                    matches.append({
+                        "src": [src_reg_ir, src_off_ir],
+                        "dst": [dst_reg_ir]
                     })
 
         # Check for "dst_reg <- mem[offset]" pattern.
@@ -325,24 +326,24 @@ class GadgetClassifier(object):
                 src_off_ir = ReilImmediateOperand(src_addr, self._address_size)
                 dst_reg_ir = ReilRegisterOperand(dst_reg, self._arch_regs_size[dst_reg])
 
-                matchings.append({
-                    "src" : [src_reg_ir, src_off_ir],
-                    "dst" : [dst_reg_ir]
+                matches.append({
+                    "src": [src_reg_ir, src_off_ir],
+                    "dst": [dst_reg_ir]
                 })
 
-        return matchings
+        return matches
 
     def _classify_store_memory(self, regs_init, regs_fini, mem_fini, written_regs, read_regs):
         """Classify store-memory gadgets.
         """
-        matchings = []
+        matches = []
 
         regs_init_inv = self._invert_dictionary(regs_init)
 
         # Check for "mem[dst_reg + offset] <- src_reg" pattern.
         for src_reg, src_val in regs_init.items():
             # Make sure the *src* register was read.
-            if not src_reg in read_regs:
+            if src_reg not in read_regs:
                 continue
 
             src_size = self._arch_regs_size[src_reg]
@@ -350,7 +351,7 @@ class GadgetClassifier(object):
             for addr in mem_fini.read_inverse(src_val, src_size / 8):
                 for dst_reg, dst_val in regs_init.items():
                     # Make sure the *dst* register was written.
-                    if not dst_reg in read_regs:
+                    if dst_reg not in read_regs:
                         continue
 
                     # Check restrictions.
@@ -363,15 +364,15 @@ class GadgetClassifier(object):
                     dst_reg_ir = ReilRegisterOperand(dst_reg, self._arch_regs_size[dst_reg])
                     dst_off_ir = ReilImmediateOperand(offset, self._arch_regs_size[dst_reg])
 
-                    matchings.append({
-                        "src" : [src_reg_ir],
-                        "dst" : [dst_reg_ir, dst_off_ir]
+                    matches.append({
+                        "src": [src_reg_ir],
+                        "dst": [dst_reg_ir, dst_off_ir]
                     })
 
         # Check for "mem[offset] <- src_reg" pattern.
         for src_reg, src_val in regs_init.items():
             # Make sure the *src* register was read.
-            if not src_reg in read_regs:
+            if src_reg not in read_regs:
                 continue
 
             src_size = self._arch_regs_size[src_reg]
@@ -383,17 +384,17 @@ class GadgetClassifier(object):
                 dst_reg_ir = ReilEmptyOperand()
                 dst_off_ir = ReilImmediateOperand(offset, self._address_size)
 
-                matchings.append({
-                    "src" : [src_reg_ir],
-                    "dst" : [dst_reg_ir, dst_off_ir]
+                matches.append({
+                    "src": [src_reg_ir],
+                    "dst": [dst_reg_ir, dst_off_ir]
                 })
 
-        return matchings
+        return matches
 
     def _classify_arithmetic_load(self, regs_init, regs_fini, mem_fini, written_regs, read_regs):
         """Classify arithmetic-load gadgets.
         """
-        matchings = []
+        matches = []
 
         # Check for "dst_reg <- dst_reg OP mem[src_reg + offset]" pattern.
         for op_name, op_fn in self._binary_ops.items():
@@ -411,7 +412,7 @@ class GadgetClassifier(object):
 
                         for src_reg, src_val in regs_init.items():
                             # Make sure the *src* register was read.
-                            if not src_reg in read_regs:
+                            if src_reg not in read_regs:
                                 continue
 
                             # Check restrictions.
@@ -424,10 +425,10 @@ class GadgetClassifier(object):
                             src_off_ir = ReilImmediateOperand(offset, self._address_size)
                             dst_reg_ir = ReilRegisterOperand(dst_reg, self._arch_regs_size[dst_reg])
 
-                            matchings.append({
-                                "src" : [dst_reg_ir, src_reg_ir, src_off_ir],
-                                "dst" : [dst_reg_ir],
-                                "op"  : op_name
+                            matches.append({
+                                "src": [dst_reg_ir, src_reg_ir, src_off_ir],
+                                "dst": [dst_reg_ir],
+                                "op":  op_name
                             })
 
         # Check for "dst_reg <- dst_reg OP mem[offset]" pattern.
@@ -447,18 +448,18 @@ class GadgetClassifier(object):
                         src_off_ir = ReilImmediateOperand(addr, self._address_size)
                         dst_reg_ir = ReilRegisterOperand(dst_reg, self._arch_regs_size[dst_reg])
 
-                        matchings.append({
-                            "src" : [dst_reg_ir, src_reg_ir, src_off_ir],
-                            "dst" : [dst_reg_ir],
-                            "op"  : op_name
+                        matches.append({
+                            "src": [dst_reg_ir, src_reg_ir, src_off_ir],
+                            "dst": [dst_reg_ir],
+                            "op":  op_name
                         })
 
-        return matchings
+        return matches
 
     def _classify_arithmetic_store(self, regs_init, regs_fini, mem_fini, written_regs, read_regs):
         """Classify arithmetic-store gadgets.
         """
-        matchings = []
+        matches = []
 
         # Check for "m[dst_reg + offset] <- m[dst_reg + offset] OP src_reg" pattern.
         for op_name, op_fn in self._binary_ops.items():
@@ -470,7 +471,7 @@ class GadgetClassifier(object):
                     if success_read_curr and success_read_prev:
                         for src_reg, src_val in regs_init.items():
                             # Make sure the *src* register was read.
-                            if not src_reg in read_regs:
+                            if src_reg not in read_regs:
                                 continue
 
                             # Check restrictions.
@@ -481,7 +482,7 @@ class GadgetClassifier(object):
                                 # find dst + offset
                                 for dst_reg, dst_val in regs_init.items():
                                     # Make sure the *dst* register was written.
-                                    if not dst_reg in read_regs:
+                                    if dst_reg not in read_regs:
                                         continue
 
                                     # Check restrictions.
@@ -494,11 +495,10 @@ class GadgetClassifier(object):
                                     dst_reg_ir = ReilRegisterOperand(dst_reg, self._arch_regs_size[dst_reg])
                                     dst_off_ir = ReilImmediateOperand(offset, self._address_size)
 
-                                    matchings.append({
-                                        "src" : [dst_reg_ir, dst_off_ir, \
-                                            src_reg_ir],
-                                        "dst" : [dst_reg_ir, dst_off_ir],
-                                        "op"  : op_name
+                                    matches.append({
+                                        "src": [dst_reg_ir, dst_off_ir, src_reg_ir],
+                                        "dst": [dst_reg_ir, dst_off_ir],
+                                        "op":  op_name
                                     })
 
         # Check for "m[offset] <- m[offset] OP src_reg" pattern.
@@ -511,7 +511,7 @@ class GadgetClassifier(object):
                     if success_read_curr and success_read_prev:
                         for src_reg, src_val in regs_init.items():
                             # Make sure the *src* register was read.
-                            if not src_reg in read_regs:
+                            if src_reg not in read_regs:
                                 continue
 
                             # Check restrictions.
@@ -523,13 +523,13 @@ class GadgetClassifier(object):
                                 dst_reg_ir = ReilEmptyOperand()
                                 dst_off_ir = ReilImmediateOperand(addr, self._address_size)
 
-                                matchings.append({
-                                    "src" : [dst_reg_ir, dst_off_ir, src_reg_ir],
-                                    "dst" : [dst_reg_ir, dst_off_ir],
-                                    "op"  : op_name
+                                matches.append({
+                                    "src": [dst_reg_ir, dst_off_ir, src_reg_ir],
+                                    "dst": [dst_reg_ir, dst_off_ir],
+                                    "op":  op_name
                                 })
 
-        return matchings
+        return matches
 
     # Auxiliary functions
     # ======================================================================== #
@@ -537,8 +537,7 @@ class GadgetClassifier(object):
         """Classify gadgets.
         """
         # Collect REIL instructions of the gadget.
-        instrs = [ir_instr for g_instrs in gadget.instrs
-                           for ir_instr in g_instrs.ir_instrs]
+        instrs = [ir_instr for g_instrs in gadget.instrs for ir_instr in g_instrs.ir_instrs]
 
         # Repeat classification.
         results = []
@@ -565,20 +564,20 @@ class GadgetClassifier(object):
             # Compute values for all registers. For example, in x86, it
             # computes 'al' from 'eax'.
             regs_initial_full = self._compute_full_context(regs_initial)
-            regs_final_full   = self._compute_full_context(regs_final)
+            regs_final_full = self._compute_full_context(regs_final)
 
             # Get written and read registers.
             regs_written = self._ir_emulator.written_registers
-            regs_read    = self._ir_emulator.read_registers
+            regs_read = self._ir_emulator.read_registers
 
-            # Compute modifiead registers.
+            # Compute modified registers.
             mod_regs = self._compute_mod_regs(
                 regs_initial_full,
                 regs_final_full
             )
 
             # Classified gadgets based on initial and final context.
-            matchings = classifier(
+            matches = classifier(
                 regs_initial_full,
                 regs_final_full,
                 mem_final,
@@ -587,10 +586,10 @@ class GadgetClassifier(object):
             )
 
             # Save results.
-            results += [(matchings, mod_regs)]
+            results += [(matches, mod_regs)]
 
         # Analyze results and compute candidate gadgets.
-        candidates, mod_regs = self._analize_execution_results(results)
+        candidates, mod_regs = self._analyze_execution_results(results)
 
         # Create classified gadgets.
         classified = self._create_typed_gadgets(
@@ -602,7 +601,7 @@ class GadgetClassifier(object):
 
         return classified
 
-    def _analize_execution_results(self, results):
+    def _analyze_execution_results(self, results):
         matching_candidates, _ = results[0]
 
         classified_candidates = []
@@ -610,12 +609,11 @@ class GadgetClassifier(object):
         for matching_candidate in matching_candidates:
             valid_matching = True
 
-            for matchings, _ in results[1:]:
-                if matching_candidate not in matchings:
+            for matches, _ in results[1:]:
+                if matching_candidate not in matches:
                     valid_matching = False
 
-            if valid_matching and \
-                matching_candidate not in classified_candidates:
+            if valid_matching and matching_candidate not in classified_candidates:
                 classified_candidates.append(matching_candidate)
 
         modified_regs = set()
@@ -625,15 +623,14 @@ class GadgetClassifier(object):
 
         return classified_candidates, list(modified_regs)
 
-    def _create_typed_gadgets(self, gadget, classified_gadgets, modified_regs, \
-        gadget_type):
+    def _create_typed_gadgets(self, gadget, classified_gadgets, modified_regs, gadget_type):
         typed_gadgets = []
 
         # Remove register aliases
         mod_regs = []
 
         for r in modified_regs:
-            alias, _ =  self._arch_info.alias_mapper.get(r, (None, None))
+            alias, _ = self._arch_info.alias_mapper.get(r, (None, None))
 
             if not alias:
                 mod_regs += [r]
@@ -643,10 +640,9 @@ class GadgetClassifier(object):
         modified_regs_ir = [ReilRegisterOperand(r, self._arch_regs_size[r]) for r in mod_regs]
 
         for candidate in classified_gadgets:
-            typed_gadget = TypedGadget(gadget, gadget_type)
+            typed_gadget = TypedGadget(gadget, gadget_type, gadget.instrs)
 
-            if gadget_type in [GadgetType.Arithmetic, \
-                GadgetType.ArithmeticLoad, GadgetType.ArithmeticStore]:
+            if gadget_type in [GadgetType.Arithmetic, GadgetType.ArithmeticLoad, GadgetType.ArithmeticStore]:
                 typed_gadget.operation = candidate["op"]
 
             if candidate.get("op", "") != "nop":
@@ -656,8 +652,7 @@ class GadgetClassifier(object):
                 if gadget_type == GadgetType.StoreMemory:
                     typed_gadget.modified_registers = [r for r in modified_regs_ir]
                 else:
-                    typed_gadget.modified_registers = [r for r in modified_regs_ir \
-                        if r not in typed_gadget.destination]
+                    typed_gadget.modified_registers = [r for r in modified_regs_ir if r not in typed_gadget.destination]
 
             typed_gadgets += [typed_gadget]
 
@@ -687,7 +682,7 @@ class GadgetClassifier(object):
         """
         assert regs_init.keys() == regs_fini.keys()
 
-        modified_regs  = []
+        modified_regs = []
 
         for reg in regs_init:
             if regs_init[reg] != regs_fini[reg]:
@@ -696,12 +691,12 @@ class GadgetClassifier(object):
         return modified_regs
 
     def _invert_dictionary(self, d):
-        """Invert a dictinary.
+        """Invert a dictionary.
         """
         inv_dict = {}
 
         for k, v in d.items():
-            inv_dict[v]  = inv_dict.get(v, [])
+            inv_dict[v] = inv_dict.get(v, [])
             inv_dict[v] += [k]
 
         return inv_dict
