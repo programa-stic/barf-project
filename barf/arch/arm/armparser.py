@@ -59,6 +59,7 @@ logger = logging.getLogger(__name__)
 
 arch_info = None
 
+
 # Parsing functions
 # ============================================================================ #
 def process_shifted_register(tokens):
@@ -77,6 +78,7 @@ def process_shifted_register(tokens):
 
     return ArmShiftedRegisterOperand(base, sh_type, amount, base.size)
 
+
 def process_register(tokens):
     name = tokens["name"]
     if name in arch_info.registers_size:
@@ -87,6 +89,7 @@ def process_register(tokens):
 
     return oprnd
 
+
 def parse_operand(string, location, tokens):
     """Parse an ARM instruction operand.
     """
@@ -96,12 +99,11 @@ def parse_operand(string, location, tokens):
         oprnd = ArmImmediateOperand("".join(tokens["immediate_operand"]), size)
 
     if "register_operand" in tokens:
-        oprnd =  process_register(tokens["register_operand"])
+        oprnd = process_register(tokens["register_operand"])
 
         # TODO: Figure out where to really store this flag, instead of in the register class
         if "wb" in tokens["register_operand"]:
             oprnd.wb = True
-
 
     if "memory_operand" in tokens:
         mem_oprnd = tokens["memory_operand"]
@@ -124,22 +126,22 @@ def parse_operand(string, location, tokens):
 
         if disp:
             if "shift" in disp:
-                displacement = process_shifted_register(disp["shift"])
+                displ_imm = process_shifted_register(disp["shift"])
             elif "reg" in disp:
-                displacement = process_register(disp["reg"])
+                displ_imm = process_register(disp["reg"])
             elif "imm" in disp:
-                displacement = ArmImmediateOperand("".join(disp["imm"]), arch_info.operand_size)
+                displ_imm = ArmImmediateOperand("".join(disp["imm"]), arch_info.operand_size)
             else:
                 raise Exception("Unknown displacement type.")
         else:
-            displacement = None
+            displ_imm = None
 
         size = arch_info.operand_size
         # TODO: Add sizes for LDR/STR variations (half word, byte, double word)
-        oprnd = ArmMemoryOperand(reg_base, index_type, displacement, disp_minus, size)
+        oprnd = ArmMemoryOperand(reg_base, index_type, displ_imm, disp_minus, size)
 
     if "shifted_register" in tokens:
-        oprnd =  process_shifted_register(tokens["shifted_register"])
+        oprnd = process_shifted_register(tokens["shifted_register"])
 
     if "register_list_operand" in tokens:
         parsed_reg_list = tokens["register_list_operand"]
@@ -156,29 +158,31 @@ def parse_operand(string, location, tokens):
 
     return oprnd
 
+
 def parse_instruction(string, location, tokens):
     """Parse an ARM instruction.
     """
-    mnemonic = tokens.get("mnemonic")
+    mnemonic_str = tokens.get("mnemonic")
     operands = [op for op in tokens.get("operands", [])]
 
     instr = ArmInstruction(
         string,
-        mnemonic["ins"],
+        mnemonic_str["ins"],
         operands,
         arch_info.architecture_mode
     )
 
-    if "cc" in mnemonic:
-        instr.condition_code = cc_mapper[mnemonic["cc"]]
+    if "cc" in mnemonic_str:
+        instr.condition_code = cc_mapper[mnemonic_str["cc"]]
 
-    if "uf" in mnemonic:
+    if "uf" in mnemonic_str:
         instr.update_flags = True
 
-    if "ldm_stm_addr_mode" in mnemonic:
-        instr.ldm_stm_addr_mode = ldm_stm_am_mapper[mnemonic["ldm_stm_addr_mode"]]
+    if "ldm_stm_addr_mode" in mnemonic_str:
+        instr.ldm_stm_addr_mode = ldm_stm_am_mapper[mnemonic_str["ldm_stm_addr_mode"]]
 
     return instr
+
 
 # Grammar Rules
 # ============================================================================ #
@@ -201,7 +205,7 @@ dec_num = Word("0123456789")
 # ============================================================================ #
 sign = Optional(Or([plus, minus("minus")]))
 
-immediate = Group(Optional(Suppress(hashsign)) + (sign +  Or([hex_num, dec_num]))("value"))
+immediate = Group(Optional(Suppress(hashsign)) + (sign + Or([hex_num, dec_num]))("value"))
 
 register = Group(Or([
     Combine(Literal("r") + Word(nums)("reg_num")),
@@ -329,8 +333,8 @@ ldm_stm_addr_mode = Optional(Or([
 update_flags = Optional(Literal("s"))("uf")
 
 cc_plus_uf = Or([
-    condition_code + update_flags, # pre-UAL syntax
-    update_flags + condition_code, # UAL syntax
+    condition_code + update_flags,  # pre-UAL syntax
+    update_flags + condition_code,  # UAL syntax
 ])
 
 mnemonic = Group(Or([
@@ -374,6 +378,7 @@ instruction = (
     LineEnd()
 ).setParseAction(parse_instruction)
 
+
 class ArmParser(object):
     """ARM Instruction Parser.
     """
@@ -392,7 +397,7 @@ class ArmParser(object):
         try:
             instr_lower = instr.lower()
 
-            if not instr_lower in self._cache:
+            if instr_lower not in self._cache:
                 instr_asm = instruction.parseString(instr_lower)[0]
 
                 self._cache[instr_lower] = instr_asm
@@ -416,7 +421,7 @@ class ArmParser(object):
                 "Invalid operand size: %s" % instr
 
         # Check memory operand parameters.
-        assert all([oprnd.base or oprnd.index or oprnd.displacement
+        assert all([oprnd.base_reg or oprnd.index_type or oprnd.displacement
                         for oprnd in instr.operands
                             if isinstance(oprnd, ArmMemoryOperand)]), \
                 "Invalid memory operand parameters: %s" % instr

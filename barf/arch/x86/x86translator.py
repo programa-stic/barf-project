@@ -49,9 +49,7 @@ logger = logging.getLogger(__name__)
 class X86TranslationBuilder(TranslationBuilder):
 
     def __init__(self, ir_name_generator, architecture_mode):
-        super(X86TranslationBuilder, self).__init__(ir_name_generator, architecture_mode)
-
-        self._arch_info = X86ArchitectureInformation(architecture_mode)
+        super(X86TranslationBuilder, self).__init__(ir_name_generator, X86ArchitectureInformation(architecture_mode))
 
         self._regs_mapper = self._arch_info.alias_mapper
 
@@ -1382,9 +1380,7 @@ class X86Translator(Translator):
         #   FI;
         # FI;
 
-
         if len(instruction.operands) == 1:
-
             oprnd0 = tb.read(instruction.operands[0])
 
             if oprnd0.size == 8:
@@ -1890,9 +1886,9 @@ class X86Translator(Translator):
 
         tb.add(self._builder.gen_str(count, count_ext))
         tb.add(self._builder.gen_str(size, size_ext))
-        tb.add(self._builder.gen_sub(size_ext, count_ext, count_check)) # count_check = size_ext - count_ext
+        tb.add(self._builder.gen_sub(size_ext, count_ext, count_check))     # count_check = size_ext - count_ext
 
-        tb.add(self._builder.gen_bsh(count_check, tb.immediate(-count.size, count_check.size), count_check_sign)) # count_check_sign == 1 => count > size
+        tb.add(self._builder.gen_bsh(count_check, tb.immediate(-count.size, count_check.size), count_check_sign))   # count_check_sign == 1 => count > size
 
         tb.add(self._builder.gen_jcc(count_check_sign, bad_parameters_lbl))
         tb.add(self._builder.gen_jcc(tb.immediate(1, 1), shift_lbl))
@@ -1909,7 +1905,6 @@ class X86Translator(Translator):
             self._undefine_flag(tb, self._flags["af"])
             self._undefine_flag(tb, self._flags["pf"])
         tb.add(self._builder.gen_jcc(tb.immediate(1, 1), end_addr))
-
 
         tb.add(shift_lbl)
         # (* Perform the shift *)
@@ -2648,7 +2643,6 @@ class X86Translator(Translator):
         oprnd0 = tb.read(instruction.operands[0])
         oprnd1 = tb.read(instruction.operands[1])
 
-        tmp0 = tb.temporal(oprnd0.size)
         zero = tb.immediate(0, oprnd0.size)
         one = tb.immediate(1, oprnd0.size)
         bit_base_size = tb.immediate(oprnd0.size, oprnd1.size)
@@ -3699,10 +3693,7 @@ class X86Translator(Translator):
 
         dst = tb.temporal(8)
 
-        tmp0 = tb.temporal(dst.size)
         tmp1 = tb.temporal(dst.size)
-        tmp2 = tb.temporal(dst.size)
-        tmp3 = tb.temporal(dst.size)
 
         shl_one = tb.immediate(1, 8)
 
@@ -4017,7 +4008,6 @@ class X86Translator(Translator):
         dst_high = tb.temporal(64)
         dst = tb.temporal(oprnd0.size)
         dst_tmp0 = tb.temporal(oprnd0.size)
-        dst_tmp1 = tb.temporal(oprnd0.size)
         dst_low_ext = tb.temporal(oprnd0.size)
 
         tb.add(self._builder.gen_bsh(oprnd0, tb.immediate(-64, oprnd0.size), dst_high))
@@ -4346,13 +4336,11 @@ class X86Translator(Translator):
             t1_ext = tb.temporal(oprnd0.size)
             t2_ext = tb.temporal(oprnd0.size)
             dst_tmp0 = tb.temporal(oprnd0.size)
-            dst_tmp1 = tb.temporal(oprnd0.size)
             dst_new = tb.temporal(oprnd0.size)
 
             imm1 = tb.immediate(-(i * 8), oprnd0.size)
             imm2 = tb.immediate(j * 8, 8)
             imm3 = tb.immediate((j+1) * 8, 8)
-            imm4 = tb.immediate(16, oprnd0.size)
 
             # Extract i-th bytes.
             tb.add(self._builder.gen_bsh(oprnd0, imm1, t1))
@@ -4398,13 +4386,11 @@ class X86Translator(Translator):
             t1_ext = tb.temporal(oprnd0.size)
             t2_ext = tb.temporal(oprnd0.size)
             dst_tmp0 = tb.temporal(oprnd0.size)
-            dst_tmp1 = tb.temporal(oprnd0.size)
             dst_new = tb.temporal(oprnd0.size)
 
             imm1 = tb.immediate(-(i * 16), oprnd0.size)
             imm2 = tb.immediate(j * 16, 16)
             imm3 = tb.immediate((j+1) * 16, 16)
-            imm4 = tb.immediate(32, oprnd0.size)
 
             # Extract i-th bytes.
             tb.add(self._builder.gen_bsh(oprnd0, imm1, t1))
@@ -4443,7 +4429,6 @@ class X86Translator(Translator):
         j = 0
 
         word = 16
-        dword = 2*word
         qword = 4*word
         dqword = 2*qword
 
@@ -4456,13 +4441,11 @@ class X86Translator(Translator):
             t1_ext = tb.temporal(oprnd0.size)
             t2_ext = tb.temporal(oprnd0.size)
             dst_tmp0 = tb.temporal(oprnd0.size)
-            dst_tmp1 = tb.temporal(oprnd0.size)
             dst_new = tb.temporal(oprnd0.size)
 
             imm1 = tb.immediate(-(i * size_src), oprnd0.size)
             imm2 = tb.immediate(j * size_src, size_src)
             imm3 = tb.immediate((j+1) * size_src, size_src)
-            imm4 = tb.immediate(size_dst, oprnd0.size)
 
             # Extract i-th bytes.
             tb.add(self._builder.gen_bsh(oprnd0, imm1, t1))
@@ -4502,8 +4485,6 @@ class X86Translator(Translator):
 
         tb.add(self._builder.gen_str(tb.immediate(0, dst.size), dst))
 
-        j = 0
-
         for i in xrange(oprnd0.size / 32):
 
             t1 = tb.temporal(8)
@@ -4514,10 +4495,6 @@ class X86Translator(Translator):
             tmp0 = tb.temporal(32)
             tmp1 = tb.temporal(oprnd0.size)
 
-            t1_ext = tb.temporal(oprnd0.size)
-            t2_ext = tb.temporal(oprnd0.size)
-            dst_tmp0 = tb.temporal(oprnd0.size)
-            dst_tmp1 = tb.temporal(oprnd0.size)
             dst_new = tb.temporal(oprnd0.size)
 
             imm1 = tb.immediate(-(i * 2), oprnd2.size)
@@ -4586,7 +4563,6 @@ class X86Translator(Translator):
             not_sign = tb.temporal(1)
             sign_ext = tb.temporal(8)
             not_sign_ext = tb.temporal(8)
-            t4 = tb.temporal(8)
             t5 = tb.temporal(8)
             t6 = tb.temporal(oprnd0.size)
             dst_new = tb.temporal(oprnd0.size)

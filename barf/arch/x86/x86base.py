@@ -273,6 +273,12 @@ class X86ArchitectureInformation(ArchitectureInformation):
         return address_size_map[self._arch_mode]
 
     @property
+    def registers(self):
+        """Return all registers.
+        """
+        return self._registers_all
+
+    @property
     def registers_all(self):
         """Return all registers.
         """
@@ -385,44 +391,44 @@ class X86ArchitectureInformation(ArchitectureInformation):
     def _load_alias_mapper(self):
         if self._arch_mode == ARCH_X86_MODE_32:
             alias_mapper = {
-                "al" : ("eax", 0), "ah" : ("eax", 8), "ax" : ("eax", 0),
-                "bl" : ("ebx", 0), "bh" : ("ebx", 8), "bx" : ("ebx", 0),
-                "cl" : ("ecx", 0), "ch" : ("ecx", 8), "cx" : ("ecx", 0),
-                "dl" : ("edx", 0), "dh" : ("edx", 8), "dx" : ("edx", 0),
-                "si" : ("esi", 0),
-                "di" : ("edi", 0),
-                "bp" : ("ebp", 0),
-                "sp" : ("esp", 0),
+                "al": ("eax", 0), "ah": ("eax", 8), "ax": ("eax", 0),
+                "bl": ("ebx", 0), "bh": ("ebx", 8), "bx": ("ebx", 0),
+                "cl": ("ecx", 0), "ch": ("ecx", 8), "cx": ("ecx", 0),
+                "dl": ("edx", 0), "dh": ("edx", 8), "dx": ("edx", 0),
+                "si": ("esi", 0),
+                "di": ("edi", 0),
+                "bp": ("ebp", 0),
+                "sp": ("esp", 0),
             }
 
             flags_reg = "eflags"
         else:
             alias_mapper = {
-                "al"   : ("rax", 0), "ah"   : ("rax", 8), "ax"   : ("rax", 0),
-                "bl"   : ("rbx", 0), "bh"   : ("rbx", 8), "bx"   : ("rbx", 0),
-                "cl"   : ("rcx", 0), "ch"   : ("rcx", 8), "cx"   : ("rcx", 0),
-                "dl"   : ("rdx", 0), "dh"   : ("rdx", 8), "dx"   : ("rdx", 0),
-                "di"   : ("rdi", 0), "dil"  : ("rdi", 0),
-                "si"   : ("rsi", 0), "sil"  : ("rsi", 0),
-                "sp"   : ("rsp", 0), "bpl"  : ("rbp", 0),
-                "bp"   : ("rbp", 0), "spl"  : ("rsp", 0),
-                "eax"  : ("rax", 0),
-                "ebx"  : ("rbx", 0),
-                "ecx"  : ("rcx", 0),
-                "edx"  : ("rdx", 0),
-                "edi"  : ("rdi", 0),
-                "esi"  : ("rsi", 0),
-                "ebp"  : ("rbp", 0),
-                "esp"  : ("rsp", 0),
-                "eip"  : ("rip", 0),
-                "r8b"  : ( "r8", 0), "r8w"  : ( "r8", 0), "r8d"  : ( "r8", 0),
-                "r9b"  : ( "r9", 0), "r9w"  : ( "r9", 0), "r9d"  : ( "r9", 0),
-                "r10b" : ("r10", 0), "r10w" : ("r10", 0), "r10d" : ("r10", 0),
-                "r11b" : ("r11", 0), "r11w" : ("r11", 0), "r11d" : ("r11", 0),
-                "r12b" : ("r12", 0), "r12w" : ("r12", 0), "r12d" : ("r12", 0),
-                "r13b" : ("r13", 0), "r13w" : ("r13", 0), "r13d" : ("r13", 0),
-                "r14b" : ("r14", 0), "r14w" : ("r14", 0), "r14d" : ("r14", 0),
-                "r15b" : ("r15", 0), "r15w" : ("r15", 0), "r15d" : ("r15", 0),
+                "al":   ("rax", 0), "ah":  ("rax", 8), "ax": ("rax", 0),
+                "bl":   ("rbx", 0), "bh":  ("rbx", 8), "bx": ("rbx", 0),
+                "cl":   ("rcx", 0), "ch":  ("rcx", 8), "cx": ("rcx", 0),
+                "dl":   ("rdx", 0), "dh":  ("rdx", 8), "dx": ("rdx", 0),
+                "di":   ("rdi", 0), "dil": ("rdi", 0),
+                "si":   ("rsi", 0), "sil": ("rsi", 0),
+                "sp":   ("rsp", 0), "bpl": ("rbp", 0),
+                "bp":   ("rbp", 0), "spl": ("rsp", 0),
+                "eax":  ("rax", 0),
+                "ebx":  ("rbx", 0),
+                "ecx":  ("rcx", 0),
+                "edx":  ("rdx", 0),
+                "edi":  ("rdi", 0),
+                "esi":  ("rsi", 0),
+                "ebp":  ("rbp", 0),
+                "esp":  ("rsp", 0),
+                "eip":  ("rip", 0),
+                "r8b":  ("r8",  0), "r8w":  ("r8",  0), "r8d":  ("r8",  0),
+                "r9b":  ("r9",  0), "r9w":  ("r9",  0), "r9d":  ("r9",  0),
+                "r10b": ("r10", 0), "r10w": ("r10", 0), "r10d": ("r10", 0),
+                "r11b": ("r11", 0), "r11w": ("r11", 0), "r11d": ("r11", 0),
+                "r12b": ("r12", 0), "r12w": ("r12", 0), "r12d": ("r12", 0),
+                "r13b": ("r13", 0), "r13w": ("r13", 0), "r13d": ("r13", 0),
+                "r14b": ("r14", 0), "r14w": ("r14", 0), "r14d": ("r14", 0),
+                "r15b": ("r15", 0), "r15w": ("r15", 0), "r15d": ("r15", 0),
             }
 
             flags_reg = "rflags"
@@ -547,14 +553,14 @@ class X86Instruction(object):
     def __str__(self):
         operands_str = ", ".join([str(oprnd) for oprnd in self._operands])
 
-        string  = self._prefix + " " if self._prefix else ""
+        string = self._prefix + " " if self._prefix else ""
         string += self._mnemonic
         string += " " + operands_str if operands_str else ""
 
         return string
 
     def __eq__(self, other):
-        return  self.prefix == other.prefix and \
+        return self.prefix == other.prefix and \
                 self.mnemonic == other.mnemonic and \
                 self.operands == other.operands and \
                 self.bytes == other.bytes and \
@@ -664,14 +670,14 @@ class X86ImmediateOperand(X86Operand):
 
         immediate_format = kwargs.get("immediate_format", "hex")
 
-        string  = self._modifier + " " if self._modifier else ""
+        string = self._modifier + " " if self._modifier else ""
 
         if immediate_format == "hex":
             string += hex(self._immediate & 2**self._size-1)
         elif immediate_format == "dec":
             string += str(self._immediate & 2**self._size-1)
         else:
-            raise Exception("Invalid immediate format: {}".format(imm_fmt))
+            raise Exception("Invalid immediate format: {}".format(immediate_format))
 
         return string[:-1] if string[-1] == 'L' else string
 
@@ -679,13 +685,13 @@ class X86ImmediateOperand(X86Operand):
         if not self._size:
             raise Exception("Operand size missing.")
 
-        string  = self._modifier + " " if self._modifier else ""
+        string = self._modifier + " " if self._modifier else ""
         string += hex(self._immediate & 2**self._size-1)
 
         return string[:-1] if string[-1] == 'L' else string
 
     def __eq__(self, other):
-        return  self.modifier == other.modifier and \
+        return self.modifier == other.modifier and \
                 self.size == other.size and \
                 self.immediate == other.immediate
 
@@ -730,13 +736,13 @@ class X86RegisterOperand(X86Operand):
         if not self._size:
             raise Exception("Operand size missing.")
 
-        string  = self._modifier + " " if self._modifier else ""
+        string = self._modifier + " " if self._modifier else ""
         string += self._name
 
         return string
 
     def __eq__(self, other):
-        return  self.modifier == other.modifier and \
+        return self.modifier == other.modifier and \
                 self.size == other.size and \
                 self.name == other.name
 
@@ -841,7 +847,7 @@ class X86MemoryOperand(X86Operand):
         return string
 
     def __eq__(self, other):
-        return  self.modifier == other.modifier and \
+        return self.modifier == other.modifier and \
                 self.size == other.size and \
                 self.segment == other.segment and \
                 self.base == other.base and \

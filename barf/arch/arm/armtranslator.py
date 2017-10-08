@@ -64,7 +64,6 @@ from barf.arch.translator import TranslationBuilder
 from barf.core.reil import check_operands_size
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilInstructionBuilder
-from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
 from barf.utils.utils import VariableNamer
 
@@ -77,9 +76,7 @@ logger = logging.getLogger(__name__)
 class ArmTranslationBuilder(TranslationBuilder):
 
     def __init__(self, ir_name_generator, architecture_mode):
-        super(ArmTranslationBuilder, self).__init__(ir_name_generator, architecture_mode)
-
-        self._arch_info = ArmArchitectureInformation(architecture_mode)
+        super(ArmTranslationBuilder, self).__init__(ir_name_generator, ArmArchitectureInformation(architecture_mode))
 
     def read(self, arm_operand):
 
@@ -155,11 +152,11 @@ class ArmTranslationBuilder(TranslationBuilder):
                     self.add(self._builder.gen_jcc(self._greater_than_or_equal(sh_am_7_0, self.immediate(33, sh_am_7_0.size)),
                                                  sh_am_greater_32_label))
 
-                    # Shift < 32 => shited_register = base lsl sh_am
+                    # Shift < 32 => shifted_register = base lsl sh_am
                     self.add(self._builder.gen_bsh(base, sh_am_7_0, ret))
                     self._jump_to(sh_am_end_label)
 
-                    # Shift >= 32 => shited_register = 0
+                    # Shift >= 32 => shifted_register = 0
                     self.add(sh_am_greater_32_label)
                     self.add(self._builder.gen_str(self.immediate(0x0, ret.size), ret))
 
@@ -225,7 +222,7 @@ class ArmTranslationBuilder(TranslationBuilder):
             if len(reg_range) == 1:
                 ret.append(ReilRegisterOperand(reg_range[0].name, reg_range[0].size))
             else:
-                reg_num = int(reg_range[0].name[1:]) # Assuming the register is named with one letter + number
+                reg_num = int(reg_range[0].name[1:])    # Assuming the register is named with one letter + number
                 reg_end = int(reg_range[1].name[1:])
                 if reg_num > reg_end:
                     raise NotImplementedError("Instruction Not Implemented: Invalid register range.")
@@ -260,18 +257,18 @@ class ArmTranslator(Translator):
         self._builder = ReilInstructionBuilder()
 
         self._flags = {
-            "nf" : ReilRegisterOperand("nf", 1),
-            "zf" : ReilRegisterOperand("zf", 1),
-            "cf" : ReilRegisterOperand("cf", 1),
-            "vf" : ReilRegisterOperand("vf", 1),
+            "nf": ReilRegisterOperand("nf", 1),
+            "zf": ReilRegisterOperand("zf", 1),
+            "cf": ReilRegisterOperand("cf", 1),
+            "vf": ReilRegisterOperand("vf", 1),
         }
 
         if self._arch_mode in [ARCH_ARM_MODE_ARM, ARCH_ARM_MODE_THUMB]:
-            self._sp = ReilRegisterOperand("r13", 32) # TODO: Implement alias
+            self._sp = ReilRegisterOperand("r13", 32)   # TODO: Implement alias
             self._pc = ReilRegisterOperand("r15", 32)
             self._lr = ReilRegisterOperand("r14", 32)
 
-            self._ws = ReilImmediateOperand(4, 32) # word size
+            self._ws = ReilImmediateOperand(4, 32)      # word size
 
         # TODO: Remove this code?
         # elif self._arch_mode == ARCH_ARM_MODE_64:
@@ -359,7 +356,7 @@ class ArmTranslator(Translator):
         """
         self._translation_mode = value
 
-    def _log_not_supported_instruction(self, instruction, reason = "unknown"):
+    def _log_not_supported_instruction(self, instruction, reason="unknown"):
         bytes_str = " ".join("%02x" % ord(b) for b in instruction.bytes)
 
         logger.info(
@@ -463,7 +460,7 @@ class ArmTranslator(Translator):
 
                     # if Rs[7:0] == 0 then
                     #     carry_out = C Flag
-                    tb._jump_if_zero(rs_7_0, end_label) # shift_carry_out already has the C flag set, so do nothing
+                    tb._jump_if_zero(rs_7_0, end_label)     # shift_carry_out already has the C flag set, so do nothing
 
                     tb.add(self._builder.gen_jcc(tb._greater_than_or_equal(rs_7_0, tb.immediate(33, rs_7_0.size)),
                                                  rs_greater_32_label))
@@ -601,24 +598,23 @@ class ArmTranslator(Translator):
             return
 
         eval_cc_fn = {
-            ARM_COND_CODE_EQ : self._evaluate_eq,
-            ARM_COND_CODE_NE : self._evaluate_ne,
-            ARM_COND_CODE_CS : self._evaluate_cs,
-            ARM_COND_CODE_HS : self._evaluate_cs,
-            ARM_COND_CODE_CC : self._evaluate_cc,
-            ARM_COND_CODE_LO : self._evaluate_cc,
-            ARM_COND_CODE_MI : self._evaluate_mi,
-            ARM_COND_CODE_PL : self._evaluate_pl,
-            ARM_COND_CODE_VS : self._evaluate_vs,
-            ARM_COND_CODE_VC : self._evaluate_vc,
-            ARM_COND_CODE_HI : self._evaluate_hi,
-            ARM_COND_CODE_LS : self._evaluate_ls,
-            ARM_COND_CODE_GE : self._evaluate_ge,
-            ARM_COND_CODE_LT : self._evaluate_lt,
-            ARM_COND_CODE_GT : self._evaluate_gt,
-            ARM_COND_CODE_LE : self._evaluate_le,
+            ARM_COND_CODE_EQ: self._evaluate_eq,
+            ARM_COND_CODE_NE: self._evaluate_ne,
+            ARM_COND_CODE_CS: self._evaluate_cs,
+            ARM_COND_CODE_HS: self._evaluate_cs,
+            ARM_COND_CODE_CC: self._evaluate_cc,
+            ARM_COND_CODE_LO: self._evaluate_cc,
+            ARM_COND_CODE_MI: self._evaluate_mi,
+            ARM_COND_CODE_PL: self._evaluate_pl,
+            ARM_COND_CODE_VS: self._evaluate_vs,
+            ARM_COND_CODE_VC: self._evaluate_vc,
+            ARM_COND_CODE_HI: self._evaluate_hi,
+            ARM_COND_CODE_LS: self._evaluate_ls,
+            ARM_COND_CODE_GE: self._evaluate_ge,
+            ARM_COND_CODE_LT: self._evaluate_lt,
+            ARM_COND_CODE_GT: self._evaluate_gt,
+            ARM_COND_CODE_LE: self._evaluate_le,
         }
-
 
         neg_cond = tb._negate_reg(eval_cc_fn[instruction.condition_code](tb))
 
@@ -757,7 +753,7 @@ class ArmTranslator(Translator):
 
         tb.add(self._builder.gen_add(oprnd1, oprnd2, result))
 
-        self._update_flags_data_proc_add(tb, oprnd1, oprnd2, result) # S = 1 (implied in the instruction)
+        self._update_flags_data_proc_add(tb, oprnd1, oprnd2, result)    # S = 1 (implied in the instruction)
 
     def _translate_cmp(self, tb, instruction):
         oprnd1 = tb.read(instruction.operands[0])
@@ -767,7 +763,7 @@ class ArmTranslator(Translator):
 
         tb.add(self._builder.gen_sub(oprnd1, oprnd2, result))
 
-        self._update_flags_data_proc_sub(tb, oprnd1, oprnd2, result) # S = 1 (implied in the instruction)
+        self._update_flags_data_proc_sub(tb, oprnd1, oprnd2, result)    # S = 1 (implied in the instruction)
 
     def _translate_cbz(self, tb, instruction):
         oprnd1 = tb.read(instruction.operands[0])
@@ -909,7 +905,7 @@ class ArmTranslator(Translator):
 
     def _translate_ldrd(self, tb, instruction):
 
-        if len(instruction.operands) > 2: # Rd2 has been specified (UAL syntax)
+        if len(instruction.operands) > 2:   # Rd2 has been specified (UAL syntax)
             addr_reg = tb._compute_memory_address(instruction.operands[2])
         else:
             addr_reg = tb._compute_memory_address(instruction.operands[1])
@@ -920,7 +916,7 @@ class ArmTranslator(Translator):
 
         addr_reg = tb._add_to_reg(addr_reg, ReilImmediateOperand(4, reil_operand.size))
 
-        if len(instruction.operands) > 2: # Rd2 has been specified (UAL syntax)
+        if len(instruction.operands) > 2:   # Rd2 has been specified (UAL syntax)
             reil_operand = ReilRegisterOperand(instruction.operands[1].name, instruction.operands[0].size)
         else:
             # TODO: Assuming the register is written in its number format
@@ -931,7 +927,7 @@ class ArmTranslator(Translator):
 
     def _translate_strd(self, tb, instruction):
 
-        if len(instruction.operands) > 2: # Rd2 has been specified (UAL syntax)
+        if len(instruction.operands) > 2:   # Rd2 has been specified (UAL syntax)
             addr_reg = tb._compute_memory_address(instruction.operands[2])
         else:
             addr_reg = tb._compute_memory_address(instruction.operands[1])
@@ -942,7 +938,7 @@ class ArmTranslator(Translator):
 
         addr_reg = tb._add_to_reg(addr_reg, ReilImmediateOperand(4, reil_operand.size))
 
-        if len(instruction.operands) > 2: # Rd2 has been specified (UAL syntax)
+        if len(instruction.operands) > 2:   # Rd2 has been specified (UAL syntax)
             reil_operand = ReilRegisterOperand(instruction.operands[1].name, instruction.operands[0].size)
         else:
             # TODO: Assuming the register is written in its number format
@@ -969,14 +965,14 @@ class ArmTranslator(Translator):
         reg_list = tb.read(instruction.operands[1])
 
         if instruction.ldm_stm_addr_mode is None:
-            instruction.ldm_stm_addr_mode = ARM_LDM_STM_IA # default mode for load and store
+            instruction.ldm_stm_addr_mode = ARM_LDM_STM_IA  # default mode for load and store
 
         if load:
             load_store_fn = self._load_value
             # Convert stack addressing modes to non-stack addressing modes
             if instruction.ldm_stm_addr_mode in ldm_stack_am_to_non_stack_am:
                 instruction.ldm_stm_addr_mode = ldm_stack_am_to_non_stack_am[instruction.ldm_stm_addr_mode]
-        else: # Store
+        else:   # Store
             load_store_fn = self._store_value
             if instruction.ldm_stm_addr_mode in stm_stack_am_to_non_stack_am:
                 instruction.ldm_stm_addr_mode = stm_stack_am_to_non_stack_am[instruction.ldm_stm_addr_mode]
@@ -989,16 +985,16 @@ class ArmTranslator(Translator):
             for reg in reg_list:
                 load_store_fn(tb, pointer, reg)
                 pointer = tb._add_to_reg(pointer, self._ws)
-        elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_IB:
+        elif instruction.ldm_stm_addr_mode == ARM_LDM_STM_IB:
             for reg in reg_list:
                 pointer = tb._add_to_reg(pointer, self._ws)
                 load_store_fn(tb, pointer, reg)
-        elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_DA:
-            reg_list.reverse() # Assuming the registry list was in increasing registry number
+        elif instruction.ldm_stm_addr_mode == ARM_LDM_STM_DA:
+            reg_list.reverse()  # Assuming the registry list was in increasing registry number
             for reg in reg_list:
                 load_store_fn(tb, pointer, reg)
                 pointer = tb._sub_to_reg(pointer, self._ws)
-        elif  instruction.ldm_stm_addr_mode == ARM_LDM_STM_DB:
+        elif instruction.ldm_stm_addr_mode == ARM_LDM_STM_DB:
             reg_list.reverse()
             for reg in reg_list:
                 pointer = tb._sub_to_reg(pointer, self._ws)
@@ -1025,8 +1021,8 @@ class ArmTranslator(Translator):
         # (and write-back) Instructions are modified to adapt it to the
         # LDM/STM interface
 
-        sp_name = "r13" # TODO: Use self._sp
-        sp_size = instruction.operands[0].reg_list[0][0].size # Infer it from the registers list
+        sp_name = "r13"     # TODO: Use self._sp
+        sp_size = instruction.operands[0].reg_list[0][0].size   # Infer it from the registers list
         sp_reg = ArmRegisterOperand(sp_name, sp_size)
         sp_reg.wb = True
         instruction.operands = [sp_reg, instruction.operands[0]]
@@ -1093,22 +1089,22 @@ class ArmTranslator(Translator):
             cond = tb.immediate(1, 1)
         else:
             eval_cc_fn = {
-                ARM_COND_CODE_EQ : self._evaluate_eq,
-                ARM_COND_CODE_NE : self._evaluate_ne,
-                ARM_COND_CODE_CS : self._evaluate_cs,
-                ARM_COND_CODE_HS : self._evaluate_cs,
-                ARM_COND_CODE_CC : self._evaluate_cc,
-                ARM_COND_CODE_LO : self._evaluate_cc,
-                ARM_COND_CODE_MI : self._evaluate_mi,
-                ARM_COND_CODE_PL : self._evaluate_pl,
-                ARM_COND_CODE_VS : self._evaluate_vs,
-                ARM_COND_CODE_VC : self._evaluate_vc,
-                ARM_COND_CODE_HI : self._evaluate_hi,
-                ARM_COND_CODE_LS : self._evaluate_ls,
-                ARM_COND_CODE_GE : self._evaluate_ge,
-                ARM_COND_CODE_LT : self._evaluate_lt,
-                ARM_COND_CODE_GT : self._evaluate_gt,
-                ARM_COND_CODE_LE : self._evaluate_le,
+                ARM_COND_CODE_EQ: self._evaluate_eq,
+                ARM_COND_CODE_NE: self._evaluate_ne,
+                ARM_COND_CODE_CS: self._evaluate_cs,
+                ARM_COND_CODE_HS: self._evaluate_cs,
+                ARM_COND_CODE_CC: self._evaluate_cc,
+                ARM_COND_CODE_LO: self._evaluate_cc,
+                ARM_COND_CODE_MI: self._evaluate_mi,
+                ARM_COND_CODE_PL: self._evaluate_pl,
+                ARM_COND_CODE_VS: self._evaluate_vs,
+                ARM_COND_CODE_VC: self._evaluate_vc,
+                ARM_COND_CODE_HI: self._evaluate_hi,
+                ARM_COND_CODE_LS: self._evaluate_ls,
+                ARM_COND_CODE_GE: self._evaluate_ge,
+                ARM_COND_CODE_LT: self._evaluate_lt,
+                ARM_COND_CODE_GT: self._evaluate_gt,
+                ARM_COND_CODE_LE: self._evaluate_le,
             }
 
             cond = eval_cc_fn[instruction.condition_code](tb)

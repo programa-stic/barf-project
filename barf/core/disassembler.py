@@ -25,6 +25,7 @@
 """Generic Disassembler Interface.
 """
 
+
 class DisassemblerError(Exception):
     pass
 

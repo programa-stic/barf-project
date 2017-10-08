@@ -52,18 +52,19 @@ logger = logging.getLogger(__name__)
 arch_info = None
 
 modifier_size = {
-    "ymmword ptr" : 256,
-    "xmmword ptr" : 128,
-    "xword ptr"   : 80,
-    "tword ptr"   : 80,
-    "qword ptr"   : 64,
-    "dword ptr"   : 32,
-    "word ptr"    : 16,
-    "byte ptr"    : 8,
-    "ptr"         : None,   # Based on architecture size.
-    "far ptr"     : None,   # Based on architecture size.
-    "far"         : None,   # Based on architecture size.
+    "ymmword ptr": 256,
+    "xmmword ptr": 128,
+    "xword ptr":   80,
+    "tword ptr":   80,
+    "qword ptr":   64,
+    "dword ptr":   32,
+    "word ptr":    16,
+    "byte ptr":    8,
+    "ptr":         None,   # Based on architecture size.
+    "far ptr":     None,   # Based on architecture size.
+    "far":         None,   # Based on architecture size.
 }
+
 
 # Parsing functions
 # ============================================================================ #
@@ -89,23 +90,23 @@ def infer_operands_size(operands):
 
 def parse_immediate(string):
     if string.startswith("0x") or string.startswith("-0x"):
-        immediate = int(string, 16)
+        imm = int(string, 16)
     else:
-        immediate = int(string, 10)
+        imm = int(string, 10)
 
-    return immediate
+    return imm
 
 
 def parse_operand(string, location, tokens):
     """Parse an x86 instruction operand.
     """
-    modifier = " ".join(tokens.get("modifier", ""))
+    mod = " ".join(tokens.get("modifier", ""))
 
     if "immediate" in tokens:
-        immediate = parse_immediate("".join(tokens["immediate"]))
-        size = modifier_size.get(modifier, None)
+        imm = parse_immediate("".join(tokens["immediate"]))
+        size = modifier_size.get(mod, None)
 
-        oprnd = X86ImmediateOperand(immediate, size)
+        oprnd = X86ImmediateOperand(imm, size)
 
     if "register" in tokens:
         name = tokens["register"]
@@ -114,15 +115,15 @@ def parse_operand(string, location, tokens):
         oprnd = X86RegisterOperand(name, size)
 
     if "memory" in tokens:
-        segment = tokens.get("segment", None)
-        base = tokens.get("base", None)
-        index = tokens.get("index", None)
-        scale = int(tokens.get("scale", "0x1"), 16)
-        displacement = int("".join(tokens.get("displacement", "0x0")), 16)
+        seg_reg = tokens.get("segment", None)
+        base_reg = tokens.get("base", None)
+        index_reg = tokens.get("index", None)
+        scale_imm = int(tokens.get("scale", "0x1"), 16)
+        displ_imm = int("".join(tokens.get("displacement", "0x0")), 16)
 
-        oprnd = X86MemoryOperand(segment, base, index, scale, displacement)
+        oprnd = X86MemoryOperand(seg_reg, base_reg, index_reg, scale_imm, displ_imm)
 
-    oprnd.modifier = modifier
+    oprnd.modifier = mod
 
     if not oprnd.size and oprnd.modifier:
         oprnd.size = modifier_size[oprnd.modifier]
@@ -133,25 +134,26 @@ def parse_operand(string, location, tokens):
 def parse_instruction(string, location, tokens):
     """Parse an x86 instruction.
     """
-    prefix = tokens.get("prefix", None)
-    mnemonic = tokens.get("mnemonic")
+    prefix_str = tokens.get("prefix", None)
+    mnemonic_str = tokens.get("mnemonic")
     operands = [op for op in tokens.get("operands", [])]
 
     infer_operands_size(operands)
 
     # Quick hack: Capstone returns rep instead of repe for cmps and scas
     # instructions.
-    if prefix == "rep" and (mnemonic.startswith("cmps") or mnemonic.startswith("scas")):
-        prefix = "repe"
+    if prefix_str == "rep" and (mnemonic_str.startswith("cmps") or mnemonic_str.startswith("scas")):
+        prefix_str = "repe"
 
     instr = X86Instruction(
-        prefix,
-        mnemonic,
+        prefix_str,
+        mnemonic_str,
         operands,
         arch_info.architecture_mode
     )
 
     return instr
+
 
 # Grammar Rules
 # ============================================================================ #
@@ -183,7 +185,7 @@ modifier = (
     Optional(Literal("ptr"))
 )
 
-immediate = Optional("-") +  Or([hex_num, dec_num])
+immediate = Optional("-") + Or([hex_num, dec_num])
 
 segment = Or([
     Literal("cs"),
@@ -300,7 +302,7 @@ class X86Parser(object):
             instr_asm = copy.deepcopy(self._cache[instr_lower])
 
             # self._check_instruction(instr_asm)
-        except:
+        except Exception:
             instr_asm = None
 
             error_msg = "Failed to parse instruction: %s"
