@@ -173,7 +173,7 @@ class TranslationBuilder(object):
         return ret
 
     def _extract_bit(self, reg, bit):
-        assert(bit >= 0 and bit < reg.size)
+        assert(0 <= bit < reg.size)
         tmp = self.temporal(reg.size)
         ret = self.temporal(1)
 
@@ -199,7 +199,7 @@ class TranslationBuilder(object):
         return self._extract_bit(reg, reg.size - 1)
 
     def _extract_sign_bit(self, reg):
-        return self._extract_msb(self, reg)
+        return self._extract_msb(reg)
 
     def _greater_than_or_equal(self, reg1, reg2):
         assert(reg1.size == reg2.size)

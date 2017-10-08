@@ -248,7 +248,7 @@ operand = (
     Or([immediate("immediate"), register("register"), memory("memory")])
 ).setParseAction(parse_operand)
 
-# Intruction Parsing
+# Instruction Parsing
 # ============================================================================ #
 prefix = Or([
     Literal("lock"),

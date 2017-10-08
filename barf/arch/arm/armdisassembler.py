@@ -186,24 +186,24 @@ class ArmDisassembler(Disassembler):
         self._arch_mode = architecture_mode
         self._arch_info = ArmArchitectureInformation(architecture_mode)
 
-        self._avaliable_disassemblers = {}
+        self._available_disassemblers = {}
 
         self.__setup_available_disassemblers()
 
         # TODO: define default disassembler externally
-        self._disassembler = self._avaliable_disassemblers[architecture_mode]
+        self._disassembler = self._available_disassemblers[architecture_mode]
 
     def disassemble(self, data, address, architecture_mode=None):
         """Disassemble the data into an instruction.
         """
         # TODO: Improve this code!
-        if architecture_mode == None:
-            if self._arch_mode == None:
+        if architecture_mode is None:
+            if self._arch_mode is None:
                 architecture_mode = ARCH_ARM_MODE_THUMB
             else:
                 architecture_mode = self._arch_mode
 
-        self._disassembler = self._avaliable_disassemblers[architecture_mode]
+        self._disassembler = self._available_disassemblers[architecture_mode]
 
         disasm = self._cs_disassemble_one(data, address)
 
@@ -247,13 +247,13 @@ class ArmDisassembler(Disassembler):
             ARCH_ARM_MODE_THUMB : CS_MODE_THUMB,
         }
 
-        self._avaliable_disassemblers = {
+        self._available_disassemblers = {
             ARCH_ARM_MODE_ARM : Cs(CS_ARCH_ARM, arch_map[ARCH_ARM_MODE_ARM]),
             ARCH_ARM_MODE_THUMB : Cs(CS_ARCH_ARM, arch_map[ARCH_ARM_MODE_THUMB]),
         }
 
-        self._avaliable_disassemblers[ARCH_ARM_MODE_ARM].detail = True
-        self._avaliable_disassemblers[ARCH_ARM_MODE_THUMB].detail = True
+        self._available_disassemblers[ARCH_ARM_MODE_ARM].detail = True
+        self._available_disassemblers[ARCH_ARM_MODE_THUMB].detail = True
 
     # Casptone to BARF translation
     # ======================================================================== #
@@ -380,7 +380,7 @@ class ArmDisassembler(Disassembler):
             operands = op_translated
 
         # Remove narrow/wide compiler suffixes (.w/.n), they are of no
-        # interest for tranlation purpouses
+        # interest for translation purposes
         if mnemonic[-2:] == ".w" or mnemonic[-2:] == ".n":
             mnemonic = mnemonic[:-2]
 

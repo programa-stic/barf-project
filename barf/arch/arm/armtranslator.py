@@ -241,6 +241,7 @@ class ArmTranslator(Translator):
     """ARM to IR Translator."""
 
     def __init__(self, architecture_mode=ARCH_ARM_MODE_THUMB, translation_mode=FULL_TRANSLATION):
+        super(ArmTranslator, self).__init__()
 
         # Set *Architecture Mode*. The translation of each instruction
         # into the REIL language is based on this.
@@ -329,12 +330,12 @@ class ArmTranslator(Translator):
         if instruction.mnemonic in ["b", "bl", "bx", "blx", "bne", "beq", "bpl",
                                     "ble", "bcs", "bhs", "blt", "bge", "bhi",
                                     "blo", "bls"]:
-            if instruction.condition_code == None:
+            if instruction.condition_code is None:
                 instruction.condition_code = ARM_COND_CODE_AL  # TODO: unify translations
             translator_fn(tb, instruction)
         else:
             # Pre-processing: evaluate flags
-            if instruction.condition_code != None:
+            if instruction.condition_code is not None:
                 self._evaluate_condition_code(tb, instruction)
 
             translator_fn(tb, instruction)
@@ -434,7 +435,7 @@ class ArmTranslator(Translator):
             shift_type = carry_operand.shift_type
             shift_amount = carry_operand.shift_amount
 
-            if (shift_type == 'lsl'):
+            if shift_type == 'lsl':
 
                 if isinstance(shift_amount, ArmImmediateOperand):
                     if shift_amount.immediate == 0:
@@ -967,7 +968,7 @@ class ArmTranslator(Translator):
         base = tb.read(instruction.operands[0])
         reg_list = tb.read(instruction.operands[1])
 
-        if instruction.ldm_stm_addr_mode == None:
+        if instruction.ldm_stm_addr_mode is None:
             instruction.ldm_stm_addr_mode = ARM_LDM_STM_IA # default mode for load and store
 
         if load:
@@ -1088,7 +1089,7 @@ class ArmTranslator(Translator):
         self._translate_branch(tb, instruction, link=False)
 
     def _translate_branch(self, tb, instruction, link):
-        if (instruction.condition_code == ARM_COND_CODE_AL):
+        if instruction.condition_code == ARM_COND_CODE_AL:
             cond = tb.immediate(1, 1)
         else:
             eval_cc_fn = {

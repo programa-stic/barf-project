@@ -175,6 +175,8 @@ class ArmArchitectureInformation(ArchitectureInformation):
     ]
 
     def __init__(self, architecture_mode):
+        super(ArmArchitectureInformation, self).__init__()
+
         self._arch_mode = architecture_mode
 
         self._registers_all = []
@@ -276,13 +278,13 @@ class ArmArchitectureInformation(ArchitectureInformation):
 
         # ARM: "POP reg, {reg*, pc}" instr.
         if instruction.mnemonic == "pop" and \
-           ("pc" in str(instruction.operands[1]) or \
+           ("pc" in str(instruction.operands[1]) or
            "r15" in str(instruction.operands[1])):
             is_ret = True
 
         # ARM: "LDR pc, *" instr.
         if instruction.mnemonic == "ldr" and \
-           ("pc" in str(instruction.operands[0]) or \
+           ("pc" in str(instruction.operands[0]) or
            "r15" in str(instruction.operands[0])):
             is_ret = True
 
@@ -805,7 +807,7 @@ class ArmMemoryOperand(ArmOperand):
 
     @property
     def disp_minus(self):
-        """Get sign of displacemnt."""
+        """Get sign of displacement."""
         if not self._size:
             raise Exception("Operand size missing.")
 
@@ -821,13 +823,13 @@ class ArmMemoryOperand(ArmOperand):
 
         string = "[" + str(self._base_reg)
 
-        if (self._index_type == ARM_MEMORY_INDEX_OFFSET):
+        if self._index_type == ARM_MEMORY_INDEX_OFFSET:
             if self._displacement:
                 string += ", " + disp_str
             string += "]"
-        elif (self._index_type == ARM_MEMORY_INDEX_PRE):
+        elif self._index_type == ARM_MEMORY_INDEX_PRE:
             string += ", " + disp_str + "]!"
-        elif (self._index_type == ARM_MEMORY_INDEX_POST):
+        elif self._index_type == ARM_MEMORY_INDEX_POST:
             string += "], " + disp_str
         else:
             raise Exception("Unknown memory index type.")

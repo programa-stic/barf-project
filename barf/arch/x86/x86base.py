@@ -224,6 +224,8 @@ class X86ArchitectureInformation(ArchitectureInformation):
     ]
 
     def __init__(self, architecture_mode):
+        super(X86ArchitectureInformation, self).__init__()
+
         self._arch_mode = architecture_mode
 
         self._registers_all = []
@@ -563,14 +565,15 @@ class X86Instruction(object):
         return not self.__eq__(other)
 
     def __getstate__(self):
-        state = {}
-        state['_prefix'] = self._prefix
-        state['_mnemonic'] = self._mnemonic
-        state['_operands'] = self._operands
-        state['_bytes'] = self._bytes
-        state['_size'] = self._size
-        state['_address'] = self._address
-        state['_arch_mode'] = self._arch_mode
+        state = {
+            '_prefix': self._prefix,
+            '_mnemonic': self._mnemonic,
+            '_operands': self._operands,
+            '_bytes': self._bytes,
+            '_size': self._size,
+            '_address': self._address,
+            '_arch_mode': self._arch_mode
+        }
 
         return state
 
@@ -620,9 +623,10 @@ class X86Operand(object):
         return self.__str__()
 
     def __getstate__(self):
-        state = {}
-        state['_modifier'] = self._modifier
-        state['_size'] = self._size
+        state = {
+            '_modifier': self._modifier,
+            '_size': self._size
+        }
 
         return state
 

@@ -2490,7 +2490,7 @@ class X86Translator(Translator):
         tmp0_1 = tb.temporal(oprnd0.size)
         zero = tb.immediate(0, oprnd0.size)
 
-        # TODO: Improve this translation. It uses unecessary large
+        # TODO: Improve this translation. It uses unnecessary large
         # register...
         tmp_cf_ext = tb.temporal(oprnd0.size * 4)
 
