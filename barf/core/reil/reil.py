@@ -485,13 +485,19 @@ class ReilRegisterOperand(ReilOperand):
         self._name = state['_name']
 
 
-class ReilEmptyOperand(ReilRegisterOperand):
+class ReilEmptyOperand(ReilOperand):
 
     """Representation of an IR instruction's empty operand.
     """
 
     def __init__(self):
-        super(ReilEmptyOperand, self).__init__("EMPTY", size=None)
+        super(ReilEmptyOperand, self).__init__(size=None)
+
+    def __str__(self):
+        return "EMPTY"
+
+    def __eq__(self, other):
+        return type(other) is type(self)
 
 
 class ReilInstructionBuilder(object):
