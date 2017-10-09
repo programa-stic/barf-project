@@ -314,12 +314,10 @@ class ControlFlowGraph(object):
         self._graph = self._build_graph()
 
         # List of entry basic blocks
-        self._entry_blocks = [bb.address for bb in basic_blocks
-                                if len(self._graph.in_edges(bb.address)) == 0]
+        self._entry_blocks = [bb.address for bb in basic_blocks if len(self._graph.in_edges(bb.address)) == 0]
 
         # List of exit basic blocks
-        self._exit_blocks = [bb.address for bb in basic_blocks
-                                if len(self._graph.out_edges(bb.address)) == 0]
+        self._exit_blocks = [bb.address for bb in basic_blocks if len(self._graph.out_edges(bb.address)) == 0]
 
         self._name = name
 
@@ -434,12 +432,10 @@ class ControlFlowGraph(object):
         self._graph = self._build_graph()
 
         # List of entry basic blocks
-        self._entry_blocks = [bb.address for bb in basic_blocks
-                                if len(self._graph.in_edges(bb.address)) == 0]
+        self._entry_blocks = [bb.address for bb in basic_blocks if len(self._graph.in_edges(bb.address)) == 0]
 
         # List of exit basic blocks
-        self._exit_blocks = [bb.address for bb in basic_blocks
-                                if len(self._graph.out_edges(bb.address)) == 0]
+        self._exit_blocks = [bb.address for bb in basic_blocks if len(self._graph.out_edges(bb.address)) == 0]
 
 
 class CFGRecover(object):
@@ -470,7 +466,7 @@ class CFGRecover(object):
         # First pass: Recover BBs.
         bbs = self._recover_bbs(start, end, symbols)
 
-        # Second pass: Split overlapping basic blocks introduced by backedges.
+        # Second pass: Split overlapping basic blocks introduced by back edges.
         bbs = self._split_bbs(bbs, symbols)
 
         # Third pass: Extract call targets for further analysis.
@@ -507,7 +503,7 @@ class CFGRecover(object):
                     break
 
             if not bb_divided:
-                if not bb1.empty() and not bb1 in bbs_new:
+                if not bb1.empty() and bb1 not in bbs_new:
                     bbs_new += [bb1]
 
         return bbs_new
@@ -627,9 +623,9 @@ class RecursiveDescent(CFGRecover):
 
             # Recursive descent mode: add branches to process queue.
             for addr, _ in bb.branches:
-                if not addr in addrs_processed:
+                if addr not in addrs_processed:
                     # Do not process other functions.
-                    if not addr in symbols:
+                    if addr not in symbols:
                         addrs_to_process.put(addr)
 
         return bbs
@@ -675,7 +671,7 @@ class LinearSweep(CFGRecover):
 
             if not self._bb_ends_in_direct_jmp(bb) and \
                not self._bb_ends_in_return(bb) and \
-               not addr_next in addrs_processed:
+               addr_next not in addrs_processed:
                 addrs_to_process.put(addr_next)
 
         return bbs
@@ -683,8 +679,7 @@ class LinearSweep(CFGRecover):
     def _bb_ends_in_direct_jmp(self, bb):
         last_instr = bb.instrs[-1].asm_instr
 
-        return self._arch_info.instr_is_branch(last_instr) and \
-               not self._arch_info.instr_is_branch_cond(last_instr)
+        return self._arch_info.instr_is_branch(last_instr) and not self._arch_info.instr_is_branch_cond(last_instr)
 
     def _bb_ends_in_return(self, bb):
         last_instr = bb.instrs[-1].asm_instr
@@ -787,7 +782,7 @@ class CFGSimpleRenderer(CFGRenderer):
     def _render_asm(self, instr, mnemonic_width, options, fill_char=""):
         oprnds_str = ", ".join([oprnd.to_string(**options) for oprnd in instr.operands])
 
-        asm_str  = instr.prefix + " " if instr.prefix else ""
+        asm_str = instr.prefix + " " if instr.prefix else ""
         asm_str += instr.mnemonic + fill_char * (mnemonic_width - len(instr.mnemonic))
         asm_str += " " + oprnds_str if oprnds_str else ""
 
@@ -881,7 +876,7 @@ class CFGSimpleRendererEx(CFGRenderer):
     }
 
     # Templates.
-    bb_tpl  = '<'
+    bb_tpl = '<'
     bb_tpl += '<table border="1.0" cellborder="0" cellspacing="1" cellpadding="0" valign="middle">'
     bb_tpl += '  <tr><td align="center" cellpadding="1" port="enter"></td></tr>'
     bb_tpl += '  <tr><td align="left" cellspacing="1">{label}</td></tr>'
@@ -938,7 +933,7 @@ class CFGSimpleRendererEx(CFGRenderer):
 
         oprnds_str = ", ".join([oprnd.to_string(**options) for oprnd in instr.operands])
 
-        asm_str  = instr.prefix + " " if instr.prefix else ""
+        asm_str = instr.prefix + " " if instr.prefix else ""
         asm_str += instr.mnemonic + fill_char * (mnemonic_width - len(instr.mnemonic))
         asm_str += " " + oprnds_str if oprnds_str else ""
 

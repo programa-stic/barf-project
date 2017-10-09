@@ -39,11 +39,11 @@ import logging
 import barf.core.smt.smtfunction as smtfunction
 
 from barf.analysis.gadget import GadgetType
-from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
 from barf.core.reil import ReilEmptyOperand
 
 logger = logging.getLogger("GadgetVerifier")
+
 
 class GadgetVerifier(object):
 
@@ -60,36 +60,36 @@ class GadgetVerifier(object):
 
         # Constraints generators ordered by gadget type.
         self._constraints_generators = {
-            GadgetType.NoOperation     : self._get_constrs_no_operation,
-            GadgetType.Jump            : self._get_constrs_jump,
-            GadgetType.MoveRegister    : self._get_constrs_move_register,
-            GadgetType.LoadConstant    : self._get_constrs_load_constant,
-            GadgetType.Arithmetic      : self._get_constrs_arithmetic,
-            GadgetType.LoadMemory      : self._get_constrs_load_memory,
-            GadgetType.StoreMemory     : self._get_constrs_store_memory,
-            GadgetType.ArithmeticLoad  : self._get_constrs_arithmetic_load,
-            GadgetType.ArithmeticStore : self._get_constrs_arithmetic_store,
-            GadgetType.Undefined       : None,
+            GadgetType.NoOperation:     self._get_constrs_no_operation,
+            GadgetType.Jump:            self._get_constrs_jump,
+            GadgetType.MoveRegister:    self._get_constrs_move_register,
+            GadgetType.LoadConstant:    self._get_constrs_load_constant,
+            GadgetType.Arithmetic:      self._get_constrs_arithmetic,
+            GadgetType.LoadMemory:      self._get_constrs_load_memory,
+            GadgetType.StoreMemory:     self._get_constrs_store_memory,
+            GadgetType.ArithmeticLoad:  self._get_constrs_arithmetic_load,
+            GadgetType.ArithmeticStore: self._get_constrs_arithmetic_store,
+            GadgetType.Undefined:       None,
         }
 
         # Supported arithmetic and logical operations for arithmetic
         # gadgets.
         self._arithmetic_ops = {
             # Arithmetic
-            "+"  : lambda x, y: x + y,
-            "-"  : lambda x, y: x - y,
+            "+": lambda x, y: x + y,
+            "-": lambda x, y: x - y,
 
-            # "*"  : lambda x, y: x * y,
-            # "/"  : lambda x, y: x / y,
-            # "%"  : lambda x, y: x % y,
+            # "*": lambda x, y: x * y,
+            # "/": lambda x, y: x / y,
+            # "%": lambda x, y: x % y,
 
             # Bitwise
-            "&"  : lambda x, y: x & y,
-            "^"  : lambda x, y: x ^ y,
-            "|"  : lambda x, y: x | y,
+            "&": lambda x, y: x & y,
+            "^": lambda x, y: x ^ y,
+            "|": lambda x, y: x | y,
 
-            # "<<" : lambda x, y: x << y,
-            # ">>" : lambda x, y: x >> y,
+            # "<<": lambda x, y: x << y,
+            # ">>": lambda x, y: x >> y,
         }
 
     def verify(self, gadget):
@@ -157,7 +157,7 @@ class GadgetVerifier(object):
 
         """
         # *src* register has to have the same value of *dst* for all
-        # possibles assigments of *dst*.
+        # possibles assignments of *dst*.
 
         dst = self.analyzer.get_register_expr(gadget.destination[0].name, mode="post")
         src = self.analyzer.get_register_expr(gadget.sources[0].name, mode="pre")
@@ -183,7 +183,7 @@ class GadgetVerifier(object):
 
         """
         # *src* register has to have the same value of *dst* for all
-        # possibles assigments of *dst*.
+        # possibles assignments of *dst*.
 
         dst = self.analyzer.get_register_expr(gadget.destination[0].name, mode="post")
         src = gadget.sources[0].immediate
@@ -209,7 +209,7 @@ class GadgetVerifier(object):
 
         """
         # *dst* register has to have the value of *src1 op src2* for all
-        # possibles assigments of *src1* and *src2*.
+        # possibles assignments of *src1* and *src2*.
 
         dst = self.analyzer.get_register_expr(gadget.destination[0].name, mode="post")
         src1 = self.analyzer.get_register_expr(gadget.sources[0].name, mode="pre")
@@ -237,8 +237,7 @@ class GadgetVerifier(object):
         dst = self.analyzer.get_register_expr(gadget.destination[0].name, mode="post")
         size = gadget.destination[0].size
 
-        if isinstance(gadget.sources[0], ReilRegisterOperand) and \
-            not isinstance(gadget.sources[0], ReilEmptyOperand):
+        if isinstance(gadget.sources[0], ReilRegisterOperand) and not isinstance(gadget.sources[0], ReilEmptyOperand):
             base_addr = self.analyzer.get_register_expr(gadget.sources[0].name, mode="pre")
             offset = gadget.sources[1].immediate
 
@@ -272,8 +271,7 @@ class GadgetVerifier(object):
     def _get_constrs_store_memory(self, gadget):
         """Generate constraints for the StoreMemory gadget: mem[dst_reg + offset] <- src_reg
         """
-        if isinstance(gadget.destination[0], ReilRegisterOperand) and \
-            not isinstance(gadget.destination[0], ReilEmptyOperand):
+        if isinstance(gadget.destination[0], ReilRegisterOperand) and not isinstance(gadget.destination[0], ReilEmptyOperand):
             base_addr = self.analyzer.get_register_expr(gadget.destination[0].name, mode="pre")
             offset = gadget.destination[1].immediate
 
@@ -314,8 +312,7 @@ class GadgetVerifier(object):
         dst = self.analyzer.get_register_expr(gadget.destination[0].name, mode="post")
         size = gadget.destination[0].size
 
-        if isinstance(gadget.sources[1], ReilRegisterOperand) and \
-            not isinstance(gadget.sources[1], ReilEmptyOperand):
+        if isinstance(gadget.sources[1], ReilRegisterOperand) and not isinstance(gadget.sources[1], ReilEmptyOperand):
             base_addr = self.analyzer.get_register_expr(gadget.sources[1].name, mode="pre")
             offset = gadget.sources[2].immediate
 
@@ -354,8 +351,7 @@ class GadgetVerifier(object):
     def _get_constrs_arithmetic_store(self, gadget):
         """Generate constraints for the ArithmeticStore gadget: m[dst_reg + offset] <- m[dst_reg + offset] OP src_reg
         """
-        if isinstance(gadget.sources[0], ReilRegisterOperand) and \
-            not isinstance(gadget.sources[0], ReilEmptyOperand):
+        if isinstance(gadget.sources[0], ReilRegisterOperand) and not isinstance(gadget.sources[0], ReilEmptyOperand):
             base_addr = self.analyzer.get_register_expr(gadget.sources[0].name, mode="pre")
             offset = gadget.sources[1].immediate
 
@@ -393,28 +389,3 @@ class GadgetVerifier(object):
             constrs_mod = [reduce(lambda c, acc: acc | c, constrs_mod[1:], constrs_mod[0])]
 
         return constrs + constrs_mod
-
-    # Auxiliary
-    # ======================================================================== #
-    def _print_verification_exception(self, gadget):
-        import traceback
-
-        print("[-] Error verifying gadgets...")
-
-        logger.debug("[-] Error verifying gadgets :")
-        logger.debug("")
-        logger.debug(str(gadget))
-        logger.debug(str(gadget._gadget))
-
-        logger.debug(map(str, gadget.sources))
-        logger.debug(map(lambda r: str(r.size), gadget.sources))
-        logger.debug(map(type, gadget.sources))
-
-        logger.debug(map(str, gadget.destination))
-        logger.debug(map(lambda r: str(r.size), gadget.destination))
-        logger.debug(map(type, gadget.destination))
-
-        bin = "\\x".join(["\\x".join(["%02x" % ord(b) for b in dinstr.asm_instr.bytes]) for dinstr in gadget.instrs])
-        logger.debug("bin : " + bin)
-        logger.debug("")
-        logger.debug(traceback.format_exc())

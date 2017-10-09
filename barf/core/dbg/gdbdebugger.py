@@ -31,9 +31,10 @@ from pybfd.bfd import Bfd
 from barf.core.bi import Memory
 from barf.core.dbg.debugger import Debugger
 
+
 # TODO: See how to get this information from gdb.
 def get_section_text_limits(filename):
-    """Get setion .text limits.
+    """Get section .text limits.
     """
     bfd = Bfd(filename)
 
@@ -47,6 +48,7 @@ def get_section_text_limits(filename):
     bfd.close()
 
     return section_start, section_end
+
 
 class GDBDebugger(Debugger):
 
@@ -71,8 +73,7 @@ class GDBDebugger(Debugger):
     def get_registers(self):
         """Get registers.
         """
-        registers32 = ["eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi",
-            "eip"]
+        registers32 = ["eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi", "eip"]
 
         regs = {}
 

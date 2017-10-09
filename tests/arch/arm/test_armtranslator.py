@@ -215,12 +215,12 @@ class ArmTranslationTests(unittest.TestCase):
 
         asm = "\n".join(asm_list)
 
-        bytes = self._arm_compile(asm)
+        bytecode = self._arm_compile(asm)
 
         curr_addr = 0
-        end_addr = len(bytes)
+        end_addr = len(bytecode)
 
-        dis = ArmDisassembler();
+        dis = ArmDisassembler()
 
         arm_instr_list = []
 
@@ -228,8 +228,7 @@ class ArmTranslationTests(unittest.TestCase):
             # disassemble instruction
             start, end = curr_addr, min(curr_addr + 16, end_addr)
 
-            USE_ARM = 0
-            arm_instr = dis.disassemble(bytes[start:end], 0x8000, USE_ARM)
+            arm_instr = dis.disassemble(bytecode[start:end], 0x8000, 0)
 
             if not arm_instr:
                 raise Exception("Error in capstone disassembly")
@@ -238,7 +237,6 @@ class ArmTranslationTests(unittest.TestCase):
 
             # update instruction pointer
             curr_addr += arm_instr.size
-
 
         # TODO: Separate parser tests vs CS->BARF translator
 #         arm_instrs = [self.arm_parser.parse(asm) for asm in asm_list]
@@ -255,10 +253,6 @@ class ArmTranslationTests(unittest.TestCase):
 
     def _arm_compile(self, assembly):
         # TODO: This is a copy of the pyasmjit
-
-        # Initialize return values
-        rc = 0
-        ctx = {}
 
         # Create temporary files for compilation.
         f_asm = tempfile.NamedTemporaryFile(delete=False)
@@ -293,7 +287,6 @@ class ArmTranslationTests(unittest.TestCase):
         os.remove(f_bin.name)
 
         return binary
-
 
     def __run_code(self, asm_list, address, ctx_init):
         reil_instrs = self.__asm_to_reil(asm_list, address)

@@ -25,6 +25,7 @@
 """Generic Debugger Interface.
 """
 
+
 class Debugger(object):
 
     """Generic Debugger Interface.

@@ -93,26 +93,27 @@ from barf.arch.arm.armbase import cc_inverse_mapper
 from barf.arch.arm.armbase import arm_alias_reg_map
 from barf.arch.arm.armbase import ldm_stm_am_mapper
 from barf.core.disassembler import Disassembler
+from barf.core.disassembler import DisassemblerError
 from barf.core.disassembler import InvalidDisassemblerData
 
 # from barf.arch.arm.armparser import ArmParser
 
 cc_capstone_barf_mapper = {
-    ARM_CC_EQ : ARM_COND_CODE_EQ,
-    ARM_CC_NE : ARM_COND_CODE_NE,
-    ARM_CC_MI : ARM_COND_CODE_MI,
-    ARM_CC_PL : ARM_COND_CODE_PL,
-    ARM_CC_VS : ARM_COND_CODE_VS,
-    ARM_CC_VC : ARM_COND_CODE_VC,
-    ARM_CC_HI : ARM_COND_CODE_HI,
-    ARM_CC_LS : ARM_COND_CODE_LS,
-    ARM_CC_GE : ARM_COND_CODE_GE,
-    ARM_CC_LT : ARM_COND_CODE_LT,
-    ARM_CC_GT : ARM_COND_CODE_GT,
-    ARM_CC_LE : ARM_COND_CODE_LE,
-    ARM_CC_AL : ARM_COND_CODE_AL,
-    ARM_CC_HS : ARM_COND_CODE_HS,
-    ARM_CC_LO : ARM_COND_CODE_LO,
+    ARM_CC_EQ: ARM_COND_CODE_EQ,
+    ARM_CC_NE: ARM_COND_CODE_NE,
+    ARM_CC_MI: ARM_COND_CODE_MI,
+    ARM_CC_PL: ARM_COND_CODE_PL,
+    ARM_CC_VS: ARM_COND_CODE_VS,
+    ARM_CC_VC: ARM_COND_CODE_VC,
+    ARM_CC_HI: ARM_COND_CODE_HI,
+    ARM_CC_LS: ARM_COND_CODE_LS,
+    ARM_CC_GE: ARM_COND_CODE_GE,
+    ARM_CC_LT: ARM_COND_CODE_LT,
+    ARM_CC_GT: ARM_COND_CODE_GT,
+    ARM_CC_LE: ARM_COND_CODE_LE,
+    ARM_CC_AL: ARM_COND_CODE_AL,
+    ARM_CC_HS: ARM_COND_CODE_HS,
+    ARM_CC_LO: ARM_COND_CODE_LO,
 }
 
 logger = logging.getLogger(__name__)
@@ -186,24 +187,24 @@ class ArmDisassembler(Disassembler):
         self._arch_mode = architecture_mode
         self._arch_info = ArmArchitectureInformation(architecture_mode)
 
-        self._avaliable_disassemblers = {}
+        self._available_disassemblers = {}
 
         self.__setup_available_disassemblers()
 
         # TODO: define default disassembler externally
-        self._disassembler = self._avaliable_disassemblers[architecture_mode]
+        self._disassembler = self._available_disassemblers[architecture_mode]
 
     def disassemble(self, data, address, architecture_mode=None):
         """Disassemble the data into an instruction.
         """
         # TODO: Improve this code!
-        if architecture_mode == None:
-            if self._arch_mode == None:
+        if architecture_mode is None:
+            if self._arch_mode is None:
                 architecture_mode = ARCH_ARM_MODE_THUMB
             else:
                 architecture_mode = self._arch_mode
 
-        self._disassembler = self._avaliable_disassemblers[architecture_mode]
+        self._disassembler = self._available_disassemblers[architecture_mode]
 
         disasm = self._cs_disassemble_one(data, address)
 
@@ -214,7 +215,7 @@ class ArmDisassembler(Disassembler):
             instr.size = disasm.size
             instr.bytes = data[0:disasm.size]
         else:
-            raise DisassembleError()
+            raise DisassemblerError()
 
         return instr
 
@@ -243,17 +244,17 @@ class ArmDisassembler(Disassembler):
 
     def __setup_available_disassemblers(self):
         arch_map = {
-            ARCH_ARM_MODE_ARM : CS_MODE_ARM,
-            ARCH_ARM_MODE_THUMB : CS_MODE_THUMB,
+            ARCH_ARM_MODE_ARM:   CS_MODE_ARM,
+            ARCH_ARM_MODE_THUMB: CS_MODE_THUMB,
         }
 
-        self._avaliable_disassemblers = {
-            ARCH_ARM_MODE_ARM : Cs(CS_ARCH_ARM, arch_map[ARCH_ARM_MODE_ARM]),
-            ARCH_ARM_MODE_THUMB : Cs(CS_ARCH_ARM, arch_map[ARCH_ARM_MODE_THUMB]),
+        self._available_disassemblers = {
+            ARCH_ARM_MODE_ARM:   Cs(CS_ARCH_ARM, arch_map[ARCH_ARM_MODE_ARM]),
+            ARCH_ARM_MODE_THUMB: Cs(CS_ARCH_ARM, arch_map[ARCH_ARM_MODE_THUMB]),
         }
 
-        self._avaliable_disassemblers[ARCH_ARM_MODE_ARM].detail = True
-        self._avaliable_disassemblers[ARCH_ARM_MODE_THUMB].detail = True
+        self._available_disassemblers[ARCH_ARM_MODE_ARM].detail = True
+        self._available_disassemblers[ARCH_ARM_MODE_THUMB].detail = True
 
     # Casptone to BARF translation
     # ======================================================================== #
@@ -274,16 +275,16 @@ class ArmDisassembler(Disassembler):
             raise Exception("Invalid shift type.")
 
         cs_shift_mapper = {
-            ARM_SFT_ASR : "asr",
-            ARM_SFT_LSL : "lsl",
-            ARM_SFT_LSR : "lsr",
-            ARM_SFT_ROR : "ror",
-            ARM_SFT_RRX : "rrx",
-            ARM_SFT_ASR_REG : "asr",
-            ARM_SFT_LSL_REG : "lsl",
-            ARM_SFT_LSR_REG : "lsr",
-            ARM_SFT_ROR_REG : "ror",
-            ARM_SFT_RRX_REG : "rrx",
+            ARM_SFT_ASR:     "asr",
+            ARM_SFT_LSL:     "lsl",
+            ARM_SFT_LSR:     "lsr",
+            ARM_SFT_ROR:     "ror",
+            ARM_SFT_RRX:     "rrx",
+            ARM_SFT_ASR_REG: "asr",
+            ARM_SFT_LSL_REG: "lsl",
+            ARM_SFT_LSR_REG: "lsr",
+            ARM_SFT_ROR_REG: "ror",
+            ARM_SFT_RRX_REG: "rrx",
         }
 
         # The base register (arm_base) is not included in the shift
@@ -335,7 +336,7 @@ class ArmDisassembler(Disassembler):
                 if cs_insn.operands[0].shift.type > 0:
                     # There's a shift operation, the displacement extracted
                     # earlier was just the base register of the shifted
-                    # register that is generating the disaplacement.
+                    # register that is generating the displacement.
                     displacement = self.__cs_shift_to_arm_op(cs_insn.operands[0], cs_insn, displacement)
             else:
                 displacement = ArmImmediateOperand(cs_op.mem.disp, self._arch_info.operand_size)
@@ -344,9 +345,7 @@ class ArmDisassembler(Disassembler):
 
             oprnd = ArmMemoryOperand(reg_base, index_type, displacement, disp_minus, self._arch_info.operand_size)
         else:
-            oprnd = None
-
-            error_msg = "Instruction: " + cs_insn.mnemonic  + " " + cs_insn.op_str + ". Unkown operand type: " + str(cs_op.type)
+            error_msg = "Instruction: " + cs_insn.mnemonic + " " + cs_insn.op_str + ". Unknown operand type: " + str(cs_op.type)
 
             logger.error(error_msg)
 
@@ -380,7 +379,7 @@ class ArmDisassembler(Disassembler):
             operands = op_translated
 
         # Remove narrow/wide compiler suffixes (.w/.n), they are of no
-        # interest for tranlation purpouses
+        # interest for translation purposes
         if mnemonic[-2:] == ".w" or mnemonic[-2:] == ".n":
             mnemonic = mnemonic[:-2]
 

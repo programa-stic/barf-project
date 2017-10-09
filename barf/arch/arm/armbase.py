@@ -33,28 +33,28 @@ from barf.arch import ArchitectureInformation
 
 # Used in CS->BARF translator
 arm_alias_reg_map = {
-     "a1" : "r0",
-     "a2" : "r1",
-     "a3" : "r2",
-     "a4" : "r3",
+     "a1": "r0",
+     "a2": "r1",
+     "a3": "r2",
+     "a4": "r3",
 
-     "v1" : "r4",
-     "v2" : "r5",
-     "v3" : "r6",
-     "v4" : "r7",
-     "v5" : "r8",
-     "v6" : "r9",
-     "v7" : "r10",
-     "v8" : "r11",
+     "v1": "r4",
+     "v2": "r5",
+     "v3": "r6",
+     "v4": "r7",
+     "v5": "r8",
+     "v6": "r9",
+     "v7": "r10",
+     "v8": "r11",
 
-     "sb" : "r9",
-     "sl" : "r10",
-     "fp" : "r11",
-     "ip" : "r12",
+     "sb": "r9",
+     "sl": "r10",
+     "fp": "r11",
+     "ip": "r12",
 
-     "sp" : "r13",
-     "lr" : "r14",
-     "pc" : "r15",
+     "sp": "r13",
+     "lr": "r14",
+     "pc": "r15",
 }
 
 ARM_COND_CODE_EQ = 0
@@ -76,23 +76,23 @@ ARM_COND_CODE_HS = 15
 ARM_COND_CODE_LO = 16
 
 cc_mapper = {
-    "eq" : ARM_COND_CODE_EQ,
-    "ne" : ARM_COND_CODE_NE,
-    "cs" : ARM_COND_CODE_CS,
-    "hs" : ARM_COND_CODE_HS,
-    "cc" : ARM_COND_CODE_CC,
-    "lo" : ARM_COND_CODE_LO,
-    "mi" : ARM_COND_CODE_MI,
-    "pl" : ARM_COND_CODE_PL,
-    "vs" : ARM_COND_CODE_VS,
-    "vc" : ARM_COND_CODE_VC,
-    "hi" : ARM_COND_CODE_HI,
-    "ls" : ARM_COND_CODE_LS,
-    "ge" : ARM_COND_CODE_GE,
-    "lt" : ARM_COND_CODE_LT,
-    "gt" : ARM_COND_CODE_GT,
-    "le" : ARM_COND_CODE_LE,
-    "al" : ARM_COND_CODE_AL,
+    "eq": ARM_COND_CODE_EQ,
+    "ne": ARM_COND_CODE_NE,
+    "cs": ARM_COND_CODE_CS,
+    "hs": ARM_COND_CODE_HS,
+    "cc": ARM_COND_CODE_CC,
+    "lo": ARM_COND_CODE_LO,
+    "mi": ARM_COND_CODE_MI,
+    "pl": ARM_COND_CODE_PL,
+    "vs": ARM_COND_CODE_VS,
+    "vc": ARM_COND_CODE_VC,
+    "hi": ARM_COND_CODE_HI,
+    "ls": ARM_COND_CODE_LS,
+    "ge": ARM_COND_CODE_GE,
+    "lt": ARM_COND_CODE_LT,
+    "gt": ARM_COND_CODE_GT,
+    "le": ARM_COND_CODE_LE,
+    "al": ARM_COND_CODE_AL,
 }
 
 cc_inverse_mapper = {v: k for k, v in cc_mapper.items()}
@@ -107,30 +107,30 @@ ARM_LDM_STM_ED = 6
 ARM_LDM_STM_EA = 7
 
 ldm_stm_am_mapper = {
-    "ia" : ARM_LDM_STM_IA,
-    "ib" : ARM_LDM_STM_IB,
-    "da" : ARM_LDM_STM_DA,
-    "db" : ARM_LDM_STM_DB,
-    "fd" : ARM_LDM_STM_FD,
-    "fa" : ARM_LDM_STM_FA,
-    "ed" : ARM_LDM_STM_ED,
-    "ea" : ARM_LDM_STM_EA,
+    "ia": ARM_LDM_STM_IA,
+    "ib": ARM_LDM_STM_IB,
+    "da": ARM_LDM_STM_DA,
+    "db": ARM_LDM_STM_DB,
+    "fd": ARM_LDM_STM_FD,
+    "fa": ARM_LDM_STM_FA,
+    "ed": ARM_LDM_STM_ED,
+    "ea": ARM_LDM_STM_EA,
 }
 
 ldm_stm_am_inverse_mapper = {v: k for k, v in ldm_stm_am_mapper.items()}
 
 ldm_stack_am_to_non_stack_am = {
-    ARM_LDM_STM_FA : ARM_LDM_STM_DA,
-    ARM_LDM_STM_FD : ARM_LDM_STM_IA,
-    ARM_LDM_STM_EA : ARM_LDM_STM_DB,
-    ARM_LDM_STM_ED : ARM_LDM_STM_IB,
+    ARM_LDM_STM_FA: ARM_LDM_STM_DA,
+    ARM_LDM_STM_FD: ARM_LDM_STM_IA,
+    ARM_LDM_STM_EA: ARM_LDM_STM_DB,
+    ARM_LDM_STM_ED: ARM_LDM_STM_IB,
 }
 
 stm_stack_am_to_non_stack_am = {
-    ARM_LDM_STM_ED : ARM_LDM_STM_DA,
-    ARM_LDM_STM_EA : ARM_LDM_STM_IA,
-    ARM_LDM_STM_FD : ARM_LDM_STM_DB,
-    ARM_LDM_STM_FA : ARM_LDM_STM_IB,
+    ARM_LDM_STM_ED: ARM_LDM_STM_DA,
+    ARM_LDM_STM_EA: ARM_LDM_STM_IA,
+    ARM_LDM_STM_FD: ARM_LDM_STM_DB,
+    ARM_LDM_STM_FA: ARM_LDM_STM_IB,
 }
 
 ARM_MEMORY_INDEX_OFFSET = 0
@@ -175,6 +175,8 @@ class ArmArchitectureInformation(ArchitectureInformation):
     ]
 
     def __init__(self, architecture_mode):
+        super(ArmArchitectureInformation, self).__init__()
+
         self._arch_mode = architecture_mode
 
         self._registers_all = []
@@ -197,8 +199,8 @@ class ArmArchitectureInformation(ArchitectureInformation):
     @property
     def architecture_size(self):
         arch_size_map = {
-            ARCH_ARM_MODE_ARM : 32,
-            ARCH_ARM_MODE_THUMB : 32,
+            ARCH_ARM_MODE_ARM:   32,
+            ARCH_ARM_MODE_THUMB: 32,
         }
 
         return arch_size_map[self._arch_mode]
@@ -206,8 +208,8 @@ class ArmArchitectureInformation(ArchitectureInformation):
     @property
     def operand_size(self):
         operand_size_map = {
-            ARCH_ARM_MODE_ARM : 32,
-            ARCH_ARM_MODE_THUMB : 32,
+            ARCH_ARM_MODE_ARM:   32,
+            ARCH_ARM_MODE_THUMB: 32,
         }
 
         return operand_size_map[self._arch_mode]
@@ -215,8 +217,8 @@ class ArmArchitectureInformation(ArchitectureInformation):
     @property
     def address_size(self):
         address_size_map = {
-            ARCH_ARM_MODE_ARM : 32,
-            ARCH_ARM_MODE_THUMB : 32,
+            ARCH_ARM_MODE_ARM:   32,
+            ARCH_ARM_MODE_THUMB: 32,
         }
 
         return address_size_map[self._arch_mode]
@@ -262,11 +264,11 @@ class ArmArchitectureInformation(ArchitectureInformation):
         """Return the maximum instruction size in bytes.
         """
         instruction_size_map = {
-            ARCH_ARM_MODE_ARM : 4,
+            ARCH_ARM_MODE_ARM: 4,
 
             # NOTE: THUMB instructions are 2 byte long but THUMBv2
             # instruction have both 2 and 4 byte long.
-            ARCH_ARM_MODE_THUMB : 4,
+            ARCH_ARM_MODE_THUMB: 4,
         }
 
         return instruction_size_map[self._arch_mode]
@@ -276,13 +278,13 @@ class ArmArchitectureInformation(ArchitectureInformation):
 
         # ARM: "POP reg, {reg*, pc}" instr.
         if instruction.mnemonic == "pop" and \
-           ("pc" in str(instruction.operands[1]) or \
+           ("pc" in str(instruction.operands[1]) or
            "r15" in str(instruction.operands[1])):
             is_ret = True
 
         # ARM: "LDR pc, *" instr.
         if instruction.mnemonic == "ldr" and \
-           ("pc" in str(instruction.operands[0]) or \
+           ("pc" in str(instruction.operands[0]) or
            "r15" in str(instruction.operands[0])):
             is_ret = True
 
@@ -310,6 +312,9 @@ class ArmArchitectureInformation(ArchitectureInformation):
 
         return instruction.mnemonic_full in branch_instr
 
+    def instr_is_syscall(self, instruction):
+        raise NotImplementedError()
+
     def stack_pointer_register(self):
         return "r13"
 
@@ -324,10 +329,10 @@ class ArmArchitectureInformation(ArchitectureInformation):
 
     def _load_alias_mapper(self):
         alias_mapper = {
-            "fp" : ("r11", 0),
-            "sp" : ("r13", 0),
-            "lr" : ("r14", 0),
-            "pc" : ("r15", 0),
+            "fp": ("r11", 0),
+            "sp": ("r13", 0),
+            "lr": ("r14", 0),
+            "pc": ("r15", 0),
         }
 
         flags_reg = "apsr"
@@ -388,7 +393,7 @@ class ArmInstruction(object):
         self._mnemonic = mnemonic
         self._operands = operands
         self._bytes = ""
-        self._size = 4 # TODO: Thumb
+        self._size = 4      # TODO: Thumb
         self._address = None
         self._arch_mode = arch_mode
         self._condition_code = None
@@ -585,7 +590,7 @@ class ArmImmediateOperand(ArmOperand):
         elif immediate_format == "dec":
             string = str(self._immediate)
         else:
-            raise Exception("Invalid immediate format: {}".format(imm_fmt))
+            raise Exception("Invalid immediate format: {}".format(immediate_format))
 
         return string[:-1] if string[-1] == 'L' else string
 
@@ -640,7 +645,7 @@ class ArmRegisterOperand(ArmOperand):
         if not self._size:
             raise Exception("Operand size missing.")
 
-        string  = self._modifier + " " if self._modifier else ""
+        string = self._modifier + " " if self._modifier else ""
         string += self._name
 
         return string
@@ -743,17 +748,16 @@ class ArmShiftedRegisterOperand(ArmOperand):
         if not self._size:
             raise Exception("Operand size missing.")
 
-        string  = str(self._base_reg) + ", " + str(self._shift_type)
+        string = str(self._base_reg) + ", " + str(self._shift_type)
         if self._shift_amount:
             string += " " + str(self._shift_amount)
 
         return string
 
     def __eq__(self, other):
-        return  self._base_reg == other._base_reg  and \
-                self._shift_type == other._shift_type  and \
+        return  self._base_reg == other._base_reg and \
+                self._shift_type == other._shift_type and \
                 self._shift_amount == other._shift_amount
-
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -770,7 +774,7 @@ class ArmMemoryOperand(ArmOperand):
         '_size',
     ]
 
-    def __init__(self, base_reg, index_type, displacement, disp_minus = False, size=None):
+    def __init__(self, base_reg, index_type, displacement, disp_minus=False, size=None):
         super(ArmMemoryOperand, self).__init__("")
 
         self._base_reg = base_reg
@@ -805,12 +809,11 @@ class ArmMemoryOperand(ArmOperand):
 
     @property
     def disp_minus(self):
-        """Get sign of displacemnt."""
+        """Get sign of displacement."""
         if not self._size:
             raise Exception("Operand size missing.")
 
         return self._disp_minus
-
 
     def __str__(self):
         if not self._size:
@@ -821,13 +824,13 @@ class ArmMemoryOperand(ArmOperand):
 
         string = "[" + str(self._base_reg)
 
-        if (self._index_type == ARM_MEMORY_INDEX_OFFSET):
+        if self._index_type == ARM_MEMORY_INDEX_OFFSET:
             if self._displacement:
                 string += ", " + disp_str
             string += "]"
-        elif (self._index_type == ARM_MEMORY_INDEX_PRE):
+        elif self._index_type == ARM_MEMORY_INDEX_PRE:
             string += ", " + disp_str + "]!"
-        elif (self._index_type == ARM_MEMORY_INDEX_POST):
+        elif self._index_type == ARM_MEMORY_INDEX_POST:
             string += "], " + disp_str
         else:
             raise Exception("Unknown memory index type.")
@@ -835,10 +838,9 @@ class ArmMemoryOperand(ArmOperand):
         return string
 
     def __eq__(self, other):
-        return  self._base_reg == other._base_reg  and \
-                self._index_type == other._index_type  and \
+        return  self._base_reg == other._base_reg and \
+                self._index_type == other._index_type and \
                 self._displacement == other._displacement
-
 
     def __ne__(self, other):
         return not self.__eq__(other)

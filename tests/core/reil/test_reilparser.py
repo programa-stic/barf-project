@@ -33,7 +33,7 @@ class ReilParserTests(unittest.TestCase):
         self._parser = ReilParser()
 
     def test_add(self):
-        instrs  = ["str [eax, EMPTY, t0]"]
+        instrs = ["str [eax, EMPTY, t0]"]
         instrs += ["str [ebx, EMPTY, t1]"]
         instrs += ["add [t0, t1, t2]"]
         instrs += ["str [t2, EMPTY, eax]"]

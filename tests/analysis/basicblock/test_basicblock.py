@@ -42,7 +42,6 @@ def get_full_path(filename):
     return os.path.dirname(os.path.abspath(__file__)) + filename
 
 
-
 class BinDiffTests(unittest.TestCase):
 
     def setUp(self):

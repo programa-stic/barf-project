@@ -31,14 +31,11 @@ Some more work is needed to make this algorithm truly architecture
 agnostic.
 
 """
-import logging
 import re
 
-from barf.analysis.gadget import GadgetType
 from barf.analysis.gadget import RawGadget
 from barf.arch import ARCH_ARM
 from barf.arch import ARCH_X86
-from barf.arch.x86.x86translator import FULL_TRANSLATION
 from barf.arch.x86.x86translator import LITE_TRANSLATION
 from barf.core.disassembler import InvalidDisassemblerData
 from barf.core.reil import DualInstruction
@@ -135,13 +132,11 @@ class GadgetFinder(object):
                 continue
 
             # build gadget
-            if ins_ir[-1] and \
-                (ins_ir[-1].mnemonic == ReilMnemonic.JCC and \
-                    isinstance(ins_ir[-1].operands[2], ReilRegisterOperand)):
+            if ins_ir[-1] and (ins_ir[-1].mnemonic == ReilMnemonic.JCC and isinstance(ins_ir[-1].operands[2], ReilRegisterOperand)):
 
                 # add for REX.W + FF /3 call instruction
                 if ins_ir[-1].mnemonic == ReilMnemonic.JCC:
-                    #try addr - 1
+                    # try addr - 1
                     try:
                         asm_instr_1 = self._disasm.disassemble(
                             self._mem[addr-1:min(addr+15, end_address + 1)],
@@ -200,7 +195,7 @@ class GadgetFinder(object):
             # TODO: Evaluate performance
             gad_found = False
             for gad in free_jump_gadgets:
-                if len(re.findall(gad, "".join(self._mem[addr:min(addr+4, end_address + 1)]))) > 0: # TODO: Add thumb (+2)
+                if len(re.findall(gad, "".join(self._mem[addr:min(addr+4, end_address + 1)]))) > 0:     # TODO: Add thumb (+2)
                     gad_found = True
                     break
             if not gad_found:
@@ -211,7 +206,7 @@ class GadgetFinder(object):
         for addr in gadget_tail_addr:
             try:
                 asm_instr = self._disasm.disassemble(
-                    self._mem[addr:min(addr+4, end_address + 1)], # TODO: Add thumb (+16)
+                    self._mem[addr:min(addr+4, end_address + 1)],   # TODO: Add thumb (+16)
                     addr,
                     architecture_mode=self._architecture_mode
                 )
@@ -246,7 +241,7 @@ class GadgetFinder(object):
 
         return candidates
 
-    def _build_from(self, address, root, base_address, depth = 2):
+    def _build_from(self, address, root, base_address, depth=2):
         """Build gadget recursively.
         """
         if depth == 0:
@@ -282,9 +277,8 @@ class GadgetFinder(object):
             except:
                 continue
 
-            if self._is_valid_ins(ir_instrs, asm_instr):
-                child = GadgetTreeNode(DualInstruction(start_addr, asm_instr, \
-                    ir_instrs))
+            if self._is_valid_ins(ir_instrs):
+                child = GadgetTreeNode(DualInstruction(start_addr, asm_instr, ir_instrs))
 
                 root.add_child(child)
 
@@ -310,15 +304,14 @@ class GadgetFinder(object):
     def _build_gadgets_rec(self, gadget_tree_root):
         """Build a gadget from a gadget tree.
         """
-        root     = gadget_tree_root.get_root()
+        root = gadget_tree_root.get_root()
         children = gadget_tree_root.get_children()
 
         node_list = []
 
-        root_gadget_ins = DualInstruction(root.address, root.asm_instr, \
-            root.ir_instrs)
+        root_gadget_ins = DualInstruction(root.address, root.asm_instr, root.ir_instrs)
 
-        if children == []:
+        if not children:
             node_list += [[root_gadget_ins]]
         else:
             for child in children:
@@ -328,7 +321,7 @@ class GadgetFinder(object):
 
         return node_list
 
-    def _is_valid_ins(self, ins_ir, ins_asm):
+    def _is_valid_ins(self, ins_ir):
         """Check for instruction validity as a gadget.
         """
         invalid_instrs = [
@@ -346,7 +339,7 @@ class GadgetTreeNode(object):
     """
 
     def __init__(self, root):
-        self._root     = root
+        self._root = root
         self._children = []
 
     def get_root(self):

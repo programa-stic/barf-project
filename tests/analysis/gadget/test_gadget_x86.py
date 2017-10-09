@@ -1532,11 +1532,6 @@ class GadgetVerifierTests64(unittest.TestCase):
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
 
-        # self.print_candidates(g_candidates)
-        # self.print_classified(g_classified)
-
-        verified = self._g_verifier.verify(g_classified[0])
-
         self.assertEquals(len(g_candidates), 1)
         self.assertEquals(len(g_classified), 1)
 

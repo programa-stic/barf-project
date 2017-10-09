@@ -26,8 +26,6 @@ import unittest
 
 from barf.analysis.basicblock import CFGRecoverer
 from barf.analysis.basicblock import RecursiveDescent
-from barf.analysis.basicblock.basicblock import ControlFlowGraph
-from barf.analysis.codeanalyzer.codeanalyzer import CodeAnalyzer
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86disassembler import X86Disassembler

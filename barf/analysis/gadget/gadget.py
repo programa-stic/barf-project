@@ -23,7 +23,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
-This module contains two basic classes for gaget processing: RawGadget
+This module contains two basic classes for gadget processing: RawGadget
 and TypedGadgets. The first is used to describe the gadgets found by
 GadgetFinder. These are candidate gadgets as they are not validated yet.
 However, they contains (the RawGadget object) the assembly code as well
@@ -35,6 +35,7 @@ each classified type and the RawGadget object is associated with them.
 
 from barf.core.reil import ReilEmptyOperand
 from barf.core.reil import ReilImmediateOperand
+
 
 class RawGadget(object):
 
@@ -97,7 +98,7 @@ class RawGadget(object):
             lines += ["0x%08x : %s" % (dinstr.asm_instr.address, dinstr.asm_instr)]
 
             for instr in dinstr.ir_instrs:
-                lines += ["  %s" % (instr)]
+                lines += ["  %s" % instr]
 
         return "\n".join(lines)
 
@@ -118,9 +119,10 @@ class TypedGadget(RawGadget):
         '_operation',
     ]
 
-    def __init__(self, gadget, gadget_type):
+    def __init__(self, gadget, gadget_type, instrs):
+        super(TypedGadget, self).__init__(instrs)
 
-        # A raw gaget.
+        # A raw gadget.
         self._gadget = gadget
 
         # A list of sources.
@@ -132,7 +134,7 @@ class TypedGadget(RawGadget):
         # A list of registers that are modified after gadget execution.
         self._modified_regs = []
 
-        # Type of the gaget.
+        # Type of the gadget.
         self._gadget_type = gadget_type
 
         # Verification flag.
@@ -231,16 +233,16 @@ class TypedGadget(RawGadget):
 
     def __str__(self):
         strings = {
-            GadgetType.NoOperation     : dump_no_operation,
-            GadgetType.Jump            : dump_jump,
-            GadgetType.MoveRegister    : dump_move_register,
-            GadgetType.LoadConstant    : dump_load_constant,
-            GadgetType.Arithmetic      : dump_arithmetic,
-            GadgetType.LoadMemory      : dump_load_memory,
-            GadgetType.StoreMemory     : dump_store_memory,
-            GadgetType.ArithmeticLoad  : dump_arithmetic_load,
-            GadgetType.ArithmeticStore : dump_arithmetic_store,
-            GadgetType.Undefined       : dump_undefined,
+            GadgetType.NoOperation:     dump_no_operation,
+            GadgetType.Jump:            dump_jump,
+            GadgetType.MoveRegister:    dump_move_register,
+            GadgetType.LoadConstant:    dump_load_constant,
+            GadgetType.Arithmetic:      dump_arithmetic,
+            GadgetType.LoadMemory:      dump_load_memory,
+            GadgetType.StoreMemory:     dump_store_memory,
+            GadgetType.ArithmeticLoad:  dump_arithmetic_load,
+            GadgetType.ArithmeticStore: dump_arithmetic_store,
+            GadgetType.Undefined:       dump_undefined,
         }
 
         return strings[self._gadget_type](self)
@@ -287,16 +289,16 @@ class GadgetType(object):
     @staticmethod
     def to_string(gadget_type):
         strings = {
-            GadgetType.NoOperation     : "No Operation",
-            GadgetType.Jump            : "Jump",
-            GadgetType.MoveRegister    : "Move Register",
-            GadgetType.LoadConstant    : "Load Constant",
-            GadgetType.Arithmetic      : "Arithmetic",
-            GadgetType.LoadMemory      : "Load Memory",
-            GadgetType.StoreMemory     : "Store Memory",
-            GadgetType.ArithmeticLoad  : "Arithmetic Load",
-            GadgetType.ArithmeticStore : "Arithmetic Store",
-            GadgetType.Undefined       : "Undefined",
+            GadgetType.NoOperation:     "No Operation",
+            GadgetType.Jump:            "Jump",
+            GadgetType.MoveRegister:    "Move Register",
+            GadgetType.LoadConstant:    "Load Constant",
+            GadgetType.Arithmetic:      "Arithmetic",
+            GadgetType.LoadMemory:      "Load Memory",
+            GadgetType.StoreMemory:     "Store Memory",
+            GadgetType.ArithmeticLoad:  "Arithmetic Load",
+            GadgetType.ArithmeticStore: "Arithmetic Store",
+            GadgetType.Undefined:       "Undefined",
         }
 
         return strings[gadget_type]
@@ -307,38 +309,40 @@ class GadgetType(object):
 def dump_no_operation(gadget):
     return "nop <- nop > {}"
 
+
 def dump_jump(gadget):
     return "NOT SUPPORTED YET!"
+
 
 def dump_move_register(gadget):
     fmt = "%s <- %s > {%s}"
 
     mod_regs = [r for r in gadget.modified_registers]
 
-    fmt_params = (str(gadget.destination[0]), str(gadget.sources[0]),
-        "; ".join(map(str, mod_regs)))
+    fmt_params = (str(gadget.destination[0]), str(gadget.sources[0]), "; ".join(map(str, mod_regs)))
 
     return fmt % fmt_params
+
 
 def dump_load_constant(gadget):
     fmt = "%s <- %s > {%s}"
 
     mod_regs = [r for r in gadget.modified_registers]
 
-    fmt_params = (str(gadget.destination[0]), str(gadget.sources[0]),
-        "; ".join(map(str, mod_regs)))
+    fmt_params = (str(gadget.destination[0]), str(gadget.sources[0]), "; ".join(map(str, mod_regs)))
 
     return fmt % fmt_params
+
 
 def dump_arithmetic(gadget):
     fmt = "%s <- %s %s %s > {%s}"
 
     mod_regs = [r for r in gadget.modified_registers]
 
-    fmt_params = (str(gadget.destination[0]), str(gadget.sources[0]),
-        gadget.operation, str(gadget.sources[1]), "; ".join(map(str, mod_regs)))
+    fmt_params = (str(gadget.destination[0]), str(gadget.sources[0]), gadget.operation, str(gadget.sources[1]), "; ".join(map(str, mod_regs)))
 
     return fmt % fmt_params
+
 
 def dump_load_memory(gadget):
     fmt = "%s <- mem[%s] > {%s}"
@@ -363,6 +367,7 @@ def dump_load_memory(gadget):
 
     return fmt % fmt_params
 
+
 def dump_store_memory(gadget):
     fmt = "mem[%s] <- %s > {%s}"
 
@@ -384,7 +389,8 @@ def dump_store_memory(gadget):
         "; ".join(map(str, mod_regs))
     )
 
-    return  fmt % fmt_params
+    return fmt % fmt_params
+
 
 def dump_arithmetic_load(gadget):
     fmt = "%s <- %s %s mem[%s] > {%s}"
@@ -409,6 +415,7 @@ def dump_arithmetic_load(gadget):
         "; ".join(map(str, mod_regs)))
 
     return fmt % fmt_params
+
 
 def dump_arithmetic_store(gadget):
     fmt = "mem[%s] <- mem[%s] %s %s > {%s}"
@@ -444,6 +451,7 @@ def dump_arithmetic_store(gadget):
     )
 
     return fmt % fmt_params
+
 
 def dump_undefined(gadget):
     return "undefined"

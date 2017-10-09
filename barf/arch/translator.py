@@ -22,7 +22,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from barf.core.reil import ReilEmptyOperand
 from barf.core.reil import ReilRegisterOperand
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilInstruction
@@ -63,12 +62,14 @@ class Translator(object):
 
 class TranslationBuilder(object):
 
-    def __init__(self, ir_name_generator, architecture_mode):
+    def __init__(self, ir_name_generator, architecture_information):
         self._ir_name_generator = ir_name_generator
 
         self._instructions = []
 
         self._builder = ReilInstructionBuilder()
+
+        self._arch_info = architecture_information
 
     def add(self, instr):
         self._instructions.append(instr)
@@ -173,12 +174,12 @@ class TranslationBuilder(object):
         return ret
 
     def _extract_bit(self, reg, bit):
-        assert(bit >= 0 and bit < reg.size)
+        assert(0 <= bit < reg.size)
         tmp = self.temporal(reg.size)
         ret = self.temporal(1)
 
-        self.add(self._builder.gen_bsh(reg, self.immediate(-bit, reg.size), tmp)) # shift to LSB
-        self.add(self._builder.gen_and(tmp, self.immediate(1, reg.size), ret)) # filter LSB
+        self.add(self._builder.gen_bsh(reg, self.immediate(-bit, reg.size), tmp))   # shift to LSB
+        self.add(self._builder.gen_and(tmp, self.immediate(1, reg.size), ret))      # filter LSB
 
         return ret
 
@@ -189,9 +190,9 @@ class TranslationBuilder(object):
         neg_bit = self.temporal(reg.size)
         ret = self.temporal(1)
 
-        self.add(self._builder.gen_sub(self.immediate(0, bit.size), bit, neg_bit)) # as left bit is indicated by a negative number
-        self.add(self._builder.gen_bsh(reg, neg_bit, tmp)) # shift to LSB
-        self.add(self._builder.gen_and(tmp, self.immediate(1, reg.size), ret)) # filter LSB
+        self.add(self._builder.gen_sub(self.immediate(0, bit.size), bit, neg_bit))  # as left bit is indicated by a negative number
+        self.add(self._builder.gen_bsh(reg, neg_bit, tmp))                          # shift to LSB
+        self.add(self._builder.gen_and(tmp, self.immediate(1, reg.size), ret))      # filter LSB
 
         return ret
 
@@ -199,7 +200,7 @@ class TranslationBuilder(object):
         return self._extract_bit(reg, reg.size - 1)
 
     def _extract_sign_bit(self, reg):
-        return self._extract_msb(self, reg)
+        return self._extract_msb(reg)
 
     def _greater_than_or_equal(self, reg1, reg2):
         assert(reg1.size == reg2.size)

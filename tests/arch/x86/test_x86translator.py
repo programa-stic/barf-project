@@ -644,7 +644,7 @@ class X86TranslationTests(unittest.TestCase):
 
         ctx_init["xmm0"] = 0x88776655443322118877665544332211
         ctx_init["xmm1"] = 0x992277aa113311FF992277aa113311FF
-        res              = 0x88226655113311118822665511331111
+        res = 0x88226655113311118822665511331111
 
         x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
 
@@ -1159,33 +1159,6 @@ class X86TranslationTests(unittest.TestCase):
         ctx_init = {
             'rax'    : 0xFFFFFFFFFFFFFFFF,
             'rbx'    : 0x0000000000000001,
-            'rdx'    : 0xFFFFFFFFFFFFFFFF,
-            'rflags' : 0x202,
-        }
-
-        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
-
-        # Undefined flags...
-        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
-        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
-        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "sf")
-        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "zf")
-        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
-        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "pf")
-
-        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
-
-        if not cmp_result:
-            self.__save_failing_context(ctx_init)
-
-        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
-
-    def test_idiv_3(self):
-        asm = ["idiv ebx"]
-
-        ctx_init = {
-            'rax'    : 0xFFFFFFFFFFFFFFFE,
-            'rbx'    : 0xFFFFFFFFFFFFFFFF,
             'rdx'    : 0xFFFFFFFFFFFFFFFF,
             'rflags' : 0x202,
         }
