@@ -92,9 +92,7 @@ class SmtTranslator(object):
             ReilMnemonic.SUB: self._translate_sub,
             ReilMnemonic.MUL: self._translate_mul,
             ReilMnemonic.DIV: self._translate_div,
-            ReilMnemonic.SDIV: self._translate_sdiv,
             ReilMnemonic.MOD: self._translate_mod,
-            ReilMnemonic.SMOD: self._translate_smod,
             ReilMnemonic.BSH: self._translate_bsh,
 
             # Bitwise Instructions
@@ -116,11 +114,10 @@ class SmtTranslator(object):
             ReilMnemonic.UNKN: self._translate_unkn,
             ReilMnemonic.NOP: self._translate_nop,
 
-            # Ad hoc Instructions
-            ReilMnemonic.RET: self._translate_ret,
-
             # Extensions
             ReilMnemonic.SEXT: self._translate_sext,
+            ReilMnemonic.SDIV: self._translate_sdiv,
+            ReilMnemonic.SMOD: self._translate_smod,
         }
 
     def translate(self, instr):
@@ -610,13 +607,6 @@ class SmtTranslator(object):
         """Return a formula representation of a NOP instruction.
         """
         return []
-
-    # Ad-hoc Instructions
-    # ======================================================================== #
-    def _translate_ret(self, oprnd1, oprnd2, oprnd3):
-        """Return a formula representation of a RET instruction.
-        """
-        raise Exception("Unsupported instruction : RET")
 
     # Extension
     # ======================================================================== #

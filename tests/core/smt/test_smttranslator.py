@@ -99,26 +99,12 @@ class SmtTranslatorTests(unittest.TestCase):
         self.assertEqual(len(form), 1)
         self.assertEqual(form[0].value, "(= t2_1 (bvudiv t0_0 t1_0))")
 
-    def test_translate_sdiv(self):
-        instr = self._parser.parse(["sdiv [BYTE t0, BYTE t1, BYTE t2]"])[0]
-        form = self._translator.translate(instr)
-
-        self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (bvsdiv t0_0 t1_0))")
-
     def test_translate_mod(self):
         instr = self._parser.parse(["mod [BYTE t0, BYTE t1, BYTE t2]"])[0]
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
         self.assertEqual(form[0].value, "(= t2_1 (bvurem t0_0 t1_0))")
-
-    def test_translate_smod(self):
-        instr = self._parser.parse(["smod [BYTE t0, BYTE t1, BYTE t2]"])[0]
-        form = self._translator.translate(instr)
-
-        self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (bvsmod t0_0 t1_0))")
 
     def test_translate_bsh(self):
         instr = self._parser.parse(["bsh [DWORD t0, DWORD t1, DWORD t2]"])[0]
@@ -209,15 +195,6 @@ class SmtTranslatorTests(unittest.TestCase):
 
         self.assertEqual(len(form), 0)
 
-    # Ad-hoc Instructions
-    def test_translate_ret(self):
-        instr = self._parser.parse(["ret [empty, empty, empty]"])[0]
-
-        with self.assertRaises(Exception) as context:
-            self._translator.translate(instr)
-
-        self.assertTrue("Unsupported instruction : RET" in context.exception)
-
     # Extensions
     def test_translate_sext(self):
         instr = self._parser.parse(["sext [BYTE t0, empty, WORD t2]"])[0]
@@ -226,20 +203,19 @@ class SmtTranslatorTests(unittest.TestCase):
         self.assertEqual(len(form), 1)
         self.assertEqual(form[0].value, "(= t2_1 ((_ sign_extend 8) t0_0))")
 
-    # def test_translate_sext_2(self):
-    #     instr = self._parser.parse(["sext [BYTE al, empty, WORD bx]"])[0]
-    #     form = self._translator.translate(instr)
+    def test_translate_sdiv(self):
+        instr = self._parser.parse(["sdiv [BYTE t0, BYTE t1, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-    #     for f in form:
-    #         print(str(f))
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (bvsdiv t0_0 t1_0))")
 
-    # def test_translate_str_2(self):
-    #     instr = self._parser.parse(["str [BYTE al, empty, WORD bx]"])[0]
-    #     form = self._translator.translate(instr)
+    def test_translate_smod(self):
+        instr = self._parser.parse(["smod [BYTE t0, BYTE t1, BYTE t2]"])[0]
+        form = self._translator.translate(instr)
 
-    #     for f in form:
-    #         print(str(f))
-
+        self.assertEqual(len(form), 1)
+        self.assertEqual(form[0].value, "(= t2_1 (bvsmod t0_0 t1_0))")
 
 
 def main():
