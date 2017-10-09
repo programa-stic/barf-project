@@ -40,7 +40,6 @@ import barf.core.smt.smtfunction as smtfunction
 
 from barf.analysis.gadget import GadgetType
 from barf.core.reil import ReilRegisterOperand
-from barf.core.reil import ReilEmptyOperand
 
 logger = logging.getLogger("GadgetVerifier")
 
@@ -237,7 +236,7 @@ class GadgetVerifier(object):
         dst = self.analyzer.get_register_expr(gadget.destination[0].name, mode="post")
         size = gadget.destination[0].size
 
-        if isinstance(gadget.sources[0], ReilRegisterOperand) and not isinstance(gadget.sources[0], ReilEmptyOperand):
+        if isinstance(gadget.sources[0], ReilRegisterOperand):
             base_addr = self.analyzer.get_register_expr(gadget.sources[0].name, mode="pre")
             offset = gadget.sources[1].immediate
 
@@ -271,7 +270,7 @@ class GadgetVerifier(object):
     def _get_constrs_store_memory(self, gadget):
         """Generate constraints for the StoreMemory gadget: mem[dst_reg + offset] <- src_reg
         """
-        if isinstance(gadget.destination[0], ReilRegisterOperand) and not isinstance(gadget.destination[0], ReilEmptyOperand):
+        if isinstance(gadget.destination[0], ReilRegisterOperand):
             base_addr = self.analyzer.get_register_expr(gadget.destination[0].name, mode="pre")
             offset = gadget.destination[1].immediate
 
@@ -312,7 +311,7 @@ class GadgetVerifier(object):
         dst = self.analyzer.get_register_expr(gadget.destination[0].name, mode="post")
         size = gadget.destination[0].size
 
-        if isinstance(gadget.sources[1], ReilRegisterOperand) and not isinstance(gadget.sources[1], ReilEmptyOperand):
+        if isinstance(gadget.sources[1], ReilRegisterOperand):
             base_addr = self.analyzer.get_register_expr(gadget.sources[1].name, mode="pre")
             offset = gadget.sources[2].immediate
 
@@ -351,7 +350,7 @@ class GadgetVerifier(object):
     def _get_constrs_arithmetic_store(self, gadget):
         """Generate constraints for the ArithmeticStore gadget: m[dst_reg + offset] <- m[dst_reg + offset] OP src_reg
         """
-        if isinstance(gadget.sources[0], ReilRegisterOperand) and not isinstance(gadget.sources[0], ReilEmptyOperand):
+        if isinstance(gadget.sources[0], ReilRegisterOperand):
             base_addr = self.analyzer.get_register_expr(gadget.sources[0].name, mode="pre")
             offset = gadget.sources[1].immediate
 

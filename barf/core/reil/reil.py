@@ -91,13 +91,10 @@ class ReilMnemonic(object):
     UNDEF = 16
     NOP   = 17
 
-    # Added Instructions
-    RET   = 18
-
     # Extensions
-    SEXT  = 19
-    SDIV  = 20
-    SMOD  = 21
+    SEXT  = 18
+    SDIV  = 19
+    SMOD  = 20
 
     @staticmethod
     def to_string(mnemonic):
@@ -130,9 +127,6 @@ class ReilMnemonic(object):
             ReilMnemonic.UNKN:  "unkn",
             ReilMnemonic.UNDEF: "undef",
             ReilMnemonic.NOP:   "nop",
-
-            # Added Instructions
-            ReilMnemonic.RET: "ret",
 
             # Extensions
             ReilMnemonic.SEXT: "sext",
@@ -175,9 +169,6 @@ class ReilMnemonic(object):
             "nop":   ReilMnemonic.NOP,
 
             # Added Instructions
-            "ret": ReilMnemonic.RET,
-
-            # Added Instructions
             "sext": ReilMnemonic.SEXT,
             "sdiv": ReilMnemonic.SDIV,
             "smod": ReilMnemonic.SMOD,
@@ -213,9 +204,6 @@ REIL_MNEMONICS = (
     ReilMnemonic.UNKN,
     ReilMnemonic.UNDEF,
     ReilMnemonic.NOP,
-
-    # Added Instructions
-    ReilMnemonic.RET,
 
     # Extensions
     ReilMnemonic.SEXT,
@@ -497,13 +485,19 @@ class ReilRegisterOperand(ReilOperand):
         self._name = state['_name']
 
 
-class ReilEmptyOperand(ReilRegisterOperand):
+class ReilEmptyOperand(ReilOperand):
 
     """Representation of an IR instruction's empty operand.
     """
 
     def __init__(self):
-        super(ReilEmptyOperand, self).__init__("EMPTY", size=None)
+        super(ReilEmptyOperand, self).__init__(size=None)
+
+    def __str__(self):
+        return "EMPTY"
+
+    def __eq__(self, other):
+        return type(other) is type(self)
 
 
 class ReilInstructionBuilder(object):
@@ -611,15 +605,6 @@ class ReilInstructionBuilder(object):
         empty_reg = ReilEmptyOperand()
 
         return self.build(ReilMnemonic.NOP, empty_reg, empty_reg, empty_reg)
-
-    # Ad hoc Instructions
-    # ======================================================================== #
-    def gen_ret(self):
-        """Return a RET instruction.
-        """
-        empty_reg = ReilEmptyOperand()
-
-        return self.build(ReilMnemonic.RET, empty_reg, empty_reg, empty_reg)
 
     # Extensions
     # ======================================================================== #

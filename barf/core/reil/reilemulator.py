@@ -336,9 +336,6 @@ class ReilCpu(object):
             ReilMnemonic.UNKN:  self.__execute_unkn,
             ReilMnemonic.NOP:   self.__execute_skip,
 
-            # Ad hoc Instructions
-            ReilMnemonic.RET: self.__execute_skip,
-
             # Extensions
             ReilMnemonic.SEXT: self.__execute_sext,
             ReilMnemonic.SDIV: self.__execute_binary_op,
@@ -797,9 +794,6 @@ class ReilEmulatorTainter(object):
             ReilMnemonic.UNDEF: self.__taint_undef,
             ReilMnemonic.UNKN:  self.__taint_nothing,
             ReilMnemonic.NOP:   self.__taint_nothing,
-
-            # Ad hoc Instructions
-            ReilMnemonic.RET: self.__taint_nothing,
 
             # Extensions
             ReilMnemonic.SEXT: self.__taint_move,
