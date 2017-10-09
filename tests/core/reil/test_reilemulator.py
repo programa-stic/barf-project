@@ -33,9 +33,7 @@ from barf.core.reil import ReilCpuZeroDivisionError
 from barf.core.reil import ReilEmulator
 from barf.core.reil import ReilMemory
 from barf.core.reil import ReilMemoryEx
-from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilParser
-from barf.core.reil import ReilRegisterOperand
 from barf.core.reil import ReilContainer
 from barf.core.reil import ReilSequence
 
@@ -231,7 +229,7 @@ class ReilEmulatorTests(unittest.TestCase):
 
         self._emulator.set_instruction_post_handler(post_hanlder, paramter)
 
-        reil_ctx_out, reil_mem_out = self._emulator.execute_lite(
+        _, _ = self._emulator.execute_lite(
             reil_instrs[0]
         )
 

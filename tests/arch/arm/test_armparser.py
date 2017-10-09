@@ -92,7 +92,7 @@ class ArmParser32BitsTests(unittest.TestCase):
             "ldr r2, [r3], #-134314",
             "ldr r2, [r3], r3, lsl #0x12",
 
-            #A3.11.4 (examples)
+            # A3.11.4 (examples)
             "ldr r1, [r0]",
             "ldr r8, [r3, #4]",
             "ldr r12, [r13, #-4]",
