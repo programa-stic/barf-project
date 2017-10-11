@@ -26,12 +26,13 @@ import unittest
 
 from barf.core.reil import ReilParser
 from barf.core.smt.smtsymbol import BitVec
+from barf.core.smt.smtsymbol import Bool
 from barf.core.smt.smtsolver import Z3Solver as SmtSolver
 # from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
 
-class SmtSolverTests(unittest.TestCase):
+class SmtSolverBitVecTests(unittest.TestCase):
 
     def setUp(self):
         self._address_size = 32
@@ -39,328 +40,444 @@ class SmtSolverTests(unittest.TestCase):
         self._solver = SmtSolver()
         self._translator = SmtTranslator(self._solver, self._address_size)
 
+    # Arithmetic operations.
+    def test_add(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = BitVec(32, "z")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+        self._solver.declare_fun("z", z)
+
+        self._solver.add(x + y == z)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+        self._solver.add(x != y)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+        z_val = self._solver.get_value(z)
+
+        self.assertTrue(x_val + y_val == z_val)
+
+    # TODO Fix para CVC4Solver.
+    def test_sub(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = BitVec(32, "z")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+        self._solver.declare_fun("z", z)
+
+        self._solver.add(x - y == z)
+
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+        self._solver.add(x != y)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        # Add constraints to avoid trivial solutions.
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+        z_val = self._solver.get_value(z)
+
+        self.assertTrue(x_val - y_val == z_val)
+
+    # TODO Fix para CVC4Solver.
     def test_mul(self):
-        instrs = self._parser.parse([
-            "mul [DWORD 0x0, DWORD 0x1, DWORD t0]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_init("t0")) != 0,   # Precondition
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t0")) == 0,   # Postcondition
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'sat')
-
-    def test_div_1(self):
-        instrs = self._parser.parse([
-            "div [DWORD 2, DWORD 1, DWORD t1]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t1")) != 0x2,
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_div_2(self):
-        instrs = self._parser.parse([
-            "div [DWORD 0xffffffff, DWORD 0x2, DWORD t1]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t1")) != 0x7fffffff,
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_sdiv_1(self):
-        instrs = self._parser.parse([
-            "sdiv [DWORD -2, DWORD -1, DWORD t1]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t1")) != 0x2,
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_sdiv_2(self):
-        instrs = self._parser.parse([
-            "sdiv [DWORD -2, DWORD 1, DWORD t1]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t1")) != 0xfffffffe,
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_smod_1(self):
-        instrs = self._parser.parse([
-            "smod [DWORD 5, DWORD -3, DWORD t1]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t1")) != 0xffffffff,
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_smod_2(self):
-        instrs = self._parser.parse([
-            "smod [DWORD -5, DWORD 3, DWORD t1]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t1")) != 0x1,
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_bsh_left_1(self):
-        instrs = self._parser.parse([
-            "bsh [DWORD t1, DWORD 16, QWORD t2]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t1")) == 0xffffffff,
-            self._translator.make_bitvec(64, self._translator.get_name_curr("t2")) != 0x0000ffffffff0000,
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_bsh_left_2(self):
-        instrs = self._parser.parse([
-            "bsh [DWORD t1, DWORD 16, DWORD t2]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t1")) == 0xffffffff,
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t2")) != 0xffff0000,
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_bsh_left_3(self):
-        instrs = self._parser.parse([
-            "bsh [DWORD t1, DWORD 16, WORD t2]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t1")) == 0xffffffff,
-            self._translator.make_bitvec(16, self._translator.get_name_curr("t2")) != 0x0000,
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_bsh_right_1(self):
-        instrs = self._parser.parse([
-            "bsh [DWORD t1, DWORD -16, QWORD t2]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t1")) == 0xffffffff,
-            self._translator.make_bitvec(64, self._translator.get_name_curr("t2")) != 0x000000000000ffff,
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_bsh_right_2(self):
-        instrs = self._parser.parse([
-            "bsh [DWORD t1, DWORD -16, DWORD t2]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t1")) == 0xffffffff,
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t2")) != 0x0000ffff,
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_bsh_right_3(self):
-        instrs = self._parser.parse([
-            "bsh [DWORD t1, DWORD -16, WORD t2]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t1")) == 0xffffffff,
-            self._translator.make_bitvec(16, self._translator.get_name_curr("t2")) != 0xffff,
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    # Extensions
-    def test_sext_1(self):
-        instrs = self._parser.parse([
-            "sext [WORD 0xffff, EMPTY, DWORD t1]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t1")) != 0xffffffff,
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'unsat')
-
-    def test_sext_2(self):
-        instrs = self._parser.parse([
-            "sext [WORD 0x7fff, EMPTY, DWORD t1]"
-        ])
-
-        # Translate instructions to formulae
-        for instr in instrs:
-            for form in self._translator.translate(instr):
-                self._solver.add(form)
-
-        # Add constraints
-        constraints = [
-            self._translator.make_bitvec(32, self._translator.get_name_curr("t1")) != 0x00007fff,
-        ]
-
-        for constr in constraints:
-            self._solver.add(constr)
-
-        # Assertions
-        self.assertEqual(self._solver.check(), 'unsat')
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = BitVec(32, "z")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+        self._solver.declare_fun("z", z)
+
+        self._solver.add(x * y == z)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+        self._solver.add(x != y)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+        z_val = self._solver.get_value(z)
+
+        self.assertTrue(x_val * y_val == z_val)
+
+    def test_div(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = BitVec(32, "z")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+        self._solver.declare_fun("z", z)
+
+        self._solver.add(x / y == z)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+        self._solver.add(x != y)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+        z_val = self._solver.get_value(z)
+
+        self.assertTrue(x_val / y_val == z_val)
+
+    def test_mod(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = BitVec(32, "z")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+        self._solver.declare_fun("z", z)
+
+        self._solver.add(x % y == z)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+        self._solver.add(x != y)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+        z_val = self._solver.get_value(z)
+
+        self.assertTrue(x_val % y_val == z_val)
+
+    # TODO Fix
+    # def test_neg(self):
+    #     x = BitVec(32, "x")
+    #     z = BitVec(32, "z")
+
+    #     self._solver.declare_fun("x", x)
+    #     self._solver.declare_fun("z", z)
+
+    #     self._solver.add(-x == z)
+
+    #     # Add constraints to avoid trivial solutions.
+    #     self._solver.add(x > 1)
+
+    #     self.assertEqual(self._solver.check(), "sat")
+
+    #     x_val = self._solver.get_value(x)
+    #     z_val = self._solver.get_value(z)
+
+    #     # print(x_val, z_val)
+
+    #     self.assertTrue(-x_val == z_val)
+
+    # Bitwise operations.
+    def test_and(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = BitVec(32, "z")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+        self._solver.declare_fun("z", z)
+
+        self._solver.add(x & y == z)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+        self._solver.add(x != y)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+        z_val = self._solver.get_value(z)
+
+        self.assertTrue(x_val & y_val == z_val)
+
+    def test_xor(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = BitVec(32, "z")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+        self._solver.declare_fun("z", z)
+
+        self._solver.add(x ^ y == z)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+        self._solver.add(x != y)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+        z_val = self._solver.get_value(z)
+
+        self.assertTrue(x_val ^ y_val == z_val)
+
+    def test_or(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = BitVec(32, "z")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+        self._solver.declare_fun("z", z)
+
+        self._solver.add(x | y == z)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+        self._solver.add(x != y)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+        z_val = self._solver.get_value(z)
+
+        self.assertTrue(x_val | y_val == z_val)
+
+    # TODO Fix para CVC4Solver.
+    def test_lshift(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = BitVec(32, "z")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+        self._solver.declare_fun("z", z)
+
+        self._solver.add(x << y == z)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+        self._solver.add(x != y)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+        z_val = self._solver.get_value(z)
+
+        self.assertTrue(x_val << y_val == z_val)
+
+    def test_rshift(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = BitVec(32, "z")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+        self._solver.declare_fun("z", z)
+
+        self._solver.add(x >> y == z)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+        self._solver.add(x != y)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+        z_val = self._solver.get_value(z)
+
+        self.assertTrue(x_val >> y_val == z_val)
+
+    # TODO Fix
+    # def test_invert(self):
+    #     x = BitVec(32, "x")
+    #     y = BitVec(32, "y")
+    #     z = BitVec(32, "z")
+
+    #     self._solver.declare_fun("x", x)
+    #     self._solver.declare_fun("y", y)
+    #     self._solver.declare_fun("z", z)
+
+    #     self._solver.add(~x == z)
+
+    #     # Add constraints to avoid trivial solutions.
+    #     self._solver.add(x > 1)
+
+    #     self.assertEqual(self._solver.check(), "sat")
+
+    #     x_val = self._solver.get_value(x)
+    #     y_val = self._solver.get_value(y)
+    #     z_val = self._solver.get_value(z)
+
+    #     print(x_val, z_val)
+
+    #     self.assertTrue(~x_val == z_val)
+
+    # Comparison operators (signed)
+    def test_lt(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+
+        self._solver.add(x < y)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+
+        self.assertTrue(x_val < y_val)
+
+    def test_le(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+
+        self._solver.add(x <= y)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+
+        self.assertTrue(x_val <= y_val)
+
+    def test_eq(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+
+        self._solver.add(x == y)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+
+        self.assertTrue(x_val == y_val)
+
+    def test_neq(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+
+        self._solver.add(x != y)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+
+        self.assertTrue(x_val != y_val)
+
+    def test_gt(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+
+        self._solver.add(x > y)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+
+        self.assertTrue(x_val > y_val)
+
+    def test_ge(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+
+        self._solver.add(x >= y)
+
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
+        self._solver.add(y > 1)
+
+        self.assertEqual(self._solver.check(), "sat")
+
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+
+        self.assertTrue(x_val >= y_val)
+
+    # Comparison operators (unsigned)
+    def test_ult(self):
+        # TODO Implement.
+        pass
+
+    def test_ule(self):
+        # TODO Implement.
+        pass
+
+    def test_ugt(self):
+        # TODO Implement.
+        pass
+
+    def test_uge(self):
+        # TODO Implement.
+        pass
+
+    # Arithmetic operators (unsigned)
+    def test_udiv(self):
+        # TODO Implement.
+        pass
+
+    def test_urem(self):
+        # TODO Implement.
+        pass
 
 
 def main():
