@@ -24,13 +24,11 @@
 
 import unittest
 
-from barf.analysis.basicblock import CFGRecoverer
-from barf.analysis.basicblock import RecursiveDescent
+from barf.analysis.codeanalyzer import CodeAnalyzer
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch.x86.x86base import X86ArchitectureInformation
-from barf.arch.x86.x86disassembler import X86Disassembler
+from barf.arch.x86.x86parser import X86Parser
 from barf.arch.x86.x86translator import X86Translator
-from barf.core.bi import Memory
 from barf.core.smt.smtsolver import Z3Solver as SmtSolver
 # from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
@@ -40,78 +38,114 @@ class CodeAnalyzerTests(unittest.TestCase):
 
     def setUp(self):
         self._arch_info = X86ArchitectureInformation(ARCH_X86_MODE_32)
-        self._operand_size = self._arch_info.operand_size
-        self._memory = Memory()
+
         self._smt_solver = SmtSolver()
-        self._smt_translator = SmtTranslator(self._smt_solver, self._operand_size)
+
+        self._smt_translator = SmtTranslator(self._smt_solver, self._arch_info.address_size)
         self._smt_translator.set_arch_alias_mapper(self._arch_info.alias_mapper)
         self._smt_translator.set_arch_registers_size(self._arch_info.registers_size)
-        self._disasm = X86Disassembler()
-        self._ir_translator = X86Translator()
-        self._bb_builder = CFGRecoverer(RecursiveDescent(self._disasm, self._memory, self._ir_translator, self._arch_info))
 
-    # def test_check_path_satisfiability(self):
-    #     # binary : stack1
-    #     bin_start_address, bin_end_address = 0x08048ec0, 0x8048f02
+        self._x86_parser = X86Parser(architecture_mode=ARCH_X86_MODE_32)
 
-    #     binary  = "\x55"                          # 0x08048ec0 : push   ebp
-    #     binary += "\x89\xe5"                      # 0x08048ec1 : mov    ebp,esp
-    #     binary += "\x83\xec\x60"                  # 0x08048ec3 : sub    esp,0x60
-    #     binary += "\x8d\x45\xfc"                  # 0x08048ec6 : lea    eax,[ebp-0x4]
-    #     binary += "\x89\x44\x24\x08"              # 0x08048ec9 : mov    DWORD PTR [esp+0x8],eax
-    #     binary += "\x8d\x45\xac"                  # 0x08048ecd : lea    eax,[ebp-0x54]
-    #     binary += "\x89\x44\x24\x04"              # 0x08048ed0 : mov    DWORD PTR [esp+0x4],eax
-    #     binary += "\xc7\x04\x24\xa8\x5a\x0c\x08"  # 0x08048ed4 : mov    DWORD PTR [esp],0x80c5aa8
-    #     binary += "\xe8\xa0\x0a\x00\x00"          # 0x08048edb : call   8049980 <_IO_printf>
-    #     binary += "\x8d\x45\xac"                  # 0x08048ee0 : lea    eax,[ebp-0x54]
-    #     binary += "\x89\x04\x24"                  # 0x08048ee3 : mov    DWORD PTR [esp],eax
-    #     binary += "\xe8\xc5\x0a\x00\x00"          # 0x08048ee6 : call   80499b0 <_IO_gets>
-    #     binary += "\x8b\x45\xfc"                  # 0x08048eeb : mov    eax,DWORD PTR [ebp-0x4]
-    #     binary += "\x3d\x44\x43\x42\x41"          # 0x08048eee : cmp    eax,0x41424344
-    #     binary += "\x75\x0c"                      # 0x08048ef3 : jne    8048f01 <main+0x41>
-    #     binary += "\xc7\x04\x24\xc0\x5a\x0c\x08"  # 0x08048ef5 : mov    DWORD PTR [esp],0x80c5ac0
-    #     binary += "\xe8\x4f\x0c\x00\x00"          # 0x08048efc : call   8049b50 <_IO_puts>
-    #     binary += "\xc9"                          # 0x08048f01 : leave
-    #     binary += "\xc3"                          # 0x08048f02 : ret
+        self._x86_translator = X86Translator(architecture_mode=ARCH_X86_MODE_32)
 
-    #     self._memory.add_vma(bin_start_address, bytearray(binary))
+        self._code_analyzer = CodeAnalyzer(self._smt_solver, self._smt_translator, self._arch_info)
 
-    #     start = 0x08048ec0
-    #     end = 0x08048f01
+    def test_add_reg_reg(self):
+        # Parser x86 instructions.
+        asm_instrs = [self._x86_parser.parse(i) for i in [
+            "add eax, ebx",
+        ]]
 
-    #     registers = {
-    #         "eax": GenericRegister("eax", 32, 0xffffd0ec),
-    #         "ecx": GenericRegister("ecx", 32, 0x00000001),
-    #         "edx": GenericRegister("edx", 32, 0xffffd0e4),
-    #         "ebx": GenericRegister("ebx", 32, 0x00000000),
-    #         "esp": GenericRegister("esp", 32, 0xffffd05c),
-    #         "ebp": GenericRegister("ebp", 32, 0x08049580),
-    #         "esi": GenericRegister("esi", 32, 0x00000000),
-    #         "edi": GenericRegister("edi", 32, 0x08049620),
-    #         "eip": GenericRegister("eip", 32, 0x08048ec0),
-    #     }
+        # Add REIL instruction to the analyzer.
+        for reil_instr in self.__asm_to_reil(asm_instrs):
+            self._code_analyzer.add_instruction(reil_instr)
 
-    #     flags = {
-    #         "af": GenericFlag("af", 0x0),
-    #         "cf": GenericFlag("cf", 0x0),
-    #         "of": GenericFlag("of", 0x0),
-    #         "pf": GenericFlag("pf", 0x1),
-    #         "sf": GenericFlag("sf", 0x0),
-    #         "zf": GenericFlag("zf", 0x1),
-    #     }
+        # Add constraints.
+        eax_pre = self._code_analyzer.get_register_expr("eax", mode="pre")
+        eax_post = self._code_analyzer.get_register_expr("eax", mode="post")
 
-    #     bb_list, calls = self._bb_builder.build(bin_start_address, bin_end_address)
+        constraints = [
+            eax_pre != 42,      # Pre-condition
+            eax_post == 42,     # Post-condition
+        ]
 
-    #     bb_graph = ControlFlowGraph(bb_list)
+        for constr in constraints:
+            self._code_analyzer.add_constraint(constr)
 
-    #     code_analyzer = CodeAnalyzer(self._smt_solver, self._smt_translator, self._arch_info)
+        # Assertions.
+        self.assertEqual(self._code_analyzer.check(), 'sat')
+        self.assertNotEqual(self._code_analyzer.get_expr_value(eax_pre), 42)
+        self.assertEqual(self._code_analyzer.get_expr_value(eax_post), 42)
 
-    #     code_analyzer.set_context(GenericContext(registers, flags, {}))
+    def test_add_reg_mem(self):
+        # Parser x86 instructions.
+        asm_instrs = [self._x86_parser.parse(i) for i in [
+            "add eax, [ebx + 0x1000]",
+        ]]
 
-    #     bb_paths = list(bb_graph.all_simple_bb_paths(start, end))
+        # Add REIL instruction to the analyzer.
+        for reil_instr in self.__asm_to_reil(asm_instrs):
+            self._code_analyzer.add_instruction(reil_instr)
 
-    #     self.assertTrue(code_analyzer.check_path_satisfiability(bb_paths[0], start))
-    #     self.assertTrue(code_analyzer.check_path_satisfiability(bb_paths[1], start))
+        # Add constraints.
+        eax_pre = self._code_analyzer.get_register_expr("eax", mode="pre")
+        eax_post = self._code_analyzer.get_register_expr("eax", mode="post")
+
+        constraints = [
+            eax_pre != 42,      # Pre-condition
+            eax_post == 42,     # Post-condition
+        ]
+
+        for constr in constraints:
+            self._code_analyzer.add_constraint(constr)
+
+        # Assertions
+        self.assertEqual(self._code_analyzer.check(), 'sat')
+        self.assertNotEqual(self._code_analyzer.get_expr_value(eax_pre), 42)
+        self.assertEqual(self._code_analyzer.get_expr_value(eax_post), 42)
+
+    def test_add_mem_reg(self):
+        # Parser x86 instructions.
+        asm_instrs = [self._x86_parser.parse(i) for i in [
+            "add [eax + 0x1000], ebx",
+        ]]
+
+        # Add REIL instruction to the analyzer.
+        for reil_instr in self.__asm_to_reil(asm_instrs):
+            self._code_analyzer.add_instruction(reil_instr)
+
+        # Add constraints.
+        eax_pre = self._code_analyzer.get_register_expr("eax", mode="pre")
+
+        mem_pre = self._code_analyzer.get_memory(mode="pre")
+        mem_post = self._code_analyzer.get_memory(mode="post")
+
+        constraints = [
+            mem_pre[eax_pre + 0x1000] != 42,  # Pre-condition
+            mem_post[eax_pre + 0x1000] == 42,   # Post-condition
+        ]
+
+        for constr in constraints:
+            self._code_analyzer.add_constraint(constr)
+
+        # Assertions.
+        self.assertEqual(self._code_analyzer.check(), 'sat')
+        self.assertNotEqual(self._code_analyzer.get_expr_value(mem_pre[eax_pre + 0x1000]), 42)
+        self.assertEqual(self._code_analyzer.get_expr_value(mem_post[eax_pre + 0x1000]), 42)
+
+    def __asm_to_reil(self, instructions):
+        # Set address for each instruction.
+        for addr, asm_instr in enumerate(instructions):
+            asm_instr.address = addr
+
+        # Translate to REIL instructions.
+        reil_instrs = [self._x86_translator.translate(i) for i in instructions]
+
+        # Flatten list and return
+        reil_instrs = [instr for instrs in reil_instrs for instr in instrs]
+
+        return reil_instrs
 
 
 def main():
