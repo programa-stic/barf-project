@@ -9,8 +9,10 @@ branches:
   only:
     - master
 
+sudo: required
+
 install:
-  - apt-get install nasm
+  - sudo apt-get install nasm
   - pip install pyasmjit
   - pip install z3-solver
   - pip install nose
