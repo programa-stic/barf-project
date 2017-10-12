@@ -1,0 +1,17 @@
+os: linux
+
+language: python
+
+python:
+  - "2.6"
+  - "2.7"
+
+branches:
+  only:
+    - master
+
+install:
+  - pip install nose
+  - pip install .
+
+script: nosetests
