@@ -11,7 +11,7 @@ branches:
     - master
 
 install:
-  - sudo apt-get install z3
+  - sudo apt-get install python-z3
   - pip install nose
   - pip install .
 
