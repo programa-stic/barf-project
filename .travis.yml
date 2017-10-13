@@ -18,4 +18,8 @@ install:
   - pip install nose
   - pip install .
 
-script: nosetests
+script:
+  - nosetests --cover-erase --with-coverage --cover-package=barf --cover-tests
+
+after_success:
+  - coverage report
