@@ -4,10 +4,32 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- Add support for Travis CI.
+- Add tests for the `smt` package.
+- Add svg ouput format for `BARFcfg` and `BARFcg` tools.
+- Add `Dockerfile`.
+- Add support for x86 instructions: `LAHF`, `XADD`.
+- Add support for x86 sse instructions: `LDDQU`, `MOVAPS`, `MOVSD`.
+
 ### Changed
+- Overall code quality improvement in most modules.
+- Revamp `smt` package.
+- Refactor `codeanalyzer` module.
+- Improve code quality of `basicblock` module.
+- Restructure binary sample directory.
+- Load all sections of a binary into memory by default.
+- Update `ARM` architecural information.
+- Refactor `emulate` method to support `x86_64`, `ARM` and `Thumb` code.
+
 ### Deprecated
+
 ### Fixed
+- Fix Capstone installation issues.
+- Various fixes in the `smt` package.
+
 ### Removed
+- Remove `smtlibv2.py` module dependency from `PySymEmu`.
+
 ### Security
 
 ## [0.4.0] - 2017-04-10
