@@ -16,6 +16,7 @@ install:
   - pip install pyasmjit
   - pip install z3-solver
   - pip install nose
+  - pip install coverage
   - pip install .
 
 script:
