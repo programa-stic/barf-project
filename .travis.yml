@@ -32,7 +32,7 @@ script:
   - nosetests --cover-erase --with-coverage --cover-package=barf --cover-tests
 
 after_script:
-  - ./cc-test-reporter --file ./.coverage
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 
 after_success:
-  - coverage report
+  - coverage xml
