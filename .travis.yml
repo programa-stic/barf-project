@@ -1,3 +1,7 @@
+env:
+  global:
+    - CC_TEST_REPORTER_ID=acfad14368f768950c73db21da3f21c4cb0f7056ab017a014c2ee636a11627e9
+
 os: linux
 
 language: python
@@ -19,8 +23,16 @@ install:
   - pip install coverage
   - pip install .
 
+before_script:
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - ./cc-test-reporter before-build
+
 script:
   - nosetests --cover-erase --with-coverage --cover-package=barf --cover-tests
+
+after_script:
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 
 after_success:
   - coverage report
