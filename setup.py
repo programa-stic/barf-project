@@ -36,10 +36,14 @@ setup(
     url              = 'http://github.com/programa-stic/barf-project',
     scripts          = [
         'scripts/barf-install-solvers.sh',
-        'tools/cfg/BARFcfg',
-        'tools/cg/BARFcg',
-        'tools/gadgets/BARFgadgets',
     ],
+    entry_points = {
+        "console_scripts": [
+            "BARFcfg = barf.tools.cfg.cfg:main",
+            "BARFcg = barf.tools.cg.cg:main",
+            "BARFgadgets = barf.tools.gadgets.gadgets:main",
+        ]
+    }    ,
     version          = __version__,
     zip_safe         = False
 )
