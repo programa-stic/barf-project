@@ -298,7 +298,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
 
     def instr_is_branch(self, instruction):
         branch_instr = [
-            "b", "bx", "bne", "beq", "bpl", "ble", "bcs", "bhs", "blt", "bge",
+            "b", "bal", "bx", "bne", "beq", "bpl", "ble", "bcs", "bhs", "blt", "bge",
             "bhi", "blo", "bls"
         ]
 
