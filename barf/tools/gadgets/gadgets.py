@@ -38,6 +38,7 @@ from pygments.lexers.asm import NasmLexer
 from barf.analysis.gadget.gadget import GadgetType
 from barf.barf import BARF
 
+
 def filter_duplicates(candidates):
 
     gadgets = {}
@@ -49,6 +50,7 @@ def filter_duplicates(candidates):
             gadgets[asm_instrs] = cand
 
     return [cand for asm_instrs, cand in gadgets.items()]
+
 
 def sort_gadgets_by_type(gadgets):
     # Sort gadgets by type.
@@ -62,6 +64,7 @@ def sort_gadgets_by_type(gadgets):
 
     return gadgets_by_type
 
+
 def sort_gadgets_by_address(gadgets):
     # Sort gadgets by address.
     gadgets_by_address = {}
@@ -73,6 +76,7 @@ def sort_gadgets_by_address(gadgets):
         gadgets_by_address[gadget.address] += [gadget]
 
     return gadgets_by_address
+
 
 def sort_gadgets_by_depth(gadgets):
     # Sort gadgets by depth (instructions number).
@@ -88,6 +92,7 @@ def sort_gadgets_by_depth(gadgets):
 
     return gadgets_by_depth
 
+
 def print_gadgets_raw(gadgets, f, sort_mode, color, title, show_binary):
     # Print title
     print(title,            file=f)
@@ -95,8 +100,8 @@ def print_gadgets_raw(gadgets, f, sort_mode, color, title, show_binary):
     print(" " * len(title), file=f)
 
     sort_methods = {
-        'addr'  : sort_gadgets_by_address,
-        'depth' : sort_gadgets_by_depth,
+        'addr': sort_gadgets_by_address,
+        'depth': sort_gadgets_by_depth,
     }
 
     gadgets_sorted = sort_methods[sort_mode](gadgets)
@@ -129,14 +134,15 @@ def print_gadgets_raw(gadgets, f, sort_mode, color, title, show_binary):
         print("", file=f)
 
     # Print summary.
-    summary_item_fmt  = "[+] {name} : {value}"
+    summary_item_fmt = "[+] {name} : {value}"
     summary_ruler_fmt = "{0}"
 
-    summary_item  = summary_item_fmt.format(name=title, value=len(gadgets))
+    summary_item = summary_item_fmt.format(name=title, value=len(gadgets))
     summary_ruler = summary_ruler_fmt.format(" " * len(summary_item))
 
     print(summary_item,  file=f)
     print(summary_ruler, file=f)
+
 
 def print_gadgets_typed(gadgets, f, address_size, title):
     # Print title.
@@ -153,7 +159,7 @@ def print_gadgets_typed(gadgets, f, address_size, title):
         lhands = []
         rhands = []
         instrs = []
-        mods   = []
+        mods = []
 
         # Prepare gadgets for printing.
         for gadget in gadget_list:
@@ -163,38 +169,38 @@ def print_gadgets_typed(gadgets, f, address_size, title):
             if gadget.address not in gadgets_desc:
                 gadgets_desc[gadget.address] = []
 
-            asm_instrs     = [str(dinstr.asm_instr) for dinstr in gadget.instrs]
+            asm_instrs = [str(dinstr.asm_instr) for dinstr in gadget.instrs]
             asm_instrs_str = " ; ".join(asm_instrs).replace("\n", "")
 
             gadgets_desc[gadget.address] += [{
-                'addr'  : gadget.address,
-                'lhand' : lhand,
-                'rhand' : rhand,
-                'mods'  : mod_regs_str,
-                'instrs' : asm_instrs_str,
+                'addr': gadget.address,
+                'lhand': lhand,
+                'rhand': rhand,
+                'mods': mod_regs_str,
+                'instrs': asm_instrs_str,
             }]
 
             lhands += [len(lhand)]
             rhands += [len(rhand)]
-            mods   += [len(mod_regs_str)]
+            mods += [len(mod_regs_str)]
             instrs += [len(asm_instrs_str)]
 
         # Compute columns width.
-        lhand_max  = max(lhands)
-        rhand_max  = max(rhands)
-        mods_max   = max(mods)
+        lhand_max = max(lhands)
+        rhand_max = max(rhands)
+        mods_max = max(mods)
         instrs_max = max(instrs)
 
         # Tile and table formats.
-        table_title_fmt  = "# {0} ({1} gadget{2})"
-        table_ruler_fmt  = "{0}"
+        table_title_fmt = "# {0} ({1} gadget{2})"
+        table_ruler_fmt = "{0}"
         table_header_fmt = " {0:^%ds} | {1:^%ds} | {2:^%ds} | {3:^%ds} " % (address_size / 4 + 2, lhand_max + rhand_max + 4, mods_max, instrs_max)
         table_footer_fmt = "{0}"
-        table_row_fmt    = " 0x{addr:0%dx} | {lhand:>%ds} <- {rhand:<%ds} | {mods:<%ds} | {instrs} " % (address_size / 4, lhand_max, rhand_max, max(mods_max, len("Clobbered Registers")))
+        table_row_fmt = " 0x{addr:0%dx} | {lhand:>%ds} <- {rhand:<%ds} | {mods:<%ds} | {instrs} " % (address_size / 4, lhand_max, rhand_max, max(mods_max, len("Clobbered Registers")))
 
-        table_title  = table_title_fmt.format(GadgetType.to_string(ty), len(gadget_list), "" if len(gadget_list) == 1 else "s")
+        table_title = table_title_fmt.format(GadgetType.to_string(ty), len(gadget_list), "" if len(gadget_list) == 1 else "s")
         table_header = table_header_fmt.format("Address", "Operation", "Clobbered Registers", "Instructions")
-        table_ruler  = table_ruler_fmt.format("-" * len(table_header))
+        table_ruler = table_ruler_fmt.format("-" * len(table_header))
         table_footer = table_footer_fmt.format(" " * len(table_header))
 
         print(table_title,        file=f)
@@ -210,14 +216,15 @@ def print_gadgets_typed(gadgets, f, address_size, title):
         print(table_footer, file=f)
 
     # Print summary.
-    summary_item_fmt  = "[+] {name} : {value}"
+    summary_item_fmt = "[+] {name} : {value}"
     summary_ruler_fmt = "{0}"
 
-    summary_item  = summary_item_fmt.format(name=title, value=len(gadgets))
+    summary_item = summary_item_fmt.format(name=title, value=len(gadgets))
     summary_ruler = summary_ruler_fmt.format(" " * len(summary_item))
 
     print(summary_item,  file=f)
     print(summary_ruler, file=f)
+
 
 def init_parser():
 
@@ -316,10 +323,11 @@ def init_parser():
 
     return parser
 
-def do_find(bin, args):
+
+def do_find(b, args):
     start = time.time()
 
-    candidates = bin.gadget_finder.find(bin.binary.ea_start, bin.binary.ea_end, byte_depth=args.bdepth, instrs_depth=args.idepth)
+    candidates = b.gadget_finder.find(b.binary.ea_start, b.binary.ea_end, byte_depth=args.bdepth, instrs_depth=args.idepth)
 
     end = time.time()
     find_time = end - start
@@ -333,13 +341,14 @@ def do_find(bin, args):
 
     return candidates, find_time
 
-def do_classify(bin, gadgets, args):
+
+def do_classify(b, gadgets, args):
     start = time.time()
 
     classified = []
 
     for gadget in gadgets:
-        classified += bin.gadget_classifier.classify(gadget)
+        classified += b.gadget_classifier.classify(gadget)
 
     end = time.time()
 
@@ -347,14 +356,15 @@ def do_classify(bin, gadgets, args):
 
     return classified, classify_time
 
-def do_verify(bin, classified, args):
+
+def do_verify(b, classified, args):
     start = time.time()
 
     verified = []
     invalid = []
 
     for gadget in classified:
-        valid = bin.gadget_verifier.verify(gadget)
+        valid = b.gadget_verifier.verify(gadget)
 
         if valid:
             gadget.is_valid = True
@@ -407,8 +417,8 @@ def do_verify(bin, classified, args):
 
     return verified, verify_time, discarded, invalid
 
-def main():
 
+def main():
     parser = init_parser()
 
     args = parser.parse_args()
@@ -416,8 +426,6 @@ def main():
     find_time = 0.0
     classify_time = 0.0
     verify_time = 0.0
-
-    address_size = None
 
     output_fd = sys.stdout
     filename = os.path.abspath(args.filename)
@@ -471,13 +479,13 @@ def main():
 
             # print non-verified
             candidates_by_addr = sort_gadgets_by_address(candidates)
-            verified_by_addr   = sort_gadgets_by_address(verified)
-            discarded_by_addr   = sort_gadgets_by_address(discarded)
+            verified_by_addr = sort_gadgets_by_address(verified)
+            discarded_by_addr = sort_gadgets_by_address(discarded)
 
             diff = []
 
             for addr in candidates_by_addr.keys():
-                if not addr in verified_by_addr and not addr in discarded_by_addr:
+                if addr not in verified_by_addr and addr not in discarded_by_addr:
                     diff += candidates_by_addr[addr]
 
             print_gadgets_raw(diff, output_fd, args.sort, args.color, "Non-verified Gadgets", args.show_binary)
@@ -499,7 +507,7 @@ def main():
     if args.summary:
         summary_fd = open(args.summary, "a")
 
-        fmt  = "{gadgets:d} {classify:d} {verify:d} {size:d} "   # basic stuff
+        fmt = "{gadgets:d} {classify:d} {verify:d} {size:d} "    # basic stuff
         fmt += "{ftime:.3f} {ctime:.3f} {vtime:.3f} "            # time
         fmt += "{no_operation} {jump} {move_register} {load_constant} {arithmetic} {load_memory} {store_memory} {arithmetic_load} {arithmetic_store} {undefined}"
 
@@ -543,6 +551,7 @@ def main():
     # Close output file.
     if args.output:
         output_fd.close()
+
 
 if __name__ == "__main__":
 

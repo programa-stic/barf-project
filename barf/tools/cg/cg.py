@@ -41,6 +41,7 @@ def print_recovery_status(address, name, size):
 
     print("    Processing {} @ {:#x} ({})".format(name, address, size))
 
+
 def load_symbols_from_file(filename):
     symbols_by_addr = {}
 
@@ -65,6 +66,7 @@ def load_symbols_from_file(filename):
 
     return symbols_by_addr
 
+
 def recover_cfg_some(barf, addresses, symbols_by_addr):
     cfgs = []
 
@@ -74,6 +76,7 @@ def recover_cfg_some(barf, addresses, symbols_by_addr):
         cfgs.append(cfg)
 
     return cfgs
+
 
 def recover_cfg_all(barf, symbols_by_addr):
     if len(symbols_by_addr) > 0:
@@ -89,11 +92,13 @@ def recover_cfg_all(barf, symbols_by_addr):
 
     return cfgs
 
+
 def create_output_dir(name):
     if not os.path.exists(name):
         os.makedirs(name)
 
     return name
+
 
 def init_parser():
 
@@ -138,6 +143,7 @@ def init_parser():
         help="Recover specified functions by address (comma separated).")
 
     return parser
+
 
 def main():
 

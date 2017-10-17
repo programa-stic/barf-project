@@ -40,6 +40,7 @@ def print_recovery_status(address, name, size):
 
     print("    Processing {} @ {:#x} ({})".format(name, address, size))
 
+
 def load_symbols_from_file(filename):
     symbols_by_addr = {}
 
@@ -64,6 +65,7 @@ def load_symbols_from_file(filename):
 
     return symbols_by_addr
 
+
 def recover_cfg_some(barf, addresses, symbols_by_addr):
     cfgs = []
 
@@ -73,6 +75,7 @@ def recover_cfg_some(barf, addresses, symbols_by_addr):
         cfgs.append(cfg)
 
     return cfgs
+
 
 def recover_cfg_all(barf, symbols_by_addr):
     if len(symbols_by_addr) > 0:
@@ -88,12 +91,14 @@ def recover_cfg_all(barf, symbols_by_addr):
 
     return cfgs
 
-def save_cfg_graph(cfg, output_dir, show_reil, format, immediate_format):
+
+def save_cfg_graph(cfg, output_dir, show_reil, fmt, immediate_format):
     options = {
-        "immediate_format" : immediate_format
+        "immediate_format": immediate_format
     }
 
-    cfg.save(output_dir + os.path.sep + cfg.name, print_ir=show_reil, format=format, options=options)
+    cfg.save(output_dir + os.path.sep + cfg.name, print_ir=show_reil, format=fmt, options=options)
+
 
 def save_cfg_text(cfg, output_dir, show_reil, brief):
     fn_name = cfg.name
@@ -118,6 +123,7 @@ def save_cfg_text(cfg, output_dir, show_reil, brief):
                         for reil_instr in dinstr.ir_instrs:
                             print("  {:#x}:{:02x}   {}".format(reil_instr.address >> 0x8, reil_instr.address & 0xFF, reil_instr), file=f)
 
+
 def save_cfgs(cfgs, output_dir, output_format, show_reil, brief, immediate_format):
     for cfg in cfgs:
         if len(cfg.basic_blocks) == 0:
@@ -130,11 +136,13 @@ def save_cfgs(cfgs, output_dir, output_format, show_reil, brief, immediate_forma
         if output_format == "txt":
             save_cfg_text(cfg, output_dir, show_reil, brief)
 
+
 def create_output_dir(name):
     if not os.path.exists(name):
         os.makedirs(name)
 
     return name
+
 
 def init_parser():
 
@@ -204,6 +212,7 @@ def init_parser():
         help="Recover specified functions by address (comma separated).")
 
     return parser
+
 
 def main():
 
