@@ -389,6 +389,14 @@ class ReilCpu(object):
         self.__regs = value
 
     @property
+    def memory(self):
+        return self.__mem
+
+    @memory.setter
+    def memory(self, value):
+        self.__mem = value
+
+    @property
     def read_registers(self):
         return self.__regs_read
 
