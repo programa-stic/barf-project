@@ -206,7 +206,6 @@ doc/        Documentation.
 examples/   Basic example scripts that show various functionalities.
 scripts/    Installation scripts.
 tests/      BARF package tests.
-tools/      Tools build upon BARF.
 ```
 
 ### Notes
