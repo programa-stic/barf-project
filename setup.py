@@ -34,9 +34,6 @@ setup(
     ],
     packages         = find_packages(exclude=['tests', 'tests.*']),
     url              = 'http://github.com/programa-stic/barf-project',
-    scripts          = [
-        'scripts/barf-install-solvers.sh',
-    ],
     entry_points = {
         "console_scripts": [
             "BARFcfg = barf.tools.cfg.cfg:main",
