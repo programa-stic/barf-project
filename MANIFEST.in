@@ -2,6 +2,6 @@ include CHANGELOG.md
 include LICENSE
 include README.md
 include scripts/barf-install-solvers.sh
-include tools/cfg/README.md
-include tools/cg/README.md
-include tools/gadgets/README.md
+include barf/tools/cfg/README.md
+include barf/tools/cg/README.md
+include barf/tools/gadgets/README.md

@@ -31,6 +31,7 @@ import os
 import sys
 import time
 
+from barf.analysis.basicblock.callgraph import CallGraph
 from barf.barf import BARF
 from barf.core.symbols import load_symbols
 
@@ -39,6 +40,7 @@ def print_recovery_status(address, name, size):
     size = size if size != 0 else "?"
 
     print("    Processing {} @ {:#x} ({})".format(name, address, size))
+
 
 def load_symbols_from_file(filename):
     symbols_by_addr = {}
@@ -64,6 +66,7 @@ def load_symbols_from_file(filename):
 
     return symbols_by_addr
 
+
 def recover_cfg_some(barf, addresses, symbols_by_addr):
     cfgs = []
 
@@ -73,6 +76,7 @@ def recover_cfg_some(barf, addresses, symbols_by_addr):
         cfgs.append(cfg)
 
     return cfgs
+
 
 def recover_cfg_all(barf, symbols_by_addr):
     if len(symbols_by_addr) > 0:
@@ -88,47 +92,6 @@ def recover_cfg_all(barf, symbols_by_addr):
 
     return cfgs
 
-def save_cfg_graph(cfg, output_dir, show_reil, format, immediate_format):
-    options = {
-        "immediate_format" : immediate_format
-    }
-
-    cfg.save(output_dir + os.path.sep + cfg.name, print_ir=show_reil, format=format, options=options)
-
-def save_cfg_text(cfg, output_dir, show_reil, brief):
-    fn_name = cfg.name
-    fn_start = cfg.start_address
-    fn_end = cfg.end_address
-
-    with open(output_dir + os.path.sep + fn_name + ".txt", "w") as f:
-        print("Function : {} [{:#x} - {:#x}]".format(fn_name, fn_start, fn_end), file=f)
-
-        for bb in cfg.basic_blocks:
-            branches = ", ".join(sorted(["{:#x}".format(a) for a, _ in bb.branches]))
-
-            print("[basic block] {:#x}:{:#x} -> {}".format(bb.start_address, bb.end_address + 1, branches), file=f)
-
-            if not brief:
-                for dinstr in bb:
-                    asm_instr = dinstr.asm_instr
-
-                    print("  {:#x}    {}".format(asm_instr.address, asm_instr), file=f)
-
-                    if show_reil:
-                        for reil_instr in dinstr.ir_instrs:
-                            print("  {:#x}:{:02x}   {}".format(reil_instr.address >> 0x8, reil_instr.address & 0xFF, reil_instr), file=f)
-
-def save_cfgs(cfgs, output_dir, output_format, show_reil, brief, immediate_format):
-    for cfg in cfgs:
-        if len(cfg.basic_blocks) == 0:
-            print("[*] Ignoring empty CFG: {}".format(cfg.name))
-            continue
-
-        if output_format in ["pdf", "png", "dot", "svg"]:
-            save_cfg_graph(cfg, output_dir, show_reil, output_format, immediate_format)
-
-        if output_format == "txt":
-            save_cfg_text(cfg, output_dir, show_reil, brief)
 
 def create_output_dir(name):
     if not os.path.exists(name):
@@ -136,9 +99,10 @@ def create_output_dir(name):
 
     return name
 
+
 def init_parser():
 
-    description = "Tool for recovering CFG of a binary."
+    description = "Tool for recovering CG of a binary."
 
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -158,38 +122,13 @@ def init_parser():
         "-f", "--format",
         type=str,
         default="dot",
-        choices=["txt", "pdf", "png", "dot", "svg"],
+        choices=["pdf", "png", "dot", "svg"],
         help="Output format.")
 
     parser.add_argument(
         "-t", "--time",
         action="store_true",
         help="Print process time.")
-
-    parser.add_argument(
-        "-d", "--output-dir",
-        type=str,
-        default=".",
-        help="Output directory.")
-
-    parser.add_argument(
-        "-b", "--brief",
-        default=False,
-        action="store_true",
-        help="Brief output.")
-
-    parser.add_argument(
-        "--show-reil",
-        default=False,
-        action="store_true",
-        help="Show REIL translation.")
-
-    parser.add_argument(
-        "--immediate-format",
-        type=str,
-        default="hex",
-        choices=["hex", "dec"],
-        help="Output format.")
 
     group = parser.add_mutually_exclusive_group()
 
@@ -204,6 +143,7 @@ def init_parser():
         help="Recover specified functions by address (comma separated).")
 
     return parser
+
 
 def main():
 
@@ -243,8 +183,6 @@ def main():
     # Recover CFGs.
     print("[+] Recovering CFGs...")
 
-    output_dir = create_output_dir(args.output_dir + os.path.sep + filename.split(os.path.sep)[-1] + "_cfg")
-
     if args.recover_all:
         cfgs = recover_cfg_all(barf, symbols_by_addr)
 
@@ -255,10 +193,20 @@ def main():
 
     print("[+] Number of CFGs recovered: {:d}".format(len(cfgs)))
 
-    # Saving CFGs to files.
-    print("[+] Saving CFGs...")
+    # Recover CG.
+    print("[+] Recovering program CG...")
 
-    save_cfgs(cfgs, output_dir, args.format, args.show_reil, args.brief, args.immediate_format)
+    cfgs_filtered = []
+    for cfg in cfgs:
+        if len(cfg.basic_blocks) == 0:
+            print("[*] Ignoring empty CFG: {}".format(cfg.name))
+            continue
+
+        cfgs_filtered.append(cfg)
+
+    cg = CallGraph(cfgs_filtered)
+
+    cg.save(filename.split(os.path.sep)[-1] + "_cg", format=args.format)
 
     process_end = time.time()
 

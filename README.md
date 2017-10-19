@@ -206,7 +206,6 @@ doc/        Documentation.
 examples/   Basic example scripts that show various functionalities.
 scripts/    Installation scripts.
 tests/      BARF package tests.
-tools/      Tools build upon BARF.
 ```
 
 ### Notes
@@ -267,7 +266,7 @@ optional arguments:
   -r {8,16,32,64}       Filter verified gadgets by operands register size.
 ```
 
-For more information, see [README](./tools/gadgets/README.md).
+For more information, see [README](./barf/tools/gadgets/README.md).
 
 ### BARFcfg
 
@@ -304,7 +303,7 @@ optional arguments:
                         separated).
 ```
 
-For more information, see [README](./tools/cfg/README.md).
+For more information, see [README](./barf/tools/cfg/README.md).
 
 ### BARFcg
 
@@ -333,7 +332,7 @@ optional arguments:
                         separated).
 ```
 
-For more information, see [README](./tools/cg/README.md).
+For more information, see [README](./barf/tools/cg/README.md).
 
 ## PyAsmJIT
 
