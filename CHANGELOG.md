@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Add support for x86 sse instructions: `LDDQU`, `MOVAPS`, `MOVSD`.
 
 ### Changed
+- Restructure `tools` directory and move it into `barf` package.
 - Overall code quality improvement in most modules.
 - Revamp `smt` package.
 - Refactor `codeanalyzer` module.
@@ -22,8 +23,10 @@ All notable changes to this project will be documented in this file.
 - Refactor `emulate` method to support `x86_64`, `ARM` and `Thumb` code.
 
 ### Deprecated
+- Remove deprecated `barf-install-solver.sh` script.
 
 ### Fixed
+- Add `BAL` ARM instruction to the list of branch instructions.
 - Fix Capstone installation issues.
 - Various fixes in the `smt` package.
 
