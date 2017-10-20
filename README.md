@@ -1,5 +1,7 @@
 # BARF : Binary Analysis and Reverse engineering Framework
 
+[![Build Status](https://travis-ci.org/programa-stic/barf-project.svg?branch=master)](https://travis-ci.org/programa-stic/barf-project)
+
 The analysis of binary code is a crucial activity in many areas of the computer sciences and software engineering disciplines ranging from software security and program analysis to reverse engineering. Manual binary analysis is a difficult and time-consuming task and there are software tools that seek to automate or assist human analysts. However, most of these tools have several technical and commercial restrictions that limit access and use by a large portion of the academic and practitioner communities. *BARF* is an open source binary analysis framework that aims to support a wide range of binary code analysis tasks that are common in the information security discipline. It is a scriptable platform that supports instruction lifting from multiple architectures, binary translation to an intermediate representation, an extensible framework for code analysis plugins and interoperation with external tools such as debuggers, SMT solvers and instrumentation tools. The framework is designed primarily for human-assisted analysis but it can be fully automated.
 
 The *BARF project* includes *BARF* and related tools and packages. So far the
