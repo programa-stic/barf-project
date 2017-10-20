@@ -60,7 +60,7 @@ $ sudo python setup.py install --user
 #### Notes
 
 * Only one SMT solver is needed in order to work. You may choose between Z3 and CVC4 or install both.
-* To run some tests you need to install PyAsmJIT first.
+* To run some tests you need to install [PyAsmJIT] first: ``sudo pip install pyasmjit``
 * You may need to install [Graphviz]: ``sudo apt-get install graphviz``
 
 ### Quickstart
@@ -71,15 +71,15 @@ This is a very simple example which shows how to open a binary file and print ea
 from barf import BARF
 
 # Open binary file.
-barf = BARF("examples/bin/x86/branch1")
+barf = BARF("examples/samples/bin/branch1.x86")
 
 # Print assembly instruction.
 for addr, asm_instr, reil_instrs in barf.translate():
-    print("0x{addr:08x} {instr}".format(addr=addr, instr=asm_instr))
+    print("{:#x} {}".format(addr, asm_instr))
 
     # Print REIL translation.
     for reil_instr in reil_instrs:
-        print("{indent:11s} {instr}".format(indent="", instr=reil_instr))
+        print("\t{}".format(reil_instr))
 ```
 
 We can also recover the CFG and save it to a ``.dot`` file.
@@ -89,7 +89,7 @@ We can also recover the CFG and save it to a ``.dot`` file.
 cfg = barf.recover_cfg()
 
 # Save CFG to a .dot file.
-cfg.save("branch1_cfg")
+cfg.save("branch1.x86_cfg")
 ```
 
 We can check restrictions on code using a SMT solver. For instance, suppose you have the following code:
@@ -116,7 +116,7 @@ First, we add the instructions to the analyzer component.
 from barf import BARF
 
 # Open ELF file
-barf = BARF("examples/bin/x86/constraint1")
+barf = BARF("examples/samples/bin/constraint1.x86")
 
 # Add instructions to analyze.
 for addr, asm_instr, reil_instrs in barf.translate(0x80483ed, 0x8048401):
@@ -124,51 +124,44 @@ for addr, asm_instr, reil_instrs in barf.translate(0x80483ed, 0x8048401):
         barf.code_analyzer.add_instruction(reil_instr)
 ```
 
-Then, we generate expressions for each variable of interest
+Then, we generate expressions for each variable of interest and add the desired restrictions on them.
 
 ```python
-# Get smt expression for eax and ebp registers
-eap = barf.code_analyzer.get_register_expr("eax")
-ebp = barf.code_analyzer.get_register_expr("ebp")
+ebp = barf.code_analyzer.get_register_expr("ebp", mode="post")
 
-# Get smt expressions for memory locations (each one of 4 bytes)
-a = barf.code_analyzer.get_memory_expr(ebp-0x8, 4)
-b = barf.code_analyzer.get_memory_expr(ebp-0xc, 4)
-c = barf.code_analyzer.get_memory_expr(ebp-0x4, 4)
-```
+# Preconditions: set range for variable a and b
+a = barf.code_analyzer.get_memory_expr(ebp-0x8, 4, mode="pre")
+b = barf.code_analyzer.get_memory_expr(ebp-0xc, 4, mode="pre")
 
-And add the desired restrictions on them.
+for constr in [a >= 2, a <= 100, b >= 2, b <= 100]:
+    barf.code_analyzer.add_constraint(constr)
 
-```python
-# Set range for variables
-barf.code_analyzer.set_preconditions([a >= 2, a <= 100])
-barf.code_analyzer.set_preconditions([b >= 2, b <= 100])
+# Postconditions: set desired value for the result
+c = barf.code_analyzer.get_memory_expr(ebp-0x4, 4, mode="post")
 
-# Set desired value for the result
-barf.code_analyzer.set_postconditions([c == 13])
+for constr in [c >= 26, c <= 28]:
+    barf.code_analyzer.add_constraint(constr)
 ```
 
 Finally, we check is the restrictions we establish can be resolved.
 
 ```python
-# Check satisfiability.
 if barf.code_analyzer.check() == 'sat':
-    print("SAT!")
+    print("[+] Satisfiable! Possible assignments:")
 
-    # Get concrete value for expressions.
-    eax_val = barf.code_analyzer.get_expr_value(eax)
+    # Get concrete value for expressions
     a_val = barf.code_analyzer.get_expr_value(a)
     b_val = barf.code_analyzer.get_expr_value(b)
     c_val = barf.code_analyzer.get_expr_value(c)
 
-    # Print values.
-    print("eax : 0x{0:%08x} ({0})".format(eax_val))
-    print("ebp : 0x{0:%08x} ({0})".format(ebp_val))
-    print("  a : 0x{0:%08x} ({0})".format(a_val))
-    print("  b : 0x{0:%08x} ({0})".format(b_val))
-    print("  c : 0x{0:%08x} ({0})".format(c_val))
+    # Print values
+    print("- a: {0:#010x} ({0})".format(a_val))
+    print("- b: {0:#010x} ({0})".format(b_val))
+    print("- c: {0:#010x} ({0})".format(c_val))
+
+    assert a_val + b_val + 5 == c_val
 else:
-    print("UNSAT!")
+    print("[-] Unsatisfiable!")
 ```
 
 You can see these and more examples in the [examples](./examples) directory.
@@ -181,36 +174,22 @@ The framework is divided in three main components: **core**, **arch** and **anal
 
 This component contains essential modules:
 
-* ``REIL`` : Provides definitions for the REIL language. It, also, implements an *emulator* and a *parser*.
-* ``SMT`` : Provides means to interface with *Z3* SMT solver. Also, it provides functionality to translate REIL instructions to SMT expressions.
-* ``BI`` : The *Binary Interface* module is responsible for loading binary files for processing (it uses [PEFile] and [PyELFTools].)
+* ``REIL``: Provides definitions for the REIL language. It, also, implements an *emulator* and a *parser*.
+* ``SMT``: Provides means to interface with [Z3] and [CVC4] SMT solver. Also, it provides functionality to translate REIL instructions to SMT expressions.
+* ``BI``: The *Binary Interface* module is responsible for loading binary files for processing (it uses [PEFile] and [PyELFTools].)
 
 #### Arch
 
 Each supported architecture is provided as a subcomponent which contains the following modules.
 
-* ``Architecture`` : Describes the architecture, i.e., registers, memory address size.
-* ``Translator`` : Provides translators to REIL for each supported instruction.
-* ``Disassembler`` : Provides disassembling functionalities (it uses Capstone.)
-* ``Parser`` : Transforms instruction in string to object form (provided by the *Instruction* module.)
+* ``Architecture``: Describes the architecture, i.e., registers, memory address size.
+* ``Translator``: Provides translators to REIL for each supported instruction.
+* ``Disassembler``: Provides disassembling functionalities (it uses [Capstone].)
+* ``Parser``: Transforms instruction from string to object form.
 
 #### Analysis
 
-So far this component consists of two modules: *Control-Flow Graph*, *Call Graph* and *Code Analyzer*. The first two, provides functionality for CFG and CG recovery, respectively. The latter, its a high-level interface to the SMT-solver-related functionalities.
-
-### Directory Structure
-
-```
-barf/       Framework's main directory.
-doc/        Documentation.
-examples/   Basic example scripts that show various functionalities.
-scripts/    Installation scripts.
-tests/      BARF package tests.
-```
-
-### Notes
-
-SMT solver interfacing is provided by the file ``core/smt/smtlibv2.py`` taken from [PySymEmu].
+So far this component consists of modules: *Control-Flow Graph*, *Call Graph* and *Code Analyzer*. The first two, provides functionality for CFG and CG recovery, respectively. The latter, its a high-level interface to the SMT solver related functionality.
 
 ## Tools
 
