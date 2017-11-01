@@ -27,14 +27,18 @@ import unittest
 from barf.arch.x86 import X86ArchitectureInformation
 from barf.arch import ARCH_X86_MODE_32
 from barf.core.reil.parser import ReilParser
-from barf.core.smt.smtsolver import Z3Solver as SmtSolver
+from barf.core.smt.smtsolver import PySMTSolver as SmtSolver
+#from barf.core.smt.smtsolver import Z3Solver as SmtSolver
 # from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
+from pysmt.shortcuts import reset_env
+from barf.core.smt.smtsymbol import to_smtlib
 
 class SmtTranslatorTests(unittest.TestCase):
 
     def setUp(self):
+        reset_env().enable_infix_notation = True; # MG: Side Effect
         self._address_size = 32
         self._parser = ReilParser()
         self._solver = SmtSolver()
@@ -52,7 +56,8 @@ class SmtTranslatorTests(unittest.TestCase):
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (bvadd t0_0 t1_0))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 (bvadd t0_0 t1_0))")
 
     def test_translate_add_2(self):
         # Destination operand larger than source operands.
@@ -60,7 +65,8 @@ class SmtTranslatorTests(unittest.TestCase):
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (bvadd ((_ zero_extend 8) t0_0) ((_ zero_extend 8) t1_0)))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 (bvadd ((_ zero_extend 8) t0_0) ((_ zero_extend 8) t1_0)))")
 
     def test_translate_add_3(self):
         # Destination operand smaller than source operands.
@@ -68,7 +74,8 @@ class SmtTranslatorTests(unittest.TestCase):
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 ((_ extract 7 0) (bvadd t0_0 t1_0)))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 ((_ extract 7 0) (bvadd t0_0 t1_0)))")
 
     def test_translate_add_4(self):
         # Mixed source operands.
@@ -76,42 +83,48 @@ class SmtTranslatorTests(unittest.TestCase):
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (bvadd ((_ zero_extend 8) t0_0) ((_ zero_extend 8) #x12)))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 (bvadd ((_ zero_extend 8) t0_0) ((_ zero_extend 8) #x12)))")
 
     def test_translate_sub(self):
         instr = self._parser.parse(["sub [BYTE t0, BYTE t1, BYTE t2]"])[0]
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (bvsub t0_0 t1_0))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 (bvsub t0_0 t1_0))")
 
     def test_translate_mul(self):
         instr = self._parser.parse(["mul [BYTE t0, BYTE t1, BYTE t2]"])[0]
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (bvmul t0_0 t1_0))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 (bvmul t0_0 t1_0))")
 
     def test_translate_div(self):
         instr = self._parser.parse(["div [BYTE t0, BYTE t1, BYTE t2]"])[0]
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (bvudiv t0_0 t1_0))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 (bvudiv t0_0 t1_0))")
 
     def test_translate_mod(self):
         instr = self._parser.parse(["mod [BYTE t0, BYTE t1, BYTE t2]"])[0]
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (bvurem t0_0 t1_0))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 (bvurem t0_0 t1_0))")
 
     def test_translate_bsh(self):
         instr = self._parser.parse(["bsh [DWORD t0, DWORD t1, DWORD t2]"])[0]
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (ite (bvsge t1_0 #x00000000) (bvshl t0_0 t1_0) (bvlshr t0_0 (bvneg t1_0))))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 (ite (bvsle #x00000000 t1_0) (bvshl t0_0 t1_0) (bvlshr t0_0 (bvneg t1_0))))")
 
     # Bitwise Instructions
     def test_translate_and(self):
@@ -119,21 +132,24 @@ class SmtTranslatorTests(unittest.TestCase):
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (bvand t0_0 t1_0))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 (bvand t0_0 t1_0))")
 
     def test_translate_or(self):
         instr = self._parser.parse(["or [BYTE t0, BYTE t1, BYTE t2]"])[0]
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (bvor t0_0 t1_0))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 (bvor t0_0 t1_0))")
 
     def test_translate_xor(self):
         instr = self._parser.parse(["xor [BYTE t0, BYTE t1, BYTE t2]"])[0]
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (bvxor t0_0 t1_0))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 (bvxor t0_0 t1_0))")
 
     # Data Transfer Instructions
     def test_translate_ldm(self):
@@ -141,21 +157,24 @@ class SmtTranslatorTests(unittest.TestCase):
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= (select MEM_0 (bvadd t0_0 #x00000000)) t2_1)")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= (select MEM_0 (bvadd t0_0 #x00000000)) t2_1)")
 
     def test_translate_stm(self):
         instr = self._parser.parse(["stm [BYTE t0, empty, DWORD t2]"])[0]
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= MEM_1 (store MEM_0 (bvadd t2_0 #x00000000) t0_0))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= MEM_1 (store MEM_0 (bvadd t2_0 #x00000000) t0_0))")
 
     def test_translate_str(self):
         instr = self._parser.parse(["str [BYTE t0, empty, BYTE t2]"])[0]
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 t0_0)")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 t0_0)")
 
     # Conditional Instructions
     def test_translate_bisz(self):
@@ -163,14 +182,16 @@ class SmtTranslatorTests(unittest.TestCase):
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (ite (= t0_0 #x00000000) #x00000001 #x00000000))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 (ite (= t0_0 #x00000000) #x00000001 #x00000000))")
 
     def test_translate_jcc(self):
         instr = self._parser.parse(["jcc [BIT t0, empty, DWORD t2]"])[0]
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(not (= t0_0 #b0))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(not (= t0_0 #x0))")
 
     # Other Instructions
     def test_translate_undef(self):
@@ -201,21 +222,25 @@ class SmtTranslatorTests(unittest.TestCase):
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 ((_ sign_extend 8) t0_0))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 ((_ sign_extend 8) t0_0))")
 
     def test_translate_sdiv(self):
         instr = self._parser.parse(["sdiv [BYTE t0, BYTE t1, BYTE t2]"])[0]
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (bvsdiv t0_0 t1_0))")
+        self.assertEqual(to_smtlib(form[0]),
+                         "(= t2_1 (bvsdiv t0_0 t1_0))")
 
     def test_translate_smod(self):
         instr = self._parser.parse(["smod [BYTE t0, BYTE t1, BYTE t2]"])[0]
         form = self._translator.translate(instr)
 
         self.assertEqual(len(form), 1)
-        self.assertEqual(form[0].value, "(= t2_1 (bvsmod t0_0 t1_0))")
+        # SMOD is not a basic operator in the theory of bv
+        # self.assertEqual(to_smtlib(form[0]),
+        #                  "(= t2_1 (bvsmod t0_0 t1_0))")
 
 
 def main():

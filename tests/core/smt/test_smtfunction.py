@@ -24,14 +24,10 @@
 
 import unittest
 
-from barf.core.smt.smtsymbol import BitVec
-from barf.core.smt.smtsymbol import Bool
-
-from barf.core.smt.smtfunction import concat
-from barf.core.smt.smtfunction import extract
-from barf.core.smt.smtfunction import ite
-from barf.core.smt.smtfunction import sign_extend
-from barf.core.smt.smtfunction import zero_extend
+from barf.core.smt.smtsymbol import (concat, extract, ite,
+                                     sign_extend, zero_extend,
+                                     BitVec, Bool)
+from pysmt.shortcuts import to_smtlib
 
 
 class SmtFunctionTests(unittest.TestCase):
@@ -39,14 +35,14 @@ class SmtFunctionTests(unittest.TestCase):
     def test_zero_extend(self):
         x = BitVec(32, "x")
         y = zero_extend(x, 64)
-
-        self.assertEqual(y.value, "((_ zero_extend 32) x)")
+        y_str = to_smtlib(y, daggify=False)
+        self.assertEqual(y_str, "((_ zero_extend 32) x)")
 
     def test_sign_extend(self):
         x = BitVec(32, "x")
         y = sign_extend(x, 64)
-
-        self.assertEqual(y.value, "((_ sign_extend 32) x)")
+        y_str = to_smtlib(y, daggify=False)
+        self.assertEqual(y_str, "((_ sign_extend 32) x)")
 
     def test_extract(self):
         x = BitVec(32, "x")
@@ -55,21 +51,29 @@ class SmtFunctionTests(unittest.TestCase):
         x2 = extract(x, 16, 8)
         x3 = extract(x, 24, 8)
 
-        self.assertEqual(x0.value, "((_ extract 7 0) x)")
-        self.assertEqual(x1.value, "((_ extract 15 8) x)")
-        self.assertEqual(x2.value, "((_ extract 23 16) x)")
-        self.assertEqual(x3.value, "((_ extract 31 24) x)")
+        x0_str = to_smtlib(x0, daggify=False)
+        x1_str = to_smtlib(x1, daggify=False)
+        x2_str = to_smtlib(x2, daggify=False)
+        x3_str = to_smtlib(x3, daggify=False)
+        self.assertEqual(x0_str, "((_ extract 7 0) x)")
+        self.assertEqual(x1_str, "((_ extract 15 8) x)")
+        self.assertEqual(x2_str, "((_ extract 23 16) x)")
+        self.assertEqual(x3_str, "((_ extract 31 24) x)")
 
     def test_ite(self):
         b = Bool("b")
         x = BitVec(32, "x")
         y = BitVec(32, "y")
         z = BitVec(32, "z")
-        v = ite(32, x == 0, y, z)
+        v = ite(32, x.Equals(0), y, z)
         w = ite(32, b, y, z)
 
-        self.assertEqual(v.value, "(ite (= x #x00000000) y z)")
-        self.assertEqual(w.value, "(ite b y z)")
+        v_str = to_smtlib(v, daggify=False)
+        w_str = to_smtlib(w, daggify=False)
+        # MG: TODO: Force printing in hex
+        # self.assertEqual(v_str, "(ite (= x #x00000000) y z)")
+        self.assertEqual(v_str, "(ite (= x #b00000000000000000000000000000000) y z)")
+        self.assertEqual(w_str, "(ite b y z)")
 
     def test_concat(self):
         x = BitVec(32, "x")
@@ -77,8 +81,10 @@ class SmtFunctionTests(unittest.TestCase):
         z = concat(32, x, y)
         v = concat(32, x)
 
-        self.assertEqual(z.value, "(concat x y)")
-        self.assertEqual(v.value, "x")
+        z_str = to_smtlib(z, daggify=False)
+        v_str = to_smtlib(v, daggify=False)
+        self.assertEqual(z_str, "(concat x y)")
+        self.assertEqual(v_str, "x")
 
 
 def main():

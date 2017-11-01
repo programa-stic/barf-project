@@ -22,226 +22,88 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from pysmt.shortcuts import *
+from pysmt.typing import *
+
+from pysmt.smtlib.printers import SmtPrinter
+
+class BarfSmtPrinter(SmtPrinter):
+    def walk_bv_constant(self, formula):
+        # Barf relies on hex printing of BV Const
+        self.write("#x" + formula.bv_str(fmt='x'))
+
+def to_smtlib(formula):
+    # MG: Six is used for compatibility btw python 2 and 3
+    from six.moves import cStringIO
+    buf = cStringIO()
+    p = BarfSmtPrinter(buf).printer(formula)
+    res = buf.getvalue()
+    buf.close()
+    return res
+
+
 
 def _cast_to_bool(value):
     if type(value) is bool:
         value = Bool(str(value).lower())
-
     assert type(value) == Bool
-
     return value
 
 
 def _cast_to_bitvec(value, size):
     if type(value) in (int, long):
         value = Constant(size, value)
-
-    assert type(value) in (Constant, BitVec) and value.size == size
+    assert value.bv_width() == size
 
     return value
 
 
-class Symbol(object):
+def Bool(value):
+    return Symbol(value)
 
-    def __init__(self, value, *children):
-        self._value = str(value) if len(children) == 0 else "({:s} {:s})".format(value, " ".join([str(c) for c in children]))
 
-    @property
-    def value(self):
-        return self._value
+def BitVec(size, value):
+    return Symbol(value, BVType(size))
 
-    def __str__(self):
-        return self._value
 
+def Constant(size, value):
+    return BV(value, size)
 
-class Bool(Symbol):
 
-    def __init__(self, value, *children):
-        super(Bool, self).__init__(value, *children)
+def Array(key_size, value_size, value):
+    return Symbol(value, ArrayType(BVType(key_size), BVType(value_size)))
 
-    @property
-    def declaration(self):
-        return "(declare-fun {} () Bool)".format(self.value)
 
-    # Comparison operators
-    def __eq__(self, other):
-        return Bool("=", self, _cast_to_bool(other))
+def zero_extend(s, size):
+    assert type(size) is int
+    assert size - s.bv_width() >= 0, (size, s.bv_width())
+    if size == s.bv_width():
+        return s
+    return BVZExt(s, size - s.bv_width())
 
-    def __ne__(self, other):
-        return Bool("not", self == other)
 
-    # Logical operators
-    def __and__(self, other):
-        return Bool("and", self, _cast_to_bool(other))
+def sign_extend(s, size):
+    assert type(size) is int
+    assert size - s.bv_width() >= 0
+    if size == s.bv_width():
+        return s
+    return BVSExt(s, size - s.bv_width())
 
-    def __or__(self, other):
-        return Bool("or", self, _cast_to_bool(other))
 
-    def __xor__(self, other):
-        return Bool("xor", self, _cast_to_bool(other))
+def extract(s, offset, size):
+    if offset == 0 and size == s.bv_width():
+        return s
+    return BVExtract(s, offset, offset + size - 1)
 
-    def __invert__(self):
-        return Bool("not", self)
 
-    # Reverse logical operators
-    def __rand__(self, other):
-        return Bool("and", _cast_to_bool(other), self)
+def ite(size, cond, true, false):
+    return Ite(cond, true, false)
 
-    def __ror__(self, other):
-        return Bool("or", _cast_to_bool(other), self)
 
-    def __rxor__(self, other):
-        return Bool("xor", _cast_to_bool(other), self)
-
-
-class BitVec(Symbol):
-
-    def __init__(self, size, value, *children):
-        super(BitVec, self).__init__(value, *children)
-
-        self.size = size
-
-    @property
-    def declaration(self):
-        return "(declare-fun {} () (_ BitVec {}))".format(self.value, self.size)
-
-    # Arithmetic operators
-    def __add__(self, other):
-        return BitVec(self.size, "bvadd", self, _cast_to_bitvec(other, self.size))
-
-    def __sub__(self, other):
-        return BitVec(self.size, "bvsub", self, _cast_to_bitvec(other, self.size))
-
-    def __mul__(self, other):
-        return BitVec(self.size, "bvmul", self, _cast_to_bitvec(other, self.size))
-
-    def __div__(self, other):
-        return BitVec(self.size, "bvsdiv", self, _cast_to_bitvec(other, self.size))
-
-    def __mod__(self, other):
-        return BitVec(self.size, "bvsmod", self, _cast_to_bitvec(other, self.size))
-
-    def __neg__(self):
-        return BitVec(self.size, "bvneg", self)
-
-    # Reverse arithmetic operators
-    def __radd__(self, other):
-        return BitVec(self.size, "bvadd", _cast_to_bitvec(other, self.size), self)
-
-    def __rsub__(self, other):
-        return BitVec(self.size, "bvsub", _cast_to_bitvec(other, self.size), self)
-
-    def __rmul__(self, other):
-        return BitVec(self.size, "bvmul", _cast_to_bitvec(other, self.size), self)
-
-    def __rdiv__(self, other):
-        return BitVec(self.size, "bvsdiv", _cast_to_bitvec(other, self.size), self)
-
-    def __rmod__(self, other):
-        return BitVec(self.size, "bvsmod", _cast_to_bitvec(other, self.size), self)
-
-    # Bitwise operators
-    def __and__(self, other):
-        return BitVec(self.size, "bvand", self, _cast_to_bitvec(other, self.size))
-
-    def __xor__(self, other):
-        return BitVec(self.size, "bvxor", self, _cast_to_bitvec(other, self.size))
-
-    def __or__(self, other):
-        return BitVec(self.size, "bvor", self, _cast_to_bitvec(other, self.size))
-
-    def __lshift__(self, other):
-        return BitVec(self.size, "bvshl", self, _cast_to_bitvec(other, self.size))
-
-    def __rshift__(self, other):
-        return BitVec(self.size, "bvlshr", self, _cast_to_bitvec(other, self.size))
-
-    def __invert__(self):
-        return BitVec(self.size, "bvnot", self)
-
-    # Reverse bitwise operators
-    def __rand__(self, other):
-        return BitVec(self.size, "bvand", _cast_to_bitvec(other, self.size), self)
-
-    def __rxor__(self, other):
-        return BitVec(self.size, "bvxor", _cast_to_bitvec(other, self.size), self)
-
-    def __ror__(self, other):
-        return BitVec(self.size, "bvor", _cast_to_bitvec(other, self.size), self)
-
-    def __rlshift__(self, other):
-        return BitVec(self.size, "bvshl", _cast_to_bitvec(other, self.size), self)
-
-    def __rrshift__(self, other):
-        return BitVec(self.size, "bvlshr", _cast_to_bitvec(other, self.size), self)
-
-    # Comparison operators (signed)
-    def __lt__(self, other):
-        return Bool("bvslt", self, _cast_to_bitvec(other, self.size))
-
-    def __le__(self, other):
-        return Bool("bvsle", self, _cast_to_bitvec(other, self.size))
-
-    def __eq__(self, other):
-        return Bool("=", self, _cast_to_bitvec(other, self.size))
-
-    def __ne__(self, other):
-        return Bool("not", self == other)
-
-    def __gt__(self, other):
-        return Bool("bvsgt", self, _cast_to_bitvec(other, self.size))
-
-    def __ge__(self, other):
-        return Bool("bvsge", self, _cast_to_bitvec(other, self.size))
-
-    # Comparison operators (unsigned)
-    def ult(self, other):
-        return Bool("bvult", self, _cast_to_bitvec(other, self.size))
-
-    def ule(self, other):
-        return Bool("bvule", self, _cast_to_bitvec(other, self.size))
-
-    def ugt(self, other):
-        return Bool("bvugt", self, _cast_to_bitvec(other, self.size))
-
-    def uge(self, other):
-        return Bool("bvuge", self, _cast_to_bitvec(other, self.size))
-
-    # Arithmetic operators (unsigned)
-    def udiv(self, other):
-        return BitVec(self.size, "bvudiv", self, _cast_to_bitvec(other, self.size))
-
-    def umod(self, other):
-        return BitVec(self.size, "bvurem", self, _cast_to_bitvec(other, self.size))
-
-
-class Constant(BitVec):
-
-    def __init__(self, size, value, *children):
-        super(Constant, self).__init__(size, self._cast_value(value, size), *children)
-
-        self.size = size
-
-    def _cast_value(self, value, size):
-        # Truncate value.
-        value = value & ((1 << size) - 1)
-
-        # Format number, choose between binary and hexadecimal notation.
-        if size < 8:
-            value_str = "#b{0:0{fill}b}".format(value, fill=size / 1)
-        else:
-            value_str = "#x{0:0{fill}x}".format(value, fill=size / 4)
-
-        return value_str
-
-
-class Array(Symbol):
-
-    def __init__(self, key_size, value_size, value, *children):
-        super(Array, self).__init__(value, *children)
-
-        self.key_size = key_size
-        self.value_size = value_size
+def concat(size, *args):
+    if len(args) == 1:
+        return args[0]
+    return BVConcat(*args)
 
 
 class BitVecArray(object):
@@ -258,12 +120,14 @@ class BitVecArray(object):
                                                                                 self.value_size)
 
     def select(self, key):
-        return BitVec(self.value_size, "select", self.array, _cast_to_bitvec(key, self.key_size))
+        return Select(self.array, _cast_to_bitvec(key, self.key_size))
 
     def store(self, key, value):
-        return Array(self.key_size, self.value_size, "(store {} {} {})".format(self.array,
-                                                                               _cast_to_bitvec(key, self.key_size),
-                                                                               _cast_to_bitvec(value, self.value_size)))
+        return self.array.Store(_cast_to_bitvec(key, self.key_size),
+                                _cast_to_bitvec(value, self.value_size))
+
+    def Equals(self, other):
+        return self.array.Equals(other.array)
 
     # Index operators
     def __getitem__(self, key):
@@ -271,16 +135,3 @@ class BitVecArray(object):
 
     def __setitem__(self, key, value):
         self.array = self.store(key, value)
-
-    # Comparison operators
-    def __eq__(self, other):
-        assert isinstance(other.array, Array)
-        assert other.array.key_size == self.array.key_size and other.array.value_size == self.array.value_size
-
-        return Bool("=", self.array, other.array)
-
-    def __neq__(self, other):
-        assert isinstance(other.array, Array)
-        assert other.array.key_size == self.array.key_size and other.array.value_size == self.array.value_size
-
-        return Bool("not", self.__eq__(other))

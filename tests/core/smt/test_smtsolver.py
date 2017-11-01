@@ -25,23 +25,13 @@
 import unittest
 
 from barf.core.reil.parser import ReilParser
-# from barf.core.smt.smtsymbol import BitVec
-# from barf.core.smt.smtsymbol import Bool
+from barf.core.smt.smtsymbol import BitVec
+from barf.core.smt.smtsymbol import Bool
 # from barf.core.smt.smtsolver import Z3Solver as SmtSolver
 # from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
 from barf.core.smt.smtsolver import PySMTSolver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
-### LIGHT WRAPPER (MG)
-from pysmt.shortcuts import Symbol
-from pysmt.typing import BVType
-def BitVec(width, name):
-    return Symbol(name, BVType(width))
-
-def Bool(name):
-    return Symbol(name)
-
-###
 
 class SmtSolverBitVecTests(unittest.TestCase):
 
