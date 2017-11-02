@@ -9,7 +9,7 @@ if __name__ == "__main__":
     #
     # Open file
     #
-    filename = "../../samples/bin/example1.x86_64"
+    filename = "./samples/bin/example1.x86_64"
     arg = "hello!"
 
     barf = BARF(filename)
@@ -53,6 +53,8 @@ if __name__ == "__main__":
     # Execute.
     #
     if path_ok:
+        print("[+] Path satisfiable!")
+
         reil_emulator = barf.ir_emulator
 
         # Set stack pointer.
@@ -95,4 +97,7 @@ if __name__ == "__main__":
 
         # Emulate code.
         print("[+] Executing from {:#x} to {:#x}".format(cfg_start.start_address, cfg_end.start_address))
+
         ctx_fini = barf.emulate(context=ctx_init, start=cfg_start.start_address, end=cfg_end.start_address)
+    else:
+        print("[-] Path unsatisfiable!")

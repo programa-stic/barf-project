@@ -6,7 +6,7 @@ if __name__ == "__main__":
     #
     # Open file
     #
-    barf = BARF("../../samples/bin/constraint2.arm")
+    barf = BARF("./samples/bin/constraint1.arm")
 
     #
     # Check constraint
@@ -16,9 +16,9 @@ if __name__ == "__main__":
     #     8390:    e52db004     push    {fp}        ; (str fp, [sp, #-4]!)
     #     8394:    e28db000     add    fp, sp, #0
     #     8398:    e24dd014     sub    sp, sp, #20
-    #     839c:    e51b3008     ldr    r3, [fp, #-8]
-    #     83a0:    e51b200c     ldr    r2, [fp, #-12]
-    #     83a4:    e0030392     mul    r3, r2, r3
+    #     839c:    e51b2008     ldr    r2, [fp, #-8]
+    #     83a0:    e51b300c     ldr    r3, [fp, #-12]
+    #     83a4:    e0823003     add    r3, r2, r3
     #     83a8:    e2833005     add    r3, r3, #5
     #     83ac:    e50b3010     str    r3, [fp, #-16]
     #     83b0:    e51b3010     ldr    r3, [fp, #-16]
@@ -40,18 +40,18 @@ if __name__ == "__main__":
     fp = barf.code_analyzer.get_register_expr("fp", mode="post")
 
     # Preconditions: set range for variable a and b
-    a = barf.code_analyzer.get_memory_expr(fp - 0x8, 4, mode="pre")
-    b = barf.code_analyzer.get_memory_expr(fp - 0xc, 4, mode="pre")
+    a = barf.code_analyzer.get_memory_expr(fp - 0x08, 4, mode="pre")
+    b = barf.code_analyzer.get_memory_expr(fp - 0x0c, 4, mode="pre")
 
-    for const in [a >= 2, a <= 100, b >= 2, b <= 100]:
-        barf.code_analyzer.add_constraint(const)
+    for constr in [a >= 2, a <= 100, b >= 2, b <= 100]:
+        barf.code_analyzer.add_constraint(constr)
 
     # Postconditions: set desired value for the result
     c = barf.code_analyzer.get_memory_expr(fp - 0x10, 4, mode="post")
 
-    barf.code_analyzer.add_constraint(c == 15)
+    for constr in [c >= 26, c <= 28]:
+        barf.code_analyzer.add_constraint(constr)
 
-    # Check satisfiability
     print("[+] Check for satisfiability...")
 
     if barf.code_analyzer.check() == 'sat':
@@ -67,6 +67,6 @@ if __name__ == "__main__":
         print("- b: {0:#010x} ({0})".format(b_val))
         print("- c: {0:#010x} ({0})".format(c_val))
 
-        assert a_val * b_val + 5 == c_val
+        assert a_val + b_val + 5 == c_val
     else:
         print("[-] Unsatisfiable!")
