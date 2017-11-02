@@ -51,7 +51,6 @@ if __name__ == "__main__":
 
     barf.code_analyzer.add_constraint(c == 15)
 
-    # Check satisfiability
     print("[+] Check for satisfiability...")
 
     if barf.code_analyzer.check() == 'sat':

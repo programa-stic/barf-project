@@ -43,14 +43,14 @@ if __name__ == "__main__":
     a = barf.code_analyzer.get_memory_expr(fp - 0x08, 4, mode="pre")
     b = barf.code_analyzer.get_memory_expr(fp - 0x0c, 4, mode="pre")
 
-    for const in [a >= 2, a <= 100, b >= 2, b <= 100]:
-        barf.code_analyzer.add_constraint(const)
+    for constr in [a >= 2, a <= 100, b >= 2, b <= 100]:
+        barf.code_analyzer.add_constraint(constr)
 
-    # Postconditions: Set desired value for the result
+    # Postconditions: set desired value for the result
     c = barf.code_analyzer.get_memory_expr(fp - 0x10, 4, mode="post")
 
-    for const in [c >= 26, c <= 28]:
-        barf.code_analyzer.add_constraint(const)
+    for constr in [c >= 26, c <= 28]:
+        barf.code_analyzer.add_constraint(constr)
 
     print("[+] Check for satisfiability...")
 

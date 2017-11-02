@@ -37,6 +37,6 @@ if __name__ == "__main__":
     #
     context_out = barf.emulate(start=0x8390, end=0x83e0)  # ARM mode
 
-    print "%s : %s" % ("r3", hex(context_out['registers']["r3"]))
+    print("{}: {}".format("r3", hex(context_out['registers']["r3"])))
 
-    assert(context_out['registers']["r3"] == 0xa)
+    assert context_out['registers']["r3"] == 0xa

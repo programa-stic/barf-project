@@ -35,14 +35,14 @@ if __name__ == "__main__":
 
     ebp = barf.code_analyzer.get_register_expr("ebp", mode="post")
 
-    # Preconditions: Set range for variable a and b
+    # Preconditions: set range for variable a and b
     a = barf.code_analyzer.get_memory_expr(ebp-0x8, 4, mode="pre")
     b = barf.code_analyzer.get_memory_expr(ebp-0xc, 4, mode="pre")
 
     for const in [a >= 2, a <= 100, b >= 2, b <= 100]:
         barf.code_analyzer.add_constraint(const)
 
-    # Postconditions: Set desired value for the result
+    # Postconditions: set desired value for the result
     c = barf.code_analyzer.get_memory_expr(ebp-0x4, 4, mode="post")
 
     barf.code_analyzer.add_constraint(c == 15)

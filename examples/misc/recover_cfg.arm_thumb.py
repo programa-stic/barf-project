@@ -9,6 +9,7 @@ if __name__ == "__main__":
     #
     filename = "../../samples/bin/branch4.arm_thumb"
     barf = BARF(filename)
+
     #
     # Recover CFG
     #
