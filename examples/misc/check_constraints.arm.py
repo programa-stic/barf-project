@@ -6,7 +6,7 @@ if __name__ == "__main__":
     #
     # Open file
     #
-    barf = BARF("../../samples/bin/constraint1.arm")
+    barf = BARF("./samples/bin/constraint1.arm")
 
     #
     # Check constraint
