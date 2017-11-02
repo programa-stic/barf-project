@@ -35,13 +35,12 @@ import pyasmjit
 
 from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch.arm.armbase import ArmArchitectureInformation
+from barf.arch.arm.armdisassembler import ArmDisassembler
 from barf.arch.arm.armparser import ArmParser
 from barf.arch.arm.armtranslator import ArmTranslator
-from barf.arch.arm.armtranslator import FULL_TRANSLATION
 from barf.core.reil import ReilContainer
 from barf.core.reil import ReilEmulator
 from barf.core.reil import ReilSequence
-from barf.arch.arm.armdisassembler import ArmDisassembler
 
 
 @unittest.skipUnless(platform.machine().lower() == 'armv6l',
@@ -49,11 +48,10 @@ from barf.arch.arm.armdisassembler import ArmDisassembler
 class ArmTranslationTests(unittest.TestCase):
 
     def setUp(self):
-        self.trans_mode = FULL_TRANSLATION
         self.arch_mode = ARCH_ARM_MODE_THUMB
         self.arch_info = ArmArchitectureInformation(self.arch_mode)
         self.arm_parser = ArmParser(self.arch_mode)
-        self.arm_translator = ArmTranslator(self.arch_mode, self.trans_mode)
+        self.arm_translator = ArmTranslator(architecture_mode=self.arch_mode)
         self.reil_emulator = ReilEmulator(self.arch_info)
 
         self.context_filename = "failing_context.data"

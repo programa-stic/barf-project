@@ -33,7 +33,6 @@ import pyasmjit
 from barf.arch import ARCH_X86_MODE_64
 from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86parser import X86Parser
-from barf.arch.x86.x86translator import FULL_TRANSLATION
 from barf.arch.x86.x86translator import X86Translator
 from barf.core.reil import ReilContainer
 from barf.core.reil import ReilEmulator
@@ -50,7 +49,7 @@ class X86TranslationTests(unittest.TestCase):
         self.arch_info = X86ArchitectureInformation(self.arch_mode)
 
         self.x86_parser = X86Parser(self.arch_mode)
-        self.x86_translator = X86Translator(self.arch_mode, FULL_TRANSLATION)
+        self.x86_translator = X86Translator(architecture_mode=self.arch_mode)
         self.reil_emulator = ReilEmulator(self.arch_info)
 
         self.context_filename = "failing_context.data"

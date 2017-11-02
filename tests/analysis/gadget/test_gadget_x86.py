@@ -34,14 +34,13 @@ from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
 from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86disassembler import X86Disassembler
-from barf.arch.x86.x86translator import LITE_TRANSLATION
 from barf.arch.x86.x86translator import X86Translator
 from barf.core.reil import ReilEmptyOperand
 from barf.core.reil import ReilEmulator
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
-from barf.core.smt.smtsolver import Z3Solver as SmtSolver
 # from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
+from barf.core.smt.smtsolver import Z3Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
 
@@ -60,7 +59,7 @@ class GadgetClassifierTests(unittest.TestCase):
     #     binary  = "\x90"                     # 0x00 : (1) nop
     #     binary += "\xc3"                     # 0x00 : (1) ret
 
-    #     g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+    #     g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
     #     g_candidates = g_finder.find(0x00000000, 0x00000001)
     #     g_classified = self._g_classifier.classify(g_candidates[0])
@@ -83,7 +82,7 @@ class GadgetClassifierTests(unittest.TestCase):
     #     binary  = "\x89\xc0"                 # 0X00 : (2) mov eax, eax
     #     binary += "\xc3"                     # 0X02 : (1) ret
 
-    #     g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+    #     g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
     #     g_candidates = g_finder.find(0x00000000, 0x00000002)
     #     g_classified = self._g_classifier.classify(g_candidates[0])
@@ -107,7 +106,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x89\xd8"                 # 0x00 : (2) mov eax, ebx
         binary += "\xc3"                     # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -132,7 +131,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x8d\x03"                 # 0x00 : (2) lea eax, [ebx]
         binary += "\xc3"                     # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -157,7 +156,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x93"                     # 0x00 : (1) xchg ebx, eax
         binary += "\xc3"                     # 0x01 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000001)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -183,7 +182,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x93"                     # 0x00 : (1) xchg ebx, eax
         binary += "\xc3"                     # 0x01 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000001)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -209,7 +208,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x6b\xc3\x01"             # 0x00 : (3) imul eax, ebx, 0x1
         binary += "\xc3"                     # 0x03 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000003)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -234,7 +233,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\xb8\x00\x00\x00\x00"     # 0x00 : (5) mov eax, 0x0
         binary += "\xc3"                     # 0x05 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000005)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -259,7 +258,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x29\xc0"                # 0x00 : (2) sub eax, eax
         binary += "\xc3"                    # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -284,7 +283,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x01\xc1"                 # 0x00 : (2) add ecx, eax
         binary += "\xc3"                     # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -311,7 +310,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary += "\x00\xc9"                  # 0x02 : (2) add cl, cl
         binary += "\xc3"                      # 0x04 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000004)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -339,7 +338,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary += "\x50"                       # 0x02 : (1) push eax
         binary += "\xC3"                       # 0x03 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000003)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -364,7 +363,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x29\xd1"                 # 0x00 : (2) sub ecx, edx
         binary += "\xc3"                     # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -390,7 +389,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x8b\x03"                 # 0x00 : (2) mov eax, dword ptr [ebx]
         binary += "\xc3"                     # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -415,7 +414,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x8b\x0d\xef\xbe\xad\xde" # 0x00 : (6) mov ecx, dword ptr [0xdeadbeef]
         binary += "\xc3"                     # 0x06 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -440,7 +439,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x8b\x88\x00\x01\x00\x00" # 0x00 : (6) mov ecx, dword ptr [eax+0x100]
         binary += "\xc3"                     # 0x06 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -465,7 +464,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x8b\x09"                 # 0x00 : (2) mov ecx, dword ptr [ecx]
         binary += "\xc3"                     # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -490,7 +489,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x8b\x89\x00\x01\x00\x00"  # 0x00 : (6) mov ecx, dword ptr [ecx+0x100]
         binary += "\xc3"                      # 0x06 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -518,7 +517,7 @@ class GadgetClassifierTests(unittest.TestCase):
     #     # binary  = "\x8b\x89\x00\x01\x00\x00"  # 0x00 : (6) mov ecx, dword ptr [ecx+0x100]
     #     # binary += "\xc3"                      # 0x06 : (1) ret
 
-    #     g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+    #     g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
     #     g_candidates = g_finder.find(0x00000000, 0x00000001)
     #     g_classified = self._g_classifier.classify(g_candidates[0])
@@ -542,7 +541,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x89\x18"                 # 0x00 : (2) mov dword ptr [eax], ebx
         binary += "\xc3"                     # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -566,7 +565,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x89\x0d\xef\xbe\xad\xde" # 0x00 : (6) mov dword ptr [0xdeadbeef], ecx
         binary += "\xc3"                     # 0x06 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -590,7 +589,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x89\x88\x00\x01\x00\x00" # 0x00 : (6) mov dword ptr [eax+0x100], ecx
         binary += "\xc3"                     # 0x06 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -614,7 +613,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x89\x09"                 # 0x00 : (2) mov dword ptr [ecx], ecx
         binary += "\xc3"                     # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -638,7 +637,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x89\x89\x00\x01\x00\x00" # 0x00 : (6) mov dword ptr [ecx+0x100], ecx
         binary += "\xc3"                     # 0x06 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -662,7 +661,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x00\x00"                # 0x00 : (2) add byte ptr [eax], al
         binary += "\xc3"                    # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -684,7 +683,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x03\x03"                 # 0x00 : (2) add eax, dword ptr [ebx]
         binary += "\xc3"                     # 0x00 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -710,7 +709,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x03\x05\xef\xbe\xad\xde" # 0x00 : (6) add eax, dword ptr [0xdeadbeef]
         binary += "\xc3"                     # 0x01 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -736,7 +735,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x03\x83\x00\x01\x00\x00" # 0x00 : (6) add eax, dword ptr [ebx+0x100]
         binary += "\xc3"                     # 0x06 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
         g_classified = self._g_classifier.classify(g_candidates[2])
@@ -762,7 +761,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x03\x09"                 # 0x00 : (2) add ecx, dword ptr [ecx]
         binary += "\xc3"                     # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -788,7 +787,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x03\x89\x00\x01\x00\x00" # 0x00 : (6) add ecx, dword ptr [ecx+0x100]
         binary += "\xc3"                     # 0x06 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -814,7 +813,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x01\x18"                 # 0x02 : (2) add dword ptr [eax], ebx
         binary += "\xc3"                     # 0x02 : (2) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -839,7 +838,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x01\x0d\xef\xbe\xad\xde" # 0x00 : (6) add dword ptr [0xdeadbeef], ecx
         binary += "\xc3"                     # 0x06 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -864,7 +863,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x01\x88\x00\x01\x00\x00" # 0x00 : (6) add dword ptr [eax+0x100], ecx
         binary += "\xc3"                     # 0x06 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -889,7 +888,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x01\x09"                 # 0x00 : (2) add dword ptr [ecx], ecx
         binary += "\xc3"                     # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -914,7 +913,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary  = "\x01\x89\x00\x01\x00\x00" # 0x00 : (6) add dword ptr [ecx+0x100], ecx
         binary += "\xc3"                     # 0x06 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -939,7 +938,7 @@ class GadgetClassifierTests(unittest.TestCase):
         binary += "\xc7\x40\x20\x00\x00\x00\x00" # 0x07 : (7) mov dword ptr [eax+0x20], 0x0
         binary += "\xc3"                         # 0x0e : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x0000000e)
         g_classified = self._g_classifier.classify(g_candidates[2])
@@ -989,7 +988,7 @@ class GadgetVerifierTests(unittest.TestCase):
     #     binary  = "\x90"                     # 0x00 : (1) nop
     #     binary += "\xc3"                     # 0x00 : (1) ret
 
-    #     g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+    #     g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
     #     g_candidates = g_finder.find(0x00000000, 0x00000001)
     #     g_classified = self._g_classifier.classify(g_candidates[0])
@@ -1016,7 +1015,7 @@ class GadgetVerifierTests(unittest.TestCase):
     #     binary  = "\x39\xd8"                    # 0x00 : (2) cmp eax, ebx
     #     binary += "\xc3"                        # 0x02 : (1) ret
 
-    #     g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+    #     g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
     #     g_candidates = g_finder.find(0x00000000, 0x00000002)
 
@@ -1045,7 +1044,7 @@ class GadgetVerifierTests(unittest.TestCase):
     #     binary  = "\x08\xc9"                    # 0x00 : (2) or cl, cl
     #     binary += "\xc3"                        # 0x02 : (1) ret
 
-    #     g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+    #     g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
     #     g_candidates = g_finder.find(0x00000000, 0x00000002)
 
@@ -1071,7 +1070,7 @@ class GadgetVerifierTests(unittest.TestCase):
         binary  = "\x89\xd8"                  # 0x00 : (2) mov eax, ebx
         binary += "\xc3"                      # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -1101,7 +1100,7 @@ class GadgetVerifierTests(unittest.TestCase):
         binary += "\x5b"                      # 0x01 : (1) pop ebx
         binary += "\xc3"                      # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -1131,7 +1130,7 @@ class GadgetVerifierTests(unittest.TestCase):
         binary += "\x03\x03"                  # 0x02 : (2) add eax, dword ptr [ebx]
         binary += "\xc3"                      # 0x04 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000004)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -1161,7 +1160,7 @@ class GadgetVerifierTests(unittest.TestCase):
         binary += "\x53"                      # 0x01 : (1) push ebx
         binary += "\xc3"                      # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -1190,7 +1189,7 @@ class GadgetVerifierTests(unittest.TestCase):
         binary += "\x03\x03"                  # 0x02 : (2) add eax, dword ptr [ebx]
         binary += "\xc3"                      # 0x04 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000004)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -1220,7 +1219,7 @@ class GadgetVerifierTests(unittest.TestCase):
         binary += "\x00\xc9"                    # 0x02 : (2) add cl, cl
         binary += "\xc3"                        # 0x05 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000004)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -1252,7 +1251,7 @@ class GadgetVerifierTests(unittest.TestCase):
         binary += "\x00\xc9"                    # 0x02 : (2) add cl, cl
         binary += "\xc3"                        # 0x05 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000004)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -1283,7 +1282,7 @@ class GadgetVerifierTests(unittest.TestCase):
         binary += "\x50"                       # 0x02 : (1) push eax
         binary += "\xc3"                       # 0x03 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000003)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -1313,7 +1312,7 @@ class GadgetVerifierTests(unittest.TestCase):
         binary += "\x5d"                       # 0x03 : (1) pop ebp
         binary += "\xc3"                       # 0x04 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000004)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -1343,7 +1342,7 @@ class GadgetVerifierTests(unittest.TestCase):
         binary += "\xc9"                                # 0x06 : (1) leave
         binary += "\xc3"                                # 0x07 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000007)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -1371,7 +1370,7 @@ class GadgetVerifierTests(unittest.TestCase):
         binary  = "\x01\x18"                 # 0x00 : (2) add dword ptr [eax], ebx
         binary += "\xc3"                     # 0x02 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000002)
         g_classified = self._g_classifier.classify(g_candidates[0])
@@ -1400,7 +1399,7 @@ class GadgetVerifierTests(unittest.TestCase):
 
         binary = "\x31\x05\x08\x8b\x00\x5d\xc3" # xor dword ptr [0x5d008b08], eax ; ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
         g_classified = self._g_classifier.classify(g_candidates[2])
@@ -1430,7 +1429,7 @@ class GadgetVerifierTests(unittest.TestCase):
         binary += "\xc9"                                # 0x06 : (1) leave
         binary += "\xc3"                                # 0x07 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000007)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -1460,7 +1459,7 @@ class GadgetVerifierTests(unittest.TestCase):
         binary += "\xb6\x55"                            # 0x02 : (2) mov dh,0x55
         binary += "\xc3"                                # 0x04 : (1) ret
 
-        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(translation_mode=LITE_TRANSLATION), ARCH_X86, ARCH_X86_MODE_32)
+        g_finder = GadgetFinder(X86Disassembler(), binary, X86Translator(), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000004)
         g_classified = self._g_classifier.classify(g_candidates[1])
@@ -1524,8 +1523,7 @@ class GadgetVerifierTests64(unittest.TestCase):
         binary += "\xC3"                    # 0x02 : (1) ret
 
         disassembler = X86Disassembler(architecture_mode=ARCH_X86_MODE_64)
-        translator = X86Translator(architecture_mode=ARCH_X86_MODE_64,
-                               translation_mode=LITE_TRANSLATION)
+        translator = X86Translator(architecture_mode=ARCH_X86_MODE_64)
 
         g_finder = GadgetFinder(disassembler, binary, translator, ARCH_X86, ARCH_X86_MODE_64)
 

@@ -34,12 +34,11 @@ from barf.arch import ARCH_ARM_MODE_ARM
 from barf.arch.arm.armbase import ArmArchitectureInformation
 from barf.arch.arm.armdisassembler import ArmDisassembler
 from barf.arch.arm.armtranslator import ArmTranslator
-from barf.arch.arm.armtranslator import LITE_TRANSLATION
 from barf.core.reil import ReilEmulator
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
-from barf.core.smt.smtsolver import Z3Solver as SmtSolver
 # from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
+from barf.core.smt.smtsolver import Z3Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
 
@@ -62,7 +61,7 @@ class ArmGadgetClassifierTests(unittest.TestCase):
         self._g_verifier = GadgetVerifier(self._code_analyzer, self._arch_info)
 
     def _find_and_classify_gadgets(self, binary):
-        g_finder = GadgetFinder(ArmDisassembler(architecture_mode=ARCH_ARM_MODE_ARM), binary, ArmTranslator(translation_mode=LITE_TRANSLATION), ARCH_ARM, ARCH_ARM_MODE_ARM)
+        g_finder = GadgetFinder(ArmDisassembler(architecture_mode=ARCH_ARM_MODE_ARM), binary, ArmTranslator(), ARCH_ARM, ARCH_ARM_MODE_ARM)
 
         g_candidates = g_finder.find(0x00000000, len(binary), instrs_depth=4)
         g_classified = self._g_classifier.classify(g_candidates[0])
