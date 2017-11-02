@@ -63,7 +63,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
 
         self.assertTrue(x_val + y_val == z_val)
 
-    # TODO Fix for CVC4Solver.
     def test_sub(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
@@ -86,9 +85,8 @@ class SmtSolverBitVecTests(unittest.TestCase):
         y_val = self._solver.get_value(y)
         z_val = self._solver.get_value(z)
 
-        self.assertTrue(x_val - y_val == z_val)
+        self.assertTrue((x_val - y_val) & 0xffffffff == z_val)
 
-    # TODO Fix for CVC4Solver.
     def test_mul(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
@@ -111,7 +109,7 @@ class SmtSolverBitVecTests(unittest.TestCase):
         y_val = self._solver.get_value(y)
         z_val = self._solver.get_value(z)
 
-        self.assertTrue(x_val * y_val == z_val)
+        self.assertTrue((x_val * y_val) & 0xffffffff == z_val)
 
     def test_div(self):
         x = BitVec(32, "x")
@@ -253,7 +251,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
 
         self.assertTrue(x_val | y_val == z_val)
 
-    # TODO Fix for CVC4Solver.
     def test_lshift(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
@@ -276,7 +273,7 @@ class SmtSolverBitVecTests(unittest.TestCase):
         y_val = self._solver.get_value(y)
         z_val = self._solver.get_value(z)
 
-        self.assertTrue(x_val << y_val == z_val)
+        self.assertTrue((x_val << y_val) & 0xffffffff == z_val)
 
     def test_rshift(self):
         x = BitVec(32, "x")
