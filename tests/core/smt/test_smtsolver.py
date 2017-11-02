@@ -29,7 +29,6 @@ from barf.core.smt.smtsymbol import BitVec
 from barf.core.smt.smtsymbol import Bool
 from barf.core.smt.smtsolver import Z3Solver as SmtSolver
 # from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
-from barf.core.smt.smttranslator import SmtTranslator
 
 
 class SmtSolverBitVecTests(unittest.TestCase):
@@ -38,7 +37,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
         self._address_size = 32
         self._parser = ReilParser()
         self._solver = SmtSolver()
-        self._translator = SmtTranslator(self._solver, self._address_size)
 
     # Arithmetic operations.
     def test_add(self):
