@@ -581,7 +581,7 @@ class BARF(object):
             if self._arch_mode == arch.ARCH_ARM_MODE_ARM:
                 self.ir_emulator.registers[self.ip] = asm_instr.address + 8
             elif self._arch_mode == arch.ARCH_ARM_MODE_THUMB:
-                self.ir_emulator.registers[self.ip] = asm_instr.address + 4
+                self.ir_emulator.registers[self.ip] = asm_instr.address + 2
 
     def _load_binary_elf(self, filename):
         logger.info("Loading ELF image into memory")
