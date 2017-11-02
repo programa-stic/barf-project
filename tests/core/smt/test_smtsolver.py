@@ -63,7 +63,7 @@ class SmtSolverBitVecTests(unittest.TestCase):
 
         self.assertTrue(x_val + y_val == z_val)
 
-    # TODO Fix para CVC4Solver.
+    # TODO Fix for CVC4Solver.
     def test_sub(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
@@ -88,7 +88,7 @@ class SmtSolverBitVecTests(unittest.TestCase):
 
         self.assertTrue(x_val - y_val == z_val)
 
-    # TODO Fix para CVC4Solver.
+    # TODO Fix for CVC4Solver.
     def test_mul(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
@@ -161,27 +161,24 @@ class SmtSolverBitVecTests(unittest.TestCase):
 
         self.assertTrue(x_val % y_val == z_val)
 
-    # TODO Fix
-    # def test_neg(self):
-    #     x = BitVec(32, "x")
-    #     z = BitVec(32, "z")
+    def test_neg(self):
+        x = BitVec(32, "x")
+        z = BitVec(32, "z")
 
-    #     self._solver.declare_fun("x", x)
-    #     self._solver.declare_fun("z", z)
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("z", z)
 
-    #     self._solver.add(-x == z)
+        self._solver.add(-x == z)
 
-    #     # Add constraints to avoid trivial solutions.
-    #     self._solver.add(x > 1)
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
 
-    #     self.assertEqual(self._solver.check(), "sat")
+        self.assertEqual(self._solver.check(), "sat")
 
-    #     x_val = self._solver.get_value(x)
-    #     z_val = self._solver.get_value(z)
+        x_val = self._solver.get_value(x)
+        z_val = self._solver.get_value(z)
 
-    #     # print(x_val, z_val)
-
-    #     self.assertTrue(-x_val == z_val)
+        self.assertTrue(-x_val & 0xffffffff == z_val)
 
     # Bitwise operations.
     def test_and(self):
@@ -256,7 +253,7 @@ class SmtSolverBitVecTests(unittest.TestCase):
 
         self.assertTrue(x_val | y_val == z_val)
 
-    # TODO Fix para CVC4Solver.
+    # TODO Fix for CVC4Solver.
     def test_lshift(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
@@ -305,30 +302,27 @@ class SmtSolverBitVecTests(unittest.TestCase):
 
         self.assertTrue(x_val >> y_val == z_val)
 
-    # TODO Fix
-    # def test_invert(self):
-    #     x = BitVec(32, "x")
-    #     y = BitVec(32, "y")
-    #     z = BitVec(32, "z")
+    def test_invert(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = BitVec(32, "z")
 
-    #     self._solver.declare_fun("x", x)
-    #     self._solver.declare_fun("y", y)
-    #     self._solver.declare_fun("z", z)
+        self._solver.declare_fun("x", x)
+        self._solver.declare_fun("y", y)
+        self._solver.declare_fun("z", z)
 
-    #     self._solver.add(~x == z)
+        self._solver.add(~x == z)
 
-    #     # Add constraints to avoid trivial solutions.
-    #     self._solver.add(x > 1)
+        # Add constraints to avoid trivial solutions.
+        self._solver.add(x > 1)
 
-    #     self.assertEqual(self._solver.check(), "sat")
+        self.assertEqual(self._solver.check(), "sat")
 
-    #     x_val = self._solver.get_value(x)
-    #     y_val = self._solver.get_value(y)
-    #     z_val = self._solver.get_value(z)
+        x_val = self._solver.get_value(x)
+        y_val = self._solver.get_value(y)
+        z_val = self._solver.get_value(z)
 
-    #     print(x_val, z_val)
-
-    #     self.assertTrue(~x_val == z_val)
+        self.assertTrue(~x_val & 0xffffffff == z_val)
 
     # Comparison operators (signed)
     def test_lt(self):
