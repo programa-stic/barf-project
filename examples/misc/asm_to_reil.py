@@ -3,6 +3,8 @@
 from barf.barf import BARF
 
 if __name__ == "__main__":
+    # x86
+    # ======================================================================= #
     #
     # Open file
     #
@@ -19,6 +21,8 @@ if __name__ == "__main__":
         for reil_instr in reil_instrs:
             print("{0:14}{1}".format("", reil_instr))
 
+    # ARM
+    # ======================================================================= #
     #
     # Open file
     #
