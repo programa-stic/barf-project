@@ -7,7 +7,7 @@ all: \
 	example1 \
 	branch4 \
 	constraint1 constraint3 \
-	loop2
+	loop-simple1 loop2
 
 example1: src/example1.c
 	$(X86_CC) -m64 -o bin/example1.x86_64 src/example1.c
@@ -24,6 +24,12 @@ constraint1: src/constraint1.c
 constraint3: src/constraint3.c
 	$(X86_CC) -m32 -O0 -o bin/constraint3.x86 src/constraint3.c
 
+loop-simple1: src/loop-simple1.c
+	$(X86_CC) -m32    -o bin/loop-simple1.x86       src/loop-simple1.c
+	$(X86_CC) -m64    -o bin/loop-simple1.x86_64    src/loop-simple1.c
+	$(ARM_CC) -marm   -o bin/loop-simple1.arm       src/loop-simple1.c
+	$(ARM_CC) -mthumb -o bin/loop-simple1.arm_thumb src/loop-simple1.c
+
 loop2: src/loop2.c
 	$(X86_CC) -m32  -o bin/loop2.x86 src/loop2.c
 	$(ARM_CC) -marm -o bin/loop2.arm src/loop2.c
@@ -32,4 +38,4 @@ clean:
 	rm -f bin/example1.*
 	rm -f bin/branch4.*
 	rm -f bin/constraint1.* bin/constraint3.*
-	rm -f bin/loop2.*
+	rm -f bin/loop-simple1.* bin/loop2.*
