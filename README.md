@@ -73,7 +73,7 @@ This is a very simple example which shows how to open a binary file and print ea
 from barf import BARF
 
 # Open binary file.
-barf = BARF("examples/samples/bin/branch1.x86")
+barf = BARF("examples/misc/samples/bin/branch4.x86")
 
 # Print assembly instruction.
 for addr, asm_instr, reil_instrs in barf.translate():
@@ -91,7 +91,7 @@ We can also recover the CFG and save it to a ``.dot`` file.
 cfg = barf.recover_cfg()
 
 # Save CFG to a .dot file.
-cfg.save("branch1.x86_cfg")
+cfg.save("branch4.x86_cfg")
 ```
 
 We can check restrictions on code using a SMT solver. For instance, suppose you have the following code:
@@ -118,7 +118,7 @@ First, we add the instructions to the analyzer component.
 from barf import BARF
 
 # Open ELF file
-barf = BARF("examples/samples/bin/constraint1.x86")
+barf = BARF("examples/misc/samples/bin/constraint1.x86")
 
 # Add instructions to analyze.
 for addr, asm_instr, reil_instrs in barf.translate(0x80483ed, 0x8048401):
