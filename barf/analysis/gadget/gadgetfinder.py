@@ -36,7 +36,6 @@ import re
 from barf.analysis.gadget import RawGadget
 from barf.arch import ARCH_ARM
 from barf.arch import ARCH_X86
-from barf.arch.x86.x86translator import LITE_TRANSLATION
 from barf.core.disassembler import InvalidDisassemblerData
 from barf.core.reil import DualInstruction
 from barf.core.reil import ReilMnemonic
@@ -75,18 +74,12 @@ class GadgetFinder(object):
         self._max_bytes = byte_depth
         self._instrs_depth = instrs_depth
 
-        trans_mode_old = self._ir_trans.translation_mode
-
-        self._ir_trans.translation_mode = LITE_TRANSLATION
-
         if self._architecture == ARCH_X86:
             candidates = self._find_x86_candidates(start_address, end_address)
         elif self._architecture == ARCH_ARM:
             candidates = self._find_arm_candidates(start_address, end_address)
         else:
             raise Exception("Architecture not supported.")
-
-        self._ir_trans.translation_mode = trans_mode_old
 
         return candidates
 

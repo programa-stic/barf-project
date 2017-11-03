@@ -40,9 +40,6 @@ from barf.core.reil import ReilRegisterOperand
 from barf.core.reil import check_operands_size
 from barf.utils.utils import VariableNamer
 
-FULL_TRANSLATION = 0
-LITE_TRANSLATION = 1
-
 logger = logging.getLogger(__name__)
 
 
@@ -179,7 +176,7 @@ class X86Translator(Translator):
 
     """x86 to IR Translator."""
 
-    def __init__(self, architecture_mode=ARCH_X86_MODE_32, translation_mode=FULL_TRANSLATION):
+    def __init__(self, architecture_mode=ARCH_X86_MODE_32):
 
         super(X86Translator, self).__init__()
 
@@ -189,9 +186,6 @@ class X86Translator(Translator):
 
         # An instance of *ArchitectureInformation*.
         self._arch_info = X86ArchitectureInformation(architecture_mode)
-
-        # Set *Translation Mode*.
-        self._translation_mode = translation_mode
 
         # An instance of a *VariableNamer*. This is used so all the
         # temporary REIL registers are unique.
@@ -286,18 +280,6 @@ class X86Translator(Translator):
         """Restart IR register name generator.
         """
         self._ir_name_generator.reset()
-
-    @property
-    def translation_mode(self):
-        """Get translation mode.
-        """
-        return self._translation_mode
-
-    @translation_mode.setter
-    def translation_mode(self, value):
-        """Set translation mode.
-        """
-        self._translation_mode = value
 
     def _log_not_supported_instruction(self, instruction):
         bytes_str = " ".join("%02x" % ord(b) for b in instruction.bytes)
@@ -1132,14 +1114,13 @@ class X86Translator(Translator):
 
         tb.add(self._builder.gen_add(oprnd0, oprnd1, tmp0))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, SF, ZF, AF, CF, PF
-            self._update_of(tb, oprnd0, oprnd1, tmp0)
-            self._update_sf(tb, oprnd0, oprnd1, tmp0)
-            self._update_zf(tb, oprnd0, oprnd1, tmp0)
-            self._update_af(tb, oprnd0, oprnd1, tmp0)
-            self._update_cf(tb, oprnd0, oprnd1, tmp0)
-            self._update_pf(tb, oprnd0, oprnd1, tmp0)
+        # Flags : OF, SF, ZF, AF, CF, PF
+        self._update_of(tb, oprnd0, oprnd1, tmp0)
+        self._update_sf(tb, oprnd0, oprnd1, tmp0)
+        self._update_zf(tb, oprnd0, oprnd1, tmp0)
+        self._update_af(tb, oprnd0, oprnd1, tmp0)
+        self._update_cf(tb, oprnd0, oprnd1, tmp0)
+        self._update_pf(tb, oprnd0, oprnd1, tmp0)
 
         tb.write(instruction.operands[0], tmp0)
         tb.write(instruction.operands[1], oprnd0)
@@ -1158,14 +1139,13 @@ class X86Translator(Translator):
 
         tb.add(self._builder.gen_add(oprnd0, oprnd1, tmp0))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, SF, ZF, AF, CF, PF
-            self._update_of(tb, oprnd0, oprnd1, tmp0)
-            self._update_sf(tb, oprnd0, oprnd1, tmp0)
-            self._update_zf(tb, oprnd0, oprnd1, tmp0)
-            self._update_af(tb, oprnd0, oprnd1, tmp0)
-            self._update_cf(tb, oprnd0, oprnd1, tmp0)
-            self._update_pf(tb, oprnd0, oprnd1, tmp0)
+        # Flags : OF, SF, ZF, AF, CF, PF
+        self._update_of(tb, oprnd0, oprnd1, tmp0)
+        self._update_sf(tb, oprnd0, oprnd1, tmp0)
+        self._update_zf(tb, oprnd0, oprnd1, tmp0)
+        self._update_af(tb, oprnd0, oprnd1, tmp0)
+        self._update_cf(tb, oprnd0, oprnd1, tmp0)
+        self._update_pf(tb, oprnd0, oprnd1, tmp0)
 
         tb.write(instruction.operands[0], tmp0)
 
@@ -1184,14 +1164,13 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_str(self._flags["cf"], tmp1))
         tb.add(self._builder.gen_add(tmp0, tmp1, tmp2))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, SF, ZF, AF, CF, PF
-            self._update_of(tb, oprnd0, oprnd1, tmp2)
-            self._update_sf(tb, oprnd0, oprnd1, tmp2)
-            self._update_zf(tb, oprnd0, oprnd1, tmp2)
-            self._update_af(tb, oprnd0, oprnd1, tmp2)
-            self._update_cf(tb, oprnd0, oprnd1, tmp2)
-            self._update_pf(tb, oprnd0, oprnd1, tmp2)
+        # Flags : OF, SF, ZF, AF, CF, PF
+        self._update_of(tb, oprnd0, oprnd1, tmp2)
+        self._update_sf(tb, oprnd0, oprnd1, tmp2)
+        self._update_zf(tb, oprnd0, oprnd1, tmp2)
+        self._update_af(tb, oprnd0, oprnd1, tmp2)
+        self._update_cf(tb, oprnd0, oprnd1, tmp2)
+        self._update_pf(tb, oprnd0, oprnd1, tmp2)
 
         tb.write(instruction.operands[0], tmp2)
 
@@ -1207,14 +1186,13 @@ class X86Translator(Translator):
 
         tb.add(self._builder.gen_sub(oprnd0, oprnd1, tmp0))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, SF, ZF, AF, PF, CF
-            self._update_of_sub(tb, oprnd0, oprnd1, tmp0)
-            self._update_sf(tb, oprnd0, oprnd1, tmp0)
-            self._update_zf(tb, oprnd0, oprnd1, tmp0)
-            self._update_af_sub(tb, oprnd0, oprnd1, tmp0)
-            self._update_pf(tb, oprnd0, oprnd1, tmp0)
-            self._update_cf(tb, oprnd0, oprnd1, tmp0)
+        # Flags : OF, SF, ZF, AF, PF, CF
+        self._update_of_sub(tb, oprnd0, oprnd1, tmp0)
+        self._update_sf(tb, oprnd0, oprnd1, tmp0)
+        self._update_zf(tb, oprnd0, oprnd1, tmp0)
+        self._update_af_sub(tb, oprnd0, oprnd1, tmp0)
+        self._update_pf(tb, oprnd0, oprnd1, tmp0)
+        self._update_cf(tb, oprnd0, oprnd1, tmp0)
 
         tb.write(instruction.operands[0], tmp0)
 
@@ -1238,14 +1216,13 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_str(tmp0, tmp3))
         tb.add(self._builder.gen_str(tmp1, tmp4))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, SF, ZF, AF, PF, CF
-            self._update_of_sub(tb, tmp3, tmp4, tmp2)
-            self._update_sf(tb, tmp3, tmp4, tmp2)
-            self._update_zf(tb, tmp3, tmp4, tmp2)
-            self._update_af_sub(tb, tmp3, tmp4, tmp2)
-            self._update_pf(tb, tmp3, tmp4, tmp2)
-            self._update_cf(tb, tmp3, tmp4, tmp2)
+        # Flags : OF, SF, ZF, AF, PF, CF
+        self._update_of_sub(tb, tmp3, tmp4, tmp2)
+        self._update_sf(tb, tmp3, tmp4, tmp2)
+        self._update_zf(tb, tmp3, tmp4, tmp2)
+        self._update_af_sub(tb, tmp3, tmp4, tmp2)
+        self._update_pf(tb, tmp3, tmp4, tmp2)
+        self._update_cf(tb, tmp3, tmp4, tmp2)
 
         tb.write(instruction.operands[0], tmp2)
 
@@ -1307,23 +1284,22 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_bsh(tmp0, imm0, result_high))
         tb.add(self._builder.gen_str(tmp0, result_low))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, CF
-            fimm0 = tb.immediate(1, 1)
+        # Flags : OF, CF
+        fimm0 = tb.immediate(1, 1)
 
-            ftmp0 = tb.temporal(oprnd0.size*2)
-            ftmp1 = tb.temporal(1)
+        ftmp0 = tb.temporal(oprnd0.size*2)
+        ftmp1 = tb.temporal(1)
 
-            tb.add(self._builder.gen_bsh(tmp0, imm0, ftmp0))
-            tb.add(self._builder.gen_bisz(ftmp0, ftmp1))
-            tb.add(self._builder.gen_xor(ftmp1, fimm0, self._flags["of"]))
-            tb.add(self._builder.gen_xor(ftmp1, fimm0, self._flags["cf"]))
+        tb.add(self._builder.gen_bsh(tmp0, imm0, ftmp0))
+        tb.add(self._builder.gen_bisz(ftmp0, ftmp1))
+        tb.add(self._builder.gen_xor(ftmp1, fimm0, self._flags["of"]))
+        tb.add(self._builder.gen_xor(ftmp1, fimm0, self._flags["cf"]))
 
-            # Flags : SF, ZF, AF, PF
-            self._undefine_flag(tb, self._flags["sf"])
-            self._undefine_flag(tb, self._flags["zf"])
-            self._undefine_flag(tb, self._flags["af"])
-            self._undefine_flag(tb, self._flags["pf"])
+        # Flags : SF, ZF, AF, PF
+        self._undefine_flag(tb, self._flags["sf"])
+        self._undefine_flag(tb, self._flags["zf"])
+        self._undefine_flag(tb, self._flags["af"])
+        self._undefine_flag(tb, self._flags["pf"])
 
     def _translate_imul(self, tb, instruction):
         # Flags Affected
@@ -1435,13 +1411,12 @@ class X86Translator(Translator):
 
             tb.write(instruction.operands[0], tmp0)
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, CF
-            # TODO: Implement.
-            self._undefine_flag(tb, self._flags["sf"])
-            self._undefine_flag(tb, self._flags["zf"])
-            self._undefine_flag(tb, self._flags["af"])
-            self._undefine_flag(tb, self._flags["pf"])
+        # Flags : OF, CF
+        # TODO: Implement.
+        self._undefine_flag(tb, self._flags["sf"])
+        self._undefine_flag(tb, self._flags["zf"])
+        self._undefine_flag(tb, self._flags["af"])
+        self._undefine_flag(tb, self._flags["pf"])
 
     def _translate_div(self, tb, instruction):
         # Flags Affected
@@ -1519,14 +1494,13 @@ class X86Translator(Translator):
 
         tb.add(self._builder.gen_str(tmp6, result_high))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : CF, OF, SF, ZF, AF, PF
-            self._undefine_flag(tb, self._flags["cf"])
-            self._undefine_flag(tb, self._flags["of"])
-            self._undefine_flag(tb, self._flags["sf"])
-            self._undefine_flag(tb, self._flags["zf"])
-            self._undefine_flag(tb, self._flags["af"])
-            self._undefine_flag(tb, self._flags["pf"])
+        # Flags : CF, OF, SF, ZF, AF, PF
+        self._undefine_flag(tb, self._flags["cf"])
+        self._undefine_flag(tb, self._flags["of"])
+        self._undefine_flag(tb, self._flags["sf"])
+        self._undefine_flag(tb, self._flags["zf"])
+        self._undefine_flag(tb, self._flags["af"])
+        self._undefine_flag(tb, self._flags["pf"])
 
     def _translate_idiv(self, tb, instruction):
         # Flags Affected
@@ -1604,14 +1578,13 @@ class X86Translator(Translator):
 
         tb.add(self._builder.gen_str(tmp6, result_high))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : CF, OF, SF, ZF, AF, PF
-            self._undefine_flag(tb, self._flags["cf"])
-            self._undefine_flag(tb, self._flags["of"])
-            self._undefine_flag(tb, self._flags["sf"])
-            self._undefine_flag(tb, self._flags["zf"])
-            self._undefine_flag(tb, self._flags["af"])
-            self._undefine_flag(tb, self._flags["pf"])
+        # Flags : CF, OF, SF, ZF, AF, PF
+        self._undefine_flag(tb, self._flags["cf"])
+        self._undefine_flag(tb, self._flags["of"])
+        self._undefine_flag(tb, self._flags["sf"])
+        self._undefine_flag(tb, self._flags["zf"])
+        self._undefine_flag(tb, self._flags["af"])
+        self._undefine_flag(tb, self._flags["pf"])
 
     def _translate_inc(self, tb, instruction):
         # Flags Affected
@@ -1626,13 +1599,12 @@ class X86Translator(Translator):
 
         tb.add(self._builder.gen_add(oprnd0, imm0, tmp0))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, SF, ZF, AF, PF
-            self._update_of(tb, oprnd0, imm0, tmp0)
-            self._update_sf(tb, oprnd0, imm0, tmp0)
-            self._update_zf(tb, oprnd0, imm0, tmp0)
-            self._update_af(tb, oprnd0, imm0, tmp0)
-            self._update_pf(tb, oprnd0, imm0, tmp0)
+        # Flags : OF, SF, ZF, AF, PF
+        self._update_of(tb, oprnd0, imm0, tmp0)
+        self._update_sf(tb, oprnd0, imm0, tmp0)
+        self._update_zf(tb, oprnd0, imm0, tmp0)
+        self._update_af(tb, oprnd0, imm0, tmp0)
+        self._update_pf(tb, oprnd0, imm0, tmp0)
 
         tb.write(instruction.operands[0], tmp0)
 
@@ -1649,13 +1621,12 @@ class X86Translator(Translator):
 
         tb.add(self._builder.gen_sub(oprnd0, imm0, tmp0))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, SF, ZF, AF, PF
-            self._update_of_sub(tb, oprnd0, imm0, tmp0)
-            self._update_sf(tb, oprnd0, imm0, tmp0)
-            self._update_zf(tb, oprnd0, imm0, tmp0)
-            self._update_af_sub(tb, oprnd0, imm0, tmp0)
-            self._update_pf(tb, oprnd0, imm0, tmp0)
+        # Flags : OF, SF, ZF, AF, PF
+        self._update_of_sub(tb, oprnd0, imm0, tmp0)
+        self._update_sf(tb, oprnd0, imm0, tmp0)
+        self._update_zf(tb, oprnd0, imm0, tmp0)
+        self._update_af_sub(tb, oprnd0, imm0, tmp0)
+        self._update_pf(tb, oprnd0, imm0, tmp0)
 
         tb.write(instruction.operands[0], tmp0)
 
@@ -1683,13 +1654,12 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_bisz(oprnd0, tmp2))
         tb.add(self._builder.gen_xor(tmp2, imm2, self._flags["cf"]))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, SF, ZF, AF, PF
-            self._update_of_sub(tb, oprnd0, oprnd0, tmp1)
-            self._update_sf(tb, oprnd0, oprnd0, tmp1)
-            self._update_zf(tb, oprnd0, oprnd0, tmp1)
-            self._update_af_sub(tb, zero, oprnd0, tmp1)
-            self._update_pf(tb, oprnd0, oprnd0, tmp1)
+        # Flags : OF, SF, ZF, AF, PF
+        self._update_of_sub(tb, oprnd0, oprnd0, tmp1)
+        self._update_sf(tb, oprnd0, oprnd0, tmp1)
+        self._update_zf(tb, oprnd0, oprnd0, tmp1)
+        self._update_af_sub(tb, zero, oprnd0, tmp1)
+        self._update_pf(tb, oprnd0, oprnd0, tmp1)
 
         tb.write(instruction.operands[0], tmp1)
 
@@ -1731,18 +1701,17 @@ class X86Translator(Translator):
 
         tb.add(self._builder.gen_and(oprnd0, oprnd1, tmp0))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, CF
-            self._clear_flag(tb, self._flags["of"])
-            self._clear_flag(tb, self._flags["cf"])
+        # Flags : OF, CF
+        self._clear_flag(tb, self._flags["of"])
+        self._clear_flag(tb, self._flags["cf"])
 
-            # Flags : SF, ZF, PF
-            self._update_sf(tb, oprnd0, oprnd1, tmp0)
-            self._update_zf(tb, oprnd0, oprnd1, tmp0)
-            self._update_pf(tb, oprnd0, oprnd1, tmp0)
+        # Flags : SF, ZF, PF
+        self._update_sf(tb, oprnd0, oprnd1, tmp0)
+        self._update_zf(tb, oprnd0, oprnd1, tmp0)
+        self._update_pf(tb, oprnd0, oprnd1, tmp0)
 
-            # Flags : AF
-            self._undefine_flag(tb, self._flags["af"])
+        # Flags : AF
+        self._undefine_flag(tb, self._flags["af"])
 
         tb.write(instruction.operands[0], tmp0)
 
@@ -1759,18 +1728,17 @@ class X86Translator(Translator):
 
         tb.add(self._builder.gen_or(oprnd0, oprnd1, tmp0))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, CF
-            self._clear_flag(tb, self._flags["of"])
-            self._clear_flag(tb, self._flags["cf"])
+        # Flags : OF, CF
+        self._clear_flag(tb, self._flags["of"])
+        self._clear_flag(tb, self._flags["cf"])
 
-            # Flags : SF, ZF, PF
-            self._update_sf(tb, oprnd0, oprnd1, tmp0)
-            self._update_zf(tb, oprnd0, oprnd1, tmp0)
-            self._update_pf(tb, oprnd0, oprnd1, tmp0)
+        # Flags : SF, ZF, PF
+        self._update_sf(tb, oprnd0, oprnd1, tmp0)
+        self._update_zf(tb, oprnd0, oprnd1, tmp0)
+        self._update_pf(tb, oprnd0, oprnd1, tmp0)
 
-            # Flags : AF
-            self._undefine_flag(tb, self._flags["af"])
+        # Flags : AF
+        self._undefine_flag(tb, self._flags["af"])
 
         tb.write(instruction.operands[0], tmp0)
 
@@ -1787,18 +1755,17 @@ class X86Translator(Translator):
 
         tb.add(self._builder.gen_xor(oprnd0, oprnd1, tmp0))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, CF
-            self._clear_flag(tb, self._flags["of"])
-            self._clear_flag(tb, self._flags["cf"])
+        # Flags : OF, CF
+        self._clear_flag(tb, self._flags["of"])
+        self._clear_flag(tb, self._flags["cf"])
 
-            # Flags : SF, ZF, PF
-            self._update_sf(tb, oprnd0, oprnd1, tmp0)
-            self._update_zf(tb, oprnd0, oprnd1, tmp0)
-            self._update_pf(tb, oprnd0, oprnd1, tmp0)
+        # Flags : SF, ZF, PF
+        self._update_sf(tb, oprnd0, oprnd1, tmp0)
+        self._update_zf(tb, oprnd0, oprnd1, tmp0)
+        self._update_pf(tb, oprnd0, oprnd1, tmp0)
 
-            # Flags : AF
-            self._undefine_flag(tb, self._flags["af"])
+        # Flags : AF
+        self._undefine_flag(tb, self._flags["af"])
 
         tb.write(instruction.operands[0], tmp0)
 
@@ -1897,13 +1864,12 @@ class X86Translator(Translator):
         # dst <- undefined
         tb.add(self._builder.gen_str(oprnd0, dst))
         # Set flags: CF, OF, SF, ZF, AF, PF are undefined;
-        if self._translation_mode == FULL_TRANSLATION:
-            self._undefine_flag(tb, self._flags["cf"])
-            self._undefine_flag(tb, self._flags["of"])
-            self._undefine_flag(tb, self._flags["sf"])
-            self._undefine_flag(tb, self._flags["zf"])
-            self._undefine_flag(tb, self._flags["af"])
-            self._undefine_flag(tb, self._flags["pf"])
+        self._undefine_flag(tb, self._flags["cf"])
+        self._undefine_flag(tb, self._flags["of"])
+        self._undefine_flag(tb, self._flags["sf"])
+        self._undefine_flag(tb, self._flags["zf"])
+        self._undefine_flag(tb, self._flags["af"])
+        self._undefine_flag(tb, self._flags["pf"])
         tb.add(self._builder.gen_jcc(tb.immediate(1, 1), end_addr))
 
         tb.add(shift_lbl)
@@ -1945,11 +1911,10 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_bsh(dst_tmp0, dst_count, dst_tmp1))
         tb.add(self._builder.gen_str(dst_tmp1, dst))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : SF, ZF, PF
-            self._update_sf(tb, oprnd0, oprnd0, dst)
-            self._update_zf(tb, oprnd0, oprnd0, dst)
-            self._update_pf(tb, oprnd0, oprnd0, dst)
+        # Flags : SF, ZF, PF
+        self._update_sf(tb, oprnd0, oprnd0, dst)
+        self._update_zf(tb, oprnd0, oprnd0, dst)
+        self._update_pf(tb, oprnd0, oprnd0, dst)
 
         tb.write(instruction.operands[0], dst)
 
@@ -2010,17 +1975,16 @@ class X86Translator(Translator):
         # Shift one more time
         tb.add(self._builder.gen_bsh(tmp4, imm2, tmp6))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF
-            # TODO: Implement translation for OF flag.
+        # Flags : OF
+        # TODO: Implement translation for OF flag.
 
-            # Flags : SF, ZF, PF
-            self._update_sf(tb, oprnd0, oprnd0, tmp6)
-            self._update_zf(tb, oprnd0, oprnd0, tmp6)
-            self._update_pf(tb, oprnd0, oprnd0, tmp6)
+        # Flags : SF, ZF, PF
+        self._update_sf(tb, oprnd0, oprnd0, tmp6)
+        self._update_zf(tb, oprnd0, oprnd0, tmp6)
+        self._update_pf(tb, oprnd0, oprnd0, tmp6)
 
-            # Flags : AF
-            self._undefine_flag(tb, self._flags["af"])
+        # Flags : AF
+        self._undefine_flag(tb, self._flags["af"])
 
         tb.write(instruction.operands[0], tmp6)
 
@@ -2074,17 +2038,16 @@ class X86Translator(Translator):
         # Shift one more time
         tb.add(self._builder.gen_bsh(tmp2, imm0, tmp4))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF
-            # TODO: Implement translation for OF flag.
+        # Flags : OF
+        # TODO: Implement translation for OF flag.
 
-            # Flags : SF, ZF, PF
-            self._update_sf(tb, oprnd0, oprnd0, tmp4)
-            self._update_zf(tb, oprnd0, oprnd0, tmp4)
-            self._update_pf(tb, oprnd0, oprnd0, tmp4)
+        # Flags : SF, ZF, PF
+        self._update_sf(tb, oprnd0, oprnd0, tmp4)
+        self._update_zf(tb, oprnd0, oprnd0, tmp4)
+        self._update_pf(tb, oprnd0, oprnd0, tmp4)
 
-            # Flags : AF
-            self._undefine_flag(tb, self._flags["af"])
+        # Flags : AF
+        self._undefine_flag(tb, self._flags["af"])
 
         tb.write(instruction.operands[0], tmp4)
 
@@ -2179,17 +2142,16 @@ class X86Translator(Translator):
         # Save result
         tb.add(self._builder.gen_str(tmp1, tmp6))
 
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF
-            # TODO: Implement translation for OF flag.
+        # Flags : OF
+        # TODO: Implement translation for OF flag.
 
-            # Flags : SF, ZF, PF
-            self._update_sf(tb, oprnd0, oprnd0, tmp6)
-            self._update_zf(tb, oprnd0, oprnd0, tmp6)
-            self._update_pf(tb, oprnd0, oprnd0, tmp6)
+        # Flags : SF, ZF, PF
+        self._update_sf(tb, oprnd0, oprnd0, tmp6)
+        self._update_zf(tb, oprnd0, oprnd0, tmp6)
+        self._update_pf(tb, oprnd0, oprnd0, tmp6)
 
-            # Flags : AF
-            self._undefine_flag(tb, self._flags["af"])
+        # Flags : AF
+        self._undefine_flag(tb, self._flags["af"])
 
         tb.add(self._builder.gen_jcc(tb.immediate(1, 1), end_lbl))
 
@@ -2607,12 +2569,11 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_and(tmp0, one, self._flags["cf"]))
 
         # Set flags.
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, SF, AF, PF
-            self._undefine_flag(tb, self._flags["of"])
-            self._undefine_flag(tb, self._flags["sf"])
-            self._undefine_flag(tb, self._flags["af"])
-            self._undefine_flag(tb, self._flags["pf"])
+        # Flags : OF, SF, AF, PF
+        self._undefine_flag(tb, self._flags["of"])
+        self._undefine_flag(tb, self._flags["sf"])
+        self._undefine_flag(tb, self._flags["af"])
+        self._undefine_flag(tb, self._flags["pf"])
 
     def _translate_bts(self, tb, instruction):
         # Flags Affected
@@ -2656,12 +2617,11 @@ class X86Translator(Translator):
         tb.add(self._builder.gen_or(oprnd0, tmp0, dst))
 
         # Set flags.
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : OF, SF, AF, PF
-            self._undefine_flag(tb, self._flags["of"])
-            self._undefine_flag(tb, self._flags["sf"])
-            self._undefine_flag(tb, self._flags["af"])
-            self._undefine_flag(tb, self._flags["pf"])
+        # Flags : OF, SF, AF, PF
+        self._undefine_flag(tb, self._flags["of"])
+        self._undefine_flag(tb, self._flags["sf"])
+        self._undefine_flag(tb, self._flags["af"])
+        self._undefine_flag(tb, self._flags["pf"])
 
         tb.write(instruction.operands[0], dst)
 
@@ -2733,13 +2693,12 @@ class X86Translator(Translator):
         tb.add(end_lbl)
 
         # Set flags.
-        if self._translation_mode == FULL_TRANSLATION:
-            # Flags : CF, OF, SF, AF, and PF
-            self._undefine_flag(tb, self._flags["cf"])
-            self._undefine_flag(tb, self._flags["of"])
-            self._undefine_flag(tb, self._flags["sf"])
-            self._undefine_flag(tb, self._flags["af"])
-            self._undefine_flag(tb, self._flags["pf"])
+        # Flags : CF, OF, SF, AF, and PF
+        self._undefine_flag(tb, self._flags["cf"])
+        self._undefine_flag(tb, self._flags["of"])
+        self._undefine_flag(tb, self._flags["sf"])
+        self._undefine_flag(tb, self._flags["af"])
+        self._undefine_flag(tb, self._flags["pf"])
 
         tb.write(instruction.operands[0], dst)
 
