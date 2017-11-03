@@ -284,8 +284,6 @@ optional arguments:
                         separated).
 ```
 
-For more information, see [README](./barf/tools/cfg/README.md).
-
 ### BARFcg
 
 ``BARFcg`` is a Python script built upon BARF that lets you recover the
@@ -312,8 +310,6 @@ optional arguments:
                         Recover specified functions by address (comma
                         separated).
 ```
-
-For more information, see [README](./barf/tools/cg/README.md).
 
 ## PyAsmJIT
 
