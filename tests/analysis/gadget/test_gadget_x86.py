@@ -223,7 +223,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].sources, [ReilRegisterOperand("ebx", 32)])
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
@@ -273,7 +273,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].sources, [ReilImmediateOperand(0x0, 32)])
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
@@ -299,7 +299,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
@@ -326,7 +326,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("cl", 8)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 3)
+        self.assertEquals(len(g_classified[0].modified_registers), 4)
 
         self.assertTrue(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
@@ -354,7 +354,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("bl", 8)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("ebx", 32) in g_classified[0].modified_registers)
 
@@ -379,7 +379,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
         self.assertEquals(g_classified[0].operation, "-")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
@@ -699,7 +699,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
@@ -725,7 +725,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
@@ -751,7 +751,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
@@ -777,7 +777,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
@@ -803,7 +803,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
@@ -829,7 +829,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("eax", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
@@ -854,7 +854,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilEmptyOperand(), ReilImmediateOperand(0xdeadbeef, 32)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
@@ -879,7 +879,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("eax", 32), ReilImmediateOperand(0x100, 32)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
@@ -904,7 +904,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
@@ -929,7 +929,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x100, 32)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
@@ -1149,7 +1149,7 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].sources, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 2)
+        self.assertEquals(len(g_classified[0].modified_registers), 3)
 
         self.assertTrue(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
@@ -1208,7 +1208,7 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEquals(g_classified[1].sources, [ReilRegisterOperand("eax", 32), ReilRegisterOperand("ebx", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEquals(g_classified[1].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEquals(len(g_classified[1].modified_registers), 2)
+        self.assertEquals(len(g_classified[1].modified_registers), 3)
 
         self.assertTrue(ReilRegisterOperand("ecx", 32) in g_classified[1].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
@@ -1239,7 +1239,7 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("cl", 8)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 3)
+        self.assertEquals(len(g_classified[0].modified_registers), 4)
 
         self.assertTrue(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
@@ -1271,7 +1271,7 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEquals(g_classified[1].destination, [ReilRegisterOperand("eax", 32)])
         self.assertEquals(g_classified[1].operation, "&")
 
-        self.assertEquals(len(g_classified[1].modified_registers), 2)
+        self.assertEquals(len(g_classified[1].modified_registers), 3)
 
         self.assertTrue(ReilRegisterOperand("ecx", 32) in g_classified[1].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
@@ -1302,7 +1302,7 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("bl", 8)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("ebx", 32) in g_classified[0].modified_registers)
 
@@ -1361,7 +1361,7 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].sources, [ReilRegisterOperand("ebp", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("ebp", 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
@@ -1390,7 +1390,7 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("eax", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEquals(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
@@ -1419,7 +1419,7 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilEmptyOperand(), ReilImmediateOperand(0x5d008b08, 32)])
         self.assertEquals(g_classified[0].operation, "^")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEquals(len(g_classified[0].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
@@ -1448,7 +1448,7 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEquals(g_classified[1].sources, [ReilRegisterOperand("ebx", 32), ReilImmediateOperand(0x80531a0, 32), ReilRegisterOperand("ah", 8)])
         self.assertEquals(g_classified[1].destination, [ReilRegisterOperand("ebx", 32), ReilImmediateOperand(0x80531a0, 32)])
 
-        self.assertEquals(len(g_classified[1].modified_registers), 2)
+        self.assertEquals(len(g_classified[1].modified_registers), 3)
 
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
         self.assertTrue(ReilRegisterOperand("ebp", 32) in g_classified[1].modified_registers)
@@ -1478,7 +1478,7 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEquals(g_classified[0].sources, [ReilImmediateOperand(0x55, 8)])
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("dh", 8)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 2)
+        self.assertEquals(len(g_classified[0].modified_registers), 3)
 
         self.assertTrue(ReilRegisterOperand("edx", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)

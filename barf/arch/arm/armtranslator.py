@@ -67,9 +67,6 @@ from barf.core.reil import ReilInstructionBuilder
 from barf.core.reil import ReilRegisterOperand
 from barf.utils.utils import VariableNamer
 
-FULL_TRANSLATION = 0
-LITE_TRANSLATION = 1
-
 logger = logging.getLogger(__name__)
 
 
@@ -237,7 +234,7 @@ class ArmTranslator(Translator):
 
     """ARM to IR Translator."""
 
-    def __init__(self, architecture_mode=ARCH_ARM_MODE_THUMB, translation_mode=FULL_TRANSLATION):
+    def __init__(self, architecture_mode=ARCH_ARM_MODE_THUMB):
         super(ArmTranslator, self).__init__()
 
         # Set *Architecture Mode*. The translation of each instruction
@@ -246,9 +243,6 @@ class ArmTranslator(Translator):
 
         # An instance of *ArchitectureInformation*.
         self._arch_info = ArmArchitectureInformation(architecture_mode)
-
-        # Set *Translation Mode*.
-        self._translation_mode = translation_mode
 
         # An instance of a *VariableNamer*. This is used so all the
         # temporary REIL registers are unique.
@@ -343,18 +337,6 @@ class ArmTranslator(Translator):
         """Restart IR register name generator.
         """
         self._ir_name_generator.reset()
-
-    @property
-    def translation_mode(self):
-        """Get translation mode.
-        """
-        return self._translation_mode
-
-    @translation_mode.setter
-    def translation_mode(self, value):
-        """Set translation mode.
-        """
-        self._translation_mode = value
 
     def _log_not_supported_instruction(self, instruction, reason="unknown"):
         bytes_str = " ".join("%02x" % ord(b) for b in instruction.bytes)
