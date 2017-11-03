@@ -24,8 +24,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import print_function
-
 import argparse
 import os
 import sys
@@ -34,70 +32,7 @@ import time
 from barf.analysis.basicblock.callgraph import CallGraph
 from barf.barf import BARF
 from barf.core.symbols import load_symbols
-
-
-def print_recovery_status(address, name, size):
-    size = size if size != 0 else "?"
-
-    print("    Processing {} @ {:#x} ({})".format(name, address, size))
-
-
-def load_symbols_from_file(filename):
-    symbols_by_addr = {}
-
-    with open(filename, "r") as f:
-        for line in f.readlines():
-            # Remove trailing '\n'.
-            line = line[:-1]
-
-            # Skip blank lines and comments.
-            if line == "" or line[0] == "#":
-                continue
-
-            # Process line.
-            parts = line.split(' ')
-
-            try:
-                addr, name, size, returns = parts[0], " ".join(parts[1:-2]), parts[-2], parts[-1]
-            except:
-                raise Exception("Error processing symbol file.")
-
-            symbols_by_addr[int(addr, 16)] = (name, int(size), returns == "True")
-
-    return symbols_by_addr
-
-
-def recover_cfg_some(barf, addresses, symbols_by_addr):
-    cfgs = []
-
-    for addr in sorted(addresses):
-        cfg = barf.recover_cfg(start=addr, symbols=symbols_by_addr, callback=print_recovery_status)
-
-        cfgs.append(cfg)
-
-    return cfgs
-
-
-def recover_cfg_all(barf, symbols_by_addr):
-    if len(symbols_by_addr) > 0:
-        print("[+] Recovering from symbols")
-
-        entries = [addr for addr in sorted(symbols_by_addr.keys())]
-    else:
-        print("[+] Recovering from entry point")
-
-        entries = [barf.binary.entry_point]
-
-    cfgs = barf.recover_cfg_all(entries, symbols=symbols_by_addr, callback=print_recovery_status)
-
-    return cfgs
-
-
-def create_output_dir(name):
-    if not os.path.exists(name):
-        os.makedirs(name)
-
-    return name
+from barf.tools.common import load_symbols_from_file, recover_cfg_all, recover_cfg_some
 
 
 def init_parser():
