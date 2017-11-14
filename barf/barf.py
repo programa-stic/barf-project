@@ -444,11 +444,26 @@ class BARF(object):
             self.ir_emulator.memory.write(addr, 4, val)
 
         # Execute the code.
+        self.__emulate(end_addr, hooks, max_instrs, print_asm, start_addr)
+
+        context_out = {
+            'registers': {},
+            'memory': {}
+        }
+
+        # save registers
+        for reg, val in self.ir_emulator.registers.items():
+            context_out['registers'][reg] = val
+
+        return context_out
+
+    def __emulate(self, end_addr, hooks, max_instrs, print_asm, start_addr):
         # Switch arch mode accordingly for ARM base on the start address.
         if self.binary.architecture == arch.ARCH_ARM:
             if start_addr & 0x1 == 0x1:
                 start_addr = start_addr & ~0x1
                 end_addr = end_addr & ~0x1
+
                 self._arch_mode = arch.ARCH_ARM_MODE_THUMB
             else:
                 self._arch_mode = arch.ARCH_ARM_MODE_ARM
@@ -461,6 +476,7 @@ class BARF(object):
         next_addr = start_addr
         instr_count = 0
         asm_instr = None
+
         while next_addr != end_addr:
             if max_instrs and instr_count > max_instrs:
                 break
@@ -514,17 +530,6 @@ class BARF(object):
 
             # Count instruction.
             instr_count += 1
-
-        context_out = {
-            'registers': {},
-            'memory': {}
-        }
-
-        # save registers
-        for reg, val in self.ir_emulator.registers.items():
-            context_out['registers'][reg] = val
-
-        return context_out
 
     def __process_reil_container(self, container, ip):
         next_addr = None
