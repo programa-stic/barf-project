@@ -80,8 +80,7 @@ class Emulator(object):
             else:
                 raise Exception("Invalid architecture mode.")
 
-
-    def emulate(self, end_addr, hooks, max_instrs, print_asm, start_addr):
+    def emulate(self, start_addr, end_addr, hooks, max_instrs, print_asm):
         # Switch arch mode accordingly for ARM base on the start address.
         if self.binary.architecture == arch.ARCH_ARM:
             if start_addr & 0x1 == 0x1:

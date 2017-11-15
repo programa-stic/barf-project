@@ -413,7 +413,7 @@ class BARF(object):
             self.ir_emulator.memory.write(addr, 4, val)
 
         # Execute the code.
-        self.emulator.emulate(end_addr, hooks, max_instrs, print_asm, start_addr)
+        self.emulator.emulate(start_addr, end_addr, hooks, max_instrs, print_asm)
 
         context_out = {
             'registers': {},

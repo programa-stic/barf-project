@@ -61,7 +61,7 @@ class EmulatorTests(unittest.TestCase):
 
         emu.load_binary(binary)
 
-        emu.emulate(0x8048407, {}, None, False, 0x080483db)
+        emu.emulate(0x080483db, 0x8048407, {}, None, False)
 
     def test_emulate_x86_64(self):
         binary = BinaryFile(get_full_path("./samples/bin/loop-simple.x86_64"))
@@ -75,7 +75,7 @@ class EmulatorTests(unittest.TestCase):
 
         emu.load_binary(binary)
 
-        emu.emulate(0x400507, {}, None, False, 0x4004d6)
+        emu.emulate(0x4004d6, 0x400507, {}, None, False)
 
     def test_emulate_arm(self):
         binary = BinaryFile(get_full_path("./samples/bin/loop-simple.arm"))
@@ -89,7 +89,7 @@ class EmulatorTests(unittest.TestCase):
 
         emu.load_binary(binary)
 
-        emu.emulate(0x10460, {}, None, True, 0x10400)
+        emu.emulate(0x10400, 0x10460, {}, None, True)
 
     def test_emulate_arm_thumb(self):
         binary = BinaryFile(get_full_path("./samples/bin/loop-simple.arm_thumb"))
@@ -103,4 +103,4 @@ class EmulatorTests(unittest.TestCase):
 
         emu.load_binary(binary)
 
-        emu.emulate(0x10432, {}, None, True, 0x10401)
+        emu.emulate(0x10401, 0x10432, {}, None, True)
