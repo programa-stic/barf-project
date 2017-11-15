@@ -22,9 +22,13 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import os
 import unittest
 
-from barf.arch import ARCH_X86_MODE_32, ARCH_X86_MODE_64, ARCH_ARM_MODE_ARM, ARCH_ARM_MODE_THUMB
+from barf.arch import ARCH_ARM_MODE_ARM
+from barf.arch import ARCH_ARM_MODE_THUMB
+from barf.arch import ARCH_X86_MODE_32
+from barf.arch import ARCH_X86_MODE_64
 from barf.arch.arm.armbase import ArmArchitectureInformation
 from barf.arch.arm.armdisassembler import ArmDisassembler
 from barf.arch.arm.armtranslator import ArmTranslator
@@ -36,13 +40,17 @@ from barf.core.bi import BinaryFile
 from barf.core.reil import ReilEmulator
 
 
+def get_full_path(filename):
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
+
+
 class EmulatorTests(unittest.TestCase):
 
     def setUp(self):
         pass
 
     def test_emulate_x86(self):
-        binary = BinaryFile("samples/bin/loop-simple.x86")
+        binary = BinaryFile(get_full_path("./samples/bin/loop-simple.x86"))
         arch_mode = ARCH_X86_MODE_32
         arch_info = X86ArchitectureInformation(arch_mode)
         ir_emulator = ReilEmulator(arch_info)
@@ -56,7 +64,7 @@ class EmulatorTests(unittest.TestCase):
         emu.emulate(0x8048407, {}, None, False, 0x080483db)
 
     def test_emulate_x86_64(self):
-        binary = BinaryFile("samples/bin/loop-simple.x86_64")
+        binary = BinaryFile(get_full_path("./samples/bin/loop-simple.x86_64"))
         arch_mode = ARCH_X86_MODE_64
         arch_info = X86ArchitectureInformation(arch_mode)
         ir_emulator = ReilEmulator(arch_info)
@@ -70,7 +78,7 @@ class EmulatorTests(unittest.TestCase):
         emu.emulate(0x400507, {}, None, False, 0x4004d6)
 
     def test_emulate_arm(self):
-        binary = BinaryFile("samples/bin/loop-simple.arm")
+        binary = BinaryFile(get_full_path("./samples/bin/loop-simple.arm"))
         arch_mode = ARCH_ARM_MODE_ARM
         arch_info = ArmArchitectureInformation(arch_mode)
         ir_emulator = ReilEmulator(arch_info)
@@ -84,7 +92,7 @@ class EmulatorTests(unittest.TestCase):
         emu.emulate(0x10460, {}, None, True, 0x10400)
 
     def test_emulate_arm_thumb(self):
-        binary = BinaryFile("samples/bin/loop-simple.arm_thumb")
+        binary = BinaryFile(get_full_path("./samples/bin/loop-simple.arm_thumb"))
         arch_mode = ARCH_ARM_MODE_THUMB
         arch_info = ArmArchitectureInformation(arch_mode)
         ir_emulator = ReilEmulator(arch_info)
