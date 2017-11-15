@@ -50,6 +50,36 @@ class Emulator(object):
         self.ip = None
         self.ir_translator = ir_translator
         self._arch_mode = arch_mode
+        self.ip = None
+        self.sp = None
+        self.ws = None
+
+        # Load instruction pointer register.
+        if self.binary.architecture == arch.ARCH_X86:
+            if self.arch_info.architecture_mode == arch.ARCH_X86_MODE_32:
+                self.ip = "eip"
+                self.sp = "esp"
+                self.ws = 4
+            elif self.arch_info.architecture_mode == arch.ARCH_X86_MODE_64:
+                self.ip = "rip"
+                self.sp = "rsp"
+                self.ws = 8
+            else:
+                raise Exception("Invalid architecture mode.")
+
+        # Load instruction pointer register.
+        if self.binary.architecture == arch.ARCH_ARM:
+            if self.arch_info.architecture_mode == arch.ARCH_ARM_MODE_THUMB:
+                self.ip = "r15"
+                self.sp = "r13"
+                self.ws = 2  # TODO Check.
+            elif self.arch_info.architecture_mode == arch.ARCH_ARM_MODE_ARM:
+                self.ip = "r15"
+                self.sp = "r13"
+                self.ws = 4
+            else:
+                raise Exception("Invalid architecture mode.")
+
 
     def emulate(self, end_addr, hooks, max_instrs, print_asm, start_addr):
         # Switch arch mode accordingly for ARM base on the start address.

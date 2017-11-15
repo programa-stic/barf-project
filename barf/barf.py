@@ -78,9 +78,6 @@ class BARF(object):
         self.smt_translator = None
         self.ir_emulator = None
         self.bb_builder = None
-        self.ip = None
-        self.sp = None
-        self.ws = None
         self._load_bin = load_bin
 
         self.emulator = None
@@ -125,18 +122,6 @@ class BARF(object):
         self.disassembler = ArmDisassembler(architecture_mode=arch_mode)
         self.ir_translator = ArmTranslator(architecture_mode=arch_mode)
 
-        # Load instruction pointer register.
-        if self.arch_info.architecture_mode == arch.ARCH_ARM_MODE_THUMB:
-            self.ip = "r15"
-            self.sp = "r13"
-            self.ws = 2  # TODO Check.
-        elif self.arch_info.architecture_mode == arch.ARCH_ARM_MODE_ARM:
-            self.ip = "r15"
-            self.sp = "r13"
-            self.ws = 4
-        else:
-            raise Exception("Invalid architecture mode.")
-
     def _setup_x86_arch(self, arch_mode=None):
         """Set up x86 architecture.
         """
@@ -148,18 +133,6 @@ class BARF(object):
         self.arch_info = X86ArchitectureInformation(arch_mode)
         self.disassembler = X86Disassembler(architecture_mode=arch_mode)
         self.ir_translator = X86Translator(architecture_mode=arch_mode)
-
-        # Load instruction pointer register.
-        if self.arch_info.architecture_mode == arch.ARCH_X86_MODE_32:
-            self.ip = "eip"
-            self.sp = "esp"
-            self.ws = 4
-        elif self.arch_info.architecture_mode == arch.ARCH_X86_MODE_64:
-            self.ip = "rip"
-            self.sp = "rsp"
-            self.ws = 8
-        else:
-            raise Exception("Invalid architecture mode.")
 
     def _setup_core_modules(self):
         """Set up core modules.
