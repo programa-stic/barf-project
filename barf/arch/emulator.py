@@ -27,6 +27,8 @@ import pefile
 
 import barf.arch as arch
 
+from barf.arch.arm.armbase import ArmArchitectureInformation
+from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.core.reil import ReilContainer
 from barf.core.reil import ReilContainerInvalidAddressError
 from barf.core.reil import ReilSequence
@@ -42,20 +44,18 @@ logger = logging.getLogger(__name__)
 
 class Emulator(object):
 
-    def __init__(self, binary, arch_info, ir_emulator, disassembler, ir_translator, arch_mode):
-        self.binary = binary
+    def __init__(self, arch_info, ir_emulator, ir_translator, disassembler):
         self.arch_info = arch_info
+        self._arch_mode = self.arch_info.architecture_mode
         self.ir_emulator = ir_emulator
-        self.disassembler = disassembler
-        self.ip = None
         self.ir_translator = ir_translator
-        self._arch_mode = arch_mode
+        self.disassembler = disassembler
         self.ip = None
         self.sp = None
         self.ws = None
 
         # Load instruction pointer register.
-        if self.binary.architecture == arch.ARCH_X86:
+        if isinstance(self.arch_info, X86ArchitectureInformation):
             if self.arch_info.architecture_mode == arch.ARCH_X86_MODE_32:
                 self.ip = "eip"
                 self.sp = "esp"
@@ -68,7 +68,7 @@ class Emulator(object):
                 raise Exception("Invalid architecture mode.")
 
         # Load instruction pointer register.
-        if self.binary.architecture == arch.ARCH_ARM:
+        if isinstance(self.arch_info, ArmArchitectureInformation):
             if self.arch_info.architecture_mode == arch.ARCH_ARM_MODE_THUMB:
                 self.ip = "r15"
                 self.sp = "r13"
@@ -82,7 +82,7 @@ class Emulator(object):
 
     def emulate(self, start_addr, end_addr, hooks, max_instrs, print_asm):
         # Switch arch mode accordingly for ARM base on the start address.
-        if self.binary.architecture == arch.ARCH_ARM:
+        if isinstance(self.arch_info, ArmArchitectureInformation):
             if start_addr & 0x1 == 0x1:
                 start_addr = start_addr & ~0x1
                 end_addr = end_addr & ~0x1
@@ -90,9 +90,6 @@ class Emulator(object):
                 self._arch_mode = arch.ARCH_ARM_MODE_THUMB
             else:
                 self._arch_mode = arch.ARCH_ARM_MODE_ARM
-
-        if self.binary.architecture == arch.ARCH_X86:
-            self._arch_mode = self.binary.architecture_mode
 
         execution_cache = ExecutionCache()
 
@@ -114,10 +111,10 @@ class Emulator(object):
 
                 # Compute next address after hook.
                 if skip:
-                    if self.binary.architecture == arch.ARCH_X86:
+                    if isinstance(self.arch_info, X86ArchitectureInformation):
                         next_addr = asm_instr.address + asm_instr.size + offset
 
-                    if self.binary.architecture == arch.ARCH_ARM:
+                    if isinstance(self.arch_info, ArmArchitectureInformation):
                         next_addr = asm_instr.address + asm_instr.size + offset
 
                 logger.debug("Continuing @ {:#x}".format(next_addr))
@@ -203,10 +200,10 @@ class Emulator(object):
         return encoding
 
     def __update_ip(self, asm_instr):
-        if self.binary.architecture == arch.ARCH_X86:
+        if isinstance(self.arch_info, X86ArchitectureInformation):
             self.ir_emulator.registers[self.ip] = asm_instr.address + asm_instr.size
 
-        if self.binary.architecture == arch.ARCH_ARM:
+        if isinstance(self.arch_info, ArmArchitectureInformation):
             if self._arch_mode == arch.ARCH_ARM_MODE_ARM:
                 self.ir_emulator.registers[self.ip] = asm_instr.address + 8
             elif self._arch_mode == arch.ARCH_ARM_MODE_THUMB:

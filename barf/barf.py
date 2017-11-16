@@ -194,7 +194,7 @@ class BARF(object):
         if self.code_analyzer:
             self.gadget_verifier = GadgetVerifier(self.code_analyzer, self.arch_info)
 
-        self.emulator = Emulator(self.binary, self.arch_info, self.ir_emulator, self.disassembler, self.ir_translator, self._arch_mode)
+        self.emulator = Emulator(self.arch_info, self.ir_emulator, self.ir_translator, self.disassembler)
 
     # ======================================================================== #
 

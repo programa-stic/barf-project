@@ -57,7 +57,7 @@ class EmulatorTests(unittest.TestCase):
         disassembler = X86Disassembler(architecture_mode=ARCH_X86_MODE_32)
         ir_translator = X86Translator(architecture_mode=ARCH_X86_MODE_32)
 
-        emu = Emulator(binary, arch_info, ir_emulator, disassembler, ir_translator, arch_mode)
+        emu = Emulator(arch_info, ir_emulator, ir_translator, disassembler)
 
         emu.load_binary(binary)
 
@@ -71,7 +71,7 @@ class EmulatorTests(unittest.TestCase):
         disassembler = X86Disassembler(architecture_mode=ARCH_X86_MODE_64)
         ir_translator = X86Translator(architecture_mode=ARCH_X86_MODE_64)
 
-        emu = Emulator(binary, arch_info, ir_emulator, disassembler, ir_translator, arch_mode)
+        emu = Emulator(arch_info, ir_emulator, ir_translator, disassembler)
 
         emu.load_binary(binary)
 
@@ -85,7 +85,7 @@ class EmulatorTests(unittest.TestCase):
         disassembler = ArmDisassembler(architecture_mode=ARCH_ARM_MODE_ARM)
         ir_translator = ArmTranslator(architecture_mode=ARCH_ARM_MODE_ARM)
 
-        emu = Emulator(binary, arch_info, ir_emulator, disassembler, ir_translator, arch_mode)
+        emu = Emulator(arch_info, ir_emulator, ir_translator, disassembler)
 
         emu.load_binary(binary)
 
@@ -99,7 +99,7 @@ class EmulatorTests(unittest.TestCase):
         disassembler = ArmDisassembler(architecture_mode=ARCH_ARM_MODE_THUMB)
         ir_translator = ArmTranslator(architecture_mode=ARCH_ARM_MODE_THUMB)
 
-        emu = Emulator(binary, arch_info, ir_emulator, disassembler, ir_translator, arch_mode)
+        emu = Emulator(arch_info, ir_emulator, ir_translator, disassembler)
 
         emu.load_binary(binary)
 
