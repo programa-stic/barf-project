@@ -298,16 +298,16 @@ class ArmArchitectureInformation(ArchitectureInformation):
 
     def instr_is_branch(self, instruction):
         branch_instr = [
-            "b", "bal", "bx", "bne", "beq", "bpl", "ble", "bcs", "bhs", "blt", "bge",
-            "bhi", "blo", "bls"
+            "bal", "bcs", "beq", "bge", "bgt", "bhs", "ble", "blo",
+            "bls", "blt", "bne", "bpl", "bx", "b", "bhi",
         ]
 
         return instruction.mnemonic_full in branch_instr
 
     def instr_is_branch_cond(self, instruction):
         branch_instr = [
-            "bne", "beq", "bpl", "ble", "bcs", "bhs", "blt", "bge",
-            "bhi", "blo", "bls"
+            "bcs", "beq", "bge", "bgt", "bhi", "bhs", "ble", "blo",
+            "bls", "blt", "bne", "bpl",
         ]
 
         return instruction.mnemonic_full in branch_instr
