@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- Add architecture emulator class.
 - Add support for Travis CI.
 - Add tests for the `smt` package.
 - Add svg ouput format for `BARFcfg` and `BARFcg` tools.
@@ -12,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Add support for x86 sse instructions: `LDDQU`, `MOVAPS`, `MOVSD`.
 
 ### Changed
+- Restructure `examples` directory and remove redundant examples.
 - Restructure `tools` directory and move it into `barf` package.
 - Overall code quality improvement in most modules.
 - Revamp `smt` package.
@@ -23,14 +25,15 @@ All notable changes to this project will be documented in this file.
 - Refactor `emulate` method to support `x86_64`, `ARM` and `Thumb` code.
 
 ### Deprecated
-- Remove deprecated `barf-install-solver.sh` script.
 
 ### Fixed
-- Add `BAL` ARM instruction to the list of branch instructions.
+- Add `BAL` and `BGT` to the list of ARM branch instructions.
 - Fix Capstone installation issues.
 - Various fixes in the `smt` package.
 
 ### Removed
+- Remove `translation_mode` parameter from x86/ARM translators.
+- Remove deprecated `barf-install-solver.sh` script.
 - Remove `smtlibv2.py` module dependency from `PySymEmu`.
 
 ### Security
