@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Removed
+### Fixed
+### Security
+
+## [0.5.0] - 2017-12-18
+### Added
 - Add architecture emulator class.
 - Add support for Travis CI.
 - Add tests for the `smt` package.
@@ -24,8 +32,6 @@ All notable changes to this project will be documented in this file.
 - Update `ARM` architecural information.
 - Refactor `emulate` method to support `x86_64`, `ARM` and `Thumb` code.
 
-### Deprecated
-
 ### Fixed
 - Add `BAL` and `BGT` to the list of ARM branch instructions.
 - Fix Capstone installation issues.
@@ -35,8 +41,6 @@ All notable changes to this project will be documented in this file.
 - Remove `translation_mode` parameter from x86/ARM translators.
 - Remove deprecated `barf-install-solver.sh` script.
 - Remove `smtlibv2.py` module dependency from `PySymEmu`.
-
-### Security
 
 ## [0.4.0] - 2017-04-10
 ### Added
@@ -132,7 +136,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 - First release.
 
-[Unreleased]: https://github.com/programa-stic/barf-project/compare/v0.4.0...master
+[Unreleased]: https://github.com/programa-stic/barf-project/compare/v0.5.0...master
+[0.5.0]: https://github.com/programa-stic/barf-project/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/programa-stic/barf-project/compare/v0.3...v0.4.0
 [0.3]: https://github.com/programa-stic/barf-project/compare/v0.2.1...v0.3
 [0.2.1]: https://github.com/programa-stic/barf-project/compare/v0.2...v0.2.1
