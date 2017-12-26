@@ -26,9 +26,6 @@ import unittest
 
 from barf.core.reil.parser import ReilParser
 from barf.core.smt.smtsymbol import BitVec
-from barf.core.smt.smtsymbol import Bool
-# from barf.core.smt.smtsolver import Z3Solver as SmtSolver
-# from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
 from barf.core.smt.smtsolver import PySMTSolver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
@@ -67,10 +64,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
         y = BitVec(32, "y")
         z = BitVec(32, "z")
 
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
-        self._solver.declare_fun("z", z)
-
         self._solver.add((x - y).Equals(z))
 
         self._solver.add(x > 1)
@@ -90,10 +83,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
         z = BitVec(32, "z")
-
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
-        self._solver.declare_fun("z", z)
 
         self._solver.add((x * y).Equals(z))
 
@@ -115,10 +104,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
         y = BitVec(32, "y")
         z = BitVec(32, "z")
 
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
-        self._solver.declare_fun("z", z)
-
         self._solver.add((x / y).Equals(z))
 
         # Add constraints to avoid trivial solutions.
@@ -139,10 +124,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
         y = BitVec(32, "y")
         z = BitVec(32, "z")
 
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
-        self._solver.declare_fun("z", z)
-
         self._solver.add((x % y).Equals(z))
 
         # Add constraints to avoid trivial solutions.
@@ -162,10 +143,7 @@ class SmtSolverBitVecTests(unittest.TestCase):
         x = BitVec(32, "x")
         z = BitVec(32, "z")
 
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("z", z)
-
-        self._solver.add(-x == z)
+        self._solver.add((-x).Equals(z))
 
         # Add constraints to avoid trivial solutions.
         self._solver.add(x > 1)
@@ -182,10 +160,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
         z = BitVec(32, "z")
-
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
-        self._solver.declare_fun("z", z)
 
         self._solver.add((x & y).Equals(z))
 
@@ -207,10 +181,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
         y = BitVec(32, "y")
         z = BitVec(32, "z")
 
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
-        self._solver.declare_fun("z", z)
-
         self._solver.add((x ^ y).Equals(z))
 
         # Add constraints to avoid trivial solutions.
@@ -230,10 +200,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
         z = BitVec(32, "z")
-
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
-        self._solver.declare_fun("z", z)
 
         self._solver.add((x | y).Equals(z))
 
@@ -255,10 +221,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
         y = BitVec(32, "y")
         z = BitVec(32, "z")
 
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
-        self._solver.declare_fun("z", z)
-
         self._solver.add((x << y).Equals(z))
 
         # Add constraints to avoid trivial solutions.
@@ -278,10 +240,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
         z = BitVec(32, "z")
-
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
-        self._solver.declare_fun("z", z)
 
         self._solver.add((x >> y).Equals(z))
 
@@ -304,11 +262,7 @@ class SmtSolverBitVecTests(unittest.TestCase):
         y = BitVec(32, "y")
         z = BitVec(32, "z")
 
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
-        self._solver.declare_fun("z", z)
-
-        self._solver.add(~x == z)
+        self._solver.add((~x).Equals(z))
 
         # Add constraints to avoid trivial solutions.
         self._solver.add(x > 1)
@@ -325,9 +279,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
     def test_lt(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
-
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
 
         self._solver.add(x < y)
 
@@ -346,9 +297,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
 
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
-
         self._solver.add(x <= y)
 
         # Add constraints to avoid trivial solutions.
@@ -365,9 +313,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
     def test_eq(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
-
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
 
         self._solver.add(x.Equals(y))
 
@@ -386,9 +331,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
 
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
-
         self._solver.add(x.NotEquals(y))
 
         # Add constraints to avoid trivial solutions.
@@ -406,9 +348,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
 
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
-
         self._solver.add(x > y)
 
         # Add constraints to avoid trivial solutions.
@@ -425,9 +364,6 @@ class SmtSolverBitVecTests(unittest.TestCase):
     def test_ge(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
-
-        self._solver.declare_fun("x", x)
-        self._solver.declare_fun("y", y)
 
         self._solver.add(x >= y)
 
