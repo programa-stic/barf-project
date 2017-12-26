@@ -54,9 +54,10 @@ from core.smt.smttranslator import SmtTranslator
 logger = logging.getLogger(__name__)
 
 # Choose between SMT Solvers...
-SMT_SOLVER = "Z3"
+# SMT_SOLVER = "Z3"
 # SMT_SOLVER = "CVC4"
 # SMT_SOLVER = None
+SMT_SOLVER = "PYSMT"
 
 
 class BARF(object):
@@ -149,7 +150,7 @@ class BARF(object):
             # Set SMT Solver.
             self.smt_solver = None
 
-            if SMT_SOLVER not in ("Z3", "CVC4"):
+            if SMT_SOLVER not in ("Z3", "CVC4", "PYSMT"):
                 raise Exception("{} SMT solver not supported.".format(SMT_SOLVER))
 
             try:
@@ -157,6 +158,8 @@ class BARF(object):
                     self.smt_solver = Z3Solver()
                 elif SMT_SOLVER == "CVC4":
                     self.smt_solver = CVC4Solver()
+                elif SMT_SOLVER == "PYSMT":
+                    self.smt_solver = PySMTSolver()
             except SmtSolverNotFound:
                 logger.warn("{} Solver is not installed. Run 'barf-install-solvers.sh' to install it.".format(SMT_SOLVER))
 

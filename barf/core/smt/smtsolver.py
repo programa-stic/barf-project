@@ -258,3 +258,70 @@ class CVC4Solver(object):
     @property
     def declarations(self):
         return self._declarations
+
+from pysmt.shortcuts import Solver
+from pysmt.exceptions import NoSolverAvailableError
+
+
+class PySMTSolver(object):
+    def __init__(self, solver_name=None):
+        self._name = solver_name
+        self._status = "unknown"
+
+        self._declarations = {}
+        self._constraints = []
+
+        self._process = None
+
+        try:
+            self._solver = Solver(name=self._name)
+        except NoSolverAvailableError:
+            raise SmtSolverNotFound("{} solver is not installed".format(self._name))
+
+    def _start_solver(self):
+        pass
+
+    def _stop_solver(self):
+        pass
+
+    def __str__(self):
+        declarations = [d.declaration for d in self._declarations.values()]
+        constraints = ["(assert {})".format(c) for c in self._constraints]
+        return "\n".join(declarations + constraints)
+
+    def add(self, constraint):
+        self._solver.add_assertion(constraint)
+
+    def check(self):
+        assert self._status in ("sat", "unsat", "unknown")
+        res = self._solver.solve()
+
+        # if self._status == "unknown":
+        #     self._write("(check-sat)")
+        #     self._status = self._read()
+        if res:
+            self._status = "sat"
+        else:
+            self._status = "unsat"
+
+        # TODO: Handling of unknown
+        return self._status
+
+    def reset(self):
+        self._solver.reset()
+        self._status = "unknown"
+        self._declarations = {}
+        self._constraints = []
+
+    def get_value(self, expr):
+        assert self._status == "sat"
+        return self._solver.get_py_value(expr)
+
+    def declare_fun(self, name, fun):
+        if name in self._declarations:
+            raise Exception("Symbol already declare.")
+        self._declarations[name] = fun
+
+    @property
+    def declarations(self):
+        return self._declarations
