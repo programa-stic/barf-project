@@ -70,7 +70,7 @@ class PySMTSolver(object):
         return self._status
 
     def reset(self):
-        self._solver.reset()
+        self._solver._reset_assertions()
         self._status = "unknown"
         self._declarations = {}
         self._constraints = []

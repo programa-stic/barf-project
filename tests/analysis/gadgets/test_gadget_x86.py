@@ -39,8 +39,7 @@ from barf.core.reil import ReilEmptyOperand
 from barf.core.reil.emulator.emulator import ReilEmulator
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
-# from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
-from barf.core.smt.smtsolver import Z3Solver as SmtSolver
+from barf.core.smt.smtsolver import PySMTSolver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator
 
 

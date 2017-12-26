@@ -24,8 +24,7 @@
 
 import logging
 
-import barf.core.smt.smtfunction as smtfunction
-import barf.core.smt.smtsymbol as smtsymbol
+import barf.core.smt.smtsymbol as smt
 
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
@@ -67,7 +66,7 @@ class CodeAnalyzer(object):
                 var_name = self._get_var_name(operand.name, mode)
                 expr = self._translator.make_bitvec(operand.size, var_name)
         elif isinstance(operand, ReilImmediateOperand):
-            expr = smtsymbol.Constant(operand.size, operand.immediate)
+            expr = smt.Constant(operand.size, operand.immediate)
         else:
             raise Exception("Invalid operand: %s" % str(operand))
 
@@ -90,7 +89,7 @@ class CodeAnalyzer(object):
         ret_val = self._translator.make_bitvec(var_size, var_name)
 
         if reg_info:
-            ret_val = smtfunction.extract(ret_val, offset, self._arch_info.registers_size[register_name])
+            ret_val = smt.extract(ret_val, offset, self._arch_info.registers_size[register_name])
 
         return ret_val
 
@@ -99,7 +98,7 @@ class CodeAnalyzer(object):
         """
         mem = self.get_memory(mode)
 
-        return smtfunction.concat(8, *reversed([mem[address + i] for i in xrange(size)]))
+        return smt.concat(8, *reversed([mem[address + i] for i in xrange(size)]))
 
     def get_memory(self, mode):
         """Return a smt bit vector that represents a memory location.

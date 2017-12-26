@@ -36,7 +36,7 @@ representation of the underlying assembly code.
 
 import logging
 
-import barf.core.smt.smtfunction as smtfunction
+import barf.core.smt.smtsymbol as smt
 
 from barf.analysis.gadgets import GadgetType
 from barf.core.reil import ReilRegisterOperand
@@ -248,7 +248,7 @@ class GadgetVerifier(object):
 
         for i in reversed(xrange(0, size, 8)):
             bytes_exprs_1 = self.analyzer.get_memory_expr(addr + i/8, 8/8)
-            bytes_exprs_2 = smtfunction.extract(dst, i, 8)
+            bytes_exprs_2 = smt.extract(dst, i, 8)
 
             constrs += [bytes_exprs_1 != bytes_exprs_2]
 
@@ -285,7 +285,7 @@ class GadgetVerifier(object):
 
         for i in reversed(xrange(0, size, 8)):
             bytes_exprs_1 = self.analyzer.get_memory_expr(addr + i/8, 8/8)
-            bytes_exprs_2 = smtfunction.extract(src, i, 8)
+            bytes_exprs_2 = smt.extract(src, i, 8)
 
             constrs += [bytes_exprs_1 != bytes_exprs_2]
 
@@ -327,8 +327,8 @@ class GadgetVerifier(object):
         constrs = []
 
         for i in reversed(xrange(0, size, 8)):
-            bytes_exprs_1 = smtfunction.extract(result, i, 8)
-            bytes_exprs_2 = smtfunction.extract(dst, i, 8)
+            bytes_exprs_1 = smt.extract(result, i, 8)
+            bytes_exprs_2 = smt.extract(dst, i, 8)
 
             constrs += [bytes_exprs_1 != bytes_exprs_2]
 
@@ -369,8 +369,8 @@ class GadgetVerifier(object):
         constrs = []
 
         for i in reversed(xrange(0, size, 8)):
-            bytes_exprs_1 = smtfunction.extract(result, i, 8)
-            bytes_exprs_2 = smtfunction.extract(dst, i, 8)
+            bytes_exprs_1 = smt.extract(result, i, 8)
+            bytes_exprs_2 = smt.extract(dst, i, 8)
 
             constrs += [bytes_exprs_1 != bytes_exprs_2]
 

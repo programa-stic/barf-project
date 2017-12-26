@@ -22,25 +22,27 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from pysmt.shortcuts import *
-from pysmt.typing import *
-
+from pysmt.shortcuts import Bool, BV, Symbol, Ite, Select
+from pysmt.shortcuts import BVSExt, BVZExt, BVExtract, BVConcat
+from pysmt.typing import BVType, ArrayType
 from pysmt.smtlib.printers import SmtPrinter
+
 
 class BarfSmtPrinter(SmtPrinter):
     def walk_bv_constant(self, formula):
         # Barf relies on hex printing of BV Const
         self.write("#x" + formula.bv_str(fmt='x'))
 
+
 def to_smtlib(formula):
+    """Returns a Smt-Lib string representation of the formula."""
     # MG: Six is used for compatibility btw python 2 and 3
     from six.moves import cStringIO
     buf = cStringIO()
-    p = BarfSmtPrinter(buf).printer(formula)
+    BarfSmtPrinter(buf).printer(formula)
     res = buf.getvalue()
     buf.close()
     return res
-
 
 
 def _cast_to_bool(value):
@@ -54,7 +56,6 @@ def _cast_to_bitvec(value, size):
     if type(value) in (int, long):
         value = Constant(size, value)
     assert value.bv_width() == size
-
     return value
 
 

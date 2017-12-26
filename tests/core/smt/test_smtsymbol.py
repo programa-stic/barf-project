@@ -24,29 +24,12 @@
 
 import unittest
 
+from pysmt.shortcuts import reset_env
+
 from barf.core.smt.smtsymbol import Bool
 from barf.core.smt.smtsymbol import BitVec
 from barf.core.smt.smtsymbol import BitVecArray
-from pysmt.smtlib.printers import SmtPrinter, cStringIO
-from pysmt.shortcuts import reset_env
-
-
-# MG: This should go in smtsymbol.py
-def to_smtlib(formula):
-    """Returns a Smt-Lib string representation of the formula."""
-
-    class BarfSmtPrinter(SmtPrinter):
-        def walk_bv_constant(self, formula):
-            self.write("#x" + formula.bv_str('x'))
-
-    buf = cStringIO()
-    p = BarfSmtPrinter(buf)
-    p.printer(formula)
-    res = buf.getvalue()
-    buf.close()
-    return res
-# END MG
-
+from barf.core.smt.smtsymbol import to_smtlib
 
 
 class BoolTests(unittest.TestCase):
@@ -54,11 +37,6 @@ class BoolTests(unittest.TestCase):
     def setUp(self):
         self.env = reset_env()
         self.env.enable_infix_notation = True
-
-    def test_declaration(self):
-        #x = Bool("x")
-        #self.assertEqual(x.declaration, "(declare-fun x () Bool)")
-        return
 
     def test_and(self):
         x = Bool("x")
@@ -97,7 +75,6 @@ class BoolTests(unittest.TestCase):
         self.assertEqual(to_smtlib(w), "(not (= x true))")
 
 
-
     def test_invert(self):
         x = Bool("x")
         z = ~x
@@ -128,11 +105,6 @@ class BoolTests(unittest.TestCase):
 
 
 class BitVecTests(unittest.TestCase):
-
-    def test_declaration(self):
-        # x = BitVec(32, "x")
-        # self.assertEqual(x.declaration, "(declare-fun x () (_ BitVec 32))")
-        return
 
     # Arithmetic operators
     def test_add(self):
@@ -328,8 +300,6 @@ class BitVecTests(unittest.TestCase):
     def test_less_than_unsigned(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
-        # MG: This should exist
-        return
         z = x.BVULT(y)
         v = x.BVULT(1)
 
@@ -339,37 +309,33 @@ class BitVecTests(unittest.TestCase):
     def test_less_than_equal_unsigned(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
-        # MG: This should exist
-        return
         z = x.BVULE(y)
         v = x.BVULE(1)
 
         self.assertEqual(to_smtlib(z), "(bvule x y)")
         self.assertEqual(to_smtlib(v), "(bvule x #x00000001)")
 
-    # def test_greater_than_unsigned(self):
-    #     x = BitVec(32, "x")
-    #     y = BitVec(32, "y")
-    #     z = x.BVUGT(y)
-    #     v = x.BVUGT(1)
+    def test_greater_than_unsigned(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = x.BVUGT(y)
+        v = x.BVUGT(1)
 
-    #     self.assertEqual(to_smtlib(z), "(bvugt x y)")
-    #     self.assertEqual(to_smtlib(v), "(bvugt x #x00000001)")
+        self.assertEqual(to_smtlib(z), "(bvult y x)")
+        self.assertEqual(to_smtlib(v), "(bvult #x00000001 x)")
 
-    # def test_greater_than_equal_unsigned(self):
-    #     x = BitVec(32, "x")
-    #     y = BitVec(32, "y")
-    #     z = x.BVUGE(y)
-    #     v = x.BVUGE(1)
+    def test_greater_than_equal_unsigned(self):
+        x = BitVec(32, "x")
+        y = BitVec(32, "y")
+        z = x.BVUGE(y)
+        v = x.BVUGE(1)
 
-        self.assertEqual(to_smtlib(z), "(bvuge x y)")
-        self.assertEqual(to_smtlib(v), "(bvuge x #x00000001)")
+        self.assertEqual(to_smtlib(z), "(bvule y x)")
+        self.assertEqual(to_smtlib(v), "(bvule #x00000001 x)")
 
     def test_udiv(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
-        # MG: This should exist
-        return
         z = x.BVUDiv(y)
         v = x.BVUDiv(1)
 
@@ -379,8 +345,6 @@ class BitVecTests(unittest.TestCase):
     def test_umod(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
-        # MG: This should exist
-        return
         z = x.BVURem(y)
         v = x.BVURem(1)
 
@@ -423,9 +387,6 @@ class BitVecArrayTests(unittest.TestCase):
 
 def main():
     unittest.main()
-
-
-
 
 
 if __name__ == '__main__':
