@@ -46,18 +46,16 @@ from arch.x86.disassembler import X86Disassembler
 from arch.x86.translator import X86Translator
 from core.binary import BinaryFile
 from core.reil.emulator import ReilEmulator
-from core.smt.smtsolver import CVC4Solver
-from core.smt.smtsolver import SmtSolverNotFound
-from core.smt.smtsolver import Z3Solver
+from core.smt.smtsolver import PySMTSolver, SmtSolverNotFound
 from core.smt.smttranslator import SmtTranslator
 
 logger = logging.getLogger(__name__)
 
-# Choose between SMT Solvers...
-# SMT_SOLVER = "Z3"
-# SMT_SOLVER = "CVC4"
-# SMT_SOLVER = None
-SMT_SOLVER = "PYSMT"
+# Choose between SMT Solvers:
+# SMT_SOLVER = "z3"
+# SMT_SOLVER = "cvc4"
+# SMT_SOLVER = "msat"
+SMT_SOLVER = "btor"
 
 
 class BARF(object):
@@ -150,18 +148,11 @@ class BARF(object):
             # Set SMT Solver.
             self.smt_solver = None
 
-            if SMT_SOLVER not in ("Z3", "CVC4", "PYSMT"):
-                raise Exception("{} SMT solver not supported.".format(SMT_SOLVER))
-
             try:
-                if SMT_SOLVER == "Z3":
-                    self.smt_solver = Z3Solver()
-                elif SMT_SOLVER == "CVC4":
-                    self.smt_solver = CVC4Solver()
-                elif SMT_SOLVER == "PYSMT":
-                    self.smt_solver = PySMTSolver()
+                self.smt_solver = PySMTSolver(solver_name=SMT_SOLVER)
             except SmtSolverNotFound:
-                logger.warn("{} Solver is not installed. Run 'barf-install-solvers.sh' to install it.".format(SMT_SOLVER))
+                logger.warn("%s Solver is not installed. Run 'pysmt-install' to install it.",
+                            SMT_SOLVER)
 
             # Set SMT translator.
             self.smt_translator = None
