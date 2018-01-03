@@ -39,6 +39,7 @@ setup(
             "BARFcfg = barf.tools.cfg.cfg:main",
             "BARFcg = barf.tools.cg.cg:main",
             "BARFgadgets = barf.tools.gadgets.gadgets:main",
+            "BARFreplay = barf.tools.replay.replay:main",
         ]
     }    ,
     version          = __version__,
