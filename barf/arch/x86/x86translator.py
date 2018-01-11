@@ -1939,7 +1939,7 @@ class X86Translator(Translator):
         imm1 = tb.immediate((2**oprnd0.size)-1, oprnd0.size)
         imm2 = tb.immediate(-1, oprnd0.size)
 
-        if oprnd0.size == 32:
+        if oprnd0.size <= 32:
             mask = tb.immediate(0x1f, oprnd1.size)
         elif oprnd0.size == 64:
             mask = tb.immediate(0x3f, oprnd1.size)
@@ -2008,7 +2008,7 @@ class X86Translator(Translator):
         imm0 = tb.immediate(1, oprnd0.size)
         imm1 = tb.immediate(-31, oprnd0.size)
 
-        if oprnd0.size == 32:
+        if oprnd0.size <= 32:
             mask = tb.immediate(0x1f, oprnd1.size)
         elif oprnd0.size == 64:
             mask = tb.immediate(0x3f, oprnd1.size)
