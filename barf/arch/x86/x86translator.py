@@ -111,7 +111,12 @@ class X86TranslationBuilder(TranslationBuilder):
     def _compute_memory_address(self, mem_operand):
         """Return operand memory access translation.
         """
-        size = self._arch_info.architecture_size
+        if mem_operand.base:
+            size = self._regs_size[mem_operand.base]
+        elif mem_operand.index:
+            size = self._regs_size[mem_operand.index]
+        else:
+            size = self._arch_info.architecture_size
 
         addr = None
 
