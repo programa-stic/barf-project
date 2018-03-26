@@ -112,10 +112,13 @@ class Emulator(object):
                 # Compute next address after hook.
                 if skip:
                     if isinstance(self.arch_info, X86ArchitectureInformation):
-                        next_addr = asm_instr.address + asm_instr.size + offset
+                        # Pop return address from the stack.
+                        next_addr = self.ir_emulator.read_memory(self.ir_emulator.registers[self.sp], self.ws)
+                        self.ir_emulator.registers[self.sp] += self.ws
 
                     if isinstance(self.arch_info, ArmArchitectureInformation):
-                        next_addr = asm_instr.address + asm_instr.size + offset
+                        # Load return address from the link register.
+                        next_addr = self.ir_emulator.registers["r14"]
 
                 logger.debug("Continuing @ {:#x}".format(next_addr))
 
