@@ -1889,8 +1889,10 @@ class X86Translator(Translator):
         #         BIT[DEST,i] <- BIT[SRC, i + COUNT - SIZE];
         #     OD;
 
-        zero = tb.temporal(count.size)
+        zero = tb.immediate(0, count.size)
+        one = tb.immediate(1, count.size)
         bit_offset = tb.temporal(oprnd0.size)
+        bit_offset_tmp = tb.temporal(oprnd0.size)
         tmp0 = tb.temporal(1)
         lower = tb.temporal(oprnd0.size*2)
         upper = tb.temporal(oprnd0.size * 2)
@@ -1900,7 +1902,8 @@ class X86Translator(Translator):
         dst_count0 = tb.temporal(oprnd0.size * 2)
 
         # Compute bit offset.
-        tb.add(self._builder.gen_sub(zero, count, bit_offset))     # negate
+        tb.add(self._builder.gen_sub(count, one, bit_offset_tmp))
+        tb.add(self._builder.gen_sub(zero, bit_offset_tmp, bit_offset))     # negate
 
         # Extract bit.
         tb.add(self._builder.gen_bsh(oprnd0, bit_offset, tmp0))

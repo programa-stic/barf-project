@@ -2319,25 +2319,24 @@ class X86TranslationTests(unittest.TestCase):
 
         self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
-    # TODO Fix
-    # def test_shrd_1(self):
-    #     asm = ["shrd eax, ebx, 3"]
+    def test_shrd_1(self):
+        asm = ["shrd eax, ebx, 3"]
 
-    #     ctx_init = self.__init_context()
+        ctx_init = self.__init_context()
 
-    #     x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
 
-    #     # NOTE: AF and OF can be left undefined in some cases. They are not
-    #     # cover by this test.
-    #     reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
-    #     reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+        # NOTE: AF and OF can be left undefined in some cases. They are not
+        # cover by this test.
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
 
-    #     cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
 
-    #     if not cmp_result:
-    #         self.__save_failing_context(ctx_init)
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
 
-    #     self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
     def test_shr_1(self):
         asm = ["shr eax, 3"]
