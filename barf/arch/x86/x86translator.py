@@ -1790,6 +1790,142 @@ class X86Translator(Translator):
 
 # "Shift and Rotate Instructions"
 # ============================================================================ #
+    def _translate_shld(self, tb, instruction):
+        # Flags Affected
+        # If the count is 1 or greater, the CF flag is filled with the last
+        # bit shifted out of the destination operand and the SF, ZF, and PF
+        # flags are set according to the value of the result. For a 1-bit
+        # shift, the OF flag is set if a sign change occurred; otherwise, it
+        # is cleared. For shifts greater than 1 bit, the OF flag is undefined.
+        # If a shift occurs, the AF flag is undefined. If the count operand is
+        # 0, the flags are not affected. If the count is greater than the
+        # operand size, the flags are undefined.
+
+        # Operation
+        # IF (In 64-Bit Mode and REX.W = 1)
+        #     THEN COUNT <- COUNT MOD 64;
+        #     ELSE COUNT <- COUNT MOD 32;
+        # FI
+        # SIZE <- OperandSize;
+        # IF COUNT = 0
+        #     THEN
+        #         No operation;
+        #     ELSE
+        #         IF COUNT > SIZE
+        #             THEN (* Bad parameters *)
+        #                 DEST is undefined;
+        #                 CF, OF, SF, ZF, AF, PF are undefined;
+        #             ELSE (* Perform the shift *)
+        #                 CF <- BIT[DEST, SIZE - COUNT];
+        #                 FOR i <- SIZE - 1 DOWN TO COUNT
+        #                     DO
+        #                         BIT[DEST, i] <- BIT[DEST, i - COUNT];
+        #                     OD;
+        #                 FOR i <- COUNT DOWN TO 0
+        #                     DO
+        #                         BIT[DEST,i] <- BIT[SRC, i - COUNT + SIZE];
+        #                     OD;
+        #             FI;
+        # FI;
+
+        oprnd0 = tb.read(instruction.operands[0])
+        oprnd1 = tb.read(instruction.operands[1])
+        oprnd2 = tb.read(instruction.operands[2])
+
+        if self._arch_info.architecture_mode == ARCH_X86_MODE_32:
+            mod_const = tb.immediate(32, oprnd2.size)
+        elif self._arch_info.architecture_mode == ARCH_X86_MODE_64:
+            mod_const = tb.immediate(64, oprnd2.size)
+        else:
+            raise Exception("Invalid architecture mode.")
+
+        size = tb.immediate(self._arch_info.operand_size, oprnd2.size)
+        end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
+        count = tb.temporal(oprnd2.size)
+        count_zero = tb.temporal(1)
+        count_ext = tb.temporal(oprnd2.size*2)
+        size_ext = tb.temporal(oprnd2.size * 2)
+        count_check = tb.temporal(oprnd2.size * 2)
+        count_check_sign = tb.temporal(1)
+        dst = tb.temporal(oprnd0.size)
+
+        bad_parameters_lbl = Label("bad_parameters_lbl")
+        shift_lbl = Label("shift_lbl")
+
+        tb.add(self._builder.gen_mod(oprnd2, mod_const, count))
+        tb.add(self._builder.gen_bisz(count, count_zero))
+        tb.add(self._builder.gen_jcc(count_zero, end_addr))
+
+        tb.add(self._builder.gen_str(count, count_ext))
+        tb.add(self._builder.gen_str(size, size_ext))
+        tb.add(self._builder.gen_sub(size_ext, count_ext, count_check))     # count_check = size_ext - count_ext
+
+        tb.add(self._builder.gen_bsh(count_check, tb.immediate(-count.size, count_check.size), count_check_sign))   # count_check_sign == 1 => count > size
+
+        tb.add(self._builder.gen_jcc(count_check_sign, bad_parameters_lbl))
+        tb.add(self._builder.gen_jcc(tb.immediate(1, 1), shift_lbl))
+
+        tb.add(bad_parameters_lbl)
+        # dst <- undefined
+        tb.add(self._builder.gen_str(oprnd0, dst))
+        # Set flags: CF, OF, SF, ZF, AF, PF are undefined;
+        self._undefine_flag(tb, self._flags["cf"])
+        self._undefine_flag(tb, self._flags["of"])
+        self._undefine_flag(tb, self._flags["sf"])
+        self._undefine_flag(tb, self._flags["zf"])
+        self._undefine_flag(tb, self._flags["af"])
+        self._undefine_flag(tb, self._flags["pf"])
+        tb.add(self._builder.gen_jcc(tb.immediate(1, 1), end_addr))
+
+        tb.add(shift_lbl)
+        # (* Perform the shift *)
+        # CF <- BIT[DEST, SIZE - COUNT];
+        # FOR i <- SIZE - 1 DOWN TO COUNT
+        #     DO
+        #         BIT[DEST, i] <- BIT[DEST, i - COUNT];
+        #     OD;
+        # FOR i <- COUNT DOWN TO 0
+        #     DO
+        #         BIT[DEST,i] <- BIT[SRC, i - COUNT + SIZE];
+        #     OD;
+
+        zero = tb.immediate(0, count.size)
+        bit_offset = tb.temporal(oprnd0.size)
+        bit_offset2 = tb.temporal(oprnd0.size)
+        bit_offset2_tmp = tb.temporal(oprnd0.size)
+        tmp0 = tb.temporal(1)
+        lower = tb.temporal(oprnd0.size*2)
+        upper = tb.temporal(oprnd0.size * 2)
+        dst_tmp0 = tb.temporal(oprnd0.size * 2)
+        dst_tmp1 = tb.temporal(oprnd0.size * 2)
+        dst_count = tb.temporal(oprnd0.size * 2)
+        dst_count0 = tb.temporal(oprnd0.size * 2)
+
+        # Compute bit offset.
+        tb.add(self._builder.gen_str(count, bit_offset))
+        tb.add(self._builder.gen_sub(size, count, bit_offset2_tmp))
+        tb.add(self._builder.gen_sub(zero, bit_offset2_tmp, bit_offset2))
+
+        # Extract bit.
+        tb.add(self._builder.gen_bsh(oprnd0, bit_offset, tmp0))
+
+        # Set CF.
+        tb.add(self._builder.gen_and(tmp0, tb.immediate(1, 1), self._flags["cf"]))
+
+        tb.add(self._builder.gen_str(oprnd1, lower))
+        tb.add(self._builder.gen_bsh(oprnd0, tb.immediate(oprnd0.size, oprnd0.size), upper))
+        tb.add(self._builder.gen_or(upper, lower, dst_tmp0))
+        tb.add(self._builder.gen_str(count, dst_count))
+        tb.add(self._builder.gen_bsh(dst_tmp0, dst_count, dst_tmp1))
+        tb.add(self._builder.gen_bsh(dst_tmp1, tb.immediate(-oprnd0.size, dst_tmp1.size), dst))
+
+        # Flags : SF, ZF, PF
+        self._update_sf(tb, oprnd0, oprnd0, dst)
+        self._update_zf(tb, oprnd0, oprnd0, dst)
+        self._update_pf(tb, oprnd0, oprnd0, dst)
+
+        tb.write(instruction.operands[0], dst)
+
     def _translate_shrd(self, tb, instruction):
         # Flags Affected
         # If the count is 1 or greater, the CF flag is filled with the last

@@ -2385,6 +2385,28 @@ class X86TranslationTests(unittest.TestCase):
 
         self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
 
+    def test_shld_1(self):
+        asm = ["shld eax, esi, 3"]
+
+        ctx_init = self.__init_context()
+
+        x86_ctx_out, reil_ctx_out = self.__run_code(asm, 0xdeadbeef, ctx_init)
+
+        # Undefined flags...
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "af")
+
+        # NOTE: OF and CF can be left undefined in some cases. They are
+        # not cover by this test.
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "cf")
+        reil_ctx_out = self.__fix_reil_flag(reil_ctx_out, x86_ctx_out, "of")
+
+        cmp_result = self.__compare_contexts(ctx_init, x86_ctx_out, reil_ctx_out)
+
+        if not cmp_result:
+            self.__save_failing_context(ctx_init)
+
+        self.assertTrue(cmp_result, self.__print_contexts(ctx_init, x86_ctx_out, reil_ctx_out))
+
     def test_shl_1(self):
         asm = ["shl eax, 3"]
 
