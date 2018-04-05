@@ -761,9 +761,12 @@ class CFGSimpleRenderer(CFGRenderer):
             # Add edges.
             for bb_src in cfg.basic_blocks:
                 for bb_dst_addr, branch_type in bb_src.branches:
-                    edge = self._create_edge(nodes[bb_src.address], nodes[bb_dst_addr], branch_type)
+                    if bb_dst_addr in nodes:
+                        edge = self._create_edge(nodes[bb_src.address], nodes[bb_dst_addr], branch_type)
 
-                    dot_graph.add_edge(edge)
+                        dot_graph.add_edge(edge)
+                    else:
+                        logger.warning("Destination basic block not found! (0x%x)", bb_dst_addr)
 
             # Save graph.
             dot_graph.write("{}.{}".format(filename, format), format=format)
@@ -908,9 +911,12 @@ class CFGSimpleRendererEx(CFGRenderer):
             # Add edges.
             for bb_src in cfg.basic_blocks:
                 for bb_dst_addr, branch_type in bb_src.branches:
-                    edge = self._create_edge(nodes[bb_src.address], nodes[bb_dst_addr], branch_type)
+                    if bb_dst_addr in nodes:
+                        edge = self._create_edge(nodes[bb_src.address], nodes[bb_dst_addr], branch_type)
 
-                    dot_graph.add_edge(edge)
+                        dot_graph.add_edge(edge)
+                    else:
+                        logger.warning("Destination basic block not found! (0x%x)", bb_dst_addr)
 
             # Save graph.
             dot_graph.write("{}.{}".format(filename, format), format=format)
