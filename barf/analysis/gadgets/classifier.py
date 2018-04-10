@@ -23,11 +23,11 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
-This is the gadget classifier. It classify gadgets in 10 different
+This is the gadgets classifier. It classify gadgets in 10 different
 types: No Operation, Jump, Move Register, Load Constant, Arithmetic,
 Load Memory, Store Memory, Arithmetic Load, Arithmetic Store or
 Undefined. This classification is based on the paper "Q: Exploit
-Hardening Made Easy." So, given a gadget (RawGadget object) it generate
+Hardening Made Easy." So, given a gadgets (RawGadget object) it generate
 one o more TypedGadgets with its type.
 
 This algorithm is architecture agnostic since it operates on the IR
@@ -37,8 +37,8 @@ representation of the underlying assembly code.
 
 import random
 
-from barf.analysis.gadget import GadgetType
-from barf.analysis.gadget import TypedGadget
+from barf.analysis.gadgets import GadgetType
+from barf.analysis.gadgets import TypedGadget
 from barf.core.reil import ReilEmptyOperand
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
@@ -54,7 +54,7 @@ class GadgetClassifier(object):
         # An instance of a REIL emulator
         self._ir_emulator = ir_emulator
 
-        # Classifiers ordered by gadget type.
+        # Classifiers ordered by gadgets type.
         self._classifiers = {
             GadgetType.NoOperation:     self._classify_no_operation,
             GadgetType.Jump:            self._classify_jump,
@@ -99,7 +99,7 @@ class GadgetClassifier(object):
         self._emu_iters = 10
 
     def classify(self, gadget):
-        """Classify gadget.
+        """Classify gadgets.
         """
         typed_gadgets = []
 
@@ -536,7 +536,7 @@ class GadgetClassifier(object):
     def _classify(self, gadget, classifier, gadget_type, iters):
         """Classify gadgets.
         """
-        # Collect REIL instructions of the gadget.
+        # Collect REIL instructions of the gadgets.
         instrs = [ir_instr for g_instrs in gadget.instrs for ir_instr in g_instrs.ir_instrs]
 
         # Repeat classification.
@@ -549,7 +549,7 @@ class GadgetClassifier(object):
             # Generate random values for registers.
             regs_initial = self._init_regs_random()
 
-            # Emulate gadget.
+            # Emulate gadgets.
             try:
                 regs_final, mem_final = self._ir_emulator.execute_lite(
                     instrs,

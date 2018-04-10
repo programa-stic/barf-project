@@ -32,9 +32,9 @@ from analysis.basicblock import CFGRecoverer
 from analysis.basicblock import ControlFlowGraph
 from analysis.basicblock import RecursiveDescent
 from analysis.codeanalyzer import CodeAnalyzer
-from analysis.gadget import GadgetClassifier
-from analysis.gadget import GadgetFinder
-from analysis.gadget import GadgetVerifier
+from analysis.gadgets import GadgetClassifier
+from analysis.gadgets import GadgetFinder
+from analysis.gadgets import GadgetVerifier
 from arch import ARCH_ARM_MODE_THUMB
 from arch import ARCH_X86
 from arch.arm import ArmArchitectureInformation

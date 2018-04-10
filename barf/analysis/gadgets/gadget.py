@@ -23,12 +23,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
-This module contains two basic classes for gadget processing: RawGadget
+This module contains two basic classes for gadgets processing: RawGadget
 and TypedGadgets. The first is used to describe the gadgets found by
 GadgetFinder. These are candidate gadgets as they are not validated yet.
 However, they contains (the RawGadget object) the assembly code as well
-as its REIL representation. One given gadget can be classified in one or
-more gadget type. At this point, a TypedGadget object is created for
+as its REIL representation. One given gadgets can be classified in one or
+more gadgets type. At this point, a TypedGadget object is created for
 each classified type and the RawGadget object is associated with them.
 
 """
@@ -39,7 +39,7 @@ from barf.core.reil import ReilImmediateOperand
 
 class RawGadget(object):
 
-    """Represent a gadget as a list of instructions.
+    """Represent a gadgets as a list of instructions.
     """
 
     __slots__ = [
@@ -52,23 +52,23 @@ class RawGadget(object):
         # List of instructions (dual instructions.)
         self._instrs = instrs
 
-        # Id of gadget.
+        # Id of gadgets.
         self._id = None
 
     @property
     def address(self):
-        """Get gadget start address.
+        """Get gadgets start address.
         """
         return self._instrs[0].address
 
     @property
     def instrs(self):
-        """Get gadget dual instructions.
+        """Get gadgets dual instructions.
         """
         return self._instrs
 
     def get_ir_instrs(self):
-        """Get gadget IR instructions.
+        """Get gadgets IR instructions.
         """
         ir_instrs_list = [dual_ins.ir_instrs for dual_ins in self._instrs]
 
@@ -81,13 +81,13 @@ class RawGadget(object):
 
     @property
     def id(self):
-        """Get gadget validity status.
+        """Get gadgets validity status.
         """
         return self._id
 
     @id.setter
     def id(self, value):
-        """Set gadget validity status.
+        """Set gadgets validity status.
         """
         self._id = value
 
@@ -105,7 +105,7 @@ class RawGadget(object):
 
 class TypedGadget(RawGadget):
 
-    """Represents a gadget with its semantic classification.
+    """Represents a gadgets with its semantic classification.
     """
 
     __slots__ = [
@@ -122,7 +122,7 @@ class TypedGadget(RawGadget):
     def __init__(self, gadget, gadget_type, instrs):
         super(TypedGadget, self).__init__(instrs)
 
-        # A raw gadget.
+        # A raw gadgets.
         self._gadget = gadget
 
         # A list of sources.
@@ -131,75 +131,75 @@ class TypedGadget(RawGadget):
         # A list of destinations.
         self._destination = []
 
-        # A list of registers that are modified after gadget execution.
+        # A list of registers that are modified after gadgets execution.
         self._modified_regs = []
 
-        # Type of the gadget.
+        # Type of the gadgets.
         self._gadget_type = gadget_type
 
         # Verification flag.
         self._verified = False
 
-        # If the gadget was verified and it turned out to be correctly
+        # If the gadgets was verified and it turned out to be correctly
         # classifies, this flags is True. Otherwise, is False.
         self._is_valid = None
 
-        # Operation computed by the gadget.
+        # Operation computed by the gadgets.
         self._operation = None
 
     # Properties
     # ======================================================================== #
     @property
     def sources(self):
-        """Get gadget sources.
+        """Get gadgets sources.
         """
         return self._sources
 
     @sources.setter
     def sources(self, value):
-        """Set gadget sources.
+        """Set gadgets sources.
         """
         self._sources = value
 
     @property
     def destination(self):
-        """Get gadget destination.
+        """Get gadgets destination.
         """
         return self._destination
 
     @destination.setter
     def destination(self, value):
-        """Set gadget destination.
+        """Set gadgets destination.
         """
         self._destination = value
 
     @property
     def modified_registers(self):
-        """Get gadget modified registers.
+        """Get gadgets modified registers.
         """
         return self._modified_regs
 
     @modified_registers.setter
     def modified_registers(self, value):
-        """Set gadget modified registers.
+        """Set gadgets modified registers.
         """
         self._modified_regs = value
 
     @property
     def verified(self):
-        """Get gadget verification status.
+        """Get gadgets verification status.
         """
         return self._verified
 
     @verified.setter
     def verified(self, value):
-        """Set gadget verification status.
+        """Set gadgets verification status.
         """
         self._verified = value
 
     @property
     def is_valid(self):
-        """Get gadget validity status.
+        """Get gadgets validity status.
         """
         if not self._verified:
             raise Exception("Typed Gadget not Verified!")
@@ -208,26 +208,26 @@ class TypedGadget(RawGadget):
 
     @is_valid.setter
     def is_valid(self, value):
-        """Set gadget validity status.
+        """Set gadgets validity status.
         """
         self._verified = True
         self._is_valid = value
 
     @property
     def type(self):
-        """Get gadget type.
+        """Get gadgets type.
         """
         return self._gadget_type
 
     @property
     def operation(self):
-        """Get gadget operation.
+        """Get gadgets operation.
         """
         return self._operation
 
     @operation.setter
     def operation(self, value):
-        """Set gadget operation.
+        """Set gadgets operation.
         """
         self._operation = value
 

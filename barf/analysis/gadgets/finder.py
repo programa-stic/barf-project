@@ -23,7 +23,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
-This module implements a gadget finder based on the paper "The Geometry of
+This module implements a gadgets finder based on the paper "The Geometry of
 Innocent Flesh on the Bone: Return-into-libc without Function Calls
 (on the x86)."
 
@@ -33,7 +33,7 @@ agnostic.
 """
 import re
 
-from barf.analysis.gadget import RawGadget
+from barf.analysis.gadgets import RawGadget
 from barf.arch import ARCH_ARM
 from barf.arch import ARCH_X86
 from barf.core.disassembler import InvalidDisassemblerData
@@ -90,7 +90,7 @@ class GadgetFinder(object):
         """
         roots = []
 
-        # find gadget tail
+        # find gadgets tail
         for addr in xrange(start_address, end_address + 1):
             # TODO: Make this 'speed improvement' architecture-agnostic
             op_codes = [
@@ -124,7 +124,7 @@ class GadgetFinder(object):
             except:
                 continue
 
-            # build gadget
+            # build gadgets
             if ins_ir[-1] and (ins_ir[-1].mnemonic == ReilMnemonic.JCC and isinstance(ins_ir[-1].operands[2], ReilRegisterOperand)):
 
                 # add for REX.W + FF /3 call instruction
@@ -159,7 +159,7 @@ class GadgetFinder(object):
         # build gadgets
         root_gadgets = [self._build_gadgets(r) for r in roots]
 
-        # flatten root gadget list
+        # flatten root gadgets list
         candidates = [item for l in root_gadgets for item in l]
 
         return candidates
@@ -179,7 +179,7 @@ class GadgetFinder(object):
             "[\x00-\xff]{1}\x80\xbd\xe8",       # pop {,pc}
         ]
 
-        # find gadget tail
+        # find gadgets tail
         for addr in xrange(start_address, end_address + 1):
             # TODO: Make this 'speed improvement' architecture-agnostic
             # TODO: Add thumb
@@ -229,13 +229,13 @@ class GadgetFinder(object):
         # build gadgets
         root_gadgets = [self._build_gadgets(r) for r in roots]
 
-        # flatten root gadget list
+        # flatten root gadgets list
         candidates = [item for l in root_gadgets for item in l]
 
         return candidates
 
     def _build_from(self, address, root, base_address, depth=2):
-        """Build gadget recursively.
+        """Build gadgets recursively.
         """
         if depth == 0:
             return
@@ -278,7 +278,7 @@ class GadgetFinder(object):
                 self._build_from(address - step, child, base_address, depth - 1)
 
     def _build_gadgets(self, gadget_tree_root):
-        """Return a gadget list.
+        """Return a gadgets list.
         """
         node_list = self._build_gadgets_rec(gadget_tree_root)
 
@@ -295,7 +295,7 @@ class GadgetFinder(object):
         # return gadgets
 
     def _build_gadgets_rec(self, gadget_tree_root):
-        """Build a gadget from a gadget tree.
+        """Build a gadgets from a gadgets tree.
         """
         root = gadget_tree_root.get_root()
         children = gadget_tree_root.get_children()
@@ -315,7 +315,7 @@ class GadgetFinder(object):
         return node_list
 
     def _is_valid_ins(self, ins_ir):
-        """Check for instruction validity as a gadget.
+        """Check for instruction validity as a gadgets.
         """
         invalid_instrs = [
             ReilMnemonic.JCC,

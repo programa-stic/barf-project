@@ -23,7 +23,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
-This modules implements the gadget verifier. The given gadgets are
+This modules implements the gadgets verifier. The given gadgets are
 already classified, so for each one of them it generates a constraint
 according to its type. Then the gadgets are translated to a logic
 formula express in the SMTLIBv2 language. Finally, the formula and the
@@ -38,7 +38,7 @@ import logging
 
 import barf.core.smt.smtfunction as smtfunction
 
-from barf.analysis.gadget import GadgetType
+from barf.analysis.gadgets import GadgetType
 from barf.core.reil import ReilRegisterOperand
 
 logger = logging.getLogger("GadgetVerifier")
@@ -57,7 +57,7 @@ class GadgetVerifier(object):
         # Architecture information.
         self._arch_info = architecture_info
 
-        # Constraints generators ordered by gadget type.
+        # Constraints generators ordered by gadgets type.
         self._constraints_generators = {
             GadgetType.NoOperation:     self._get_constrs_no_operation,
             GadgetType.Jump:            self._get_constrs_jump,
@@ -92,7 +92,7 @@ class GadgetVerifier(object):
         }
 
     def verify(self, gadget):
-        """Verify gadget.
+        """Verify gadgets.
         """
         # Add instructions to the analyzer
         self.analyzer.reset()
@@ -100,7 +100,7 @@ class GadgetVerifier(object):
         for reil_instr in gadget.get_ir_instrs():
             self.analyzer.add_instruction(reil_instr)
 
-        # Generate constraints for the gadget type.
+        # Generate constraints for the gadgets type.
         constrs = self._constraints_generators[gadget.type](gadget)
 
         # Check constraints.
@@ -115,7 +115,7 @@ class GadgetVerifier(object):
     # Verifiers
     # ======================================================================== #
     def _get_constrs_no_operation(self, gadget):
-        """Verify NoOperation gadget.
+        """Verify NoOperation gadgets.
         """
         # Constraints on memory locations.
         # mem_constrs = [self.analyzer.get_memory("pre") != self.analyzer.get_memory("post")]
@@ -146,12 +146,12 @@ class GadgetVerifier(object):
         return constrs
 
     def _get_constrs_jump(self, gadget):
-        """Verify Jump gadget.
+        """Verify Jump gadgets.
         """
         return None
 
     def _get_constrs_move_register(self, gadget):
-        """Generate constraints for the MoveRegister gadget:
+        """Generate constraints for the MoveRegister gadgets:
             dst <- src
 
         """
@@ -177,7 +177,7 @@ class GadgetVerifier(object):
         return [dst != src] + constrs_mod
 
     def _get_constrs_load_constant(self, gadget):
-        """Generate constraints for the LoadConstant gadget:
+        """Generate constraints for the LoadConstant gadgets:
             dst <- constant
 
         """
@@ -203,7 +203,7 @@ class GadgetVerifier(object):
         return [dst != src] + constrs_mod
 
     def _get_constrs_arithmetic(self, gadget):
-        """Generate constraints for the BinaryOperation gadget:
+        """Generate constraints for the BinaryOperation gadgets:
             dst <- src1 OP src2
 
         """
@@ -231,7 +231,7 @@ class GadgetVerifier(object):
         return [dst != op(src1, src2)] + constrs_mod
 
     def _get_constrs_load_memory(self, gadget):
-        """Generate constraints for the LoadMemory gadget: dst_reg <- mem[src_reg + offset]
+        """Generate constraints for the LoadMemory gadgets: dst_reg <- mem[src_reg + offset]
         """
         dst = self.analyzer.get_register_expr(gadget.destination[0].name, mode="post")
         size = gadget.destination[0].size
@@ -268,7 +268,7 @@ class GadgetVerifier(object):
         return constrs + constrs_mod
 
     def _get_constrs_store_memory(self, gadget):
-        """Generate constraints for the StoreMemory gadget: mem[dst_reg + offset] <- src_reg
+        """Generate constraints for the StoreMemory gadgets: mem[dst_reg + offset] <- src_reg
         """
         if isinstance(gadget.destination[0], ReilRegisterOperand):
             base_addr = self.analyzer.get_register_expr(gadget.destination[0].name, mode="pre")
@@ -305,7 +305,7 @@ class GadgetVerifier(object):
         return constrs + constrs_mod
 
     def _get_constrs_arithmetic_load(self, gadget):
-        """Generate constraints for the ArithmeticLoad gadget: dst_reg <- dst_reg OP mem[src_reg + offset]
+        """Generate constraints for the ArithmeticLoad gadgets: dst_reg <- dst_reg OP mem[src_reg + offset]
         """
         op = self._arithmetic_ops[gadget.operation]
         dst = self.analyzer.get_register_expr(gadget.destination[0].name, mode="post")
@@ -348,7 +348,7 @@ class GadgetVerifier(object):
         return constrs + constrs_mod
 
     def _get_constrs_arithmetic_store(self, gadget):
-        """Generate constraints for the ArithmeticStore gadget: m[dst_reg + offset] <- m[dst_reg + offset] OP src_reg
+        """Generate constraints for the ArithmeticStore gadgets: m[dst_reg + offset] <- m[dst_reg + offset] OP src_reg
         """
         if isinstance(gadget.sources[0], ReilRegisterOperand):
             base_addr = self.analyzer.get_register_expr(gadget.sources[0].name, mode="pre")
