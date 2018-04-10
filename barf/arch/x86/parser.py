@@ -41,11 +41,11 @@ from pyparsing import Word
 from pyparsing import ZeroOrMore
 
 from barf.arch import ARCH_X86_MODE_32
-from barf.arch.x86.x86base import X86ArchitectureInformation
-from barf.arch.x86.x86base import X86ImmediateOperand
-from barf.arch.x86.x86base import X86Instruction
-from barf.arch.x86.x86base import X86MemoryOperand
-from barf.arch.x86.x86base import X86RegisterOperand
+from barf.arch.x86 import X86ArchitectureInformation
+from barf.arch.x86 import X86ImmediateOperand
+from barf.arch.x86 import X86Instruction
+from barf.arch.x86 import X86MemoryOperand
+from barf.arch.x86 import X86RegisterOperand
 
 logger = logging.getLogger(__name__)
 

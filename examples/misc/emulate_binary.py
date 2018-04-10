@@ -34,8 +34,8 @@ from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch import ARCH_X86
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
-from barf.arch.arm.armbase import ArmArchitectureInformation
-from barf.arch.x86.x86base import X86ArchitectureInformation
+from barf.arch.arm import ArmArchitectureInformation
+from barf.arch.x86 import X86ArchitectureInformation
 from barf.core.symbols import load_symbols
 
 

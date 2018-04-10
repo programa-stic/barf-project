@@ -26,9 +26,9 @@ import unittest
 
 from barf.analysis.codeanalyzer import CodeAnalyzer
 from barf.arch import ARCH_X86_MODE_32
-from barf.arch.x86.x86base import X86ArchitectureInformation
-from barf.arch.x86.x86parser import X86Parser
-from barf.arch.x86.x86translator import X86Translator
+from barf.arch.x86 import X86ArchitectureInformation
+from barf.arch.x86.parser import X86Parser
+from barf.arch.x86.translator import X86Translator
 from barf.core.smt.smtsolver import Z3Solver as SmtSolver
 # from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
 from barf.core.smt.smttranslator import SmtTranslator

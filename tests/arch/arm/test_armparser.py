@@ -25,7 +25,7 @@
 import unittest
 
 from barf.arch import ARCH_ARM_MODE_THUMB
-from barf.arch.arm.armparser import ArmParser
+from barf.arch.arm.parser import ArmParser
 
 
 class ArmParser32BitsTests(unittest.TestCase):

@@ -35,16 +35,16 @@ from barf.arch import ARCH_X86
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
 from barf.arch.emulator import Emulator
-from barf.arch.x86.x86base import X86ArchitectureInformation
-from barf.arch.x86.x86disassembler import X86Disassembler
-from barf.arch.x86.x86helper import compare_contexts
-from barf.arch.x86.x86helper import fix_flags
-from barf.arch.x86.x86helper import print_contexts
-from barf.arch.x86.x86parser import X86Parser
-from barf.arch.x86.x86trace import AsmTrace
-from barf.arch.x86.x86trace import AsmTraceAnalyzer
-from barf.arch.x86.x86trace import parse_trace
-from barf.arch.x86.x86translator import X86Translator
+from barf.arch.x86 import X86ArchitectureInformation
+from barf.arch.x86.disassembler import X86Disassembler
+from barf.arch.x86.helper import compare_contexts
+from barf.arch.x86.helper import fix_flags
+from barf.arch.x86.helper import print_contexts
+from barf.arch.x86.parser import X86Parser
+from barf.arch.x86.trace import AsmTrace
+from barf.arch.x86.trace import AsmTraceAnalyzer
+from barf.arch.x86.trace import parse_trace
+from barf.arch.x86.translator import X86Translator
 from barf.core.bi import BinaryFile
 from barf.core.reil.emulator.emulator import ReilEmulator
 

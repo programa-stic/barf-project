@@ -63,40 +63,39 @@ from capstone.arm import ARM_SFT_ROR_REG
 from capstone.arm import ARM_SFT_RRX
 from capstone.arm import ARM_SFT_RRX_REG
 
-
 from barf.arch import ARCH_ARM_MODE_ARM
 from barf.arch import ARCH_ARM_MODE_THUMB
-from barf.arch.arm.armbase import ARM_COND_CODE_AL
-from barf.arch.arm.armbase import ARM_COND_CODE_EQ
-from barf.arch.arm.armbase import ARM_COND_CODE_GE
-from barf.arch.arm.armbase import ARM_COND_CODE_GT
-from barf.arch.arm.armbase import ARM_COND_CODE_HI
-from barf.arch.arm.armbase import ARM_COND_CODE_HS
-from barf.arch.arm.armbase import ARM_COND_CODE_LE
-from barf.arch.arm.armbase import ARM_COND_CODE_LO
-from barf.arch.arm.armbase import ARM_COND_CODE_LS
-from barf.arch.arm.armbase import ARM_COND_CODE_LT
-from barf.arch.arm.armbase import ARM_COND_CODE_MI
-from barf.arch.arm.armbase import ARM_COND_CODE_NE
-from barf.arch.arm.armbase import ARM_COND_CODE_PL
-from barf.arch.arm.armbase import ARM_COND_CODE_VC
-from barf.arch.arm.armbase import ARM_COND_CODE_VS
-from barf.arch.arm.armbase import ARM_MEMORY_INDEX_OFFSET
-from barf.arch.arm.armbase import ArmArchitectureInformation
-from barf.arch.arm.armbase import ArmImmediateOperand
-from barf.arch.arm.armbase import ArmInstruction
-from barf.arch.arm.armbase import ArmMemoryOperand
-from barf.arch.arm.armbase import ArmRegisterListOperand
-from barf.arch.arm.armbase import ArmRegisterOperand
-from barf.arch.arm.armbase import ArmShiftedRegisterOperand
-from barf.arch.arm.armbase import cc_inverse_mapper
-from barf.arch.arm.armbase import arm_alias_reg_map
-from barf.arch.arm.armbase import ldm_stm_am_mapper
+from barf.arch.arm import ARM_COND_CODE_AL
+from barf.arch.arm import ARM_COND_CODE_EQ
+from barf.arch.arm import ARM_COND_CODE_GE
+from barf.arch.arm import ARM_COND_CODE_GT
+from barf.arch.arm import ARM_COND_CODE_HI
+from barf.arch.arm import ARM_COND_CODE_HS
+from barf.arch.arm import ARM_COND_CODE_LE
+from barf.arch.arm import ARM_COND_CODE_LO
+from barf.arch.arm import ARM_COND_CODE_LS
+from barf.arch.arm import ARM_COND_CODE_LT
+from barf.arch.arm import ARM_COND_CODE_MI
+from barf.arch.arm import ARM_COND_CODE_NE
+from barf.arch.arm import ARM_COND_CODE_PL
+from barf.arch.arm import ARM_COND_CODE_VC
+from barf.arch.arm import ARM_COND_CODE_VS
+from barf.arch.arm import ARM_MEMORY_INDEX_OFFSET
+from barf.arch.arm import ArmArchitectureInformation
+from barf.arch.arm import ArmImmediateOperand
+from barf.arch.arm import ArmInstruction
+from barf.arch.arm import ArmMemoryOperand
+from barf.arch.arm import ArmRegisterListOperand
+from barf.arch.arm import ArmRegisterOperand
+from barf.arch.arm import ArmShiftedRegisterOperand
+from barf.arch.arm import cc_inverse_mapper
+from barf.arch.arm import arm_alias_reg_map
+from barf.arch.arm import ldm_stm_am_mapper
+# from barf.arch.arm.parser import ArmParser
 from barf.core.disassembler import Disassembler
 from barf.core.disassembler import DisassemblerError
 from barf.core.disassembler import InvalidDisassemblerData
 
-# from barf.arch.arm.armparser import ArmParser
 
 cc_capstone_barf_mapper = {
     ARM_CC_EQ: ARM_COND_CODE_EQ,

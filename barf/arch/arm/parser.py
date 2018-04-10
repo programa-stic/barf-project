@@ -42,18 +42,18 @@ from pyparsing import Group
 from pyparsing import LineEnd
 
 from barf.arch import ARCH_ARM_MODE_THUMB
-from barf.arch.arm.armbase import ArmArchitectureInformation
-from barf.arch.arm.armbase import ArmRegisterListOperand
-from barf.arch.arm.armbase import ArmImmediateOperand
-from barf.arch.arm.armbase import ArmInstruction
-from barf.arch.arm.armbase import ArmMemoryOperand
-from barf.arch.arm.armbase import ArmRegisterOperand
-from barf.arch.arm.armbase import ArmShiftedRegisterOperand
-from barf.arch.arm.armbase import ARM_MEMORY_INDEX_OFFSET
-from barf.arch.arm.armbase import ARM_MEMORY_INDEX_POST
-from barf.arch.arm.armbase import ARM_MEMORY_INDEX_PRE
-from barf.arch.arm.armbase import cc_mapper
-from barf.arch.arm.armbase import ldm_stm_am_mapper
+from barf.arch.arm import ArmArchitectureInformation
+from barf.arch.arm import ArmRegisterListOperand
+from barf.arch.arm import ArmImmediateOperand
+from barf.arch.arm import ArmInstruction
+from barf.arch.arm import ArmMemoryOperand
+from barf.arch.arm import ArmRegisterOperand
+from barf.arch.arm import ArmShiftedRegisterOperand
+from barf.arch.arm import ARM_MEMORY_INDEX_OFFSET
+from barf.arch.arm import ARM_MEMORY_INDEX_POST
+from barf.arch.arm import ARM_MEMORY_INDEX_PRE
+from barf.arch.arm import cc_mapper
+from barf.arch.arm import ldm_stm_am_mapper
 
 logger = logging.getLogger(__name__)
 

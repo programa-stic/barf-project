@@ -32,8 +32,8 @@ from barf.arch.translator import TranslationBuilder
 
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
-from barf.arch.x86.x86base import X86ArchitectureInformation
-from barf.arch.x86.x86base import X86RegisterOperand
+from barf.arch.x86 import X86ArchitectureInformation
+from barf.arch.x86 import X86RegisterOperand
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilInstructionBuilder
 from barf.core.reil import ReilRegisterOperand
@@ -54,15 +54,15 @@ class X86TranslationBuilder(TranslationBuilder):
 
     def read(self, x86_operand):
 
-        if isinstance(x86_operand, barf.arch.x86.x86base.X86ImmediateOperand):
+        if isinstance(x86_operand, barf.arch.x86.X86ImmediateOperand):
 
             reil_operand = ReilImmediateOperand(x86_operand.immediate, x86_operand.size)
 
-        elif isinstance(x86_operand, barf.arch.x86.x86base.X86RegisterOperand):
+        elif isinstance(x86_operand, barf.arch.x86.X86RegisterOperand):
 
             reil_operand = ReilRegisterOperand(x86_operand.name, x86_operand.size)
 
-        elif isinstance(x86_operand, barf.arch.x86.x86base.X86MemoryOperand):
+        elif isinstance(x86_operand, barf.arch.x86.X86MemoryOperand):
 
             addr = self._compute_memory_address(x86_operand)
 
@@ -77,7 +77,7 @@ class X86TranslationBuilder(TranslationBuilder):
 
     def write(self, x86_operand, value):
 
-        if isinstance(x86_operand, barf.arch.x86.x86base.X86RegisterOperand):
+        if isinstance(x86_operand, barf.arch.x86.X86RegisterOperand):
 
             reil_operand = ReilRegisterOperand(x86_operand.name, x86_operand.size)
 
@@ -92,7 +92,7 @@ class X86TranslationBuilder(TranslationBuilder):
 
             self.add(self._builder.gen_str(value, reil_operand))
 
-        elif isinstance(x86_operand, barf.arch.x86.x86base.X86MemoryOperand):
+        elif isinstance(x86_operand, barf.arch.x86.X86MemoryOperand):
 
             addr = self._compute_memory_address(x86_operand)
 
