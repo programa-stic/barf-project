@@ -54,6 +54,8 @@ from barf.core.reil.emulator.memory import ReilMemoryEx
 from barf.core.reil.emulator.tainter import ReilEmulatorTainter
 
 
+logger = logging.getLogger("reilemulator")
+
 DEBUG = False
 # DEBUG = True
 
@@ -219,7 +221,3 @@ class ReilEmulator(object):
         """Return written (native) registers.
         """
         return self.__cpu.written_registers
-
-
-logger = logging.getLogger("reilemulator")
-DEBUG = False

@@ -25,6 +25,10 @@
 import random
 
 
+REIL_MEMORY_ENDIANNESS_LE = 0x0     # Little Endian
+REIL_MEMORY_ENDIANNESS_BE = 0x1     # Big Endian
+
+
 class ReilMemory(object):
 
     """A REIL memory model (byte addressable).
@@ -228,7 +232,3 @@ class ReilMemoryEx(ReilMemory):
         """Get number of write operations performed on the memory.
         """
         return self.__write_count
-
-
-REIL_MEMORY_ENDIANNESS_LE = 0x0     # Little Endian
-REIL_MEMORY_ENDIANNESS_BE = 0x1     # Big Endian
