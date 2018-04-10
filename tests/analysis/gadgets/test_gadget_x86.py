@@ -25,10 +25,10 @@
 import unittest
 
 from barf.analysis.codeanalyzer import CodeAnalyzer
-from barf.analysis.gadget.gadget import GadgetType
-from barf.analysis.gadget.classifier import GadgetClassifier
-from barf.analysis.gadget.finder import GadgetFinder
-from barf.analysis.gadget.verifier import GadgetVerifier
+from barf.analysis.gadgets.gadget import GadgetType
+from barf.analysis.gadgets.classifier import GadgetClassifier
+from barf.analysis.gadgets.finder import GadgetFinder
+from barf.analysis.gadgets.verifier import GadgetVerifier
 from barf.arch import ARCH_X86
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64

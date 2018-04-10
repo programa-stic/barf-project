@@ -35,7 +35,7 @@ from pygments import highlight
 from pygments.formatters import TerminalFormatter
 from pygments.lexers.asm import NasmLexer
 
-from barf.analysis.gadget.gadget import GadgetType
+from barf.analysis.gadgets.gadget import GadgetType
 from barf.barf import BARF
 
 
@@ -192,7 +192,7 @@ def print_gadgets_typed(gadgets, f, address_size, title):
         instrs_max = max(instrs)
 
         # Tile and table formats.
-        table_title_fmt = "# {0} ({1} gadget{2})"
+        table_title_fmt = "# {0} ({1} gadgets{2})"
         table_ruler_fmt = "{0}"
         table_header_fmt = " {0:^%ds} | {1:^%ds} | {2:^%ds} | {3:^%ds} " % (address_size / 4 + 2, lhand_max + rhand_max + 4, mods_max, instrs_max)
         table_footer_fmt = "{0}"
@@ -208,7 +208,7 @@ def print_gadgets_typed(gadgets, f, address_size, title):
         print(table_header,       file=f)
         print(table_ruler,        file=f)
 
-        # Pretty print each gadget.
+        # Pretty print each gadgets.
         for address in sorted(gadgets_desc.keys()):
             for gadget_desc in gadgets_desc[address]:
                 print(table_row_fmt.format(**gadget_desc), file=f)
@@ -297,17 +297,17 @@ def init_parser():
     parser.add_argument(
         "--show-binary",
         action="store_true",
-        help="Show binary code for each gadget.")
+        help="Show binary code for each gadgets.")
 
     parser.add_argument(
         "--show-classification",
         action="store_true",
-        help="Show classification for each gadget.")
+        help="Show classification for each gadgets.")
 
     parser.add_argument(
         "--show-invalid",
         action="store_true",
-        help="Show invalid gadget, i.e., gadgets that were classified but did not pass the verification process.")
+        help="Show invalid gadgets, i.e., gadgets that were classified but did not pass the verification process.")
 
     parser.add_argument(
         "--summary",
