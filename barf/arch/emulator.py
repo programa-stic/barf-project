@@ -25,8 +25,8 @@
 import logging
 import pefile
 
-import barf.arch as arch
-
+from barf.arch import ARCH_ARM_MODE_ARM
+from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
 from barf.arch.arm.armbase import ArmArchitectureInformation
@@ -34,15 +34,14 @@ from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86translator import X86Translator
 from barf.core.reil import ReilContainer
 from barf.core.reil import ReilContainerInvalidAddressError
-from barf.core.reil.emulator.emulator import ReilEmulator
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilSequence
 from barf.core.reil import split_address
+from barf.core.reil.emulator import ReilEmulator
 from barf.utils.utils import ExecutionCache
 from barf.utils.utils import InvalidAddressError
 from barf.utils.utils import to_asm_address
 from barf.utils.utils import to_reil_address
-
 
 from elftools.elf.elffile import ELFFile
 
@@ -77,11 +76,11 @@ class Emulator(object):
 
         # Load instruction pointer register.
         if isinstance(self.arch_info, X86ArchitectureInformation):
-            if self.arch_info.architecture_mode == arch.ARCH_X86_MODE_32:
+            if self.arch_info.architecture_mode == ARCH_X86_MODE_32:
                 self.ip = "eip"
                 self.sp = "esp"
                 self.ws = 4
-            elif self.arch_info.architecture_mode == arch.ARCH_X86_MODE_64:
+            elif self.arch_info.architecture_mode == ARCH_X86_MODE_64:
                 self.ip = "rip"
                 self.sp = "rsp"
                 self.ws = 8
@@ -90,11 +89,11 @@ class Emulator(object):
 
         # Load instruction pointer register.
         if isinstance(self.arch_info, ArmArchitectureInformation):
-            if self.arch_info.architecture_mode == arch.ARCH_ARM_MODE_THUMB:
+            if self.arch_info.architecture_mode == ARCH_ARM_MODE_THUMB:
                 self.ip = "r15"
                 self.sp = "r13"
                 self.ws = 2  # TODO Check.
-            elif self.arch_info.architecture_mode == arch.ARCH_ARM_MODE_ARM:
+            elif self.arch_info.architecture_mode == ARCH_ARM_MODE_ARM:
                 self.ip = "r15"
                 self.sp = "r13"
                 self.ws = 4
@@ -187,9 +186,9 @@ class Emulator(object):
                 start_addr = start_addr & ~0x1
                 end_addr = end_addr & ~0x1
 
-                self._arch_mode = arch.ARCH_ARM_MODE_THUMB
+                self._arch_mode = ARCH_ARM_MODE_THUMB
             else:
-                self._arch_mode = arch.ARCH_ARM_MODE_ARM
+                self._arch_mode = ARCH_ARM_MODE_ARM
 
         execution_cache = ExecutionCache()
 
@@ -307,9 +306,9 @@ class Emulator(object):
             self.ir_emulator.registers[self.ip] = asm_instr.address + asm_instr.size
 
         if isinstance(self.arch_info, ArmArchitectureInformation):
-            if self._arch_mode == arch.ARCH_ARM_MODE_ARM:
+            if self._arch_mode == ARCH_ARM_MODE_ARM:
                 self.ir_emulator.registers[self.ip] = asm_instr.address + 8
-            elif self._arch_mode == arch.ARCH_ARM_MODE_THUMB:
+            elif self._arch_mode == ARCH_ARM_MODE_THUMB:
                 self.ir_emulator.registers[self.ip] = asm_instr.address + 2
 
     # Binary loader auxiliary methods.

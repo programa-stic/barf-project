@@ -28,8 +28,6 @@ BARF : Binary Analysis Framework.
 """
 import logging
 
-import arch
-
 from analysis.basicblock import CFGRecoverer
 from analysis.basicblock import ControlFlowGraph
 from analysis.basicblock import RecursiveDescent
@@ -37,6 +35,8 @@ from analysis.codeanalyzer import CodeAnalyzer
 from analysis.gadget import GadgetClassifier
 from analysis.gadget import GadgetFinder
 from analysis.gadget import GadgetVerifier
+from arch import ARCH_ARM_MODE_THUMB
+from arch import ARCH_X86
 from arch.arm.armbase import ArmArchitectureInformation
 from arch.arm.armdisassembler import ArmDisassembler
 from arch.arm.armtranslator import ArmTranslator
@@ -45,8 +45,9 @@ from arch.x86.x86base import X86ArchitectureInformation
 from arch.x86.x86disassembler import X86Disassembler
 from arch.x86.x86translator import X86Translator
 from core.bi import BinaryFile
-from core.reil.emulator.emulator import ReilEmulator
-from core.smt.smtsolver import CVC4Solver, SmtSolverNotFound
+from core.reil.emulator import ReilEmulator
+from core.smt.smtsolver import CVC4Solver
+from core.smt.smtsolver import SmtSolverNotFound
 from core.smt.smtsolver import Z3Solver
 from core.smt.smttranslator import SmtTranslator
 
@@ -105,7 +106,7 @@ class BARF(object):
         # set up architecture information
         self.arch_info = None
 
-        if self.binary.architecture == arch.ARCH_X86:
+        if self.binary.architecture == ARCH_X86:
             self._setup_x86_arch(arch_mode)
         else:
             # TODO: add arch to the binary file class.
@@ -115,7 +116,7 @@ class BARF(object):
         """Set up ARM architecture.
         """
         if arch_mode is None:
-            arch_mode = arch.ARCH_ARM_MODE_THUMB
+            arch_mode = ARCH_ARM_MODE_THUMB
 
         self.name = "ARM"
         self.arch_info = ArmArchitectureInformation(arch_mode)

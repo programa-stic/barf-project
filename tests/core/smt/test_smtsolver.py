@@ -24,7 +24,7 @@
 
 import unittest
 
-from barf.core.reil import ReilParser
+from barf.core.reil.parser import ReilParser
 from barf.core.smt.smtsymbol import BitVec
 from barf.core.smt.smtsymbol import Bool
 from barf.core.smt.smtsolver import Z3Solver as SmtSolver

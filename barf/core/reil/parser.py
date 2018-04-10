@@ -60,11 +60,11 @@ from pyparsing import Or
 from pyparsing import Suppress
 from pyparsing import Word
 
-from barf.core.reil.reil import ReilEmptyOperand
-from barf.core.reil.reil import ReilImmediateOperand
-from barf.core.reil.reil import ReilInstructionBuilder
-from barf.core.reil.reil import ReilMnemonic
-from barf.core.reil.reil import ReilRegisterOperand
+from barf.core.reil import ReilEmptyOperand
+from barf.core.reil import ReilImmediateOperand
+from barf.core.reil import ReilInstructionBuilder
+from barf.core.reil import ReilMnemonic
+from barf.core.reil import ReilRegisterOperand
 
 logger = logging.getLogger(__name__)
 

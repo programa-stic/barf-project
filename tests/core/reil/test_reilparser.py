@@ -24,7 +24,7 @@
 
 import unittest
 
-from barf.core.reil import ReilParser
+from barf.core.reil.parser import ReilParser
 
 
 class ReilParserTests(unittest.TestCase):
