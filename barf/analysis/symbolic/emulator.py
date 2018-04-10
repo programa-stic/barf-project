@@ -38,11 +38,9 @@ from barf.core.reil.emulator.memory import ReilMemoryEx
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
 from barf.core.reil import ReilSequenceInvalidAddressError
-from barf.core.reil import split_address
 from barf.core.smt.smtsolver import Z3Solver
 from barf.core.smt.smttranslator import SmtTranslator
-from barf.utils.utils import to_reil_address
-
+from barf.utils.utils import to_reil_address, split_address
 
 logger = logging.getLogger("reilsymbolicemulator")
 logger.setLevel(logging.DEBUG)

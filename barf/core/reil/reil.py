@@ -49,15 +49,11 @@ Instructions
     Other         : UNDEF, UNKN, NOP
 
 """
+from barf.utils.utils import split_address
 from barf.utils.utils import to_asm_address
 
-# Display operands size in instruction
-show_size = True
 
-
-# TODO: Create module util and move this function there.
-def split_address(address):
-    return address >> 0x08, address & 0xff
+DISPLAY_SIZE = True     # Display operands size in instruction
 
 
 class ReilMnemonic(object):
@@ -323,7 +319,7 @@ class ReilInstruction(object):
 
         mnemonic_str = ReilMnemonic.to_string(self._mnemonic)
 
-        if show_size:
+        if DISPLAY_SIZE:
             operands_str = ", ".join(map(print_oprnd, self._operands))
         else:
             operands_str = ", ".join(map(str, self._operands))
