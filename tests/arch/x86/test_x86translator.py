@@ -35,7 +35,7 @@ from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86parser import X86Parser
 from barf.arch.x86.x86translator import X86Translator
 from barf.core.reil import ReilContainer
-from barf.core.reil import ReilEmulator
+from barf.core.reil.emulator.emulator import ReilEmulator
 from barf.core.reil import ReilSequence
 
 

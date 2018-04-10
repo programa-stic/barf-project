@@ -37,7 +37,7 @@ from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86disassembler import X86Disassembler
 from barf.arch.x86.x86translator import X86Translator
 from barf.core.bi import BinaryFile
-from barf.core.reil import ReilEmulator
+from barf.core.reil.emulator.emulator import ReilEmulator
 
 
 def get_full_path(filename):

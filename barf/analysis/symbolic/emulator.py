@@ -30,11 +30,11 @@ from Queue import Queue
 
 from barf.analysis.codeanalyzer import CodeAnalyzer
 from barf.core.reil import ReilContainerInvalidAddressError
-from barf.core.reil import ReilCpu
-from barf.core.reil import ReilEmulator
-from barf.core.reil import ReilEmulatorTainter
+from barf.core.reil.emulator.cpu import ReilCpu
+from barf.core.reil.emulator.emulator import ReilEmulator
+from barf.core.reil.emulator.tainter import ReilEmulatorTainter
 from barf.core.reil import ReilImmediateOperand
-from barf.core.reil import ReilMemoryEx
+from barf.core.reil.emulator.memory import ReilMemoryEx
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
 from barf.core.reil import ReilSequenceInvalidAddressError
