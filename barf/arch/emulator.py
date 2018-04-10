@@ -27,19 +27,40 @@ import pefile
 
 import barf.arch as arch
 
+from barf.arch import ARCH_X86_MODE_32
+from barf.arch import ARCH_X86_MODE_64
 from barf.arch.arm.armbase import ArmArchitectureInformation
 from barf.arch.x86.x86base import X86ArchitectureInformation
+from barf.arch.x86.x86translator import X86Translator
 from barf.core.reil import ReilContainer
 from barf.core.reil import ReilContainerInvalidAddressError
+from barf.core.reil import ReilEmulator
+from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilSequence
+from barf.core.reil import split_address
 from barf.utils.utils import ExecutionCache
 from barf.utils.utils import InvalidAddressError
 from barf.utils.utils import to_asm_address
 from barf.utils.utils import to_reil_address
 
+
 from elftools.elf.elffile import ELFFile
 
 logger = logging.getLogger(__name__)
+
+
+class Syscall(Exception):
+    pass
+
+
+class InstructionNotImplemented(Exception):
+
+    def __init__(self, instruction):
+        self.__instruction = instruction
+
+    @property
+    def instruction(self):
+        return self.__instruction
 
 
 class Emulator(object):
@@ -79,6 +100,85 @@ class Emulator(object):
                 self.ws = 4
             else:
                 raise Exception("Invalid architecture mode.")
+
+    def set_registers(self, registers):
+        for reg, value in registers.items():
+            if not reg.endswith("_next"):
+                self.ir_emulator.registers[reg] = value
+
+    def set_memory(self, memory):
+        for addr, value in memory.items():
+            for i, b in enumerate(bytearray(value.decode("hex"))):
+                self.ir_emulator.write_memory(addr + i, 1, b)
+
+    def add_reil_hook(self, func, param):
+        self.ir_emulator.set_instruction_post_handler(func, param)
+
+    def execute(self, asm_instr):
+        """Execute an assembler instruction.
+
+        Args:
+            asm_instr (X86Instruction): A instruction to execute.
+
+        Returns:
+            A int. The address of the next instruction to execute.
+        """
+        # Update the instruction pointer.
+        self.ir_emulator.registers[self.ip] = asm_instr.address + asm_instr.size
+
+        # Process syscall.
+        if self.arch_info.instr_is_syscall(asm_instr):
+            raise Syscall()
+
+        # Process instruction and return next address instruction to execute.
+        return self.__execute(asm_instr)
+
+    def __execute(self, asm_instr):
+        # Process one assembler instruction. Translate it to REIL instruction and
+        # process each one.
+        instr_container = self.__translate(asm_instr)
+        ip = to_reil_address(asm_instr.address)
+        next_addr = None
+
+        while ip:
+            # Fetch instruction.
+            try:
+                reil_instr = instr_container.fetch(ip)
+            except ReilContainerInvalidAddressError:
+                next_addr, _ = split_address(ip)
+                break
+
+            if reil_instr.mnemonic == ReilMnemonic.UNKN:
+                raise InstructionNotImplemented(asm_instr)
+
+            # Execute instruction.
+            next_ip = self.ir_emulator.single_step(reil_instr)
+
+            # Update instruction pointer.
+            ip = next_ip if next_ip else instr_container.get_next_address(ip)
+
+        del instr_container
+
+        # delete temporal registers
+        regs = self.ir_emulator.registers.keys()
+
+        for r in regs:
+            if r.startswith("t"):
+                del self.ir_emulator.registers[r]
+
+        return next_addr if next_addr else asm_instr.address + asm_instr.size
+
+    def __translate(self, asm_instr):
+        reil_translator = X86Translator(architecture_mode=self.arch_info.architecture_mode)
+
+        # Create ReilContainer
+        instr_container = ReilContainer()
+        instr_seq = ReilSequence()
+        for reil_instr in reil_translator.translate(asm_instr):
+            instr_seq.append(reil_instr)
+        instr_container.add(instr_seq)
+
+        return instr_container
 
     def emulate(self, start_addr, end_addr, hooks, max_instrs, print_asm):
         # Switch arch mode accordingly for ARM base on the start address.
