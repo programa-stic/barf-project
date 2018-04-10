@@ -23,4 +23,4 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from reil import *
-from reilparser import *
+from parser import *
