@@ -28,10 +28,10 @@ BARF : Binary Analysis Framework.
 """
 import logging
 
-from analysis.basicblock import CFGRecoverer
-from analysis.basicblock import ControlFlowGraph
-from analysis.basicblock import RecursiveDescent
 from analysis.codeanalyzer import CodeAnalyzer
+from analysis.basicblock.controlflowgraph import CFGRecoverer
+from analysis.basicblock.controlflowgraph import ControlFlowGraph
+from analysis.basicblock.controlflowgraph import RecursiveDescent
 from analysis.gadgets import GadgetClassifier
 from analysis.gadgets import GadgetFinder
 from analysis.gadgets import GadgetVerifier
