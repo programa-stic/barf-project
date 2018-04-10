@@ -22,9 +22,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from barf.analysis.basicblock import CFGRecoverer
-from barf.analysis.basicblock import ControlFlowGraph
-from barf.analysis.basicblock import RecursiveDescent
+from barf.analysis.graphs import CFGRecoverer, ControlFlowGraph, RecursiveDescent
 from barf.arch.x86 import X86ArchitectureInformation
 from barf.arch.x86.disassembler import X86Disassembler
 from barf.arch.x86.translator import X86Translator
