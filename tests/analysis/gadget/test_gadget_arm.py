@@ -31,9 +31,9 @@ from barf.analysis.gadget.gadgetfinder import GadgetFinder
 from barf.analysis.gadget.gadgetverifier import GadgetVerifier
 from barf.arch import ARCH_ARM
 from barf.arch import ARCH_ARM_MODE_ARM
-from barf.arch.arm.armbase import ArmArchitectureInformation
-from barf.arch.arm.armdisassembler import ArmDisassembler
-from barf.arch.arm.armtranslator import ArmTranslator
+from barf.arch.arm import ArmArchitectureInformation
+from barf.arch.arm.disassembler import ArmDisassembler
+from barf.arch.arm.translator import ArmTranslator
 from barf.core.reil.emulator.emulator import ReilEmulator
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand

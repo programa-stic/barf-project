@@ -37,9 +37,9 @@ from analysis.gadget import GadgetFinder
 from analysis.gadget import GadgetVerifier
 from arch import ARCH_ARM_MODE_THUMB
 from arch import ARCH_X86
-from arch.arm.armbase import ArmArchitectureInformation
-from arch.arm.armdisassembler import ArmDisassembler
-from arch.arm.armtranslator import ArmTranslator
+from arch.arm import ArmArchitectureInformation
+from arch.arm.disassembler import ArmDisassembler
+from arch.arm.translator import ArmTranslator
 from arch.emulator import Emulator
 from arch.x86 import X86ArchitectureInformation
 from arch.x86.disassembler import X86Disassembler

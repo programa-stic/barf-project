@@ -29,7 +29,7 @@ from barf.arch import ARCH_ARM_MODE_ARM
 from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
-from barf.arch.arm.armbase import ArmArchitectureInformation
+from barf.arch.arm import ArmArchitectureInformation
 from barf.arch.x86 import X86ArchitectureInformation
 from barf.arch.x86.translator import X86Translator
 from barf.core.reil import ReilContainer

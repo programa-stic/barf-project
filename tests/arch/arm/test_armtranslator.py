@@ -34,10 +34,10 @@ import subprocess
 import pyasmjit
 
 from barf.arch import ARCH_ARM_MODE_THUMB
-from barf.arch.arm.armbase import ArmArchitectureInformation
-from barf.arch.arm.armdisassembler import ArmDisassembler
-from barf.arch.arm.armparser import ArmParser
-from barf.arch.arm.armtranslator import ArmTranslator
+from barf.arch.arm import ArmArchitectureInformation
+from barf.arch.arm.disassembler import ArmDisassembler
+from barf.arch.arm.parser import ArmParser
+from barf.arch.arm.translator import ArmTranslator
 from barf.core.reil import ReilContainer
 from barf.core.reil.emulator.emulator import ReilEmulator
 from barf.core.reil import ReilSequence
