@@ -49,6 +49,7 @@ Instructions
     Other         : UNDEF, UNKN, NOP
 
 """
+from barf.utils.utils import to_asm_address
 
 # Display operands size in instruction
 show_size = True
@@ -328,6 +329,12 @@ class ReilInstruction(object):
             operands_str = ", ".join(map(str, self._operands))
 
         return "%-5s [%s]" % (mnemonic_str, operands_str)
+
+    def __repr__(self):
+        if self._address:
+            return "{:#08x}:{:#02x} {}".format(self._address >> 8, self._address & 0xff, self.__str__())
+        else:
+            return self.__str__()
 
     def __hash__(self):
         return hash(str(self))
@@ -704,20 +711,52 @@ class DualInstruction(object):
         self._ir_instrs = state['_ir_instrs']
 
 
+class ReilSequenceInvalidAddressError(Exception):
+    pass
+
+
 class ReilSequence(object):
 
     """Reil instruction sequence.
     """
 
-    def __init__(self):
+    def __init__(self, assembly=None):
+        self.__assembly = assembly
         self.__sequence = []
         self.__next_seq_address = None
+
+    @property
+    def assembly(self):
+        return self.__assembly
 
     def append(self, instruction):
         self.__sequence.append(instruction)
 
+    def fetch(self, address):
+        base_addr, index = split_address(address)
+
+        if base_addr != to_asm_address(self.address):
+            raise ReilSequenceInvalidAddressError()
+
+        return self.get(index)
+
     def get(self, index):
         return self.__sequence[index]
+
+    def get_next_address(self, address):
+        base_addr, index = split_address(address)
+
+        if base_addr != to_asm_address(self.address):
+            raise ReilSequenceInvalidAddressError()
+
+        addr = address
+
+        if index < len(self.__sequence) - 1:
+            addr += 1
+        else:
+            raise ReilSequenceInvalidAddressError()
+
+        return addr
 
     def dump(self):
         for instr in self.__sequence:
@@ -772,6 +811,14 @@ class ReilContainer(object):
             raise ReilContainerInvalidAddressError()
 
         return self.__container[base_addr].get(index)
+
+    def fetch_sequence(self, address):
+        base_addr, index = split_address(address)
+
+        if base_addr not in self.__container.keys():
+            raise ReilContainerInvalidAddressError()
+
+        return self.__container[base_addr]
 
     def get_next_address(self, address):
         base_addr, index = split_address(address)
