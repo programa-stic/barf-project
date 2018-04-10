@@ -26,9 +26,9 @@ import unittest
 
 from barf.analysis.codeanalyzer import CodeAnalyzer
 from barf.analysis.gadget.gadget import GadgetType
-from barf.analysis.gadget.gadgetclassifier import GadgetClassifier
-from barf.analysis.gadget.gadgetfinder import GadgetFinder
-from barf.analysis.gadget.gadgetverifier import GadgetVerifier
+from barf.analysis.gadget.classifier import GadgetClassifier
+from barf.analysis.gadget.finder import GadgetFinder
+from barf.analysis.gadget.verifier import GadgetVerifier
 from barf.arch import ARCH_ARM
 from barf.arch import ARCH_ARM_MODE_ARM
 from barf.arch.arm import ArmArchitectureInformation
