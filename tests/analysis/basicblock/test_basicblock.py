@@ -30,10 +30,10 @@ from barf.analysis.basicblock import ControlFlowGraph
 from barf.analysis.basicblock import RecursiveDescent
 from barf.analysis.basicblock.basicblock import BasicBlock
 from barf.arch import ARCH_X86_MODE_32
-from barf.arch.x86.x86base import X86ArchitectureInformation
-from barf.arch.x86.x86disassembler import X86Disassembler
-from barf.arch.x86.x86parser import X86Parser
-from barf.arch.x86.x86translator import X86Translator
+from barf.arch.x86 import X86ArchitectureInformation
+from barf.arch.x86.disassembler import X86Disassembler
+from barf.arch.x86.parser import X86Parser
+from barf.arch.x86.translator import X86Translator
 from barf.core.bi import BinaryFile
 from barf.core.reil import DualInstruction
 

@@ -32,9 +32,9 @@ from barf.analysis.gadget.gadgetverifier import GadgetVerifier
 from barf.arch import ARCH_X86
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
-from barf.arch.x86.x86base import X86ArchitectureInformation
-from barf.arch.x86.x86disassembler import X86Disassembler
-from barf.arch.x86.x86translator import X86Translator
+from barf.arch.x86 import X86ArchitectureInformation
+from barf.arch.x86.disassembler import X86Disassembler
+from barf.arch.x86.translator import X86Translator
 from barf.core.reil import ReilEmptyOperand
 from barf.core.reil.emulator.emulator import ReilEmulator
 from barf.core.reil import ReilImmediateOperand

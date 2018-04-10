@@ -41,9 +41,9 @@ from arch.arm.armbase import ArmArchitectureInformation
 from arch.arm.armdisassembler import ArmDisassembler
 from arch.arm.armtranslator import ArmTranslator
 from arch.emulator import Emulator
-from arch.x86.x86base import X86ArchitectureInformation
-from arch.x86.x86disassembler import X86Disassembler
-from arch.x86.x86translator import X86Translator
+from arch.x86 import X86ArchitectureInformation
+from arch.x86.disassembler import X86Disassembler
+from arch.x86.translator import X86Translator
 from core.bi import BinaryFile
 from core.reil.emulator import ReilEmulator
 from core.smt.smtsolver import CVC4Solver

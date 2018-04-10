@@ -29,7 +29,7 @@ from pydot import Dot
 from pydot import Edge
 from pydot import Node
 
-from barf.arch.x86.x86base import X86ImmediateOperand
+from barf.arch.x86 import X86ImmediateOperand
 
 logger = logging.getLogger(__name__)
 

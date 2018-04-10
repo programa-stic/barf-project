@@ -24,7 +24,7 @@
 
 import unittest
 
-from barf.arch.x86.x86base import X86ArchitectureInformation
+from barf.arch.x86 import X86ArchitectureInformation
 from barf.arch import ARCH_X86_MODE_32
 from barf.core.reil.parser import ReilParser
 from barf.core.smt.smtsolver import Z3Solver as SmtSolver
