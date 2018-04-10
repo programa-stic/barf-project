@@ -23,4 +23,4 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from basicblock import BasicBlock
-from barf.analysis.basicblock.controlflowgraph import ControlFlowGraph, RecursiveDescent, CFGRecoverer
+from barf.analysis.graphs.controlflowgraph import ControlFlowGraph, RecursiveDescent, CFGRecoverer

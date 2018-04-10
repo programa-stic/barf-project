@@ -11,10 +11,10 @@ from pydot import Node
 from pygments import highlight
 from pygments.lexers.asm import NasmLexer
 
-from barf.analysis.basicblock import BasicBlock
-from barf.analysis.basicblock.basicblock import bb_get_instr_max_width
-from barf.analysis.basicblock.basicblock import bb_get_type
-from barf.analysis.basicblock.basicblock import func_is_non_return
+from barf.analysis.graphs import BasicBlock
+from barf.analysis.graphs.basicblock import bb_get_instr_max_width
+from barf.analysis.graphs.basicblock import bb_get_type
+from barf.analysis.graphs.basicblock import func_is_non_return
 from barf.arch import helper
 from barf.core.bi import InvalidAddressError
 from barf.core.disassembler import DisassemblerError

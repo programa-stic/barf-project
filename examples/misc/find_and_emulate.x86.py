@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-from barf.analysis.basicblock.callgraph import CallGraph
+from barf.analysis.graphs.callgraph import CallGraph
 from barf.barf import BARF
 from barf.core.symbols import load_symbols
 

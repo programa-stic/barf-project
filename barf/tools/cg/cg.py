@@ -29,7 +29,7 @@ import os
 import sys
 import time
 
-from barf.analysis.basicblock.callgraph import CallGraph
+from barf.analysis.graphs.callgraph import CallGraph
 from barf.barf import BARF
 from barf.core.symbols import load_symbols
 from barf.tools.common import load_symbols_from_file, recover_cfg_all, recover_cfg_some
