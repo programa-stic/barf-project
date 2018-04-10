@@ -36,7 +36,7 @@ from barf.arch.x86.x86base import X86ArchitectureInformation
 from barf.arch.x86.x86disassembler import X86Disassembler
 from barf.arch.x86.x86translator import X86Translator
 from barf.core.reil import ReilEmptyOperand
-from barf.core.reil import ReilEmulator
+from barf.core.reil.emulator.emulator import ReilEmulator
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
 # from barf.core.smt.smtsolver import CVC4Solver as SmtSolver

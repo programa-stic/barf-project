@@ -40,12 +40,12 @@ from analysis.gadget import GadgetVerifier
 from arch.arm.armbase import ArmArchitectureInformation
 from arch.arm.armdisassembler import ArmDisassembler
 from arch.arm.armtranslator import ArmTranslator
+from arch.emulator import Emulator
 from arch.x86.x86base import X86ArchitectureInformation
 from arch.x86.x86disassembler import X86Disassembler
 from arch.x86.x86translator import X86Translator
-from arch.emulator import Emulator
 from core.bi import BinaryFile
-from core.reil import ReilEmulator
+from core.reil.emulator.emulator import ReilEmulator
 from core.smt.smtsolver import CVC4Solver, SmtSolverNotFound
 from core.smt.smtsolver import Z3Solver
 from core.smt.smttranslator import SmtTranslator

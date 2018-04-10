@@ -46,7 +46,7 @@ from barf.arch.x86.x86trace import AsmTraceAnalyzer
 from barf.arch.x86.x86trace import parse_trace
 from barf.arch.x86.x86translator import X86Translator
 from barf.core.bi import BinaryFile
-from barf.core.reil import ReilEmulator
+from barf.core.reil.emulator.emulator import ReilEmulator
 
 
 class AsmReplayAnalyzer(AsmTraceAnalyzer):

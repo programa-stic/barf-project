@@ -34,7 +34,7 @@ from barf.arch import ARCH_ARM_MODE_ARM
 from barf.arch.arm.armbase import ArmArchitectureInformation
 from barf.arch.arm.armdisassembler import ArmDisassembler
 from barf.arch.arm.armtranslator import ArmTranslator
-from barf.core.reil import ReilEmulator
+from barf.core.reil.emulator.emulator import ReilEmulator
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
 # from barf.core.smt.smtsolver import CVC4Solver as SmtSolver
