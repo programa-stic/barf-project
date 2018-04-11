@@ -41,7 +41,7 @@ class ReilEmulatorTaintTests(unittest.TestCase):
         self._asm_parser = X86Parser()
         self._translator = X86Translator()
 
-    def test_arithmetic(self):
+    def test_arithmetic_1(self):
         asm_instrs  = self._asm_parser.parse("add eax, ebx")
 
         self.__set_address(0xdeadbeef, [asm_instrs])
@@ -61,6 +61,27 @@ class ReilEmulatorTaintTests(unittest.TestCase):
         )
 
         self.assertEqual(self._emulator.get_register_taint("eax"), True)
+
+    def test_store_reg_1(self):
+        asm_instrs  = self._asm_parser.parse("mov eax, ebx")
+
+        self.__set_address(0xdeadbeef, [asm_instrs])
+
+        reil_instrs = self._translator.translate(asm_instrs)
+
+        regs_initial = {
+            "eax" : 0x1,
+            "ebx" : 0x2,
+        }
+
+        self._emulator.set_register_taint("eax", True)
+
+        regs_final, _ = self._emulator.execute_lite(
+            reil_instrs,
+            context=regs_initial
+        )
+
+        self.assertEqual(self._emulator.get_register_taint("eax"), False)
 
     def test_store_mem_1(self):
         asm_instrs  = self._asm_parser.parse("mov [eax], ebx")

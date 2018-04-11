@@ -37,8 +37,8 @@ class ReilEmulatorTainter(object):
         self.__emu = emulator
 
         # Taint information.
-        self.__taint_reg = {}   # Register-level tainting
-        self.__taint_mem = {}   # Byte-level tainting
+        self.__taint_reg = set()   # Register-level tainting
+        self.__taint_mem = set()   # Byte-level tainting
 
         # Taint function lookup table.
         self.__tainter = {
@@ -80,8 +80,8 @@ class ReilEmulatorTainter(object):
 
     def reset(self):
         # Taint information.
-        self.__taint_reg = {}
-        self.__taint_mem = {}
+        self.__taint_reg = set()
+        self.__taint_mem = set()
 
     # Operand taint methods
     # ======================================================================== #
@@ -103,7 +103,7 @@ class ReilEmulatorTainter(object):
 
     def clear_operand_taint(self, operand):
         if isinstance(operand, ReilRegisterOperand):
-            self.clear_register_taint(operand)
+            self.clear_register_taint(operand.name)
         else:
             raise Exception("Invalid operand: %s" % str(operand))
 
@@ -113,28 +113,34 @@ class ReilEmulatorTainter(object):
         tainted = False
 
         for i in xrange(0, size):
-            tainted = tainted or self.__taint_mem.get(address + i, False)
+            tainted = tainted or address + i in self.__taint_mem
 
         return tainted
 
     def set_memory_taint(self, address, size, taint):
         for i in xrange(0, size):
-            self.__taint_mem[address + i] = taint
+            if taint:
+                self.__taint_mem.add(address + i)
+            else:
+                self.__taint_mem.discard(address + i)
 
     def clear_memory_taint(self, address, size):
         for i in xrange(0, size):
-            self.__taint_mem[address + i] = False
+            self.__taint_mem.discard(address + i)
 
     # Register taint methods
     # ======================================================================== #
     def get_register_taint(self, register):
-        return self.__taint_reg.get(self.__get_base_register(register), False)
+        return self.__get_base_register(register) in self.__taint_reg
 
     def set_register_taint(self, register, taint):
-        self.__taint_reg[self.__get_base_register(register)] = taint
+        if taint:
+            self.__taint_reg.add(self.__get_base_register(register))
+        else:
+            self.__taint_reg.discard(self.__get_base_register(register))
 
     def clear_register_taint(self, register):
-        self.__taint_reg[self.__get_base_register(register)] = False
+        self.__taint_reg.discard(self.__get_base_register(register))
 
     # Taint auxiliary methods
     # ======================================================================== #
