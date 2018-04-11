@@ -239,7 +239,7 @@ class ReilSymbolicEmulator(object):
 
         self.__emulator = ReilEmulator(self.__arch)
 
-        self.__cpu = ReilCpu(self.__arch, self.__memory, self.__tainter, self.__emulator)
+        self.__cpu = ReilCpu(self.__arch, self.__memory)
 
         self.__smt_solver = None
         self.__smt_translator = None

@@ -56,9 +56,6 @@ from barf.core.reil.emulator import ReilMemoryEx
 
 logger = logging.getLogger("reilemulator")
 
-DEBUG = False
-# DEBUG = True
-
 
 class ReilEmulator(object):
 
@@ -68,14 +65,20 @@ class ReilEmulator(object):
         # Architecture information.
         self.__arch = arch
 
-        # An instance of a ReilTainter.
-        self.__tainter = ReilEmulatorTainter(self.__arch, self)
-
         # An instance of a ReilMemory.
         self.__mem = memory if memory else ReilMemoryEx(self.__arch.address_size)
 
         # An instance of a ReilCpu.
-        self.__cpu = cpu if cpu else ReilCpu(self.__arch, self.__mem, self.__tainter, self)
+        self.__cpu = cpu if cpu else ReilCpu(self.__arch, self.__mem)
+
+        # An instance of a ReilTainter.
+        self.__tainter = ReilEmulatorTainter(self.__arch, self)
+
+        # Instructions pre and post handlers.
+        self.__instr_handler_pre = None, None
+        self.__instr_handler_post = None, None
+
+        self.__set_default_handlers()
 
     # Execution methods
     # ======================================================================== #
@@ -95,7 +98,7 @@ class ReilEmulator(object):
 
                 raise ReilCpuInvalidAddressError()
 
-            next_ip = self.__cpu.execute(instr)
+            next_ip = self.__execute_one(instr)
 
             ip = next_ip if next_ip else container.get_next_address(ip)
 
@@ -108,12 +111,29 @@ class ReilEmulator(object):
             self.__cpu.registers = dict(context)
 
         for instr in instructions:
-            self.__cpu.execute(instr)
+            self.__execute_one(instr)
 
         return dict(self.__cpu.registers), self.__mem
 
     def single_step(self, instruction):
-        return self.__cpu.execute(instruction)
+        return self.__execute_one(instruction)
+
+    def __execute_one(self, instruction):
+        # Execute pre instruction handlers
+        handler_fn_pre, handler_param_pre = self.__instr_handler_pre
+        handler_fn_pre(self, instruction, handler_param_pre)
+
+        # Execute instruction
+        next_addr = self.__cpu.execute(instruction)
+
+        # Taint instruction
+        self.__tainter.taint(instruction)
+
+        # Execute post instruction handlers
+        handler_fn_post, handler_param_post = self.__instr_handler_post
+        handler_fn_post(self, instruction, handler_param_post)
+
+        return next_addr
 
     # Reset methods
     # ======================================================================== #
@@ -124,6 +144,12 @@ class ReilEmulator(object):
         self.__cpu.reset()
         self.__tainter.reset()
 
+        # Instructions pre and post handlers.
+        self.__instr_handler_pre = None, None
+        self.__instr_handler_post = None, None
+
+        self.__set_default_handlers()
+
     def reset_memory(self):
         self.__mem.reset()
 
@@ -133,13 +159,21 @@ class ReilEmulator(object):
     def reset_tainter(self):
         self.__tainter.reset()
 
-    # Handler methods
+    # Instruction's handler methods
     # ======================================================================== #
     def set_instruction_pre_handler(self, func, parameter):
-        self.__cpu.set_instruction_pre_handler(func, parameter)
+        self.__instr_handler_pre = (func, parameter)
 
     def set_instruction_post_handler(self, func, parameter):
-        self.__cpu.set_instruction_post_handler(func, parameter)
+        self.__instr_handler_post = (func, parameter)
+
+    # Instruction's handler auxiliary methods
+    # ======================================================================== #
+    def __set_default_handlers(self):
+        empty_fn, empty_param = lambda emu, instr, param: None, None
+
+        self.__instr_handler_pre = (empty_fn, empty_param)
+        self.__instr_handler_post = (empty_fn, empty_param)
 
     # Read/Write methods
     # ======================================================================== #

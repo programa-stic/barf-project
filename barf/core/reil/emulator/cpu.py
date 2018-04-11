@@ -34,7 +34,6 @@ from barf.utils.utils import twos_complement
 
 
 DEBUG = False
-# DEBUG = True
 
 
 class ReilCpuZeroDivisionError(Exception):
@@ -51,27 +50,17 @@ class ReilCpuInvalidInstruction(Exception):
 
 class ReilCpu(object):
 
-    def __init__(self, arch, memory, tainter, emulator):
+    def __init__(self, arch, memory):
         # Architecture information.
         self.__arch = arch
 
-        # Reil emulator instance.
-        self.__emu = emulator
-
         # Reil memory instance.
         self.__mem = memory
-
-        # Reil tainter instance.
-        self.__tainter = tainter
 
         # Registers.
         self.__regs = dict()
         self.__regs_written = set()
         self.__regs_read = set()
-
-        # Instructions pre and post handlers.
-        self.__instr_handler_pre = None, None
-        self.__instr_handler_post = None, None
 
         # Instruction implementation.
         self.__executors = {
@@ -108,41 +97,20 @@ class ReilCpu(object):
             ReilMnemonic.SMOD: self.__execute_binary_op,
         }
 
-        self.__set_default_handlers()
-
     def execute(self, instr):
         if DEBUG:
             print("0x%08x:%02x : %s" % (instr.address >> 8,
                                         instr.address & 0xff,
                                         instr))
 
-        # Execute pre instruction handlers
-        handler_fn_pre, handler_param_pre = self.__instr_handler_pre
-        handler_fn_pre(self.__emu, instr, handler_param_pre)
-
-        # Execute instruction
         next_addr = self.__executors[instr.mnemonic](instr)
-
-        # Taint instruction
-        self.__tainter.taint(instr)
-
-        # Execute post instruction handlers
-        handler_fn_post, handler_param_post = self.__instr_handler_post
-        handler_fn_post(self.__emu, instr, handler_param_post)
 
         return next_addr
 
     def reset(self):
-        # Registers.
         self.__regs = dict()
         self.__regs_written = set()
         self.__regs_read = set()
-
-        # Instructions pre and post handlers.
-        self.__instr_handler_pre = None, None
-        self.__instr_handler_post = None, None
-
-        self.__set_default_handlers()
 
     # Properties
     # ======================================================================== #
@@ -169,22 +137,6 @@ class ReilCpu(object):
     @property
     def written_registers(self):
         return self.__regs_written
-
-    # Instruction's handler methods
-    # ======================================================================== #
-    def set_instruction_pre_handler(self, func, parameter):
-        self.__instr_handler_pre = (func, parameter)
-
-    def set_instruction_post_handler(self, func, parameter):
-        self.__instr_handler_post = (func, parameter)
-
-    # Instruction's handler auxiliary methods
-    # ======================================================================== #
-    def __set_default_handlers(self):
-        empty_fn, empty_param = lambda emu, instr, param: None, None
-
-        self.__instr_handler_pre = (empty_fn, empty_param)
-        self.__instr_handler_post = (empty_fn, empty_param)
 
     # Read/Write methods
     # ======================================================================== #
@@ -270,7 +222,8 @@ class ReilCpu(object):
     # ======================================================================== #
     def __debug_read_operand(self, base_register, register, value):
         base_value = self.__regs[base_register]
-        taint = "T" if self.__tainter.get_register_taint(register) else "-"
+        # taint = "T" if self.__tainter.get_register_taint(register) else "-"
+        taint = "x"
 
         params = {
             "indent":        " " * 10,
@@ -288,7 +241,8 @@ class ReilCpu(object):
 
     def __debug_write_operand(self, base_register, register, value):
         base_value = self.__regs[base_register]
-        taint = "T" if self.__tainter.get_register_taint(register) else "-"
+        # taint = "T" if self.__tainter.get_register_taint(register) else "-"
+        taint = "x"
 
         params = {
             "indent":        " " * 10,
@@ -305,7 +259,8 @@ class ReilCpu(object):
         print(fmt.format(**params))
 
     def __debug_read_memory(self, address, size, value):
-        taint = "T" if self.__tainter.get_memory_taint(address, size) else "-"
+        # taint = "T" if self.__tainter.get_memory_taint(address, size) else "-"
+        taint = "x"
 
         params = {
             "indent":  " " * 10,
@@ -319,7 +274,8 @@ class ReilCpu(object):
         print(fmt.format(**params))
 
     def __debug_write_memory(self, address, size, value):
-        taint = "T" if self.__tainter.get_memory_taint(address, size) else "-"
+        # taint = "T" if self.__tainter.get_memory_taint(address, size) else "-"
+        taint = "x"
 
         params = {
             "indent":  " " * 10,
