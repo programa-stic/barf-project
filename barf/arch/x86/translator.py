@@ -26,12 +26,11 @@ import logging
 
 import barf
 
-from barf.arch.translator import Label
-from barf.arch.translator import Translator
-from barf.arch.translator import TranslationBuilder
-
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
+from barf.arch.translator import Label
+from barf.arch.translator import TranslationBuilder
+from barf.arch.translator import Translator
 from barf.arch.x86 import X86ArchitectureInformation
 from barf.arch.x86 import X86RegisterOperand
 from barf.core.reil import ReilImmediateOperand
