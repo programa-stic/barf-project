@@ -22,14 +22,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from barf.analysis.graphs import CFGRecoverer, ControlFlowGraph, RecursiveDescent
+from barf.analysis.graphs import CFGRecoverer
+from barf.analysis.graphs import ControlFlowGraph
+from barf.analysis.graphs import RecursiveDescent
 from barf.arch.x86 import X86ArchitectureInformation
 from barf.arch.x86.disassembler import X86Disassembler
 from barf.arch.x86.translator import X86Translator
-from barf.core.reil import ReilContainer
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
-from barf.core.reil import ReilSequence
+from barf.core.reil.container import ReilContainer
+from barf.core.reil.container import ReilSequence
 from barf.utils.utils import split_address
 
 

@@ -47,7 +47,7 @@ Byte addressable memory based on a dictionary.
 
 import logging
 
-from barf.core.reil import ReilContainerInvalidAddressError
+from barf.core.reil.container import ReilContainerInvalidAddressError
 from barf.core.reil.emulator import ReilCpu
 from barf.core.reil.emulator import ReilCpuInvalidAddressError
 from barf.core.reil.emulator import ReilEmulatorTainter

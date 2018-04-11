@@ -28,7 +28,8 @@ from barf.arch import ARCH_X86_MODE_32
 from barf.arch.x86 import X86ArchitectureInformation
 from barf.arch.x86.parser import X86Parser
 from barf.arch.x86.translator import X86Translator
-from barf.core.reil import ReilContainer, ReilSequence
+from barf.core.reil.container import ReilContainer
+from barf.core.reil.container import ReilSequence
 from barf.core.reil.emulator import ReilCpuInvalidAddressError
 from barf.core.reil.emulator import ReilCpuZeroDivisionError
 from barf.core.reil.emulator import ReilEmulator

@@ -49,9 +49,6 @@ Instructions
     Other         : UNDEF, UNKN, NOP
 
 """
-from barf.utils.utils import split_address
-from barf.utils.utils import to_asm_address
-
 
 DISPLAY_SIZE = True     # Display operands size in instruction
 
@@ -207,6 +204,94 @@ REIL_MNEMONICS = (
     ReilMnemonic.SDIV,
     ReilMnemonic.SMOD,
 )
+
+
+def check_operands_size(instr, addr_size):
+    """Enforce operands' size."""
+
+    if instr.mnemonic in [ReilMnemonic.ADD, ReilMnemonic.SUB,
+                            ReilMnemonic.MUL, ReilMnemonic.DIV,
+                            ReilMnemonic.MOD, ReilMnemonic.BSH,
+                            ReilMnemonic.AND, ReilMnemonic.OR,
+                            ReilMnemonic.XOR]:
+        # operand0 : Source 1 (Literal or register)
+        # operand1 : Source 2 (Literal or register)
+        # operand2 : Destination register
+
+        # Check that source operands have the same size.
+        assert instr.operands[0].size == instr.operands[1].size, \
+            "Invalid operands size: %s" % instr
+
+    elif instr.mnemonic in [ReilMnemonic.LDM]:
+        # operand0 : Source address (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        assert instr.operands[0].size == addr_size, \
+            "Invalid operands size: %s" % instr
+
+    elif instr.mnemonic in [ReilMnemonic.STM]:
+        # operand0 : Value to store (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination address (Literal or register)
+
+        assert instr.operands[2].size == addr_size, \
+            "Invalid operands size: %s" % instr
+
+    elif instr.mnemonic in [ReilMnemonic.STR]:
+        # operand0 : Value to store (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.BISZ]:
+        # operand0 : Value to compare (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.JCC]:
+        # operand0 : Condition (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        # FIX: operand2.size should be addr_size + 1 byte
+
+        assert instr.operands[2].size == addr_size + 8, \
+            "Invalid operands size: %s" % instr
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.UNKN]:
+        # operand0 : Empty register
+        # operand1 : Empty register
+        # operand2 : Empty register
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.UNDEF]:
+        # operand0 : Empty register
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.NOP]:
+        # operand0 : Empty register
+        # operand1 : Empty register
+        # operand2 : Empty register
+
+        pass
+
+    elif instr.mnemonic in [ReilMnemonic.SEXT]:
+        # operand0 : Value to store (Literal or register)
+        # operand1 : Empty register
+        # operand2 : Destination register
+
+        assert instr.operands[0].size <= instr.operands[2].size, \
+            "Invalid operands size: %s" % instr
 
 
 class ReilInstruction(object):
@@ -567,227 +652,3 @@ class DualInstruction(object):
         self._address = state['_address']
         self._asm_instr = state['_asm_instr']
         self._ir_instrs = state['_ir_instrs']
-
-
-class ReilSequenceInvalidAddressError(Exception):
-    pass
-
-
-class ReilSequence(object):
-
-    """Reil instruction sequence.
-    """
-
-    def __init__(self, assembly=None):
-        self.__assembly = assembly
-        self.__sequence = []
-        self.__next_seq_address = None
-
-    @property
-    def assembly(self):
-        return self.__assembly
-
-    def append(self, instruction):
-        self.__sequence.append(instruction)
-
-    def fetch(self, address):
-        base_addr, index = split_address(address)
-
-        if base_addr != to_asm_address(self.address):
-            raise ReilSequenceInvalidAddressError()
-
-        return self.get(index)
-
-    def get(self, index):
-        return self.__sequence[index]
-
-    def get_next_address(self, address):
-        base_addr, index = split_address(address)
-
-        if base_addr != to_asm_address(self.address):
-            raise ReilSequenceInvalidAddressError()
-
-        addr = address
-
-        if index < len(self.__sequence) - 1:
-            addr += 1
-        else:
-            raise ReilSequenceInvalidAddressError()
-
-        return addr
-
-    def dump(self):
-        for instr in self.__sequence:
-            base_addr, index = split_address(instr.address)
-
-            print("{:08x}:{:02x}\t{}".format(base_addr, index, instr))
-
-    @property
-    def address(self):
-        return self.__sequence[0].address if self.__sequence else None
-
-    @property
-    def next_sequence_address(self):
-        return self.__next_seq_address
-
-    @next_sequence_address.setter
-    def next_sequence_address(self, address):
-        self.__next_seq_address = address
-
-    def __len__(self):
-        return len(self.__sequence)
-
-    def __iter__(self):
-        for instr in self.__sequence:
-            yield instr
-
-
-class ReilContainerInvalidAddressError(Exception):
-    pass
-
-
-class ReilContainer(object):
-
-    """Reil instruction container.
-    """
-
-    def __init__(self):
-        self.__container = {}
-
-    def add(self, sequence):
-        base_addr, _ = split_address(sequence.address)
-
-        if base_addr in self.__container.keys():
-            raise Exception("Invalid sequence")
-
-        self.__container[base_addr] = sequence
-
-    def fetch(self, address):
-        base_addr, index = split_address(address)
-
-        if base_addr not in self.__container.keys():
-            raise ReilContainerInvalidAddressError()
-
-        return self.__container[base_addr].get(index)
-
-    def fetch_sequence(self, address):
-        base_addr, index = split_address(address)
-
-        if base_addr not in self.__container.keys():
-            raise ReilContainerInvalidAddressError()
-
-        return self.__container[base_addr]
-
-    def get_next_address(self, address):
-        base_addr, index = split_address(address)
-
-        if base_addr not in self.__container.keys():
-            raise Exception("Invalid address.")
-
-        addr = address
-
-        if index < len(self.__container[base_addr]) - 1:
-            addr += 1
-        else:
-            addr = self.__container[base_addr].next_sequence_address
-
-        return addr
-
-    def dump(self):
-        for base_addr in sorted(self.__container.keys()):
-            self.__container[base_addr].dump()
-
-            print("-" * 80)
-
-    def __iter__(self):
-        for addr in sorted(self.__container.keys()):
-            for instr in self.__container[addr]:
-                yield instr
-
-
-def check_operands_size(instr, arch_size):
-    """Enforce operands' size."""
-
-    if instr.mnemonic in [ReilMnemonic.ADD, ReilMnemonic.SUB,
-                            ReilMnemonic.MUL, ReilMnemonic.DIV,
-                            ReilMnemonic.MOD, ReilMnemonic.BSH,
-                            ReilMnemonic.AND, ReilMnemonic.OR,
-                            ReilMnemonic.XOR]:
-        # operand0 : Source 1 (Literal or register)
-        # operand1 : Source 2 (Literal or register)
-        # operand2 : Destination register
-
-        # Check that source operands have the same size.
-        assert instr.operands[0].size == instr.operands[1].size, \
-            "Invalid operands size: %s" % instr
-
-    elif instr.mnemonic in [ReilMnemonic.LDM]:
-        # operand0 : Source address (Literal or register)
-        # operand1 : Empty register
-        # operand2 : Destination register
-
-        assert instr.operands[0].size == arch_size, \
-            "Invalid operands size: %s" % instr
-
-    elif instr.mnemonic in [ReilMnemonic.STM]:
-        # operand0 : Value to store (Literal or register)
-        # operand1 : Empty register
-        # operand2 : Destination address (Literal or register)
-
-        assert instr.operands[2].size == arch_size, \
-            "Invalid operands size: %s" % instr
-
-    elif instr.mnemonic in [ReilMnemonic.STR]:
-        # operand0 : Value to store (Literal or register)
-        # operand1 : Empty register
-        # operand2 : Destination register
-
-        pass
-
-    elif instr.mnemonic in [ReilMnemonic.BISZ]:
-        # operand0 : Value to compare (Literal or register)
-        # operand1 : Empty register
-        # operand2 : Destination register
-
-        pass
-
-    elif instr.mnemonic in [ReilMnemonic.JCC]:
-        # operand0 : Condition (Literal or register)
-        # operand1 : Empty register
-        # operand2 : Destination register
-
-        # FIX: operand2.size should be arch_size + 1 byte
-
-        assert instr.operands[2].size == arch_size + 8, \
-            "Invalid operands size: %s" % instr
-
-        pass
-
-    elif instr.mnemonic in [ReilMnemonic.UNKN]:
-        # operand0 : Empty register
-        # operand1 : Empty register
-        # operand2 : Empty register
-
-        pass
-
-    elif instr.mnemonic in [ReilMnemonic.UNDEF]:
-        # operand0 : Empty register
-        # operand1 : Empty register
-        # operand2 : Destination register
-
-        pass
-
-    elif instr.mnemonic in [ReilMnemonic.NOP]:
-        # operand0 : Empty register
-        # operand1 : Empty register
-        # operand2 : Empty register
-
-        pass
-
-    elif instr.mnemonic in [ReilMnemonic.SEXT]:
-        # operand0 : Value to store (Literal or register)
-        # operand1 : Empty register
-        # operand2 : Destination register
-
-        assert instr.operands[0].size <= instr.operands[2].size, \
-            "Invalid operands size: %s" % instr

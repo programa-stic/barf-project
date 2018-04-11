@@ -38,9 +38,9 @@ from barf.arch.arm import ArmArchitectureInformation
 from barf.arch.arm.disassembler import ArmDisassembler
 from barf.arch.arm.parser import ArmParser
 from barf.arch.arm.translator import ArmTranslator
-from barf.core.reil import ReilContainer
+from barf.core.reil.container import ReilContainer
+from barf.core.reil.container import ReilSequence
 from barf.core.reil.emulator.emulator import ReilEmulator
-from barf.core.reil import ReilSequence
 
 
 @unittest.skipUnless(platform.machine().lower() == 'armv6l',

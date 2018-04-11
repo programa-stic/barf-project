@@ -29,7 +29,7 @@ import sys
 from Queue import Queue
 
 from barf.analysis.codeanalyzer import CodeAnalyzer
-from barf.core.reil import ReilContainerInvalidAddressError
+from barf.core.reil.container import ReilContainerInvalidAddressError, ReilSequenceInvalidAddressError
 from barf.core.reil.emulator.cpu import ReilCpu
 from barf.core.reil.emulator.emulator import ReilEmulator
 from barf.core.reil.emulator.tainter import ReilEmulatorTainter
@@ -37,7 +37,6 @@ from barf.core.reil import ReilImmediateOperand
 from barf.core.reil.emulator.memory import ReilMemoryEx
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
-from barf.core.reil import ReilSequenceInvalidAddressError
 from barf.core.smt.smtsolver import Z3Solver
 from barf.core.smt.smttranslator import SmtTranslator
 from barf.utils.utils import to_reil_address, split_address

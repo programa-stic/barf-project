@@ -32,10 +32,10 @@ from barf.arch import ARCH_X86_MODE_64
 from barf.arch.arm import ArmArchitectureInformation
 from barf.arch.x86 import X86ArchitectureInformation
 from barf.arch.x86.translator import X86Translator
-from barf.core.reil import ReilContainer
-from barf.core.reil import ReilContainerInvalidAddressError
 from barf.core.reil import ReilMnemonic
-from barf.core.reil import ReilSequence
+from barf.core.reil.container import ReilContainer
+from barf.core.reil.container import ReilContainerInvalidAddressError
+from barf.core.reil.container import ReilSequence
 from barf.core.reil.emulator import ReilEmulator
 from barf.utils.utils import ExecutionCache
 from barf.utils.utils import InvalidAddressError
