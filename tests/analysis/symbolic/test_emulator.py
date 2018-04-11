@@ -29,7 +29,7 @@ from barf.analysis.symbolic.emulator import ReilSymbolicEmulator
 from barf.analysis.symbolic.emulator import State
 from barf.analysis.symbolic.emulator import SymExecResult
 from barf.arch.x86 import X86ArchitectureInformation
-from barf.core.bi import BinaryFile
+from barf.core.binary import BinaryFile
 from barf.utils.reil import ReilContainerBuilder
 
 

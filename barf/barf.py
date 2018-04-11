@@ -44,7 +44,7 @@ from arch.emulator import Emulator
 from arch.x86 import X86ArchitectureInformation
 from arch.x86.disassembler import X86Disassembler
 from arch.x86.translator import X86Translator
-from core.bi import BinaryFile
+from core.binary import BinaryFile
 from core.reil.emulator import ReilEmulator
 from core.smt.smtsolver import CVC4Solver
 from core.smt.smtsolver import SmtSolverNotFound

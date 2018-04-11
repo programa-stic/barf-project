@@ -45,7 +45,7 @@ from barf.arch.x86.trace import AsmTrace
 from barf.arch.x86.trace import AsmTraceAnalyzer
 from barf.arch.x86.trace import parse_trace
 from barf.arch.x86.translator import X86Translator
-from barf.core.bi import BinaryFile
+from barf.core.binary import BinaryFile
 from barf.core.reil.emulator.emulator import ReilEmulator
 
 

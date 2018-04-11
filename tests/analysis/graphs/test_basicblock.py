@@ -32,7 +32,7 @@ from barf.arch.x86 import X86ArchitectureInformation
 from barf.arch.x86.disassembler import X86Disassembler
 from barf.arch.x86.parser import X86Parser
 from barf.arch.x86.translator import X86Translator
-from barf.core.bi import BinaryFile
+from barf.core.binary import BinaryFile
 from barf.core.reil import DualInstruction
 
 

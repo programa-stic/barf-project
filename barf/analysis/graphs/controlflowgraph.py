@@ -18,7 +18,7 @@ from barf.analysis.graphs.basicblock import func_is_non_return
 from barf.arch import helper
 from barf.arch.disassembler import DisassemblerError
 from barf.arch.disassembler import InvalidDisassemblerData
-from barf.core.bi import InvalidAddressError
+from barf.core.binary import InvalidAddressError
 from barf.core.reil import DualInstruction
 
 
