@@ -69,7 +69,7 @@ class ReilEmulator(object):
         self.__mem = memory if memory else ReilMemoryEx(self.__arch.address_size)
 
         # An instance of a ReilCpu.
-        self.__cpu = cpu if cpu else ReilCpu(self.__arch, self.__mem)
+        self.__cpu = cpu if cpu else ReilCpu(self.__mem, arch=self.__arch)
 
         # An instance of a ReilTainter.
         self.__tainter = ReilEmulatorTainter(self.__arch, self)

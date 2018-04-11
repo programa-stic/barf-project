@@ -50,12 +50,12 @@ class ReilCpuInvalidInstruction(Exception):
 
 class ReilCpu(object):
 
-    def __init__(self, arch, memory):
-        # Architecture information.
-        self.__arch = arch
-
+    def __init__(self, memory, arch=None):
         # Reil memory instance.
         self.__mem = memory
+
+        # Architecture information.
+        self.__arch = arch
 
         # Registers.
         self.__regs = dict()
@@ -173,7 +173,7 @@ class ReilCpu(object):
     # Read/Write auxiliary methods
     # ======================================================================== #
     def __get_register_info(self, register):
-        if register.name in self.__arch.alias_mapper:
+        if self.__arch and register.name in self.__arch.alias_mapper:
             base_register, offset = self.__arch.alias_mapper[register.name]
             base_size = self.__arch.registers_size[base_register]
         else:
@@ -197,7 +197,7 @@ class ReilCpu(object):
         value = extract_value(base_value, offset, register.size)
 
         # Keep track of native register reads.
-        if register.name in self.__arch.registers_gp_all:
+        if self.__arch and register.name in self.__arch.registers_gp_all:
             self.__regs_read.add(register.name)
 
         if DEBUG:
@@ -212,7 +212,7 @@ class ReilCpu(object):
         self.__regs[base_register] = base_value_new
 
         # Keep track of native register writes.
-        if register.name in self.__arch.registers_gp_all:
+        if self.__arch and register.name in self.__arch.registers_gp_all:
             self.__regs_written.add(register.name)
 
         if DEBUG:
@@ -385,7 +385,7 @@ class ReilCpu(object):
     def __execute_ldm(self, instr):
         """Execute LDM instruction.
         """
-        assert instr.operands[0].size == self.__arch.address_size
+        assert instr.operands[0].size == self.__mem.address_size
         assert instr.operands[2].size in [8, 16, 32, 64, 128, 256]
 
         # Memory address.
@@ -401,7 +401,7 @@ class ReilCpu(object):
         """Execute STM instruction.
         """
         assert instr.operands[0].size in [8, 16, 32, 64, 128, 256]
-        assert instr.operands[2].size == self.__arch.address_size
+        assert instr.operands[2].size == self.__mem.address_size
 
         op0_val = self.read_operand(instr.operands[0])  # Data.
         op2_val = self.read_operand(instr.operands[2])  # Memory address.

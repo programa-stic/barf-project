@@ -1,7 +1,5 @@
 import unittest
 
-from barf.arch import ARCH_X86_MODE_32
-from barf.arch.x86 import X86ArchitectureInformation
 from barf.core.reil.emulator import ReilCpu
 from barf.core.reil.emulator import ReilMemoryEx
 from barf.core.reil.parser import ReilParser
@@ -10,14 +8,12 @@ from barf.core.reil.parser import ReilParser
 class ReilCpuTests(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.__address_size = 32
 
     # Arithmetic Instructions
     def test_add(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -35,10 +31,8 @@ class ReilCpuTests(unittest.TestCase):
         self.assertEquals(t0 + t1, cpu.registers['t2'])
 
     def test_sub(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -56,10 +50,8 @@ class ReilCpuTests(unittest.TestCase):
         self.assertEquals(t0 - t1, cpu.registers['t2'])
 
     def test_mul(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -77,10 +69,8 @@ class ReilCpuTests(unittest.TestCase):
         self.assertEquals(t0 * t1, cpu.registers['t2'])
 
     def test_div(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -98,10 +88,8 @@ class ReilCpuTests(unittest.TestCase):
         self.assertEquals(t0 / t1, cpu.registers['t2'])
 
     def test_mod(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -119,10 +107,8 @@ class ReilCpuTests(unittest.TestCase):
         self.assertEquals(t0 % t1, cpu.registers['t2'])
 
     def test_bsh_left(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -140,10 +126,8 @@ class ReilCpuTests(unittest.TestCase):
         self.assertEquals((t0 << t1) & 2**32-1, cpu.registers['t2'])
 
     def test_bsh_rigt(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -162,10 +146,8 @@ class ReilCpuTests(unittest.TestCase):
 
     # Bitwise Instructions
     def test_and(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -183,10 +165,8 @@ class ReilCpuTests(unittest.TestCase):
         self.assertEquals(t0 & t1, cpu.registers['t2'])
 
     def test_or(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -204,10 +184,8 @@ class ReilCpuTests(unittest.TestCase):
         self.assertEquals(t0 | t1, cpu.registers['t2'])
 
     def test_xor(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -226,10 +204,8 @@ class ReilCpuTests(unittest.TestCase):
 
     # Data Transfer Instructions
     def test_ldm(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -247,10 +223,8 @@ class ReilCpuTests(unittest.TestCase):
         self.assertEquals(t1, cpu.registers['t1'])
 
     def test_stm(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -268,10 +242,8 @@ class ReilCpuTests(unittest.TestCase):
         self.assertEquals(t0, cpu.memory.read(t1, 4))
 
     def test_str(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -288,10 +260,8 @@ class ReilCpuTests(unittest.TestCase):
 
     # Conditional Instructions
     def test_bisz(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -307,10 +277,8 @@ class ReilCpuTests(unittest.TestCase):
         self.assertEquals(1 if t0 == 0 else 0, cpu.registers['t1'])
 
     def test_jcc(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -329,10 +297,8 @@ class ReilCpuTests(unittest.TestCase):
 
     # Extensions
     def test_sext(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -348,10 +314,8 @@ class ReilCpuTests(unittest.TestCase):
         self.assertEquals(-t0 & 2**64-1, cpu.registers['t1'])
 
     def test_sdiv(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 
@@ -369,10 +333,8 @@ class ReilCpuTests(unittest.TestCase):
         self.assertEquals(t0 / t1, cpu.registers['t2'])
 
     def test_smod(self):
-        arch = X86ArchitectureInformation(architecture_mode=ARCH_X86_MODE_32)
-
-        mem = ReilMemoryEx(arch.address_size)
-        cpu = ReilCpu(arch, mem)
+        mem = ReilMemoryEx(self.__address_size)
+        cpu = ReilCpu(mem)
 
         parser = ReilParser()
 

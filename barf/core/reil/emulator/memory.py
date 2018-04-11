@@ -35,7 +35,6 @@ class ReilMemory(object):
     """
 
     def __init__(self, address_size):
-
         # TODO: Set endianness through a parameter.
         # TODO: Check that all addresses have size address_size.
         # TODO: Use endianness parameter.
@@ -48,6 +47,10 @@ class ReilMemory(object):
 
         # Dictionary that implements the memory itself.
         self._memory = {}
+
+    @property
+    def address_size(self):
+        return self.__address_size
 
     # Read methods
     # ======================================================================== #
