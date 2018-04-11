@@ -16,9 +16,9 @@ from barf.analysis.graphs.basicblock import bb_get_instr_max_width
 from barf.analysis.graphs.basicblock import bb_get_type
 from barf.analysis.graphs.basicblock import func_is_non_return
 from barf.arch import helper
+from barf.arch.disassembler import DisassemblerError
+from barf.arch.disassembler import InvalidDisassemblerData
 from barf.core.bi import InvalidAddressError
-from barf.core.disassembler import DisassemblerError
-from barf.core.disassembler import InvalidDisassemblerData
 from barf.core.reil import DualInstruction
 
 

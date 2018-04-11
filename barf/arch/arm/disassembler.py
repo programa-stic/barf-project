@@ -88,14 +88,13 @@ from barf.arch.arm import ArmMemoryOperand
 from barf.arch.arm import ArmRegisterListOperand
 from barf.arch.arm import ArmRegisterOperand
 from barf.arch.arm import ArmShiftedRegisterOperand
-from barf.arch.arm import cc_inverse_mapper
 from barf.arch.arm import arm_alias_reg_map
+from barf.arch.arm import cc_inverse_mapper
 from barf.arch.arm import ldm_stm_am_mapper
 # from barf.arch.arm.parser import ArmParser
-from barf.core.disassembler import Disassembler
-from barf.core.disassembler import DisassemblerError
-from barf.core.disassembler import InvalidDisassemblerData
-
+from barf.arch.disassembler import Disassembler
+from barf.arch.disassembler import DisassemblerError
+from barf.arch.disassembler import InvalidDisassemblerData
 
 cc_capstone_barf_mapper = {
     ARM_CC_EQ: ARM_COND_CODE_EQ,

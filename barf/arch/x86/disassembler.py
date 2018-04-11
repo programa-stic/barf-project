@@ -31,10 +31,10 @@ from capstone import *
 
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
+from barf.arch.disassembler import Disassembler
+from barf.arch.disassembler import DisassemblerError
 from barf.arch.x86 import X86ArchitectureInformation
 from barf.arch.x86.parser import X86Parser
-from barf.core.disassembler import Disassembler
-from barf.core.disassembler import DisassemblerError
 
 
 class X86Disassembler(Disassembler):

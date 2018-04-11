@@ -36,7 +36,7 @@ import re
 from barf.analysis.gadgets import RawGadget
 from barf.arch import ARCH_ARM
 from barf.arch import ARCH_X86
-from barf.core.disassembler import InvalidDisassemblerData
+from barf.arch.disassembler import InvalidDisassemblerData
 from barf.core.reil import DualInstruction
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
