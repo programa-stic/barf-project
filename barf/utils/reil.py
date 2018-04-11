@@ -32,7 +32,7 @@ from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
 from barf.core.reil.container import ReilContainer
 from barf.core.reil.container import ReilSequence
-from barf.utils.utils import split_address
+from barf.core.reil.helpers import split_address
 
 
 def is_conditional_jump(instruction):

@@ -37,11 +37,11 @@ from barf.core.reil.container import ReilContainer
 from barf.core.reil.container import ReilContainerInvalidAddressError
 from barf.core.reil.container import ReilSequence
 from barf.core.reil.emulator import ReilEmulator
+from barf.core.reil.helpers import split_address
+from barf.core.reil.helpers import to_asm_address
+from barf.core.reil.helpers import to_reil_address
 from barf.utils.utils import ExecutionCache
 from barf.utils.utils import InvalidAddressError
-from barf.utils.utils import split_address
-from barf.utils.utils import to_asm_address
-from barf.utils.utils import to_reil_address
 
 from elftools.elf.elffile import ELFFile
 
