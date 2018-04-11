@@ -22,11 +22,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from barf.core.reil import ReilRegisterOperand
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilInstruction
 from barf.core.reil import ReilMnemonic
-from barf.core.reil import ReilInstructionBuilder
+from barf.core.reil import ReilRegisterOperand
+from barf.core.reil.builder import ReilBuilder
 
 
 class Label(object):
@@ -59,7 +59,7 @@ class TranslationBuilder(object):
 
         self._instructions = []
 
-        self._builder = ReilInstructionBuilder()
+        self._builder = ReilBuilder()
 
         self._arch_info = architecture_information
 

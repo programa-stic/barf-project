@@ -62,9 +62,9 @@ from pyparsing import Word
 
 from barf.core.reil import ReilEmptyOperand
 from barf.core.reil import ReilImmediateOperand
-from barf.core.reil import ReilInstructionBuilder
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
+from barf.core.reil.builder import ReilBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ def parse_instruction(string, location, tokens):
     oprnd2 = tokens["snd_operand"][0]
     oprnd3 = tokens["trd_operand"][0]
 
-    ins_builder = ReilInstructionBuilder()
+    ins_builder = ReilBuilder()
 
     return ins_builder.build(mnemonic_str, oprnd1, oprnd2, oprnd3)
 

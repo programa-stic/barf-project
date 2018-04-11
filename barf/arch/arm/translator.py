@@ -59,12 +59,12 @@ from barf.arch.arm import ArmRegisterOperand
 from barf.arch.arm import ArmShiftedRegisterOperand
 from barf.arch.arm import ldm_stack_am_to_non_stack_am
 from barf.arch.arm import stm_stack_am_to_non_stack_am
-from barf.arch.translator import Translator
 from barf.arch.translator import TranslationBuilder
-from barf.core.reil import check_operands_size
+from barf.arch.translator import Translator
 from barf.core.reil import ReilImmediateOperand
-from barf.core.reil import ReilInstructionBuilder
 from barf.core.reil import ReilRegisterOperand
+from barf.core.reil import check_operands_size
+from barf.core.reil.builder import ReilBuilder
 from barf.utils.utils import VariableNamer
 
 logger = logging.getLogger(__name__)
@@ -248,7 +248,7 @@ class ArmTranslator(Translator):
         # temporary REIL registers are unique.
         self._ir_name_generator = VariableNamer("t", separator="")
 
-        self._builder = ReilInstructionBuilder()
+        self._builder = ReilBuilder()
 
         self._flags = {
             "nf": ReilRegisterOperand("nf", 1),
