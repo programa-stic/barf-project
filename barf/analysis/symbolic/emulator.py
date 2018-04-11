@@ -236,7 +236,7 @@ class ReilSymbolicEmulator(object):
 
         self.__memory = ReilMemoryEx(self.__arch.address_size)
 
-        self.__tainter = ReilEmulatorTainter(self.__arch, self)
+        self.__tainter = ReilEmulatorTainter(self, arch=self.__arch)
 
         self.__emulator = ReilEmulator(self.__arch)
 

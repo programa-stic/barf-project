@@ -29,12 +29,12 @@ from barf.core.reil import ReilRegisterOperand
 
 class ReilEmulatorTainter(object):
 
-    def __init__(self, arch, emulator):
-        # Architecture information.
-        self.__arch = arch
-
+    def __init__(self, emulator, arch=None):
         # Reil emulator instance.
         self.__emu = emulator
+
+        # Architecture information.
+        self.__arch = arch
 
         # Taint information.
         self.__taint_reg = set()   # Register-level tainting
@@ -145,7 +145,7 @@ class ReilEmulatorTainter(object):
     # Taint auxiliary methods
     # ======================================================================== #
     def __get_base_register(self, register):
-        if register in self.__arch.alias_mapper and \
+        if self.__arch and register in self.__arch.alias_mapper and \
             register not in self.__arch.registers_flags:
             # NOTE: Flags are tainted individually.
             base_name, _ = self.__arch.alias_mapper[register]

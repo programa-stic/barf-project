@@ -72,7 +72,7 @@ class ReilEmulator(object):
         self.__cpu = cpu if cpu else ReilCpu(self.__mem, arch=self.__arch)
 
         # An instance of a ReilTainter.
-        self.__tainter = ReilEmulatorTainter(self.__arch, self)
+        self.__tainter = ReilEmulatorTainter(self, arch=self.__arch)
 
         # Instructions pre and post handlers.
         self.__instr_handler_pre = None, None
