@@ -44,7 +44,7 @@ class BinDiffTests(unittest.TestCase):
 
     def setUp(self):
         self._parser = X86Parser(ARCH_X86_MODE_32)
-        self._translator = X86Translator()
+        self._translator = X86Translator(ARCH_X86_MODE_32)
 
     def test_equality(self):
         addr = 0x0804842f
@@ -100,7 +100,7 @@ class X86CfgRecoveryTests(unittest.TestCase):
         self._arch_mode = ARCH_X86_MODE_32
         self._arch_info = X86ArchitectureInformation(self._arch_mode)
         self._disassembler = X86Disassembler()
-        self._translator = X86Translator()
+        self._translator = X86Translator(ARCH_X86_MODE_32)
 
     def test_sample_1(self):
         binary = BinaryFile(get_full_path("/data/bin/x86_sample_1"))

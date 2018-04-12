@@ -168,7 +168,7 @@ class Emulator(object):
         return next_addr if next_addr else asm_instr.address + asm_instr.size
 
     def __translate(self, asm_instr):
-        reil_translator = X86Translator(architecture_mode=self.arch_info.architecture_mode)
+        reil_translator = X86Translator(self.arch_info.architecture_mode)
 
         # Create ReilContainer
         instr_container = ReilContainer()

@@ -49,7 +49,7 @@ class X86TranslationTests(unittest.TestCase):
         self.arch_info = X86ArchitectureInformation(self.arch_mode)
 
         self.x86_parser = X86Parser(self.arch_mode)
-        self.x86_translator = X86Translator(architecture_mode=self.arch_mode)
+        self.x86_translator = X86Translator(self.arch_mode)
         self.reil_emulator = ReilEmulator(self.arch_info)
 
         self.context_filename = "failing_context.data"

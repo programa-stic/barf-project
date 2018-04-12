@@ -47,7 +47,7 @@ class CodeAnalyzerTests(unittest.TestCase):
 
         self._x86_parser = X86Parser(ARCH_X86_MODE_32)
 
-        self._x86_translator = X86Translator(architecture_mode=ARCH_X86_MODE_32)
+        self._x86_translator = X86Translator(ARCH_X86_MODE_32)
 
         self._code_analyzer = CodeAnalyzer(self._smt_solver, self._smt_translator, self._arch_info)
 

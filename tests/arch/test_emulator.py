@@ -55,7 +55,7 @@ class EmulatorTests(unittest.TestCase):
         arch_info = X86ArchitectureInformation(arch_mode)
         ir_emulator = ReilEmulator(arch_info)
         disassembler = X86Disassembler(architecture_mode=ARCH_X86_MODE_32)
-        ir_translator = X86Translator(architecture_mode=ARCH_X86_MODE_32)
+        ir_translator = X86Translator(ARCH_X86_MODE_32)
 
         emu = Emulator(arch_info, ir_emulator, ir_translator, disassembler)
 
@@ -69,7 +69,7 @@ class EmulatorTests(unittest.TestCase):
         arch_info = X86ArchitectureInformation(arch_mode)
         ir_emulator = ReilEmulator(arch_info)
         disassembler = X86Disassembler(architecture_mode=ARCH_X86_MODE_64)
-        ir_translator = X86Translator(architecture_mode=ARCH_X86_MODE_64)
+        ir_translator = X86Translator(ARCH_X86_MODE_64)
 
         emu = Emulator(arch_info, ir_emulator, ir_translator, disassembler)
 

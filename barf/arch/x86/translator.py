@@ -180,7 +180,7 @@ class X86Translator(Translator):
 
     """x86 to IR Translator."""
 
-    def __init__(self, architecture_mode=ARCH_X86_MODE_32):
+    def __init__(self, architecture_mode):
 
         super(X86Translator, self).__init__()
 

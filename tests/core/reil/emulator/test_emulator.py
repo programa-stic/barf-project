@@ -46,7 +46,7 @@ class ReilEmulatorTests(unittest.TestCase):
         self._asm_parser = X86Parser(ARCH_X86_MODE_32)
         self._reil_parser = ReilParser()
 
-        self._translator = X86Translator()
+        self._translator = X86Translator(ARCH_X86_MODE_32)
 
     def test_add(self):
         asm_instrs  = self._asm_parser.parse("add eax, ebx")
