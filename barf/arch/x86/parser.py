@@ -277,7 +277,7 @@ class X86Parser(object):
     """x86 Instruction Parser.
     """
 
-    def __init__(self, architecture_mode=ARCH_X86_MODE_32):
+    def __init__(self, architecture_mode):
         global arch_info, modifier_size
 
         arch_info = X86ArchitectureInformation(architecture_mode)

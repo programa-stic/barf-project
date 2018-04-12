@@ -43,7 +43,7 @@ class ReilEmulatorTests(unittest.TestCase):
 
         self._emulator = ReilEmulator(self._arch_info)
 
-        self._asm_parser = X86Parser()
+        self._asm_parser = X86Parser(ARCH_X86_MODE_32)
         self._reil_parser = ReilParser()
 
         self._translator = X86Translator()

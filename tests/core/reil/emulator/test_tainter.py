@@ -38,7 +38,7 @@ class ReilEmulatorTaintTests(unittest.TestCase):
 
         self._emulator = ReilEmulator(self._arch_info)
 
-        self._asm_parser = X86Parser()
+        self._asm_parser = X86Parser(ARCH_X86_MODE_32)
         self._translator = X86Translator()
 
     def test_arithmetic_1(self):

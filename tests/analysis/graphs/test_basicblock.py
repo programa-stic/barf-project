@@ -43,7 +43,7 @@ def get_full_path(filename):
 class BinDiffTests(unittest.TestCase):
 
     def setUp(self):
-        self._parser = X86Parser()
+        self._parser = X86Parser(ARCH_X86_MODE_32)
         self._translator = X86Translator()
 
     def test_equality(self):

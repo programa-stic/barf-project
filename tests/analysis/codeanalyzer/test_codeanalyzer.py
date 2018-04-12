@@ -45,7 +45,7 @@ class CodeAnalyzerTests(unittest.TestCase):
         self._smt_translator.set_arch_alias_mapper(self._arch_info.alias_mapper)
         self._smt_translator.set_arch_registers_size(self._arch_info.registers_size)
 
-        self._x86_parser = X86Parser(architecture_mode=ARCH_X86_MODE_32)
+        self._x86_parser = X86Parser(ARCH_X86_MODE_32)
 
         self._x86_translator = X86Translator(architecture_mode=ARCH_X86_MODE_32)
 

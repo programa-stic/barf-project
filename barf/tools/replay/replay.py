@@ -259,7 +259,7 @@ def main():
     options.verbose = args.verbose
 
     print("[+] Loading trace...")
-    asm_trace = parse_trace(args.trace, X86Parser(architecture_mode=arch_info.architecture_mode),
+    asm_trace = parse_trace(args.trace, X86Parser(arch_info.architecture_mode),
                             start_address=start_address)
 
     print("[+] Replaying trace...")
