@@ -161,9 +161,9 @@ def get_symbols(binary_path):
 
 def get_arch(binary):
     if binary.architecture == ARCH_X86:
-        return X86ArchitectureInformation(architecture_mode=binary.architecture_mode)
+        return X86ArchitectureInformation(binary.architecture_mode)
     elif binary.architecture == ARCH_ARM:
-        return ArmArchitectureInformation(architecture_mode=binary.architecture_mode)
+        return ArmArchitectureInformation(binary.architecture_mode)
     else:
         raise Exception("Architecture not supported.")
 
