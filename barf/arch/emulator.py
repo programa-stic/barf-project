@@ -357,3 +357,16 @@ class Emulator(object):
             self._load_binary_pe(binary.filename)
         else:
             raise Exception("Unknown file format.")
+
+    def write_memory(self, address, size, value):
+        self.ir_emulator.write_memory(address, size, value)
+
+    def read_memory(self, address, size):
+        return self.ir_emulator.read_memory(address, size)
+
+    def set_memory_taint(self, address, size, value):
+        self.ir_emulator.set_memory_taint(address, size, value)
+
+    @property
+    def registers(self):
+        return self.ir_emulator.registers
