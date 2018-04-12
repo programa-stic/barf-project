@@ -37,9 +37,9 @@ from barf.arch import ARCH_X86_MODE_64
 from barf.arch.emulator import Emulator
 from barf.arch.x86 import X86ArchitectureInformation
 from barf.arch.x86.disassembler import X86Disassembler
-from barf.arch.x86.helper import compare_contexts
-from barf.arch.x86.helper import fix_flags
-from barf.arch.x86.helper import print_contexts
+from barf.arch.x86.helpers import compare_contexts
+from barf.arch.x86.helpers import fix_flags
+from barf.arch.x86.helpers import print_contexts
 from barf.arch.x86.parser import X86Parser
 from barf.arch.x86.trace import AsmTrace
 from barf.arch.x86.trace import AsmTraceAnalyzer
