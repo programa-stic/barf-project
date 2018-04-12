@@ -9,16 +9,15 @@ class ReilCpuTests(unittest.TestCase):
 
     def setUp(self):
         self.__address_size = 32
+        self.__parser = ReilParser()
 
     # Arithmetic Instructions
     def test_add(self):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["add [DWORD t0, DWORD t1, DWORD t2]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["add [DWORD t0, DWORD t1, DWORD t2]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x12345678
         t1 = 0x1234
@@ -26,7 +25,7 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.registers['t1'] = t1
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(t0 + t1, cpu.registers['t2'])
 
@@ -34,10 +33,8 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["sub [DWORD t0, DWORD t1, DWORD t2]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["sub [DWORD t0, DWORD t1, DWORD t2]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x12345678
         t1 = 0x1234
@@ -45,7 +42,7 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.registers['t1'] = t1
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(t0 - t1, cpu.registers['t2'])
 
@@ -53,10 +50,8 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["mul [DWORD t0, DWORD t1, DWORD t2]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["mul [DWORD t0, DWORD t1, DWORD t2]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x1234
         t1 = 0x1234
@@ -64,7 +59,7 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.registers['t1'] = t1
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(t0 * t1, cpu.registers['t2'])
 
@@ -72,10 +67,8 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["div [DWORD t0, DWORD t1, DWORD t2]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["div [DWORD t0, DWORD t1, DWORD t2]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x12345678
         t1 = 0x1234
@@ -83,7 +76,7 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.registers['t1'] = t1
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(t0 / t1, cpu.registers['t2'])
 
@@ -91,10 +84,8 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["mod [DWORD t0, DWORD t1, DWORD t2]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["mod [DWORD t0, DWORD t1, DWORD t2]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x12345678
         t1 = 0x1234
@@ -102,7 +93,7 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.registers['t1'] = t1
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(t0 % t1, cpu.registers['t2'])
 
@@ -110,10 +101,8 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["bsh [DWORD t0, DWORD t1, DWORD t2]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["bsh [DWORD t0, DWORD t1, DWORD t2]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x12345678
         t1 = 0x8
@@ -121,7 +110,7 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.registers['t1'] = t1
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals((t0 << t1) & 2**32-1, cpu.registers['t2'])
 
@@ -129,10 +118,8 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["bsh [DWORD t0, DWORD t1, DWORD t2]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["bsh [DWORD t0, DWORD t1, DWORD t2]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x12345678
         t1 = 0x8
@@ -140,7 +127,7 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.registers['t1'] = -t1
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(t0 >> t1, cpu.registers['t2'])
 
@@ -149,10 +136,8 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["and [DWORD t0, DWORD t1, DWORD t2]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["and [DWORD t0, DWORD t1, DWORD t2]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x12345678
         t1 = 0x1234
@@ -160,7 +145,7 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.registers['t1'] = t1
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(t0 & t1, cpu.registers['t2'])
 
@@ -168,10 +153,8 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["or [DWORD t0, DWORD t1, DWORD t2]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["or [DWORD t0, DWORD t1, DWORD t2]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x12345678
         t1 = 0x1234
@@ -179,7 +162,7 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.registers['t1'] = t1
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(t0 | t1, cpu.registers['t2'])
 
@@ -187,10 +170,8 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["xor [DWORD t0, DWORD t1, DWORD t2]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["xor [DWORD t0, DWORD t1, DWORD t2]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x12345678
         t1 = 0x1234
@@ -198,7 +179,7 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.registers['t1'] = t1
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(t0 ^ t1, cpu.registers['t2'])
 
@@ -207,10 +188,8 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["ldm [DWORD t0, EMPTY, DWORD t1]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["ldm [DWORD t0, EMPTY, DWORD t1]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x12345678
         t1 = 0x1234
@@ -218,7 +197,7 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.memory.write(t0, 4, t1)
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(t1, cpu.registers['t1'])
 
@@ -226,10 +205,8 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["stm [DWORD t0, EMPTY, DWORD t1]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["stm [DWORD t0, EMPTY, DWORD t1]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x12345678
         t1 = 0x1234
@@ -237,7 +214,7 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.registers['t1'] = t1
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(t0, cpu.memory.read(t1, 4))
 
@@ -245,16 +222,14 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["str [DWORD t0, EMPTY, DWORD t1]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["str [DWORD t0, EMPTY, DWORD t1]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x12345678
 
         cpu.registers['t0'] = t0
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(t0, cpu.registers['t1'])
 
@@ -263,16 +238,14 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["BISZ [DWORD t0, EMPTY, BIT t1]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["BISZ [DWORD t0, EMPTY, BIT t1]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x12345678
 
         cpu.registers['t0'] = t0
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(1 if t0 == 0 else 0, cpu.registers['t1'])
 
@@ -280,10 +253,8 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["jcc [BIT t0, EMPTY, POINTER t1]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["jcc [BIT t0, EMPTY, POINTER t1]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x1
         t1 = 0x1234567800
@@ -291,7 +262,7 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.registers['t1'] = t1
 
-        next_ip = cpu.execute(reil_instr)
+        next_ip = cpu.execute(instr)
 
         self.assertEquals(t1, next_ip)
 
@@ -300,16 +271,14 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["sext [DWORD t0, EMPTY, QWORD t1]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["sext [DWORD t0, EMPTY, QWORD t1]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = 0x12345678
 
         cpu.registers['t0'] = -t0 & 2**32-1
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(-t0 & 2**64-1, cpu.registers['t1'])
 
@@ -317,10 +286,8 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["sdiv [DWORD t0, DWORD t1, DWORD t2]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["sdiv [DWORD t0, DWORD t1, DWORD t2]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = -0x12345678
         t1 = -0x1234
@@ -328,7 +295,7 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.registers['t1'] = t1
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals(t0 / t1, cpu.registers['t2'])
 
@@ -336,10 +303,8 @@ class ReilCpuTests(unittest.TestCase):
         mem = ReilMemoryEx(self.__address_size)
         cpu = ReilCpu(mem)
 
-        parser = ReilParser()
-
-        reil_instr = parser.parse(["smod [DWORD t0, DWORD t1, DWORD t2]"])[0]
-        reil_instr.address = 0xcafecafe
+        instr = self.__parser.parse(["smod [DWORD t0, DWORD t1, DWORD t2]"])[0]
+        instr.address = 0xcafecafe00
 
         t0 = -0x12345678
         t1 = -0x1234
@@ -347,6 +312,6 @@ class ReilCpuTests(unittest.TestCase):
         cpu.registers['t0'] = t0
         cpu.registers['t1'] = t1
 
-        cpu.execute(reil_instr)
+        cpu.execute(instr)
 
         self.assertEquals((t0 % t1) & 2**32-1, cpu.registers['t2'])
