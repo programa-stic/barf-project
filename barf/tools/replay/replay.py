@@ -56,7 +56,7 @@ class AsmReplayAnalyzer(AsmTraceAnalyzer):
 
         self._options = options
 
-        disassembler = X86Disassembler(architecture_mode=arch.architecture_mode)
+        disassembler = X86Disassembler(arch.architecture_mode)
         ir_translator = X86Translator(arch.architecture_mode)
 
         self._emulator = Emulator(arch, ReilEmulator(arch), ir_translator, disassembler)

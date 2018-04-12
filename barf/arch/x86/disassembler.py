@@ -41,7 +41,7 @@ class X86Disassembler(Disassembler):
     """X86 Disassembler.
     """
 
-    def __init__(self, architecture_mode=ARCH_X86_MODE_32):
+    def __init__(self, architecture_mode):
         super(X86Disassembler, self).__init__()
 
         arch_mode_map = {

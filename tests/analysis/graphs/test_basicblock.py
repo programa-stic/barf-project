@@ -99,7 +99,7 @@ class X86CfgRecoveryTests(unittest.TestCase):
     def setUp(self):
         self._arch_mode = ARCH_X86_MODE_32
         self._arch_info = X86ArchitectureInformation(self._arch_mode)
-        self._disassembler = X86Disassembler()
+        self._disassembler = X86Disassembler(ARCH_X86_MODE_32)
         self._translator = X86Translator(ARCH_X86_MODE_32)
 
     def test_sample_1(self):

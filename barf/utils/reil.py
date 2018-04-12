@@ -46,7 +46,7 @@ class ReilContainerBuilder(object):
         self.__binary = binary
         self.__arch_mode = self.__binary.architecture_mode
         self.__arch = X86ArchitectureInformation(self.__arch_mode)
-        self.__disassembler = X86Disassembler(architecture_mode=self.__arch_mode)
+        self.__disassembler = X86Disassembler(self.__arch_mode)
         self.__translator = X86Translator(self.__arch_mode)
         self.__bb_builder = CFGRecoverer(RecursiveDescent(self.__disassembler, self.__binary.text_section,
                                                           self.__translator, self.__arch))
@@ -109,7 +109,7 @@ class ReilContainerEx(object):
         self.__binary = binary
         self.__arch_mode = self.__binary.architecture_mode
         self.__arch = X86ArchitectureInformation(self.__arch_mode)
-        self.__disassembler = X86Disassembler(architecture_mode=self.__arch_mode)
+        self.__disassembler = X86Disassembler(self.__arch_mode)
         self.__translator = X86Translator(self.__arch_mode)
         self.__bb_builder = CFGRecoverer(RecursiveDescent(self.__disassembler, self.__binary.text_section,
                                                           self.__translator, self.__arch))

@@ -132,7 +132,7 @@ class BARF(object):
         # Set up architecture information
         self.name = "x86"
         self.arch_info = X86ArchitectureInformation(arch_mode)
-        self.disassembler = X86Disassembler(architecture_mode=arch_mode)
+        self.disassembler = X86Disassembler(arch_mode)
         self.ir_translator = X86Translator(arch_mode)
 
     def _setup_core_modules(self):
