@@ -33,7 +33,7 @@ def check_path_satisfiability(code_analyzer, path, start_address):
                 logger.info("{:#x} {}".format(instr.address, instr))
 
                 # For each REIL instruction...
-                for reil_instr in instr.ir_instrs:
+                for reil_instr in instr.ir:
                     logger.info("{:#x} {:02d} {}".format(reil_instr.address >> 0x8, reil_instr.address & 0xff,
                                                          reil_instr))
 

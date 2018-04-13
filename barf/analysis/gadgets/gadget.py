@@ -70,7 +70,7 @@ class RawGadget(object):
     def get_ir_instrs(self):
         """Get gadgets IR instructions.
         """
-        ir_instrs_list = [dual_ins.ir_instrs for dual_ins in self._instrs]
+        ir_instrs_list = [dual_ins.ir for dual_ins in self._instrs]
 
         instrs = []
 
@@ -97,7 +97,7 @@ class RawGadget(object):
         for instr in self._instrs:
             lines += ["0x%08x : %s" % (instr.address, instr)]
 
-            for instr in instr.ir_instrs:
+            for instr in instr.ir:
                 lines += ["  %s" % instr]
 
         return "\n".join(lines)

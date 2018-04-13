@@ -272,7 +272,7 @@ class CFGRecover(object):
 
             ir = self._translator.translate(asm)
 
-            asm.ir_instrs = ir
+            asm.ir = ir
 
             bb.instrs.append(asm)
 
@@ -546,7 +546,7 @@ class CFGSimpleRenderer(CFGRenderer):
             lines.append(asm_str)
 
             if print_ir:
-                for ir_instr in instr.ir_instrs:
+                for ir_instr in instr.ir:
                     reil_str = self._render_reil(ir_instr)
                     lines.append(reil_str)
 
@@ -694,7 +694,7 @@ class CFGSimpleRendererEx(CFGRenderer):
             lines.append(asm_str)
 
             if print_ir:
-                for ir_instr in instr.ir_instrs:
+                for ir_instr in instr.ir:
                     reil_str = self._render_reil(ir_instr)
                     lines.append(reil_str)
 

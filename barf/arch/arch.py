@@ -101,9 +101,9 @@ class AssemblyInstruction(object):
         self.__ir_instrs = []
 
     @property
-    def ir_instrs(self):
+    def ir(self):
         return self.__ir_instrs
 
-    @ir_instrs.setter
-    def ir_instrs(self, value):
+    @ir.setter
+    def ir(self, value):
         self.__ir_instrs = value
