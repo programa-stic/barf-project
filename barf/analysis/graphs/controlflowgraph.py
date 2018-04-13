@@ -9,6 +9,7 @@ from pydot import Dot
 from pydot import Edge
 from pydot import Node
 from pygments import highlight
+from pygments.formatters import HtmlFormatter
 from pygments.lexers.asm import NasmLexer
 
 from barf.analysis.graphs import BasicBlock
@@ -19,7 +20,6 @@ from barf.arch import helper
 from barf.arch.disassembler import DisassemblerError
 from barf.arch.disassembler import InvalidDisassemblerData
 from barf.core.binary import InvalidAddressError
-from barf.core.reil import DualInstruction
 
 
 logger = logging.getLogger(__name__)
@@ -239,9 +239,9 @@ class CFGRecover(object):
     def _extract_call_targets(self, bbs):
         call_targets = []
         for bb in bbs:
-            for dinstr in bb:
-                if self._arch_info.instr_is_call(dinstr.asm_instr):
-                    target = helper.extract_call_target(dinstr.asm_instr)
+            for instr in bb:
+                if self._arch_info.instr_is_call(instr):
+                    target = helper.extract_call_target(instr)
 
                     if target:
                         call_targets.append(target)
@@ -270,9 +270,9 @@ class CFGRecover(object):
                 logger.warn("Error while disassembling @ {:#x}".format(addr), exc_info=True)
                 break
 
-            ir = self._translator.translate(asm)
+            asm.ir_instrs = self._translator.translate(asm)
 
-            bb.instrs.append(DualInstruction(addr, asm, ir))
+            bb.instrs.append(asm)
 
             # If it is a RET or HALT instruction, break.
             if self._arch_info.instr_is_ret(asm) or \
@@ -405,12 +405,12 @@ class LinearSweep(CFGRecover):
         return bbs
 
     def _bb_ends_in_direct_jmp(self, bb):
-        last_instr = bb.instrs[-1].asm_instr
+        last_instr = bb.instrs[-1]
 
         return self._arch_info.instr_is_branch(last_instr) and not self._arch_info.instr_is_branch_cond(last_instr)
 
     def _bb_ends_in_return(self, bb):
-        last_instr = bb.instrs[-1].asm_instr
+        last_instr = bb.instrs[-1]
 
         return self._arch_info.instr_is_ret(last_instr)
 
@@ -539,12 +539,12 @@ class CFGSimpleRenderer(CFGRenderer):
 
         asm_mnemonic_max_width = bb_get_instr_max_width(basic_block)
 
-        for dinstr in basic_block:
-            asm_str = self._render_asm(dinstr.asm_instr, asm_mnemonic_max_width + 1, options, fill_char="\\ ")
+        for instr in basic_block:
+            asm_str = self._render_asm(instr, asm_mnemonic_max_width + 1, options, fill_char="\\ ")
             lines.append(asm_str)
 
             if print_ir:
-                for ir_instr in dinstr.ir_instrs:
+                for ir_instr in instr.ir_instrs:
                     reil_str = self._render_reil(ir_instr)
                     lines.append(reil_str)
 
@@ -687,12 +687,12 @@ class CFGSimpleRendererEx(CFGRenderer):
 
         asm_mnemonic_max_width = bb_get_instr_max_width(basic_block)
 
-        for dinstr in basic_block:
-            asm_str = self._render_asm(dinstr.asm_instr, asm_mnemonic_max_width + 1, options, fill_char=" ")
+        for instr in basic_block:
+            asm_str = self._render_asm(instr, asm_mnemonic_max_width + 1, options, fill_char=" ")
             lines.append(asm_str)
 
             if print_ir:
-                for ir_instr in dinstr.ir_instrs:
+                for ir_instr in instr.ir_instrs:
                     reil_str = self._render_reil(ir_instr)
                     lines.append(reil_str)
 

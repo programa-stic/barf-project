@@ -49,7 +49,7 @@ class RawGadget(object):
 
     def __init__(self, instrs):
 
-        # List of instructions (dual instructions.)
+        # List of instructions.
         self._instrs = instrs
 
         # Id of gadgets.
@@ -63,21 +63,20 @@ class RawGadget(object):
 
     @property
     def instrs(self):
-        """Get gadgets dual instructions.
+        """Get gadgets instructions.
         """
         return self._instrs
 
-    def get_ir_instrs(self):
+    @property
+    def ir_instrs(self):
         """Get gadgets IR instructions.
         """
-        ir_instrs_list = [dual_ins.ir_instrs for dual_ins in self._instrs]
+        ir_instrs = []
 
-        instrs = []
+        for asm_instr in self._instrs:
+            ir_instrs += asm_instr.ir_instrs
 
-        for ir_instrs in ir_instrs_list:
-            instrs += ir_instrs
-
-        return instrs
+        return ir_instrs
 
     @property
     def id(self):
@@ -94,11 +93,11 @@ class RawGadget(object):
     def __str__(self):
         lines = []
 
-        for dinstr in self._instrs:
-            lines += ["0x%08x : %s" % (dinstr.asm_instr.address, dinstr.asm_instr)]
+        for asm_instr in self._instrs:
+            lines += ["0x%08x : %s" % (asm_instr.address, asm_instr)]
 
-            for instr in dinstr.ir_instrs:
-                lines += ["  %s" % instr]
+            for ir_instr in asm_instr.ir_instrs:
+                lines += ["  %s" % ir_instr]
 
         return "\n".join(lines)
 

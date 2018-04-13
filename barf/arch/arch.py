@@ -93,3 +93,17 @@ class ArchitectureInformation(object):
 
     def flags_default_value(self):
         raise NotImplementedError()
+
+
+class AssemblyInstruction(object):
+
+    def __init__(self):
+        self._ir_instrs = []
+
+    @property
+    def ir_instrs(self):
+        return self._ir_instrs
+
+    @ir_instrs.setter
+    def ir_instrs(self, value):
+        self._ir_instrs = value

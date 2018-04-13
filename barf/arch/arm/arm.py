@@ -30,6 +30,7 @@ representation.
 from barf.arch import ARCH_ARM_MODE_ARM
 from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch import ArchitectureInformation
+from barf.arch import AssemblyInstruction
 
 # Used in CS->BARF translator
 arm_alias_reg_map = {
@@ -372,7 +373,7 @@ class ArmArchitectureInformation(ArchitectureInformation):
         return []
 
 
-class ArmInstruction(object):
+class ArmInstruction(AssemblyInstruction):
     """Representation of ARM instruction."""
 
     __slots__ = [

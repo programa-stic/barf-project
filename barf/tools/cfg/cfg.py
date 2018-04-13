@@ -33,7 +33,10 @@ import time
 
 from barf.barf import BARF
 from barf.core.symbols import load_symbols
-from barf.tools.common import load_symbols_from_file, create_output_dir, recover_cfg_all, recover_cfg_some
+from barf.tools.common import create_output_dir
+from barf.tools.common import load_symbols_from_file
+from barf.tools.common import recover_cfg_all
+from barf.tools.common import recover_cfg_some
 
 
 def save_cfg_graph(cfg, output_dir, show_reil, fmt, immediate_format):
@@ -58,13 +61,11 @@ def save_cfg_text(cfg, output_dir, show_reil, brief):
             print("[basic block] {:#x}:{:#x} -> {}".format(bb.start_address, bb.end_address + 1, branches), file=f)
 
             if not brief:
-                for dinstr in bb:
-                    asm_instr = dinstr.asm_instr
-
-                    print("  {:#x}    {}".format(asm_instr.address, asm_instr), file=f)
+                for instr in bb:
+                    print("  {:#x}    {}".format(instr.address, instr), file=f)
 
                     if show_reil:
-                        for reil_instr in dinstr.ir_instrs:
+                        for reil_instr in instr.ir_instrs:
                             print("  {:#x}:{:02x}   {}".format(reil_instr.address >> 0x8, reil_instr.address & 0xFF, reil_instr), file=f)
 
 
