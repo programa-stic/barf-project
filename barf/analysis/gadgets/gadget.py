@@ -49,7 +49,7 @@ class RawGadget(object):
 
     def __init__(self, instrs):
 
-        # List of instructions (dual instructions.)
+        # List of instructions.
         self._instrs = instrs
 
         # Id of gadgets.
@@ -63,14 +63,14 @@ class RawGadget(object):
 
     @property
     def instrs(self):
-        """Get gadgets dual instructions.
+        """Get gadgets instructions.
         """
         return self._instrs
 
     def get_ir_instrs(self):
         """Get gadgets IR instructions.
         """
-        ir_instrs_list = [dual_ins.ir for dual_ins in self._instrs]
+        ir_instrs_list = [instr.ir for instr in self._instrs]
 
         instrs = []
 

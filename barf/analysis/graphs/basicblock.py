@@ -56,9 +56,7 @@ class BasicBlock(object):
 
     def __init__(self):
 
-        # List of instruction within the basic block. Each instruction
-        # is a 'dual' instruction, e.i. it pairs an assembler
-        # instruction with its REIL translation.
+        # List of instruction within the basic block.
         self._instrs = []
 
         # Start address of the basic block.
