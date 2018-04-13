@@ -229,12 +229,10 @@ class BasicBlock(object):
         asm_fmt = "{:#x}    {}"
         reil_fmt = "{:#x}:{:02d} {}"
 
-        for instr in self._instrs:
-            asm_instr = instr
-
+        for asm_instr in self._instrs:
             lines += [asm_fmt.format(asm_instr.address, asm_instr)]
 
-            for reil_instr in instr.ir:
+            for reil_instr in asm_instr.ir_instrs:
                 lines += [reil_fmt.format(reil_instr.address >> 0x8, reil_instr.address & 0xff, reil_instr)]
 
         return "\n".join(lines)

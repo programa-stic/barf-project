@@ -270,9 +270,7 @@ class CFGRecover(object):
                 logger.warn("Error while disassembling @ {:#x}".format(addr), exc_info=True)
                 break
 
-            ir = self._translator.translate(asm)
-
-            asm.ir = ir
+            asm.ir_instrs = self._translator.translate(asm)
 
             bb.instrs.append(asm)
 
@@ -546,7 +544,7 @@ class CFGSimpleRenderer(CFGRenderer):
             lines.append(asm_str)
 
             if print_ir:
-                for ir_instr in instr.ir:
+                for ir_instr in instr.ir_instrs:
                     reil_str = self._render_reil(ir_instr)
                     lines.append(reil_str)
 
@@ -694,7 +692,7 @@ class CFGSimpleRendererEx(CFGRenderer):
             lines.append(asm_str)
 
             if print_ir:
-                for ir_instr in instr.ir:
+                for ir_instr in instr.ir_instrs:
                     reil_str = self._render_reil(ir_instr)
                     lines.append(reil_str)
 

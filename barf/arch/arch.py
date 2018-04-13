@@ -98,12 +98,12 @@ class ArchitectureInformation(object):
 class AssemblyInstruction(object):
 
     def __init__(self):
-        self.__ir_instrs = []
+        self._ir_instrs = []
 
     @property
-    def ir(self):
-        return self.__ir_instrs
+    def ir_instrs(self):
+        return self._ir_instrs
 
-    @ir.setter
-    def ir(self, value):
-        self.__ir_instrs = value
+    @ir_instrs.setter
+    def ir_instrs(self, value):
+        self._ir_instrs = value

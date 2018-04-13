@@ -65,7 +65,7 @@ def save_cfg_text(cfg, output_dir, show_reil, brief):
                     print("  {:#x}    {}".format(instr.address, instr), file=f)
 
                     if show_reil:
-                        for reil_instr in instr.ir:
+                        for reil_instr in instr.ir_instrs:
                             print("  {:#x}:{:02x}   {}".format(reil_instr.address >> 0x8, reil_instr.address & 0xFF, reil_instr), file=f)
 
 

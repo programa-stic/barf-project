@@ -79,14 +79,14 @@ class BinDiffTests(unittest.TestCase):
         ir2 += [self._translator.translate(asm2[1])]
 
         bb1 = BasicBlock()
-        asm1[0].ir = ir1[0]
-        asm1[1].ir = ir1[1]
+        asm1[0].ir_instrs = ir1[0]
+        asm1[1].ir_instrs = ir1[1]
         bb1.instrs.append(asm1[0])
         bb1.instrs.append(asm1[1])
 
         bb2 = BasicBlock()
-        asm2[0].ir = ir2[0]
-        asm2[1].ir = ir2[1]
+        asm2[0].ir_instrs = ir2[0]
+        asm2[1].ir_instrs = ir2[1]
         bb2.instrs.append(asm2[0])
         bb2.instrs.append(asm2[1])
 
