@@ -42,6 +42,23 @@ def insert_value(main_value, value_to_insert, offset, size):
     return main_value
 
 
+def read_c_string(emulator, address, max_length=1024):
+    i = 0
+    data = bytearray()
+    while i < max_length:
+        b = emulator.read_memory(address + i, 1)
+        if b == 0:
+            break
+        data.append(b)
+        i += 1
+    return data.decode()
+
+
+def write_c_string(emulator, address, string):
+    for i, b in enumerate(bytearray(string + "\x00")):
+        emulator.write_memory(address + i, 1, b)
+
+
 class VariableNamer(object):
     """Variable Name Generator."""
 
