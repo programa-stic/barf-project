@@ -47,6 +47,7 @@ Instructions
     Data Transfer : LDM, STM, STR
     Conditional   : BISZ, JCC
     Other         : UNDEF, UNKN, NOP
+    Extensions    : SEXT, SDIV, SMOD
 
 """
 
