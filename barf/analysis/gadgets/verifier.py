@@ -97,7 +97,7 @@ class GadgetVerifier(object):
         # Add instructions to the analyzer
         self.analyzer.reset()
 
-        for reil_instr in gadget.get_ir_instrs():
+        for reil_instr in gadget.ir_instrs:
             self.analyzer.add_instruction(reil_instr)
 
         # Generate constraints for the gadgets type.

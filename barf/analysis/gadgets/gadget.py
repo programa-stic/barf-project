@@ -67,7 +67,8 @@ class RawGadget(object):
         """
         return self._instrs
 
-    def get_ir_instrs(self):
+    @property
+    def ir_instrs(self):
         """Get gadgets IR instructions.
         """
         ir_instrs = []
