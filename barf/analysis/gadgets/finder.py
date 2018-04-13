@@ -37,7 +37,6 @@ from barf.analysis.gadgets import RawGadget
 from barf.arch import ARCH_ARM
 from barf.arch import ARCH_X86
 from barf.arch.disassembler import InvalidDisassemblerData
-from barf.core.reil import DualInstruction
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
 
@@ -147,7 +146,9 @@ class GadgetFinder(object):
                     except:
                             pass
 
-                root = GadgetTreeNode(DualInstruction(addr, asm_instr, ins_ir))
+                asm_instr.ir_instrs = ins_ir
+
+                root = GadgetTreeNode(asm_instr)
 
                 roots.append(root)
 
@@ -217,7 +218,9 @@ class GadgetFinder(object):
             except:
                 continue
 
-            root = GadgetTreeNode(DualInstruction(addr, asm_instr, ins_ir))
+            asm_instr.ir_instrs = ins_ir
+
+            root = GadgetTreeNode(asm_instr)
 
             roots.append(root)
 
@@ -271,7 +274,9 @@ class GadgetFinder(object):
                 continue
 
             if self._is_valid_ins(ir_instrs):
-                child = GadgetTreeNode(DualInstruction(start_addr, asm_instr, ir_instrs))
+                asm_instr.ir_instrs = ir_instrs
+
+                child = GadgetTreeNode(asm_instr)
 
                 root.add_child(child)
 
@@ -302,7 +307,7 @@ class GadgetFinder(object):
 
         node_list = []
 
-        root_gadget_ins = DualInstruction(root.address, root.asm_instr, root.ir_instrs)
+        root_gadget_ins = root
 
         if not children:
             node_list += [[root_gadget_ins]]

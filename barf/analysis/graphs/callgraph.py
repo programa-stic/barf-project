@@ -129,10 +129,10 @@ class CallGraph(object):
             edges = self._edges.get(cfg.start_address, set())
 
             for bb in cfg.basic_blocks:
-                for dinstr in bb:
-                    if dinstr.asm_instr.mnemonic == "call":
-                        if isinstance(dinstr.asm_instr.operands[0], X86ImmediateOperand):
-                            target_addr = dinstr.asm_instr.operands[0].immediate
+                for instr in bb:
+                    if instr.mnemonic == "call":
+                        if isinstance(instr.operands[0], X86ImmediateOperand):
+                            target_addr = instr.operands[0].immediate
 
                             edges.add(target_addr)
 

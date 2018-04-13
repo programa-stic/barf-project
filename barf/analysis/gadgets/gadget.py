@@ -94,10 +94,10 @@ class RawGadget(object):
     def __str__(self):
         lines = []
 
-        for dinstr in self._instrs:
-            lines += ["0x%08x : %s" % (dinstr.asm_instr.address, dinstr.asm_instr)]
+        for instr in self._instrs:
+            lines += ["0x%08x : %s" % (instr.address, instr)]
 
-            for instr in dinstr.ir_instrs:
+            for instr in instr.ir_instrs:
                 lines += ["  %s" % instr]
 
         return "\n".join(lines)

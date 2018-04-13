@@ -33,7 +33,6 @@ from barf.arch.x86.disassembler import X86Disassembler
 from barf.arch.x86.parser import X86Parser
 from barf.arch.x86.translator import X86Translator
 from barf.core.binary import BinaryFile
-from barf.core.reil import DualInstruction
 
 
 def get_full_path(filename):
@@ -80,12 +79,16 @@ class BinDiffTests(unittest.TestCase):
         ir2 += [self._translator.translate(asm2[1])]
 
         bb1 = BasicBlock()
-        bb1.instrs.append(DualInstruction(addr, asm1[0], ir1[0]))
-        bb1.instrs.append(DualInstruction(addr, asm1[1], ir1[1]))
+        asm1[0].ir_instrs = ir1[0]
+        asm1[1].ir_instrs = ir1[1]
+        bb1.instrs.append(asm1[0])
+        bb1.instrs.append(asm1[1])
 
         bb2 = BasicBlock()
-        bb2.instrs.append(DualInstruction(addr, asm2[0], ir2[0]))
-        bb2.instrs.append(DualInstruction(addr, asm2[1], ir2[1]))
+        asm2[0].ir_instrs = ir2[0]
+        asm2[1].ir_instrs = ir2[1]
+        bb2.instrs.append(asm2[0])
+        bb2.instrs.append(asm2[1])
 
         self.assertTrue(bb1 == bb1)
         self.assertTrue(bb2 == bb2)

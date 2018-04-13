@@ -44,7 +44,7 @@ def filter_duplicates(candidates):
     gadgets = {}
 
     for cand in candidates:
-        asm_instrs = " ; ".join([str(dinstr.asm_instr) for dinstr in cand.instrs])
+        asm_instrs = " ; ".join([str(instr) for instr in cand.instrs])
 
         if asm_instrs not in gadgets:
             gadgets[asm_instrs] = cand
@@ -108,7 +108,7 @@ def print_gadgets_raw(gadgets, f, sort_mode, color, title, show_binary):
 
     for key in sorted(gadgets_sorted.keys()):
         for gadget in gadgets_sorted[key]:
-            asm_instrs = [str(dinstr.asm_instr) for dinstr in gadget.instrs]
+            asm_instrs = [str(instr) for instr in gadget.instrs]
 
             if color:
                 asm_instrs = map(lambda s: highlight(s, NasmLexer(), TerminalFormatter()), asm_instrs)
@@ -117,7 +117,7 @@ def print_gadgets_raw(gadgets, f, sort_mode, color, title, show_binary):
 
             if show_binary:
                 try:
-                    asm_bytes = ["%02x" % ord(b) for dinstr in gadget.instrs for b in dinstr.asm_instr.bytes]
+                    asm_bytes = ["%02x" % ord(b) for instr in gadget.instrs for b in instr.bytes]
                     asm_bytes_str = "".join(asm_bytes)
 
                     print("0x%08x: %32s | %s" % (gadget.address, asm_bytes_str, asm_instrs_str), file=f)
@@ -169,7 +169,7 @@ def print_gadgets_typed(gadgets, f, address_size, title):
             if gadget.address not in gadgets_desc:
                 gadgets_desc[gadget.address] = []
 
-            asm_instrs = [str(dinstr.asm_instr) for dinstr in gadget.instrs]
+            asm_instrs = [str(instr) for instr in gadget.instrs]
             asm_instrs_str = " ; ".join(asm_instrs).replace("\n", "")
 
             gadgets_desc[gadget.address] += [{

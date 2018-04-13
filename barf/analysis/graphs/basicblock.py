@@ -32,9 +32,9 @@ def bb_get_instr_max_width(basic_block):
     """
     asm_mnemonic_max_width = 0
 
-    for dinstr in basic_block:
-        if len(dinstr.asm_instr.mnemonic) > asm_mnemonic_max_width:
-            asm_mnemonic_max_width = len(dinstr.asm_instr.mnemonic)
+    for instr in basic_block:
+        if len(instr.mnemonic) > asm_mnemonic_max_width:
+            asm_mnemonic_max_width = len(instr.mnemonic)
 
     return asm_mnemonic_max_width
 
@@ -151,7 +151,7 @@ class BasicBlock(object):
         if self._instrs is []:
             return None
 
-        return self._instrs[-1].address + self._instrs[-1].asm_instr.size - 1
+        return self._instrs[-1].address + self._instrs[-1].size - 1
 
     @property
     def size(self):
@@ -160,7 +160,7 @@ class BasicBlock(object):
         if self._instrs is []:
             return None
 
-        return sum([dinstr.asm_instr.size for dinstr in self._instrs])
+        return sum([instr.size for instr in self._instrs])
 
     @property
     def taken_branch(self):
@@ -231,12 +231,12 @@ class BasicBlock(object):
         asm_fmt = "{:#x}    {}"
         reil_fmt = "{:#x}:{:02d} {}"
 
-        for dinstr in self._instrs:
-            asm_instr = dinstr.asm_instr
+        for instr in self._instrs:
+            asm_instr = instr
 
             lines += [asm_fmt.format(asm_instr.address, asm_instr)]
 
-            for reil_instr in dinstr.ir_instrs:
+            for reil_instr in instr.ir_instrs:
                 lines += [reil_fmt.format(reil_instr.address >> 0x8, reil_instr.address & 0xff, reil_instr)]
 
         return "\n".join(lines)

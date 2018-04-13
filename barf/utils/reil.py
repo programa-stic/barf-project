@@ -73,7 +73,7 @@ class ReilContainerBuilder(object):
 
         for bb in cfg.basic_blocks:
             for dual_instr in bb:
-                asm_instrs += [dual_instr.asm_instr]
+                asm_instrs += [dual_instr]
 
         reil_container = self.__translate(asm_instrs, reil_container)
 
@@ -132,7 +132,7 @@ class ReilContainerEx(object):
 
         for bb in cfg.basic_blocks:
             for dual_instr in bb:
-                asm_instrs += [dual_instr.asm_instr]
+                asm_instrs += [dual_instr]
 
         reil_container = self.__translate(asm_instrs, reil_container)
 
