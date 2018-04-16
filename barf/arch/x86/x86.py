@@ -498,6 +498,8 @@ class X86Instruction(AssemblyInstruction):
     ]
 
     def __init__(self, prefix, mnemonic, operands, arch_mode):
+        super(X86Instruction, self).__init__()
+
         self._prefix = prefix
         self._mnemonic = mnemonic
         self._operands = operands
