@@ -58,7 +58,6 @@ from barf.arch.translator import TranslationBuilder
 from barf.arch.translator import Translator
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
-from barf.core.reil import check_operands_size
 from barf.core.reil.builder import ReilBuilder
 from barf.utils.utils import VariableNamer
 
@@ -274,19 +273,6 @@ class ArmTranslator(Translator):
             self.__log_translation_exception(instruction)
 
             raise
-
-        # Some sanity check....
-        for instr in trans_instrs:
-            try:
-                check_operands_size(instr, self._arch_info.architecture_size)
-            except:
-                logger.error(
-                    "Invalid operand size: %s (%s)",
-                    instr,
-                    instruction
-                )
-
-                raise
 
         return trans_instrs
 

@@ -37,31 +37,43 @@ class ReilBuilder(object):
     def gen_add(self, src1, src2, dst):
         """Return an ADD instruction.
         """
+        assert src1.size == src2.size
+
         return self.build(ReilMnemonic.ADD, src1, src2, dst)
 
     def gen_sub(self, src1, src2, dst):
         """Return a SUB instruction.
         """
+        assert src1.size == src2.size
+
         return self.build(ReilMnemonic.SUB, src1, src2, dst)
 
     def gen_mul(self, src1, src2, dst):
         """Return a MUL instruction.
         """
+        assert src1.size == src2.size
+
         return self.build(ReilMnemonic.MUL, src1, src2, dst)
 
     def gen_div(self, src1, src2, dst):
         """Return a DIV instruction.
         """
+        assert src1.size == src2.size
+
         return self.build(ReilMnemonic.DIV, src1, src2, dst)
 
     def gen_mod(self, src1, src2, dst):
         """Return a MOD instruction.
         """
+        assert src1.size == src2.size
+
         return self.build(ReilMnemonic.MOD, src1, src2, dst)
 
     def gen_bsh(self, src1, src2, dst):
         """Return a BSH instruction.
         """
+        assert src1.size == src2.size
+
         return self.build(ReilMnemonic.BSH, src1, src2, dst)
 
     # Bitwise Instructions
@@ -69,16 +81,22 @@ class ReilBuilder(object):
     def gen_and(self, src1, src2, dst):
         """Return an AND instruction.
         """
+        assert src1.size == src2.size
+
         return self.build(ReilMnemonic.AND, src1, src2, dst)
 
     def gen_or(self, src1, src2, dst):
         """Return an OR instruction.
         """
+        assert src1.size == src2.size
+
         return self.build(ReilMnemonic.OR, src1, src2, dst)
 
     def gen_xor(self, src1, src2, dst):
         """Return a XOR instruction.
         """
+        assert src1.size == src2.size
+
         return self.build(ReilMnemonic.XOR, src1, src2, dst)
 
     # Data Transfer Instructions
@@ -138,6 +156,8 @@ class ReilBuilder(object):
     def gen_sext(self, src, dst):
         """Return a SEXT instruction.
         """
+        assert src.size <= dst.size
+
         empty_reg = ReilEmptyOperand()
 
         return self.build(ReilMnemonic.SEXT, src, empty_reg, dst)
@@ -145,11 +165,15 @@ class ReilBuilder(object):
     def gen_sdiv(self, src1, src2, dst):
         """Return a SDIV instruction.
         """
+        assert src1.size == src2.size
+
         return self.build(ReilMnemonic.SDIV, src1, src2, dst)
 
     def gen_smod(self, src1, src2, dst):
         """Return a SMOD instruction.
         """
+        assert src1.size == src2.size
+
         return self.build(ReilMnemonic.SMOD, src1, src2, dst)
 
     # Helpers
