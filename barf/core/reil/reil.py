@@ -60,36 +60,36 @@ class ReilMnemonic(object):
     """
 
     # Arithmetic Instructions
-    ADD   = 1
-    SUB   = 2
-    MUL   = 3
-    DIV   = 4
-    MOD   = 5
-    BSH   = 6
+    ADD = 1
+    SUB = 2
+    MUL = 3
+    DIV = 4
+    MOD = 5
+    BSH = 6
 
     # Bitwise Instructions
-    AND   = 7
-    OR    = 8
-    XOR   = 9
+    AND = 7
+    OR = 8
+    XOR = 9
 
     # Data Transfer Instructions
-    LDM   = 10
-    STM   = 11
-    STR   = 12
+    LDM = 10
+    STM = 11
+    STR = 12
 
     # Conditional Instructions
-    BISZ  = 13
-    JCC   = 14
+    BISZ = 13
+    JCC = 14
 
     # Other Instructions
-    UNKN  = 15
+    UNKN = 15
     UNDEF = 16
-    NOP   = 17
+    NOP = 17
 
     # Extensions
-    SEXT  = 18
-    SDIV  = 19
-    SMOD  = 20
+    SEXT = 18
+    SDIV = 19
+    SMOD = 20
 
     @staticmethod
     def to_string(mnemonic):
