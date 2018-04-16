@@ -44,6 +44,7 @@ def _translate_hlt(self, tb, instruction):
 
     tb.add(self._builder.gen_unkn())
 
+
 def _translate_lea(self, tb, instruction):
     # Flags Affected
     # None.
