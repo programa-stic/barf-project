@@ -506,8 +506,8 @@ class X86Translator(Translator):
     # Helpers.
     # ======================================================================== #
     def _evaluate_a(self, tb):
-        return tb._and_regs(tb._negate_reg(self._flags["cf"]), tb._negate_reg(self._flags["zf"]))
         # above (CF=0 and ZF=0).
+        return tb._and_regs(tb._negate_reg(self._flags["cf"]), tb._negate_reg(self._flags["zf"]))
 
     def _evaluate_ae(self, tb):
         # above or equal (CF=0)
