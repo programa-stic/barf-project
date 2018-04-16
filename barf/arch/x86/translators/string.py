@@ -114,23 +114,24 @@ def _update_strings_src_and_dst(self, tb, src, dst, size):
     tb.add(continue_lbl)
 
 
-def _translate_cmps(self, tb, instruct_cmpsb(tb, instruction)
+def _translate_cmps(self, tb, instruction):
+    _translate_cmpsb(self, tb, instruction)
 
 
 def _translate_cmpsb(self, tb, instruction):
-    _translate_cmps_suffix(tb, instruction, "b")
+    _translate_cmps_suffix(self, tb, instruction, "b")
 
 
 def _translate_cmpsw(self, tb, instruction):
-    _translate_cmps_suffix(tb, instruction, "w")
+    _translate_cmps_suffix(self, tb, instruction, "w")
 
 
 def _translate_cmpsd(self, tb, instruction):
-    _translate_cmps_suffix(tb, instruction, "d")
+    _translate_cmps_suffix(self, tb, instruction, "d")
 
 
 def _translate_cmpsq(self, tb, instruction):
-    _translate_cmps_suffix(tb, instruction, "q")
+    _translate_cmps_suffix(self, tb, instruction, "q")
 
 
 def _translate_cmps_suffix(self, tb, instruction, suffix):
@@ -214,23 +215,23 @@ def _translate_cmps_suffix(self, tb, instruction, suffix):
 
 
 def _translate_lods(self, tb, instruction):
-    _translate_lodsb(tb, instruction)
+    _translate_lodsb(self, tb, instruction)
 
 
 def _translate_lodsb(self, tb, instruction):
-    _translate_lods_suffix(tb, instruction, "b")
+    _translate_lods_suffix(self, tb, instruction, "b")
 
 
 def _translate_lodsw(self, tb, instruction):
-    _translate_lods_suffix(tb, instruction, "w")
+    _translate_lods_suffix(self, tb, instruction, "w")
 
 
 def _translate_lodsd(self, tb, instruction):
-    _translate_lods_suffix(tb, instruction, "d")
+    _translate_lods_suffix(self, tb, instruction, "d")
 
 
 def _translate_lodsq(self, tb, instruction):
-    _translate_lods_suffix(tb, instruction, "q")
+    _translate_lods_suffix(self, tb, instruction, "q")
 
 
 def _translate_lods_suffix(self, tb, instruction, suffix):
@@ -280,23 +281,23 @@ def _translate_lods_suffix(self, tb, instruction, suffix):
 
 
 def _translate_movs(self, tb, instruction):
-    _translate_movsb(tb, instruction)
+    _translate_movsb(self, tb, instruction)
 
 
 def _translate_movsb(self, tb, instruction):
-    _translate_movs_suffix(tb, instruction, "b")
+    _translate_movs_suffix(self, tb, instruction, "b")
 
 
 def _translate_movsw(self, tb, instruction):
-    _translate_movs_suffix(tb, instruction, "w")
+    _translate_movs_suffix(self, tb, instruction, "w")
 
 
 def _translate_movsd(self, tb, instruction):
-    _translate_movs_suffix(tb, instruction, "d")
+    _translate_movs_suffix(self, tb, instruction, "d")
 
 
 def _translate_movsq(self, tb, instruction):
-    _translate_movs_suffix(tb, instruction, "q")
+    _translate_movs_suffix(self, tb, instruction, "q")
 
 
 def _translate_movs_suffix(self, tb, instruction, suffix):
@@ -352,23 +353,23 @@ def _translate_movs_suffix(self, tb, instruction, suffix):
 
 
 def _translate_scas(self, tb, instruction):
-    _translate_scasb(tb, instruction)
+    _translate_scasb(self, tb, instruction)
 
 
 def _translate_scasb(self, tb, instruction):
-    _translate_scas_suffix(tb, instruction, "b")
+    _translate_scas_suffix(self, tb, instruction, "b")
 
 
 def _translate_scasw(self, tb, instruction):
-    _translate_scas_suffix(tb, instruction, "w")
+    _translate_scas_suffix(self, tb, instruction, "w")
 
 
 def _translate_scasd(self, tb, instruction):
-    _translate_scas_suffix(tb, instruction, "d")
+    _translate_scas_suffix(self, tb, instruction, "d")
 
 
 def _translate_scasq(self, tb, instruction):
-    _translate_scas_suffix(tb, instruction, "q")
+    _translate_scas_suffix(self, tb, instruction, "q")
 
 
 def _translate_scas_suffix(self, tb, instruction, suffix):
@@ -446,23 +447,23 @@ def _translate_scas_suffix(self, tb, instruction, suffix):
 
 
 def _translate_stos(self, tb, instruction):
-    _translate_stosb(tb, instruction)
+    _translate_stosb(self, tb, instruction)
 
 
 def _translate_stosb(self, tb, instruction):
-    _translate_stos_suffix(tb, instruction, "b")
+    _translate_stos_suffix(self, tb, instruction, "b")
 
 
 def _translate_stosw(self, tb, instruction):
-    _translate_stos_suffix(tb, instruction, "w")
+    _translate_stos_suffix(self, tb, instruction, "w")
 
 
 def _translate_stosd(self, tb, instruction):
-    _translate_stos_suffix(tb, instruction, "d")
+    _translate_stos_suffix(self, tb, instruction, "d")
 
 
 def _translate_stosq(self, tb, instruction):
-    _translate_stos_suffix(tb, instruction, "q")
+    _translate_stos_suffix(self, tb, instruction, "q")
 
 
 def _translate_stos_suffix(self, tb, instruction, suffix):
