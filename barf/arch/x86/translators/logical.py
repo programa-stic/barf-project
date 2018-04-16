@@ -124,8 +124,8 @@ def _translate_not(self, tb, instruction):
 
 
 dispatcher = {
-    '_translate_and': _translate_and,
-    '_translate_or': _translate_or,
-    '_translate_xor': _translate_xor,
-    '_translate_not': _translate_not,
+    'and': _translate_and,
+    'or': _translate_or,
+    'xor': _translate_xor,
+    'not': _translate_not,
 }

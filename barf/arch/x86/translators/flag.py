@@ -257,16 +257,16 @@ def _translate_popfq(self, tb, instruction):
 
 
 dispatcher = {
-    '_translate_cld': _translate_cld,
-    '_translate_clc': _translate_clc,
-    '_translate_stc': _translate_stc,
-    '_translate_std': _translate_std,
-    '_translate_sahf': _translate_sahf,
-    '_translate_lahf': _translate_lahf,
-    '_translate_pushf': _translate_pushf,
-    '_translate_pushfd': _translate_pushfd,
-    '_translate_pushfq': _translate_pushfq,
-    '_translate_popf': _translate_popf,
-    '_translate_popfd': _translate_popfd,
-    '_translate_popfq': _translate_popfq,
+    'cld': _translate_cld,
+    'clc': _translate_clc,
+    'stc': _translate_stc,
+    'std': _translate_std,
+    'sahf': _translate_sahf,
+    'lahf': _translate_lahf,
+    'pushf': _translate_pushf,
+    'pushfd': _translate_pushfd,
+    'pushfq': _translate_pushfq,
+    'popf': _translate_popf,
+    'popfd': _translate_popfd,
+    'popfq': _translate_popfq,
 }

@@ -1127,19 +1127,21 @@ def _translate_test(self, tb, instruction):
 
 
 dispatcher = {
-    '_translate_shld': _translate_shld,
-    '_translate_shrd': _translate_shrd,
-    '_translate_shr': _translate_shr,
-    '_translate_shl': _translate_shl,
-    '_translate_sal': _translate_sal,
-    '_translate_sar': _translate_sar,
-    '_translate_rol': _translate_rol,
-    '_translate_ror': _translate_ror,
-    '_translate_rcl': _translate_rcl,
-    '_translate_rcr': _translate_rcr,
+    # "Shift and Rotate Instructions"
+    'shld': _translate_shld,
+    'shrd': _translate_shrd,
+    'shr': _translate_shr,
+    'shl': _translate_shl,
+    'sal': _translate_sal,
+    'sar': _translate_sar,
+    'rol': _translate_rol,
+    'ror': _translate_ror,
+    'rcl': _translate_rcl,
+    'rcr': _translate_rcr,
 
-    '_translate_bt': _translate_bt,
-    '_translate_bts': _translate_bts,
-    '_translate_bsf': _translate_bsf,
-    '_translate_test': _translate_test,
+    # "Bit and Byte Instructions"
+    'bt': _translate_bt,
+    'bts': _translate_bts,
+    'bsf': _translate_bsf,
+    'test': _translate_test,
 }

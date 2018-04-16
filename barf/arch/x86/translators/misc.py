@@ -38,6 +38,12 @@ def _translate_leave(self, tb, instruction):
 
 # "Miscellaneous Instructions"
 # ============================================================================ #
+def _translate_hlt(self, tb, instruction):
+    # Flags Affected
+    # None.
+
+    tb.add(self._builder.gen_unkn())
+
 def _translate_lea(self, tb, instruction):
     # Flags Affected
     # None.
@@ -54,16 +60,12 @@ def _translate_nop(self, tb, instruction):
     tb.add(self._builder.gen_nop())
 
 
-def _translate_hlt(self, tb, instruction):
-    # Flags Affected
-    # None.
-
-    tb.add(self._builder.gen_unkn())
-
-
 dispatcher = {
-    '_translate_leave': _translate_leave,
-    '_translate_lea': _translate_lea,
-    '_translate_nop': _translate_nop,
-    '_translate_hlt': _translate_hlt,
+    # "Enter and Leave Instructions"
+    'leave': _translate_leave,
+
+    # "Miscellaneous Instructions"
+    'lea': _translate_lea,
+    'nop': _translate_nop,
+    'hlt': _translate_hlt,
 }

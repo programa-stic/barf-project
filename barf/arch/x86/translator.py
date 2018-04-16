@@ -225,15 +225,15 @@ class X86Translator(Translator):
         """Return IR representation of an instruction.
         """
         try:
-            trans_instrs = self._translate(instruction)
+            trans_instrs = self.__translate(instruction)
         except NotImplementedError:
             unkn_instr = self._builder.gen_unkn()
             unkn_instr.address = instruction.address << 8 | (0x0 & 0xff)
             trans_instrs = [unkn_instr]
 
-            self._log_not_supported_instruction(instruction)
+            self.__log_not_supported_instruction(instruction)
         except:
-            self._log_translation_exception(instruction)
+            self.__log_translation_exception(instruction)
 
             raise
 
@@ -248,44 +248,36 @@ class X86Translator(Translator):
 
         return trans_instrs
 
-    def _translate(self, instruction):
+    def reset(self):
+        """Restart IR register name generator.
+        """
+        self._ir_name_generator.reset()
+
+    def __translate(self, instruction):
         """Translate a x86 instruction into REIL language.
 
         :param instruction: a x86 instruction
         :type instruction: X86Instruction
         """
         # Retrieve translation function.
+        mnemonic = instruction.mnemonic
+
+        # Check whether it refers to the strings instruction or the sse instruction.
         if instruction.mnemonic in ["movsd"]:
-            # Check if it refers to the strings instruction or the sse
-            # instruction.
-            if not instruction.bytes:
-                # Assume strings by default.
-                translator_name = "_translate_" + instruction.mnemonic
-            elif instruction.bytes[0] not in ["\xa4", "\xa5"]:
-                translator_name = "_translate_" + instruction.mnemonic + "_sse"
-            else:
-                translator_name = "_translate_" + instruction.mnemonic
-        else:
-            translator_name = "_translate_" + instruction.mnemonic
+            if instruction.bytes[0] not in ["\xa4", "\xa5"]:
+                mnemonic += "_sse"
 
         # Translate instruction.
-        tb = X86TranslationBuilder(self._ir_name_generator, self._arch_mode)
+        if mnemonic in translators.dispatcher:
+            tb = X86TranslationBuilder(self._ir_name_generator, self._arch_mode)
 
-        if translator_name in translators.dispatcher:
-            translator_fn = translators.dispatcher[translator_name]
-
-            translator_fn(self, tb, instruction)
+            translators.dispatcher[mnemonic](self, tb, instruction)
         else:
             raise NotImplementedError("Instruction Not Implemented")
 
         return tb.instanciate(instruction.address)
 
-    def reset(self):
-        """Restart IR register name generator.
-        """
-        self._ir_name_generator.reset()
-
-    def _log_not_supported_instruction(self, instruction):
+    def __log_not_supported_instruction(self, instruction):
         bytes_str = " ".join("%02x" % ord(b) for b in instruction.bytes)
 
         logger.info(
@@ -295,7 +287,7 @@ class X86Translator(Translator):
             bytes_str
         )
 
-    def _log_translation_exception(self, instruction):
+    def __log_translation_exception(self, instruction):
         bytes_str = " ".join("%02x" % ord(b) for b in instruction.bytes)
 
         logger.error(
@@ -304,24 +296,6 @@ class X86Translator(Translator):
             bytes_str,
             exc_info=True
         )
-
-    # ======================================================================== #
-    def _extract_bit(self, tb, reg, bit):
-        assert(0 <= bit < reg.size)
-
-        tmp = tb.temporal(reg.size)
-        ret = tb.temporal(1)
-
-        tb.add(self._builder.gen_bsh(reg, tb.immediate(-bit, reg.size), tmp))   # shift to LSB
-        tb.add(self._builder.gen_and(tmp, tb.immediate(1, reg.size), ret))      # filter LSB
-
-        return ret
-
-    def _extract_msb(self, tb, reg):
-        return self._extract_bit(tb, reg, reg.size - 1)
-
-    def _extract_sign_bit(self, tb, reg):
-        return self._extract_msb(tb, reg)
 
     # Flag translation.
     # ======================================================================== #
@@ -650,3 +624,22 @@ class X86Translator(Translator):
     def _evaluate_z(self, tb):
         # zero (ZF=1)
         return self._flags["zf"]
+
+    # Helpers.
+    # ======================================================================== #
+    def _extract_bit(self, tb, reg, bit):
+        assert(0 <= bit < reg.size)
+
+        tmp = tb.temporal(reg.size)
+        ret = tb.temporal(1)
+
+        tb.add(self._builder.gen_bsh(reg, tb.immediate(-bit, reg.size), tmp))   # shift to LSB
+        tb.add(self._builder.gen_and(tmp, tb.immediate(1, reg.size), ret))      # filter LSB
+
+        return ret
+
+    def _extract_msb(self, tb, reg):
+        return self._extract_bit(tb, reg, reg.size - 1)
+
+    def _extract_sign_bit(self, tb, reg):
+        return self._extract_msb(tb, reg)

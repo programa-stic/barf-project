@@ -597,16 +597,16 @@ def _translate_cmp(self, tb, instruction):
 
 
 dispatcher = {
-    '_translate_add': _translate_add,
-    '_translate_adc': _translate_adc,
-    '_translate_sub': _translate_sub,
-    '_translate_sbb': _translate_sbb,
-    '_translate_mul': _translate_mul,
-    '_translate_imul': _translate_imul,
-    '_translate_div': _translate_div,
-    '_translate_idiv': _translate_idiv,
-    '_translate_inc': _translate_inc,
-    '_translate_dec': _translate_dec,
-    '_translate_neg': _translate_neg,
-    '_translate_cmp': _translate_cmp,
+    'add': _translate_add,
+    'adc': _translate_adc,
+    'sub': _translate_sub,
+    'sbb': _translate_sbb,
+    'mul': _translate_mul,
+    'imul': _translate_imul,
+    'div': _translate_div,
+    'idiv': _translate_idiv,
+    'inc': _translate_inc,
+    'dec': _translate_dec,
+    'neg': _translate_neg,
+    'cmp': _translate_cmp,
 }
