@@ -89,7 +89,7 @@ def _translate_movq(self, tb, instruction):
 
 
 def _translate_vmovdqa(self, tb, instruction):
-    self._translate_movdqa(tb, instruction)
+    _translate_movdqa(self, tb, instruction)
 
 
 def _translate_movdqa(self, tb, instruction):
