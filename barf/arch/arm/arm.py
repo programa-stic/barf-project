@@ -390,6 +390,8 @@ class ArmInstruction(AssemblyInstruction):
     ]
 
     def __init__(self, orig_instr, mnemonic, operands, arch_mode):
+        super(ArmInstruction, self).__init__()
+
         self._orig_instr = orig_instr
         self._mnemonic = mnemonic
         self._operands = operands
