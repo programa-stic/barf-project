@@ -199,12 +199,12 @@ def _translate_cmps_suffix(self, tb, instruction, suffix):
     tb.add(self._builder.gen_sub(src1_data, src2_data, tmp0))
 
     # Flags : CF, OF, SF, ZF, AF, PF
-    self._update_cf(self, tb, src1_data, src2_data, tmp0)
-    self._update_of_sub(self, tb, src1_data, src2_data, tmp0)
-    self._update_sf(self, tb, src1_data, src2_data, tmp0)
-    self._update_zf(self, tb, src1_data, src2_data, tmp0)
-    self._update_af_sub(self, tb, src1_data, src2_data, tmp0)
-    self._update_pf(self, tb, src1_data, src2_data, tmp0)
+    self._update_cf(tb, src1_data, src2_data, tmp0)
+    self._update_of_sub(tb, src1_data, src2_data, tmp0)
+    self._update_sf(tb, src1_data, src2_data, tmp0)
+    self._update_zf(tb, src1_data, src2_data, tmp0)
+    self._update_af_sub(tb, src1_data, src2_data, tmp0)
+    self._update_pf(tb, src1_data, src2_data, tmp0)
 
     # Update source pointers.
     _update_strings_srcs(self, tb, src1, src2, data_size)
@@ -431,12 +431,12 @@ def _translate_scas_suffix(self, tb, instruction, suffix):
     tb.add(self._builder.gen_sub(src1_data, src2_data, tmp0))
 
     # Flags : CF, OF, SF, ZF, AF, PF
-    self._update_cf(self, tb, src1_data, src2_data, tmp0)
-    self._update_of_sub(self, tb, src1_data, src2_data, tmp0)
-    self._update_sf(self, tb, src1_data, src2_data, tmp0)
-    self._update_zf(self, tb, src1_data, src2_data, tmp0)
-    self._update_af_sub(self, tb, src1_data, src2_data, tmp0)
-    self._update_pf(self, tb, src1_data, src2_data, tmp0)
+    self._update_cf(tb, src1_data, src2_data, tmp0)
+    self._update_of_sub(tb, src1_data, src2_data, tmp0)
+    self._update_sf(tb, src1_data, src2_data, tmp0)
+    self._update_zf(tb, src1_data, src2_data, tmp0)
+    self._update_af_sub(tb, src1_data, src2_data, tmp0)
+    self._update_pf(tb, src1_data, src2_data, tmp0)
 
     # Update source pointers.
     _update_strings_dst(self, tb, src2, data_size, instruction)
