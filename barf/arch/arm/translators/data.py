@@ -138,7 +138,7 @@ def _translate_sub(self, tb, instruction):
 def _translate_rsb(self, tb, instruction):
     instruction.operands[1], instruction.operands[2] = instruction.operands[2], instruction.operands[1]
 
-    self._translate_sub(tb, instruction)
+    _translate_sub(self, tb, instruction)
 
 
 def _translate_mul(self, tb, instruction):
