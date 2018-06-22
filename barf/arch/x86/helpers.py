@@ -118,3 +118,24 @@ def print_flags(flags):
         out += flag_str + " "
 
     return out[:-1]
+
+
+def print_stack(emulator, sp, addr_size):
+    out = ""
+
+    header_fmt = " {0:^15s} : {1:^16s}\n"
+    header = header_fmt.format("Address", "Value")
+    ruler = "-" * len(header) + "\n"
+
+    out += header
+    out += ruler
+
+    for addr in xrange(sp - 6*addr_size, sp + 6*addr_size, addr_size):
+        value = emulator.read_memory(addr, addr_size)
+
+        if addr == sp:
+            out += "{:016x} : {:016x} <\n".format(addr, value)
+        else:
+            out += "{:016x} : {:016x}\n".format(addr, value)
+
+    print(out)

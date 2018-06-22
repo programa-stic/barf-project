@@ -29,35 +29,15 @@ import time
 
 from barf import BARF
 from barf.arch import ARCH_ARM
-from barf.arch import ARCH_ARM_MODE_ARM
-from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch import ARCH_X86
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
-from barf.arch.arm import ArmArchitectureInformation
-from barf.arch.x86 import X86ArchitectureInformation
 from barf.core.symbols import load_symbols
-
-
-def __print_stack(emulator, sp, addr_size):
-    out = ""
-
-    header_fmt = " {0:^15s} : {1:^16s}\n"
-    header = header_fmt.format("Address", "Value")
-    ruler = "-" * len(header) + "\n"
-
-    out += header
-    out += ruler
-
-    for addr in xrange(sp - 6*addr_size, sp + 6*addr_size, addr_size):
-        value = emulator.read_memory(addr, addr_size)
-
-        if addr == sp:
-            out += "{:016x} : {:016x} <\n".format(addr, value)
-        else:
-            out += "{:016x} : {:016x}\n".format(addr, value)
-
-    print(out)
+from barf.utils.cconv import ArmSystemV
+from barf.utils.cconv import X86SystemV
+from barf.utils.cconv import X86_64SystemV
+from barf.utils.utils import read_c_string
+from barf.utils.utils import write_c_string
 
 
 def split_command_line(argv):
@@ -71,81 +51,41 @@ def split_command_line(argv):
     return prg_options, prg_arguments
 
 
-def read_c_string(reil_emulator, address, max_length=1024):
-    i = 0
-    data = bytearray()
-    while i < max_length:
-        b = reil_emulator.read_memory(address + i, 1)
-        if b == 0:
-            break
-        data.append(b)
-        i += 1
-    return data.decode()
-
-
-def write_c_string(reil_emulator, address, string):
-    for i, b in enumerate(string):
-        reil_emulator.write_memory(address + i, 1, b)
-
-
 def atoi_hook(emulator, state):
     print("[+] atoi hooked!")
 
-    arch = state["arch"]
-    binary = state["binary"]
+    # int atoi(const char *nptr);
+
+    cc = state['cc']
 
     # Read parameters.
-    if binary.architecture == ARCH_X86:
-        if binary.architecture_mode == ARCH_X86_MODE_32:
-            sp = emulator.registers[arch.stack_pointer_register()]
-            ws = arch.address_size / 8
-
-            nptr = emulator.read_memory(sp + 1 * ws, ws)
-
-        if binary.architecture_mode == ARCH_X86_MODE_64:
-            nptr = emulator.registers["rdi"]
-
-    if binary.architecture == ARCH_ARM:
-        nptr = emulator.registers["r0"]
-
-    int_str = read_c_string(emulator, nptr, max_length=1024)
+    nptr = cc.parameters[0]
 
     # Emulate function behavior.
-    if binary.architecture == ARCH_X86:
-        if binary.architecture_mode == ARCH_X86_MODE_32:
-            emulator.registers["eax"] = int(int_str)
+    value = int(read_c_string(emulator, nptr, max_length=1024))
 
-        if binary.architecture_mode == ARCH_X86_MODE_64:
-            emulator.registers["rax"] = int(int_str)
-
-    if binary.architecture == ARCH_ARM:
-        emulator.registers["r0"] = int(int_str)
+    # Save result.
+    cc.return_value = value
 
 
 def printf_hook(emulator, state):
     print("[+] printf hooked!")
 
-    arch = state["arch"]
-    binary = state["binary"]
+    # int printf(const char *format, ...);
+
+    cc = state["cc"]
 
     # Read parameters.
-    if binary.architecture == ARCH_X86:
-        if binary.architecture_mode == ARCH_X86_MODE_32:
-            sp = emulator.registers[arch.stack_pointer_register()]
-            ws = arch.address_size / 8
-
-            fmt_ptr = emulator.read_memory(sp + 1 * ws, ws)
-
-        if binary.architecture_mode == ARCH_X86_MODE_64:
-            fmt_ptr = emulator.registers["rdi"]
-
-    if binary.architecture == ARCH_ARM:
-        fmt_ptr = emulator.registers["r0"]
-
-    fmt = read_c_string(emulator, fmt_ptr, max_length=1024)
+    fmt_ptr = cc.parameters[0]
 
     # Emulate function behavior.
-    print(fmt)
+    fmt = read_c_string(emulator, fmt_ptr, max_length=1024)
+    out = fmt
+
+    print(out)
+
+    # Save result.
+    cc.return_value = len(out)
 
 
 def get_symbols(binary_path):
@@ -159,64 +99,51 @@ def get_symbols(binary_path):
     return symbols_by_addr, symbols_by_name
 
 
-def get_arch(binary):
-    if binary.architecture == ARCH_X86:
-        return X86ArchitectureInformation(binary.architecture_mode)
-    elif binary.architecture == ARCH_ARM:
-        return ArmArchitectureInformation(binary.architecture_mode)
-    else:
-        raise Exception("Architecture not supported.")
+def setup_argv(emulator, argv, base_addr):
+    addr_size = emulator.arch_info.address_size / 8
 
-
-def load_args(addr_size, args, argv_args_addr, argv_base_addr, reil_emulator):
     argv_entry_addr = {}
 
-    # Load args into memory.
-    base_addr = argv_args_addr
-    for index, arg in enumerate(args):
-        argv_entry_addr[index] = base_addr
+    # Copy arguments into the stack but first leave space for the argv
+    # array (null-terminated).
+    addr = base_addr + (len(argv) + 1) * addr_size
+    for index, arg in enumerate(argv):
+        argv_entry_addr[index] = addr
+        write_c_string(emulator, addr, arg)
+        addr += len(arg) + 1    # each argument is null-terminated
 
-        for b in bytearray(arg + "\x00"):
-            reil_emulator.write_memory(base_addr, 1, b)
-            base_addr += 1
-
-    # Build args array.
-    for index in xrange(len(args)):
+    # Build argv array.
+    for index in xrange(len(argv)):
         addr = argv_entry_addr[index]
-        reil_emulator.write_memory(argv_base_addr + index * addr_size, addr_size, addr)
+        emulator.write_memory(base_addr + index * addr_size, addr_size, addr)
     # Add null terminator.
-    reil_emulator.write_memory(argv_base_addr + len(args) * addr_size, addr_size, 0x0)
+    emulator.write_memory(base_addr + len(argv) * addr_size, addr_size, 0x0)
 
 
-def setup_emulator(reil_emulator, binary, args):
-    arch = get_arch(binary)
-
-    sp = 0x00001500
-    ws = arch.address_size / 8
-
-    argv_base_addr = 0x2500
-    argv_args_addr = 0x3500
-
-    load_args(ws, args, argv_args_addr, argv_base_addr, reil_emulator)
-
+def setup_emulator(emulator, binary, args):
+    # Instantiate calling convention.
     if binary.architecture == ARCH_X86:
         if binary.architecture_mode == ARCH_X86_MODE_32:
-            reil_emulator.write_memory(sp + 1 * ws, ws, len(args))            # argc
-            reil_emulator.write_memory(sp + 2 * ws, ws, argv_base_addr)       # argv
-            reil_emulator.write_memory(sp + 3 * ws, ws, 0x00000000)           # envp
+            cc = X86SystemV(emulator)
+        else:
+            cc = X86_64SystemV(emulator)
+    elif binary.architecture == ARCH_ARM:
+        cc = ArmSystemV(emulator)
 
-        if binary.architecture_mode == ARCH_X86_MODE_64:
-            reil_emulator.registers["rdi"] = len(args)
-            reil_emulator.registers["rsi"] = argv_base_addr
-            reil_emulator.registers["rdx"] = 0x00000000
+    arch = emulator.arch_info
+    sp = 0x1500
+    base_argv = 0x2500
 
-    if binary.architecture == ARCH_ARM:
-        reil_emulator.registers["r0"] = len(args)
-        reil_emulator.registers["r1"] = argv_base_addr
-        reil_emulator.registers["r2"] = 0x00000000
+    emulator.registers[arch.stack_pointer_register()] = sp
 
-    # Loading symbols.
-    # ======================================================================== #
+    setup_argv(emulator, args, base_argv)
+
+    # Setup main's parameters: argc, argv and envp.
+    cc.parameters[0] = len(args)    # argc
+    cc.parameters[1] = base_argv    # argv
+    cc.parameters[2] = 0x0          # envp
+
+    # Load symbols.
     print("[+] Loading symbols...")
 
     symbols_by_addr, symbols_by_name = get_symbols(binary.filename)
@@ -248,8 +175,7 @@ def setup_emulator(reil_emulator, binary, args):
             printf_addr = 0x10358
 
     state = {
-        'arch': arch,
-        'binary': binary,
+        'cc': cc,
     }
 
     ctx_init = {
@@ -289,7 +215,7 @@ def main():
 
     # Setup emulator.
     # ======================================================================== #
-    ctx_init, start, end, hooks = setup_emulator(barf.ir_emulator, barf.binary, prg_arguments)
+    ctx_init, start, end, hooks = setup_emulator(barf.emulator, barf.binary, prg_arguments)
 
     # Emulate.
     # ======================================================================== #
@@ -304,7 +230,7 @@ def main():
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
-        print("Usage: {} -- loop-simple1.[x86|x86_64|arm|arm_thumb] <iters>".format(sys.argv[0]))
+        print("Usage: {} -- samples/bin/loop-simple1.[x86|x86_64|arm|arm_thumb] <iters>".format(sys.argv[0]))
         sys.exit(1)
 
     main()
