@@ -100,6 +100,10 @@ class Emulator(object):
             else:
                 raise Exception("Invalid architecture mode.")
 
+        self.__instr_handler_post = None, None
+
+        self.__set_default_handlers()
+
     def set_registers(self, registers):
         for reg, value in registers.items():
             if not reg.endswith("_next"):
@@ -112,6 +116,14 @@ class Emulator(object):
 
     def add_reil_hook(self, func, param):
         self.ir_emulator.set_instruction_post_handler(func, param)
+
+    def add_asm_hook(self, func, param):
+        self.__instr_handler_post = (func, param)
+
+    def __set_default_handlers(self):
+        empty_fn, empty_param = lambda emu, instr, param: None, None
+
+        self.__instr_handler_post = (empty_fn, empty_param)
 
     def execute(self, asm_instr):
         """Execute an assembler instruction.
@@ -157,6 +169,10 @@ class Emulator(object):
             ip = next_ip if next_ip else instr_container.get_next_address(ip)
 
         del instr_container
+
+        # Execute post instruction handlers
+        handler_fn_post, handler_param_post = self.__instr_handler_post
+        handler_fn_post(self, asm_instr, handler_param_post)
 
         # delete temporal registers
         regs = self.ir_emulator.registers.keys()
@@ -246,6 +262,10 @@ class Emulator(object):
                 print("{:#x} {}".format(asm_instr.address, asm_instr))
 
             target_addr = self.__process_reil_container(reil_container, to_reil_address(next_addr))
+
+            # Execute post instruction handlers
+            handler_fn_post, handler_param_post = self.__instr_handler_post
+            handler_fn_post(self, asm_instr, handler_param_post)
 
             # Get next address to execute.
             next_addr = to_asm_address(target_addr) if target_addr else asm_instr.address + asm_instr.size
