@@ -4,10 +4,58 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+
+- Add hook support to the `Emulator` class.
+- Add `cconv` (calling convention) module.
+- Add `ReilCpu` tests.
+- Add `replay` tool to replay x86 execution traces.
+- Add `x86.trace` module.
+- Add `x86.helper` module.
+- Add kao's toy project solution to the `examples` folder.
+- Add flare-on 2015 challenge #2 solution to the `examples` folder.
+- Add basic symbolic execution support.
+- Add extra methods to `ReilSequence` and `ReilContainer` classes.
+- Improve hook support of the `Emulator` class.
+- Add support for `SHLD` instruction.
+
 ### Changed
+
+- Improve `emulate-binary` example script.
+- Refactor `ReilBuilder` class.
+- Refactor instruction translators (both Intel and ARM). Group translators by category and create a module for each one.
+- Improve `Emulator` class.
+- Refactor `ReilCpu` tests.
+- Rename `bi` module to `binary`.
+- Refactor `Disassembler` class.
+- Refactor `ReilEmulatorTainter` class.
+- Refactor `ReilCpu` class.
+- Refactor `reil.helpers` module.
+- Refactor `ReilContainer` class.
+- Refactor `ReilBuilder` class.
+- Refactor `reil.tainter` module.
+- Refactor `ReilCpu` class.
+- Refactor `reil.parser` test module.
+- Refactor `reil.emulator` test module.
+- Rename `basicblock` package (and tests) to `graphs`.
+- Rename `gadget` package (and tests) to `gadgets`.
+- Rename `reilparser` module to `reil.parser`.
+- Refactor `reilemulator` module. Split module into submodules: `emulator.cpu`, `emulator.emulator`, `emulator.memory`, and `emulator.tainter`.
+- Refactor `arch.emulator` module.
+
 ### Deprecated
+
 ### Removed
+
+- Remove `DualInstruction` class.
+
 ### Fixed
+
+- Fix `RSB` ARM instruction.
+- Fix control-flow graph rendering.
+- Fix `SHRD` translation.
+- Fix size of effective address calculation for Intel architecture.
+- Fix `SHL` and `SHR` instruction translator.
+
 ### Security
 
 ## [0.5.0] - 2017-12-18
