@@ -49,7 +49,7 @@ def compare_contexts(context_init, x86_context, reil_context):
 
 
 def print_contexts(context_init, x86_context, reil_context, skip=None):
-    header_fmt = " {0:^12s}: {1:^16s} | {2:^16s} | {3:^16s}\n"
+    header_fmt = " {0:^12s}: {1:^16s} | {2:^16s} || {3:^16s}\n"
     header = header_fmt.format("Register", "Initial", "Expected", "Obtained")
     ruler = "-" * len(header) + "\n"
 
@@ -61,7 +61,7 @@ def print_contexts(context_init, x86_context, reil_context, skip=None):
     mask = 2**64-1
 
     for reg in sorted(context_init.keys()):
-        if reg in skip:
+        if skip and reg in skip:
             continue
 
         if (x86_context[reg] & mask) != (reil_context[reg] & mask):
@@ -99,6 +99,24 @@ def print_contexts(context_init, x86_context, reil_context, skip=None):
     return out
 
 
+def print_registers(registers):
+    out = ""
+
+    header_fmt = " {0:^8s} : {1:^16s}\n"
+    header = header_fmt.format("Register", "Value")
+    ruler = "-" * len(header) + "\n"
+
+    out += header
+    out += ruler
+
+    fmt = " {0:>8s} : {1:016x}\n"
+
+    for reg in sorted(registers.keys()):
+        out += fmt.format(reg, registers[reg])
+
+    return out
+
+
 def print_flags(flags):
     # flags
     flags_mapper = {
@@ -130,7 +148,7 @@ def print_stack(emulator, sp, addr_size):
     out += header
     out += ruler
 
-    for addr in xrange(sp - 6*addr_size, sp + 6*addr_size, addr_size):
+    for addr in range(sp - 6*addr_size, sp + 6*addr_size, addr_size):
         value = emulator.read_memory(addr, addr_size)
 
         if addr == sp:
@@ -138,4 +156,5 @@ def print_stack(emulator, sp, addr_size):
         else:
             out += "{:016x} : {:016x}\n".format(addr, value)
 
-    print(out)
+    return out
+

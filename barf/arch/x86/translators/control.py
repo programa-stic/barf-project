@@ -22,60 +22,51 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
+from barf.arch.x86 import X86RegisterOperand
+from barf.arch.x86.translators.helpers import X86ConditionCodeHelper
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
 
 
 # "Control Transfer Instructions"
 # ============================================================================ #
-def _translate_address(self, tb, oprnd):
-    addr_oprnd_size = oprnd.size + 8
-
-    if isinstance(oprnd, ReilRegisterOperand):
-        oprnd_tmp = tb.temporal(addr_oprnd_size)
-        addr_oprnd = tb.temporal(addr_oprnd_size)
-        imm = ReilImmediateOperand(8, addr_oprnd_size)
-
-        tb.add(self._builder.gen_str(oprnd, oprnd_tmp))
-        tb.add(self._builder.gen_bsh(oprnd_tmp, imm, addr_oprnd))
-    elif isinstance(oprnd, ReilImmediateOperand):
-        addr_oprnd = ReilImmediateOperand(oprnd.immediate << 8, addr_oprnd_size)
-
-    return addr_oprnd
-
-
-def _translate_jmp(self, tb, instruction):
+def _translate_call(self, tb, instruction):
     # Flags Affected
     # All flags are affected if a task switch occurs; no flags are
     # affected if a task switch does not occur.
 
-    oprnd0 = tb.read(instruction.operands[0])
+    oprnd0 = self._reg_acc_translator.read(tb, instruction.operands[0])
 
     addr_oprnd = _translate_address(self, tb, oprnd0)
 
-    imm0 = tb.immediate(1, 1)
+    imm1 = tb.immediate(1, 1)
 
-    tb.add(self._builder.gen_jcc(imm0, addr_oprnd))
+    tmp0 = tb.temporal(self._sp.size)
+
+    ret_addr = ReilImmediateOperand((instruction.address + instruction.size), self._arch_info.address_size)
+
+    tb.add(self._builder.gen_sub(self._sp, self._ws, tmp0))
+    tb.add(self._builder.gen_str(tmp0, self._sp))
+    tb.add(self._builder.gen_stm(ret_addr, self._sp))
+    tb.add(self._builder.gen_jcc(imm1, addr_oprnd))
 
 
-def _translate_jcc(self, tb, instruction, jcc_cond):
-    # Jump if condition (jcc_cond) is met.
+def _translate_jcc(self, tb, instruction, condition_code):
+    # Jump if condition (condition_code) is met.
     # Flags Affected
     # None.
 
-    eval_cond_fn_name = "_evaluate_" + jcc_cond
-    eval_cond_fn = getattr(self, eval_cond_fn_name, None)
+    oprnd0 = self._reg_acc_translator.read(tb, instruction.operands[0])
 
-    if not eval_cond_fn:
-        raise NotImplementedError("Instruction Not Implemented")
-
-    oprnd0 = tb.read(instruction.operands[0])
+    oprnd_cc = X86ConditionCodeHelper.evaluate_cc(self._flags, tb, condition_code)
 
     addr_oprnd = _translate_address(self, tb, oprnd0)
 
-    tb.add(self._builder.gen_jcc(eval_cond_fn(tb), addr_oprnd))
+    tb.add(self._builder.gen_jcc(oprnd_cc, addr_oprnd))
 
 
 def _translate_ja(self, tb, instruction):
@@ -102,6 +93,23 @@ def _translate_je(self, tb, instruction):
     _translate_jcc(self, tb, instruction, 'e')
 
 
+def _translate_jecxz(self, tb, instruction):
+    # Jump short if ECX register is 0.
+
+    oprnd0 = self._reg_acc_translator.read(tb, instruction.operands[0])
+
+    ecx_x86 = __get_jecxz_implicit_operand()
+
+    ecx = self._reg_acc_translator.read(tb, ecx_x86)
+
+    addr_oprnd = _translate_address(self, tb, oprnd0)
+
+    tmp0 = tb.temporal(1)
+
+    tb.add(self._builder.gen_bisz(ecx, tmp0))
+    tb.add(self._builder.gen_jcc(tmp0, addr_oprnd))
+
+
 def _translate_jg(self, tb, instruction):
     _translate_jcc(self, tb, instruction, 'g')
 
@@ -116,6 +124,20 @@ def _translate_jl(self, tb, instruction):
 
 def _translate_jle(self, tb, instruction):
     _translate_jcc(self, tb, instruction, 'le')
+
+
+def _translate_jmp(self, tb, instruction):
+    # Flags Affected
+    # All flags are affected if a task switch occurs; no flags are
+    # affected if a task switch does not occur.
+
+    oprnd0 = self._reg_acc_translator.read(tb, instruction.operands[0])
+
+    addr_oprnd = _translate_address(self, tb, oprnd0)
+
+    imm0 = tb.immediate(1, 1)
+
+    tb.add(self._builder.gen_jcc(imm0, addr_oprnd))
 
 
 def _translate_jna(self, tb, instruction):
@@ -198,40 +220,79 @@ def _translate_jz(self, tb, instruction):
     _translate_jcc(self, tb, instruction, 'z')
 
 
-def _translate_jecxz(self, tb, instruction):
-    # Jump short if ECX register is 0.
-
-    oprnd0 = tb.read(instruction.operands[0])
-
-    addr_oprnd = _translate_address(self, tb, oprnd0)
-
-    tmp0 = tb.temporal(1)
-
-    ecx = ReilRegisterOperand("ecx", 32)
-
-    tb.add(self._builder.gen_bisz(ecx, tmp0))
-    tb.add(self._builder.gen_jcc(tmp0, addr_oprnd))
-
-
-def _translate_call(self, tb, instruction):
+def _translate_loop(self, tb, instruction):
     # Flags Affected
-    # All flags are affected if a task switch occurs; no flags are
-    # affected if a task switch does not occur.
+    # None.
 
-    oprnd0 = tb.read(instruction.operands[0])
+    oprnd0 = self._reg_acc_translator.read(tb, instruction.operands[0])
+
+    counter_x86 = __get_loopcc_implicit_operand(self._arch_mode)
+
+    counter = self._reg_acc_translator.read(tb, counter_x86)
 
     addr_oprnd = _translate_address(self, tb, oprnd0)
 
+    tmp0 = tb.temporal(counter.size)
+
+    imm0 = tb.immediate(1, counter.size)
+
+    tb.add(self._builder.gen_str(counter, tmp0))
+    tb.add(self._builder.gen_sub(tmp0, imm0, counter))
+    tb.add(self._builder.gen_jcc(counter, addr_oprnd))  # keep looping
+
+
+def _translate_loopcc(self, tb, instruction, condition_code):
+    # Flags Affected
+    # None.
+
+    oprnd0 = self._reg_acc_translator.read(tb, instruction.operands[0])
+
+    counter_x86 = __get_loopcc_implicit_operand(self._arch_mode)
+
+    counter = self._reg_acc_translator.read(tb, counter_x86)
+
+    addr_oprnd = _translate_address(self, tb, oprnd0)
+
+    end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
+
+    tmp0 = tb.temporal(counter.size)
+
+    counter_zero = tb.temporal(1)
+    counter_not_zero = tb.temporal(1)
+    branch_cond = tb.temporal(1)
+
+    imm0 = tb.immediate(1, counter.size)
     imm1 = tb.immediate(1, 1)
 
-    tmp0 = tb.temporal(self._sp.size)
+    keep_looping_lbl = tb.label('keep_looping')
 
-    end_addr = ReilImmediateOperand((instruction.address + instruction.size), self._arch_info.address_size)
+    neg_cond = negate_reg(tb, X86ConditionCodeHelper.evaluate_cc(self._flags, tb, condition_code))
 
-    tb.add(self._builder.gen_sub(self._sp, self._ws, tmp0))
-    tb.add(self._builder.gen_str(tmp0, self._sp))
-    tb.add(self._builder.gen_stm(end_addr, self._sp))
-    tb.add(self._builder.gen_jcc(imm1, addr_oprnd))
+    tb.add(self._builder.gen_str(counter, tmp0))
+    tb.add(self._builder.gen_sub(tmp0, imm0, counter))
+    tb.add(self._builder.gen_bisz(counter, counter_zero))
+    tb.add(self._builder.gen_xor(counter_zero, imm1, counter_not_zero))
+    tb.add(self._builder.gen_and(counter_not_zero, neg_cond, branch_cond))
+    tb.add(self._builder.gen_jcc(branch_cond, keep_looping_lbl))
+    tb.add(self._builder.gen_jcc(imm0, end_addr))  # exit loop
+    tb.add(keep_looping_lbl)
+    tb.add(self._builder.gen_jcc(imm0, addr_oprnd))
+
+
+def _translate_loope(self, tb, instruction):
+    return _translate_loopcc(self, tb, instruction, 'e')
+
+
+def _translate_loopne(self, tb, instruction):
+    return _translate_loopcc(self, tb, instruction, 'ne')
+
+
+def _translate_loopnz(self, tb, instruction):
+    return _translate_loopcc(self, tb, instruction, 'nz')
+
+
+def _translate_loopz(self, tb, instruction):
+    return _translate_loopcc(self, tb, instruction, 'z')
 
 
 def _translate_ret(self, tb, instruction):
@@ -251,7 +312,7 @@ def _translate_ret(self, tb, instruction):
 
     # Free stack.
     if len(instruction.operands) > 0:
-        oprnd0 = tb.read(instruction.operands[0])
+        oprnd0 = self._reg_acc_translator.read(tb, instruction.operands[0])
 
         imm0 = tb.immediate(oprnd0.immediate & (2 ** self._sp.size - 1), self._sp.size)
 
@@ -264,129 +325,53 @@ def _translate_ret(self, tb, instruction):
     tb.add(self._builder.gen_jcc(imm1, tmp2))
 
 
-def _translate_loop(self, tb, instruction):
-    # Flags Affected
-    # None.
+# Auxiliary functions
+# ============================================================================ #
+def _translate_address(self, tb, oprnd):
+    addr_oprnd_size = oprnd.size + 8
 
-    if self._arch_mode == ARCH_X86_MODE_32:
-        counter = ReilRegisterOperand("ecx", 32)
-    elif self._arch_mode == ARCH_X86_MODE_64:
-        counter = ReilRegisterOperand("rcx", 64)
+    if isinstance(oprnd, ReilRegisterOperand):
+        oprnd_tmp = tb.temporal(addr_oprnd_size)
+        addr_oprnd = tb.temporal(addr_oprnd_size)
+        imm = ReilImmediateOperand(8, addr_oprnd_size)
 
-    oprnd0 = tb.read(instruction.operands[0])
+        tb.add(self._builder.gen_str(oprnd, oprnd_tmp))
+        tb.add(self._builder.gen_bsh(oprnd_tmp, imm, addr_oprnd))
+    elif isinstance(oprnd, ReilImmediateOperand):
+        addr_oprnd = ReilImmediateOperand(oprnd.immediate << 8, addr_oprnd_size)
 
-    addr_oprnd = _translate_address(self, tb, oprnd0)
-
-    tmp0 = tb.temporal(counter.size)
-
-    imm0 = tb.immediate(1, counter.size)
-
-    tb.add(self._builder.gen_str(counter, tmp0))
-    tb.add(self._builder.gen_sub(tmp0, imm0, counter))
-    tb.add(self._builder.gen_jcc(counter, addr_oprnd))  # keep looping
+    return addr_oprnd
 
 
-def _translate_loopne(self, tb, instruction):
-    # Flags Affected
-    # None.
+def __get_jecxz_implicit_operand():
+    oprnd = X86RegisterOperand('ecx', 32)
 
-    if self._arch_mode == ARCH_X86_MODE_32:
-        counter = ReilRegisterOperand("ecx", 32)
-    elif self._arch_mode == ARCH_X86_MODE_64:
-        counter = ReilRegisterOperand("rcx", 64)
-
-    oprnd0 = tb.read(instruction.operands[0])
-
-    addr_oprnd = _translate_address(self, tb, oprnd0)
-
-    end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
-
-    tmp0 = tb.temporal(counter.size)
-
-    counter_zero = tb.temporal(1)
-    counter_not_zero = tb.temporal(1)
-    zf_zero = tb.temporal(1)
-    branch_cond = tb.temporal(1)
-
-    imm0 = tb.immediate(1, counter.size)
-    imm1 = tb.immediate(1, 1)
-
-    keep_looping_lbl = tb.label('keep_looping')
-
-    tb.add(self._builder.gen_str(counter, tmp0))
-    tb.add(self._builder.gen_sub(tmp0, imm0, counter))
-    tb.add(self._builder.gen_bisz(counter, counter_zero))
-    tb.add(self._builder.gen_bisz(self._flags["zf"], zf_zero))
-    tb.add(self._builder.gen_xor(counter_zero, imm1, counter_not_zero))
-    tb.add(self._builder.gen_and(counter_not_zero, zf_zero, branch_cond))
-    tb.add(self._builder.gen_jcc(branch_cond, keep_looping_lbl))
-    tb.add(self._builder.gen_jcc(imm0, end_addr))  # exit loop
-    tb.add(keep_looping_lbl)
-    tb.add(self._builder.gen_jcc(imm0, addr_oprnd))
+    return oprnd
 
 
-def _translate_loopnz(self, tb, instruction):
-    return _translate_loopne(self, tb, instruction)
+def __get_loopcc_implicit_operand(arch_mode):
+    if arch_mode == ARCH_X86_MODE_32:
+        oprnd = X86RegisterOperand('ecx', 32)
+    elif arch_mode == ARCH_X86_MODE_64:
+        oprnd = X86RegisterOperand('rcx', 64)
 
-
-def _translate_loope(self, tb, instruction):
-    # Flags Affected
-    # None.
-
-    if self._arch_mode == ARCH_X86_MODE_32:
-        counter = ReilRegisterOperand("ecx", 32)
-    elif self._arch_mode == ARCH_X86_MODE_64:
-        counter = ReilRegisterOperand("rcx", 64)
-
-    oprnd0 = tb.read(instruction.operands[0])
-
-    addr_oprnd = _translate_address(self, tb, oprnd0)
-
-    end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
-
-    tmp0 = tb.temporal(counter.size)
-
-    counter_zero = tb.temporal(1)
-    counter_not_zero = tb.temporal(1)
-    zf_zero = tb.temporal(1)
-    zf_not_zero = tb.temporal(1)
-    branch_cond = tb.temporal(1)
-
-    imm0 = tb.immediate(1, counter.size)
-    imm1 = tb.immediate(1, 1)
-
-    keep_looping_lbl = tb.label('keep_looping')
-
-    tb.add(self._builder.gen_str(counter, tmp0))
-    tb.add(self._builder.gen_sub(tmp0, imm0, counter))
-    tb.add(self._builder.gen_bisz(counter, counter_zero))
-    tb.add(self._builder.gen_bisz(self._flags["zf"], zf_zero))
-    tb.add(self._builder.gen_xor(zf_zero, imm1, zf_not_zero))
-    tb.add(self._builder.gen_xor(counter_zero, imm1, counter_not_zero))
-    tb.add(self._builder.gen_and(counter_not_zero, zf_not_zero, branch_cond))
-    tb.add(self._builder.gen_jcc(branch_cond, keep_looping_lbl))
-    tb.add(self._builder.gen_jcc(imm0, end_addr))  # exit loop
-    tb.add(keep_looping_lbl)
-    tb.add(self._builder.gen_jcc(imm0, addr_oprnd))
-
-
-def _translate_loopz(self, tb, instruction):
-    return _translate_loope(self, tb, instruction)
+    return oprnd
 
 
 dispatcher = {
-    'jmp': _translate_jmp,
-    'jcc': _translate_jcc,
+    'call': _translate_call,
     'ja': _translate_ja,
     'jae': _translate_jae,
     'jb': _translate_jb,
     'jbe': _translate_jbe,
     'jc': _translate_jc,
     'je': _translate_je,
+    'jecxz': _translate_jecxz,
     'jg': _translate_jg,
     'jge': _translate_jge,
     'jl': _translate_jl,
     'jle': _translate_jle,
+    'jmp': _translate_jmp,
     'jna': _translate_jna,
     'jnae': _translate_jnae,
     'jnb': _translate_jnb,
@@ -407,12 +392,10 @@ dispatcher = {
     'jpo': _translate_jpo,
     'js': _translate_js,
     'jz': _translate_jz,
-    'jecxz': _translate_jecxz,
-    'call': _translate_call,
-    'ret': _translate_ret,
     'loop': _translate_loop,
+    'loope': _translate_loope,
     'loopne': _translate_loopne,
     'loopnz': _translate_loopnz,
-    'loope': _translate_loope,
     'loopz': _translate_loopz,
+    'ret': _translate_ret,
 }

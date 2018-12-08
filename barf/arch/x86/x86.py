@@ -27,6 +27,10 @@ This module contains all lthe classes that handle the x86 instruction
 representation.
 
 """
+from __future__ import absolute_import
+
+from past.builtins import long
+
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
 from barf.arch import ArchitectureInformation
@@ -553,6 +557,10 @@ class X86Instruction(AssemblyInstruction):
         """Set instruction address."""
         self._address = value
 
+    def __key(self):
+        return (self._prefix, self._mnemonic, self._operands, self._bytes,
+                self._size, self._address, self._arch_mode)
+
     def __str__(self):
         operands_str = ", ".join([str(oprnd) for oprnd in self._operands])
 
@@ -572,6 +580,9 @@ class X86Instruction(AssemblyInstruction):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.__key())
 
     def __getstate__(self):
         state = {
@@ -684,6 +695,9 @@ class X86ImmediateOperand(X86Operand):
 
         return string[:-1] if string[-1] == 'L' else string
 
+    def __key(self):
+        return (self._modifier, self._immediate, self._size)
+
     def __str__(self):
         if not self._size:
             raise Exception("Operand size missing.")
@@ -700,6 +714,9 @@ class X86ImmediateOperand(X86Operand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.__key())
 
     def __getstate__(self):
         state = super(X86ImmediateOperand, self).__getstate__()
@@ -735,6 +752,9 @@ class X86RegisterOperand(X86Operand):
 
         return self._name
 
+    def __key(self):
+        return (self._modifier, self._name, self._size)
+
     def __str__(self):
         if not self._size:
             raise Exception("Operand size missing.")
@@ -751,6 +771,9 @@ class X86RegisterOperand(X86Operand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.__key())
 
     def __getstate__(self):
         state = super(X86RegisterOperand, self).__getstate__()
@@ -811,6 +834,10 @@ class X86MemoryOperand(X86Operand):
         """Get displacement value."""
         return self._displacement
 
+    def __key(self):
+        return (self._modifier, self._segment, self._base, self._index,
+                self._scale, self._displacement)
+
     def __str__(self):
         sep = ""
 
@@ -860,6 +887,9 @@ class X86MemoryOperand(X86Operand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.__key())
 
     def __getstate__(self):
         state = super(X86MemoryOperand, self).__getstate__()

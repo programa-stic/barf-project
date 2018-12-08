@@ -22,6 +22,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
 # "Enter and Leave Instructions"
 # ============================================================================ #
 def _translate_leave(self, tb, instruction):
@@ -49,9 +50,9 @@ def _translate_lea(self, tb, instruction):
     # Flags Affected
     # None.
 
-    oprnd1 = tb._compute_memory_address(instruction.operands[1])
+    oprnd1 = self._reg_acc_translator.resolve_memory_access(tb, instruction.operands[1])
 
-    tb.write(instruction.operands[0], oprnd1)
+    self._reg_acc_translator.write(tb, instruction.operands[0], oprnd1)
 
 
 def _translate_nop(self, tb, instruction):
@@ -66,7 +67,7 @@ dispatcher = {
     'leave': _translate_leave,
 
     # "Miscellaneous Instructions"
+    'hlt': _translate_hlt,
     'lea': _translate_lea,
     'nop': _translate_nop,
-    'hlt': _translate_hlt,
 }

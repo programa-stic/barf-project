@@ -27,6 +27,8 @@ This modules contains a x86 disassembler based on the Capstone
 disassembly framework.
 
 """
+from __future__ import absolute_import
+
 from capstone import *
 
 from barf.arch import ARCH_X86_MODE_32

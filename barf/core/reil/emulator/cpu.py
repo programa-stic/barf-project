@@ -95,6 +95,7 @@ class ReilCpu(object):
             ReilMnemonic.SEXT: self.__execute_sext,
             ReilMnemonic.SDIV: self.__execute_binary_op,
             ReilMnemonic.SMOD: self.__execute_binary_op,
+            ReilMnemonic.SMUL: self.__execute_binary_op,
         }
 
     def execute(self, instr):
@@ -350,6 +351,33 @@ class ReilCpu(object):
 
         return remainder & (2**result_size-1)
 
+    def __signed_mul(self, oprnd0, oprnd1, result_size):
+        op0_val = self.read_operand(oprnd0)
+        op1_val = self.read_operand(oprnd1)
+
+        op0_sign = op0_val >> oprnd0.size-1
+        op1_sign = op1_val >> oprnd1.size-1
+        result_sign = op0_sign ^ op1_sign
+
+        if op0_sign == 0x1:
+            op0_tmp = twos_complement(op0_val, oprnd0.size)
+        else:
+            op0_tmp = op0_val
+
+        if op1_sign == 0x1:
+            op1_tmp = twos_complement(op1_val, oprnd1.size)
+        else:
+            op1_tmp = op1_val
+
+        result_tmp = op0_tmp * op1_tmp
+
+        if result_sign == 0x1:
+            result = twos_complement(result_tmp, result_size)
+        else:
+            result = result_tmp
+
+        return result & (2**result_size-1)
+
     def __execute_binary_op(self, instr):
         op_map = {
             ReilMnemonic.ADD: lambda a, b: a + b,
@@ -373,6 +401,8 @@ class ReilCpu(object):
             op2_val = self.__signed_div(instr.operands[0], instr.operands[1], instr.operands[2].size)
         elif instr.mnemonic in [ReilMnemonic.SMOD]:
             op2_val = self.__signed_mod(instr.operands[0], instr.operands[1], instr.operands[2].size)
+        elif instr.mnemonic in [ReilMnemonic.SMUL]:
+            op2_val = self.__signed_mul(instr.operands[0], instr.operands[1], instr.operands[2].size)
         else:
             op2_val = op_map[instr.mnemonic](op0_val, op1_val)
 

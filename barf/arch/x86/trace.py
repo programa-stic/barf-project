@@ -22,6 +22,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 
 def _parse_memory(accesses_string):
     accesses = {}
@@ -174,19 +177,19 @@ class AsmTrace(object):
 
         return self._curr
 
-    def next(self):
+    def __next(self):
         self._id += 1
-        self._curr = self._trace.next()
+        self._curr = next(self._trace)
 
         return self._curr
 
     def set_next_address(self, address):
-        self.next()
+        self.__next()
 
         if address:
             try:
                 while self._curr[0].address != address:
-                    self.next()
+                    self.__next()
             except StopIteration:
                 print("Invalid instruction address: {:#x}.".format(address))
                 raise StopIteration()

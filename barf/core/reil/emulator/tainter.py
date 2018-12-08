@@ -73,6 +73,7 @@ class ReilEmulatorTainter(object):
             ReilMnemonic.SEXT: self.__taint_move,
             ReilMnemonic.SDIV: self.__taint_binary_op,
             ReilMnemonic.SMOD: self.__taint_binary_op,
+            ReilMnemonic.SMUL: self.__taint_binary_op,
         }
 
     def taint(self, instruction):
