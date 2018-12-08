@@ -22,34 +22,113 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import logging
+
 from barf.core.reil import ReilImmediateOperand
-from barf.core.reil import ReilInstruction
+from barf.core.reil import ReilLabel
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
 from barf.core.reil.builder import ReilBuilder
+from barf.core.reil.helpers import to_reil_address
+from barf.utils.utils import VariableNamer
+
+logger = logging.getLogger(__name__)
 
 
-class Label(object):
-
-    def __init__(self, name):
-        self.name = name
-
-    def __str__(self):
-        string = self.name + ":"
-
-        return string
+class TranslationError(Exception):
+    pass
 
 
-class Translator(object):
+class FlagTranslator(object):
+
+    def __init__(self, arch):
+        self.__arch = arch
+        self.__flags = {}
+
+    def __getattr__(self, flag):
+        return self.__get_flag(flag)
+
+    def __getitem__(self, flag):
+        return self.__get_flag(flag)
+
+    # Auxiliary functions
+    # ======================================================================== #
+    def __get_flag(self, flag):
+        flag = flag.lower()
+
+        if flag not in self.__arch.registers_flags:
+            raise TranslationError("Invalid flag")
+
+        if flag not in self.__flags:
+            self.__flags[flag] = ReilRegisterOperand(flag, self.__arch.registers_size[flag])
+
+        return self.__flags[flag]
+
+
+class RegisterTranslator(object):
+
+    def __init__(self, arch):
+        self.__arch = arch
+        self.__registers = {}
+
+    def __getattr__(self, register):
+        return self.__get_register(register)
+
+    def __getitem__(self, register):
+        return self.__get_register(register)
+
+    # Auxiliary functions
+    # ======================================================================== #
+    def __get_register(self, register):
+        register = register.lower()
+
+        if register not in self.__arch.registers_gp_all:
+            raise TranslationError("Invalid register")
+
+        if register not in self.__registers:
+            self.__registers[register] = ReilRegisterOperand(register, self.__arch.registers_size[register])
+
+        return self.__registers[register]
+
+
+class InstructionTranslator(object):
 
     def __init__(self):
-        pass
+        # An instance of a *VariableNamer*. This is used so all the
+        # temporary REIL registers are unique.
+        self._ir_name_generator = VariableNamer("t", separator="")
 
     def translate(self, instruction):
-        raise NotImplementedError()
+        """Return REIL representation of an instruction.
+        """
+        try:
+            trans_instrs = self._translate(instruction)
+        except Exception:
+            self._log_translation_exception(instruction)
+
+            raise TranslationError("Unknown error")
+
+        return trans_instrs
 
     def reset(self):
+        """Restart REIL register name generator.
+        """
+        self._ir_name_generator.reset()
+
+    def _translate(self, instruction):
         raise NotImplementedError()
+
+    # Auxiliary functions
+    # ======================================================================== #
+    def _log_not_supported_instruction(self, instruction):
+        logger.info("Instruction not supported: %s (%s [%s])",
+                    instruction.mnemonic, instruction,
+                    instruction.bytes.encode('hex'), exc_info=True)
+
+    def _log_translation_exception(self, instruction):
+        logger.error("Error translating instruction: %s (%s [%s])",
+                     instruction.mnemonic, instruction,
+                     instruction.bytes.encode('hex'), exc_info=True)
 
 
 class TranslationBuilder(object):
@@ -63,8 +142,8 @@ class TranslationBuilder(object):
 
         self._arch_info = architecture_information
 
-    def add(self, instr):
-        self._instructions.append(instr)
+    def add(self, instruction):
+        self._instructions.append(instruction)
 
     def temporal(self, size):
         return ReilRegisterOperand(self._ir_name_generator.get_next(), size)
@@ -73,40 +152,21 @@ class TranslationBuilder(object):
         return ReilImmediateOperand(value, size)
 
     def label(self, name):
-        return Label(name)
+        return ReilLabel(name)
 
     def instanciate(self, address):
-        # Set instructions address.
-        instrs = self._instructions
-
-        for instr in instrs:
-            instr.address = address << 8
-
-        instrs = self._resolve_loops(instrs)
-
-        return instrs
+        return self.__resolve_loops(address, self._instructions)
 
     # Auxiliary functions
     # ======================================================================== #
-
-    def _resolve_loops(self, instrs):
-        idx_by_labels = {}
-
+    def __resolve_loops(self, address, instrs):
         # Collect labels.
-#         curr = 0
-#         for index, instr in enumerate(instrs):
-#             if isinstance(instr, Label):
-#                 idx_by_labels[instr.name] = curr
-#
-#                 del instrs[index]
-#             else:
-#                 curr += 1
-
-        # TODO: Hack to avoid deleting while iterating
+        idx_by_labels = {}
         instrs_no_labels = []
         curr = 0
+
         for i in instrs:
-            if isinstance(i, Label):
+            if isinstance(i, ReilLabel):
                 idx_by_labels[i.name] = curr
             else:
                 instrs_no_labels.append(i)
@@ -116,118 +176,15 @@ class TranslationBuilder(object):
 
         # Resolve instruction addresses and JCC targets.
         for index, instr in enumerate(instrs):
-            assert isinstance(instr, ReilInstruction)
-
-            instr.address |= index
+            instr.address = to_reil_address(address, index)
 
             if instr.mnemonic == ReilMnemonic.JCC:
                 target = instr.operands[2]
 
-                if isinstance(target, Label):
-                    idx = idx_by_labels[target.name]
-                    address = (instr.address & ~0xff) | idx
+                if isinstance(target, ReilLabel):
+                    addr = to_reil_address(address, idx_by_labels[target.name])
+                    size = self._arch_info.address_size + 8
 
-                    instr.operands[2] = ReilImmediateOperand(address, self._arch_info.address_size + 8)
+                    instr.operands[2] = ReilImmediateOperand(addr, size)
 
         return instrs
-
-    def _all_ones_imm(self, reg):
-        return self.immediate((2**reg.size) - 1, reg.size)
-
-    def _negate_reg(self, reg):
-        neg = self.temporal(reg.size)
-        self.add(self._builder.gen_xor(reg, self._all_ones_imm(reg), neg))
-        return neg
-
-    def _and_regs(self, reg1, reg2):
-        ret = self.temporal(reg1.size)
-        self.add(self._builder.gen_and(reg1, reg2, ret))
-        return ret
-
-    def _or_regs(self, reg1, reg2):
-        ret = self.temporal(reg1.size)
-        self.add(self._builder.gen_or(reg1, reg2, ret))
-        return ret
-
-    def _xor_regs(self, reg1, reg2):
-        ret = self.temporal(reg1.size)
-        self.add(self._builder.gen_xor(reg1, reg2, ret))
-        return ret
-
-    def _equal_regs(self, reg1, reg2):
-        return self._negate_reg(self._xor_regs(reg1, reg2))
-
-    def _unequal_regs(self, reg1, reg2):
-        return self._xor_regs(reg1, reg2)
-
-    def _shift_reg(self, reg, sh):
-        ret = self.temporal(reg.size)
-        self.add(self._builder.gen_bsh(reg, sh, ret))
-        return ret
-
-    def _extract_bit(self, reg, bit):
-        assert(0 <= bit < reg.size)
-        tmp = self.temporal(reg.size)
-        ret = self.temporal(1)
-
-        self.add(self._builder.gen_bsh(reg, self.immediate(-bit, reg.size), tmp))   # shift to LSB
-        self.add(self._builder.gen_and(tmp, self.immediate(1, reg.size), ret))      # filter LSB
-
-        return ret
-
-    # Same as before but the bit number is indicated by a register and it will be resolved at runtime
-    def _extract_bit_with_register(self, reg, bit):
-        # assert(bit >= 0 and bit < reg.size2) # It is assumed, it is not checked
-        tmp = self.temporal(reg.size)
-        neg_bit = self.temporal(reg.size)
-        ret = self.temporal(1)
-
-        self.add(self._builder.gen_sub(self.immediate(0, bit.size), bit, neg_bit))  # as left bit is indicated by a negative number
-        self.add(self._builder.gen_bsh(reg, neg_bit, tmp))                          # shift to LSB
-        self.add(self._builder.gen_and(tmp, self.immediate(1, reg.size), ret))      # filter LSB
-
-        return ret
-
-    def _extract_msb(self, reg):
-        return self._extract_bit(reg, reg.size - 1)
-
-    def _extract_sign_bit(self, reg):
-        return self._extract_msb(reg)
-
-    def _greater_than_or_equal(self, reg1, reg2):
-        assert(reg1.size == reg2.size)
-        result = self.temporal(reg1.size * 2)
-
-        self.add(self._builder.gen_sub(reg1, reg2, result))
-
-        sign = self._extract_bit(result, reg1.size - 1)
-        overflow = self._overflow_from_sub(reg1, reg2, result)
-
-        return self._equal_regs(sign, overflow)
-
-    def _jump_to(self, target):
-        self.add(self._builder.gen_jcc(self.immediate(1, 1), target))
-
-    def _jump_if_zero(self, reg, label):
-        is_zero = self.temporal(1)
-        self.add(self._builder.gen_bisz(reg, is_zero))
-        self.add(self._builder.gen_jcc(is_zero, label))
-
-    def _add_to_reg(self, reg, value):
-        res = self.temporal(reg.size)
-        self.add(self._builder.gen_add(reg, value, res))
-
-        return res
-
-    def _sub_to_reg(self, reg, value):
-        res = self.temporal(reg.size)
-        self.add(self._builder.gen_sub(reg, value, res))
-
-        return res
-
-    def _overflow_from_sub(self, oprnd0, oprnd1, result):
-        op1_sign = self._extract_bit(oprnd0, oprnd0.size - 1)
-        op2_sign = self._extract_bit(oprnd1, oprnd0.size - 1)
-        res_sign = self._extract_bit(result, oprnd0.size - 1)
-
-        return self._and_regs(self._unequal_regs(op1_sign, op2_sign), self._unequal_regs(op1_sign, res_sign))

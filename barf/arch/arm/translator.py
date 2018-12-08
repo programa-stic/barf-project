@@ -55,7 +55,7 @@ from barf.arch.arm import ArmRegisterListOperand
 from barf.arch.arm import ArmRegisterOperand
 from barf.arch.arm import ArmShiftedRegisterOperand
 from barf.arch.translator import TranslationBuilder
-from barf.arch.translator import Translator
+from barf.arch.translator import InstructionTranslator
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
 from barf.core.reil.builder import ReilBuilder
@@ -223,8 +223,109 @@ class ArmTranslationBuilder(TranslationBuilder):
 
         return ret
 
+    def _all_ones_imm(self, reg):
+        return self.immediate((2**reg.size) - 1, reg.size)
 
-class ArmTranslator(Translator):
+    def _negate_reg(self, reg):
+        neg = self.temporal(reg.size)
+        self.add(self._builder.gen_xor(reg, self._all_ones_imm(reg), neg))
+        return neg
+
+    def _and_regs(self, reg1, reg2):
+        ret = self.temporal(reg1.size)
+        self.add(self._builder.gen_and(reg1, reg2, ret))
+        return ret
+
+    def _or_regs(self, reg1, reg2):
+        ret = self.temporal(reg1.size)
+        self.add(self._builder.gen_or(reg1, reg2, ret))
+        return ret
+
+    def _xor_regs(self, reg1, reg2):
+        ret = self.temporal(reg1.size)
+        self.add(self._builder.gen_xor(reg1, reg2, ret))
+        return ret
+
+    def _equal_regs(self, reg1, reg2):
+        return self._negate_reg(self._xor_regs(reg1, reg2))
+
+    def _unequal_regs(self, reg1, reg2):
+        return self._xor_regs(reg1, reg2)
+
+    def _shift_reg(self, reg, sh):
+        ret = self.temporal(reg.size)
+        self.add(self._builder.gen_bsh(reg, sh, ret))
+        return ret
+
+    def _extract_bit(self, reg, bit):
+        assert(0 <= bit < reg.size)
+        tmp = self.temporal(reg.size)
+        ret = self.temporal(1)
+
+        self.add(self._builder.gen_bsh(reg, self.immediate(-bit, reg.size), tmp))   # shift to LSB
+        self.add(self._builder.gen_and(tmp, self.immediate(1, reg.size), ret))      # filter LSB
+
+        return ret
+
+    # Same as before but the bit number is indicated by a register and it will be resolved at runtime
+    def _extract_bit_with_register(self, reg, bit):
+        # assert(bit >= 0 and bit < reg.size2) # It is assumed, it is not checked
+        tmp = self.temporal(reg.size)
+        neg_bit = self.temporal(reg.size)
+        ret = self.temporal(1)
+
+        self.add(self._builder.gen_sub(self.immediate(0, bit.size), bit, neg_bit))  # as left bit is indicated by a negative number
+        self.add(self._builder.gen_bsh(reg, neg_bit, tmp))                          # shift to LSB
+        self.add(self._builder.gen_and(tmp, self.immediate(1, reg.size), ret))      # filter LSB
+
+        return ret
+
+    def _extract_msb(self, reg):
+        return self._extract_bit(reg, reg.size - 1)
+
+    def _extract_sign_bit(self, reg):
+        return self._extract_msb(reg)
+
+    def _greater_than_or_equal(self, reg1, reg2):
+        assert(reg1.size == reg2.size)
+        result = self.temporal(reg1.size * 2)
+
+        self.add(self._builder.gen_sub(reg1, reg2, result))
+
+        sign = self._extract_bit(result, reg1.size - 1)
+        overflow = self._overflow_from_sub(reg1, reg2, result)
+
+        return self._equal_regs(sign, overflow)
+
+    def _jump_to(self, target):
+        self.add(self._builder.gen_jcc(self.immediate(1, 1), target))
+
+    def _jump_if_zero(self, reg, label):
+        is_zero = self.temporal(1)
+        self.add(self._builder.gen_bisz(reg, is_zero))
+        self.add(self._builder.gen_jcc(is_zero, label))
+
+    def _add_to_reg(self, reg, value):
+        res = self.temporal(reg.size)
+        self.add(self._builder.gen_add(reg, value, res))
+
+        return res
+
+    def _sub_to_reg(self, reg, value):
+        res = self.temporal(reg.size)
+        self.add(self._builder.gen_sub(reg, value, res))
+
+        return res
+
+    def _overflow_from_sub(self, oprnd0, oprnd1, result):
+        op1_sign = self._extract_bit(oprnd0, oprnd0.size - 1)
+        op2_sign = self._extract_bit(oprnd1, oprnd0.size - 1)
+        res_sign = self._extract_bit(result, oprnd0.size - 1)
+
+        return self._and_regs(self._unequal_regs(op1_sign, op2_sign), self._unequal_regs(op1_sign, res_sign))
+
+
+class ArmTranslator(InstructionTranslator):
 
     """ARM to IR Translator."""
 
@@ -237,10 +338,6 @@ class ArmTranslator(Translator):
 
         # An instance of *ArchitectureInformation*.
         self._arch_info = ArmArchitectureInformation(architecture_mode)
-
-        # An instance of a *VariableNamer*. This is used so all the
-        # temporary REIL registers are unique.
-        self._ir_name_generator = VariableNamer("t", separator="")
 
         self._builder = ReilBuilder()
 
@@ -263,12 +360,12 @@ class ArmTranslator(Translator):
         """
         try:
             trans_instrs = self.__translate(instruction)
-        except NotImplementedError as e:
+        except NotImplementedError:
             unkn_instr = self._builder.gen_unkn()
             unkn_instr.address = instruction.address << 8 | (0x0 & 0xff)
             trans_instrs = [unkn_instr]
 
-            self.__log_not_supported_instruction(instruction, str(e))
+            self.__log_not_supported_instruction(instruction)
         except Exception:
             self.__log_translation_exception(instruction)
 
@@ -276,18 +373,7 @@ class ArmTranslator(Translator):
 
         return trans_instrs
 
-    def reset(self):
-        """Restart IR register name generator.
-        """
-        self._ir_name_generator.reset()
-
     def __translate(self, instruction):
-        """Translate a arm instruction into REIL language.
-
-        :param instruction: a arm instruction
-        :type instruction: ArmInstruction
-        """
-
         # Retrieve translation function.
         mnemonic = instruction.mnemonic
 
@@ -308,30 +394,11 @@ class ArmTranslator(Translator):
         if mnemonic in translators.dispatcher:
             translators.dispatcher[mnemonic](self, tb, instruction)
         else:
-            raise NotImplementedError("Instruction Not Implemented")
+            tb.add(self._builder.gen_unkn())
+
+            self._log_not_supported_instruction(instruction)
 
         return tb.instanciate(instruction.address)
-
-    def __log_not_supported_instruction(self, instruction, reason="unknown"):
-        bytes_str = " ".join("%02x" % ord(b) for b in instruction.bytes)
-
-        logger.info(
-            "Instruction not supported: %s (%s [%s]). Reason: %s",
-            instruction.mnemonic,
-            instruction,
-            bytes_str,
-            reason
-        )
-
-    def __log_translation_exception(self, instruction):
-        bytes_str = " ".join("%02x" % ord(b) for b in instruction.bytes)
-
-        logger.error(
-            "Failed to translate arm to REIL: %s (%s)",
-            instruction,
-            bytes_str,
-            exc_info=True
-        )
 
     # Flag translation.
     # ======================================================================== #

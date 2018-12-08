@@ -118,6 +118,7 @@ class SmtTranslator(object):
             ReilMnemonic.SEXT: self._translate_sext,
             ReilMnemonic.SDIV: self._translate_sdiv,
             ReilMnemonic.SMOD: self._translate_smod,
+            ReilMnemonic.SMUL: self._translate_smul,
         }
 
     def translate(self, instr):
@@ -668,5 +669,27 @@ class SmtTranslator(object):
             result = smtfunction.extract(op1_var % op2_var, 0, oprnd3.size)
         else:
             result = op1_var % op2_var
+
+        return [op3_var == result] + op3_var_constrs
+
+    def _translate_smul(self, oprnd1, oprnd2, oprnd3):
+        """Return a formula representation of an MUL instruction.
+        """
+        assert oprnd1.size and oprnd2.size and oprnd3.size
+        assert oprnd1.size == oprnd2.size
+
+        op1_var = self._translate_src_oprnd(oprnd1)
+        op2_var = self._translate_src_oprnd(oprnd2)
+        op3_var, op3_var_constrs = self._translate_dst_oprnd(oprnd3)
+
+        if oprnd3.size > oprnd1.size:
+            op1_var_sx = smtfunction.sign_extend(op1_var, oprnd3.size)
+            op2_var_sx = smtfunction.sign_extend(op2_var, oprnd3.size)
+
+            result = op1_var_sx * op2_var_sx
+        elif oprnd3.size < oprnd1.size:
+            result = smtfunction.extract(op1_var * op2_var, 0, oprnd3.size)
+        else:
+            result = op1_var * op2_var
 
         return [op3_var == result] + op3_var_constrs

@@ -34,151 +34,180 @@ class ReilBuilder(object):
 
     # Arithmetic Instructions
     # ======================================================================== #
-    def gen_add(self, src1, src2, dst):
+    @staticmethod
+    def gen_add(src1, src2, dst):
         """Return an ADD instruction.
         """
         assert src1.size == src2.size
 
-        return self.build(ReilMnemonic.ADD, src1, src2, dst)
+        return ReilBuilder.build(ReilMnemonic.ADD, src1, src2, dst)
 
-    def gen_sub(self, src1, src2, dst):
+    @staticmethod
+    def gen_sub(src1, src2, dst):
         """Return a SUB instruction.
         """
         assert src1.size == src2.size
 
-        return self.build(ReilMnemonic.SUB, src1, src2, dst)
+        return ReilBuilder.build(ReilMnemonic.SUB, src1, src2, dst)
 
-    def gen_mul(self, src1, src2, dst):
+    @staticmethod
+    def gen_mul(src1, src2, dst):
         """Return a MUL instruction.
         """
         assert src1.size == src2.size
 
-        return self.build(ReilMnemonic.MUL, src1, src2, dst)
+        return ReilBuilder.build(ReilMnemonic.MUL, src1, src2, dst)
 
-    def gen_div(self, src1, src2, dst):
+    @staticmethod
+    def gen_div(src1, src2, dst):
         """Return a DIV instruction.
         """
         assert src1.size == src2.size
 
-        return self.build(ReilMnemonic.DIV, src1, src2, dst)
+        return ReilBuilder.build(ReilMnemonic.DIV, src1, src2, dst)
 
-    def gen_mod(self, src1, src2, dst):
+    @staticmethod
+    def gen_mod(src1, src2, dst):
         """Return a MOD instruction.
         """
         assert src1.size == src2.size
 
-        return self.build(ReilMnemonic.MOD, src1, src2, dst)
+        return ReilBuilder.build(ReilMnemonic.MOD, src1, src2, dst)
 
-    def gen_bsh(self, src1, src2, dst):
+    @staticmethod
+    def gen_bsh(src1, src2, dst):
         """Return a BSH instruction.
         """
         assert src1.size == src2.size
 
-        return self.build(ReilMnemonic.BSH, src1, src2, dst)
+        return ReilBuilder.build(ReilMnemonic.BSH, src1, src2, dst)
 
     # Bitwise Instructions
     # ======================================================================== #
-    def gen_and(self, src1, src2, dst):
+    @staticmethod
+    def gen_and(src1, src2, dst):
         """Return an AND instruction.
         """
         assert src1.size == src2.size
 
-        return self.build(ReilMnemonic.AND, src1, src2, dst)
+        return ReilBuilder.build(ReilMnemonic.AND, src1, src2, dst)
 
-    def gen_or(self, src1, src2, dst):
+    @staticmethod
+    def gen_or(src1, src2, dst):
         """Return an OR instruction.
         """
         assert src1.size == src2.size
 
-        return self.build(ReilMnemonic.OR, src1, src2, dst)
+        return ReilBuilder.build(ReilMnemonic.OR, src1, src2, dst)
 
-    def gen_xor(self, src1, src2, dst):
+    @staticmethod
+    def gen_xor(src1, src2, dst):
         """Return a XOR instruction.
         """
         assert src1.size == src2.size
 
-        return self.build(ReilMnemonic.XOR, src1, src2, dst)
+        return ReilBuilder.build(ReilMnemonic.XOR, src1, src2, dst)
 
     # Data Transfer Instructions
     # ======================================================================== #
-    def gen_ldm(self, src, dst):
+    @staticmethod
+    def gen_ldm(src, dst):
         """Return a LDM instruction.
         """
-        return self.build(ReilMnemonic.LDM, src, ReilEmptyOperand(), dst)
+        return ReilBuilder.build(ReilMnemonic.LDM, src, ReilEmptyOperand(), dst)
 
-    def gen_stm(self, src, dst):
+    @staticmethod
+    def gen_stm(src, dst):
         """Return a STM instruction.
         """
-        return self.build(ReilMnemonic.STM, src, ReilEmptyOperand(), dst)
+        return ReilBuilder.build(ReilMnemonic.STM, src, ReilEmptyOperand(), dst)
 
-    def gen_str(self, src, dst):
+    @staticmethod
+    def gen_str(src, dst):
         """Return a STR instruction.
         """
-        return self.build(ReilMnemonic.STR, src, ReilEmptyOperand(), dst)
+        return ReilBuilder.build(ReilMnemonic.STR, src, ReilEmptyOperand(), dst)
 
     # Conditional Instructions
     # ======================================================================== #
-    def gen_bisz(self, src, dst):
+    @staticmethod
+    def gen_bisz(src, dst):
         """Return a BISZ instruction.
         """
-        return self.build(ReilMnemonic.BISZ, src, ReilEmptyOperand(), dst)
+        return ReilBuilder.build(ReilMnemonic.BISZ, src, ReilEmptyOperand(), dst)
 
-    def gen_jcc(self, src, dst):
+    @staticmethod
+    def gen_jcc(src, dst):
         """Return a JCC instruction.
         """
-        return self.build(ReilMnemonic.JCC, src, ReilEmptyOperand(), dst)
+        return ReilBuilder.build(ReilMnemonic.JCC, src, ReilEmptyOperand(), dst)
 
     # Other Instructions
     # ======================================================================== #
-    def gen_unkn(self):
+    @staticmethod
+    def gen_unkn():
         """Return an UNKN instruction.
         """
         empty_reg = ReilEmptyOperand()
 
-        return self.build(ReilMnemonic.UNKN, empty_reg, empty_reg, empty_reg)
+        return ReilBuilder.build(ReilMnemonic.UNKN, empty_reg, empty_reg, empty_reg)
 
-    def gen_undef(self):
+    @staticmethod
+    def gen_undef():
         """Return an UNDEF instruction.
         """
         empty_reg = ReilEmptyOperand()
 
-        return self.build(ReilMnemonic.UNDEF, empty_reg, empty_reg, empty_reg)
+        return ReilBuilder.build(ReilMnemonic.UNDEF, empty_reg, empty_reg, empty_reg)
 
-    def gen_nop(self):
+    @staticmethod
+    def gen_nop():
         """Return a NOP instruction.
         """
         empty_reg = ReilEmptyOperand()
 
-        return self.build(ReilMnemonic.NOP, empty_reg, empty_reg, empty_reg)
+        return ReilBuilder.build(ReilMnemonic.NOP, empty_reg, empty_reg, empty_reg)
 
     # Extensions
     # ======================================================================== #
-    def gen_sext(self, src, dst):
+    @staticmethod
+    def gen_sext(src, dst):
         """Return a SEXT instruction.
         """
         assert src.size <= dst.size
 
         empty_reg = ReilEmptyOperand()
 
-        return self.build(ReilMnemonic.SEXT, src, empty_reg, dst)
+        return ReilBuilder.build(ReilMnemonic.SEXT, src, empty_reg, dst)
 
-    def gen_sdiv(self, src1, src2, dst):
+    @staticmethod
+    def gen_sdiv(src1, src2, dst):
         """Return a SDIV instruction.
         """
         assert src1.size == src2.size
 
-        return self.build(ReilMnemonic.SDIV, src1, src2, dst)
+        return ReilBuilder.build(ReilMnemonic.SDIV, src1, src2, dst)
 
-    def gen_smod(self, src1, src2, dst):
+    @staticmethod
+    def gen_smod(src1, src2, dst):
         """Return a SMOD instruction.
         """
         assert src1.size == src2.size
 
-        return self.build(ReilMnemonic.SMOD, src1, src2, dst)
+        return ReilBuilder.build(ReilMnemonic.SMOD, src1, src2, dst)
+
+    @staticmethod
+    def gen_smul(src1, src2, dst):
+        """Return a SMUL instruction.
+        """
+        assert src1.size == src2.size
+
+        return ReilBuilder.build(ReilMnemonic.SMUL, src1, src2, dst)
 
     # Helpers
     # ======================================================================== #
-    def build(self, mnemonic, oprnd1, oprnd2, oprnd3):
+    @staticmethod
+    def build(mnemonic, oprnd1, oprnd2, oprnd3):
         """Return the specified instruction.
         """
         ins = ReilInstruction()

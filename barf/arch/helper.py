@@ -24,6 +24,7 @@
 
 from barf.arch.arm import ArmImmediateOperand
 from barf.arch.x86 import X86ImmediateOperand
+from barf.core.reil.builder import ReilBuilder
 
 
 def extract_branch_target(asm_instruction):
@@ -46,3 +47,59 @@ def extract_call_target(asm_instruction):
         address = target_oprnd.immediate
 
     return address
+
+
+def extract_bit(tb, reg, bit):
+    assert(0 <= bit < reg.size)
+
+    tmp = tb.temporal(reg.size)
+    ret = tb.temporal(1)
+
+    tb.add(ReilBuilder.gen_bsh(reg, tb.immediate(-bit, reg.size), tmp))   # shift to LSB
+    tb.add(ReilBuilder.gen_and(tmp, tb.immediate(1, reg.size), ret))      # filter LSB
+
+    return ret
+
+
+def extract_msb(tb, reg):
+    return extract_bit(tb, reg, reg.size - 1)
+
+
+def extract_sign_bit(tb, reg):
+    return extract_msb(tb, reg)
+
+
+def all_ones_imm(tb, reg):
+    return tb.immediate((2**reg.size) - 1, reg.size)
+
+
+def negate_reg(tb, reg):
+    neg = tb.temporal(reg.size)
+    tb.add(ReilBuilder.gen_xor(reg, all_ones_imm(tb, reg), neg))
+    return neg
+
+
+def and_regs(tb, reg1, reg2):
+    ret = tb.temporal(reg1.size)
+    tb.add(ReilBuilder.gen_and(reg1, reg2, ret))
+    return ret
+
+
+def or_regs(tb, reg1, reg2):
+    ret = tb.temporal(reg1.size)
+    tb.add(ReilBuilder.gen_or(reg1, reg2, ret))
+    return ret
+
+
+def xor_regs(tb, reg1, reg2):
+    ret = tb.temporal(reg1.size)
+    tb.add(ReilBuilder.gen_xor(reg1, reg2, ret))
+    return ret
+
+
+def equal_regs(tb, reg1, reg2):
+    return negate_reg(tb, xor_regs(tb, reg1, reg2))
+
+
+def unequal_regs(tb, reg1, reg2):
+    return xor_regs(tb, reg1, reg2)

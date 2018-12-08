@@ -22,6 +22,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
 # "Logical Instructions"
 # ============================================================================ #
 def _translate_and(self, tb, instruction):
@@ -30,26 +31,41 @@ def _translate_and(self, tb, instruction):
     # set according to the result. The state of the AF flag is
     # undefined.
 
-    oprnd0 = tb.read(instruction.operands[0])
-    oprnd1 = tb.read(instruction.operands[1])
+    oprnd0 = self._reg_acc_translator.read(tb, instruction.operands[0])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[1])
 
     tmp0 = tb.temporal(oprnd0.size * 2)
 
     tb.add(self._builder.gen_and(oprnd0, oprnd1, tmp0))
 
     # Flags : OF, CF
-    self._clear_flag(tb, self._flags["of"])
-    self._clear_flag(tb, self._flags["cf"])
+    self._flag_translator.clear_flag(tb, self._flags.of)
+    self._flag_translator.clear_flag(tb, self._flags.cf)
 
     # Flags : SF, ZF, PF
-    self._update_sf(tb, oprnd0, oprnd1, tmp0)
-    self._update_zf(tb, oprnd0, oprnd1, tmp0)
-    self._update_pf(tb, oprnd0, oprnd1, tmp0)
+    self._flag_translator.update_sf(tb, oprnd0, tmp0)
+    self._flag_translator.update_zf(tb, oprnd0, tmp0)
+    self._flag_translator.update_pf(tb, tmp0)
 
     # Flags : AF
-    self._undefine_flag(tb, self._flags["af"])
+    self._flag_translator.undefine_flag(tb, self._flags.af)
 
-    tb.write(instruction.operands[0], tmp0)
+    self._reg_acc_translator.write(tb, instruction.operands[0], tmp0)
+
+
+def _translate_not(self, tb, instruction):
+    # Flags Affected
+    # None.
+
+    oprnd0 = self._reg_acc_translator.read(tb, instruction.operands[0])
+
+    tmp0 = tb.temporal(oprnd0.size * 2)
+
+    imm0 = tb.immediate((2 ** oprnd0.size) - 1, oprnd0.size)
+
+    tb.add(self._builder.gen_xor(oprnd0, imm0, tmp0))
+
+    self._reg_acc_translator.write(tb, instruction.operands[0], tmp0)
 
 
 def _translate_or(self, tb, instruction):
@@ -58,26 +74,26 @@ def _translate_or(self, tb, instruction):
     # set according to the result. The state of the AF flag is
     # undefined.
 
-    oprnd0 = tb.read(instruction.operands[0])
-    oprnd1 = tb.read(instruction.operands[1])
+    oprnd0 = self._reg_acc_translator.read(tb, instruction.operands[0])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[1])
 
     tmp0 = tb.temporal(oprnd0.size * 2)
 
     tb.add(self._builder.gen_or(oprnd0, oprnd1, tmp0))
 
     # Flags : OF, CF
-    self._clear_flag(tb, self._flags["of"])
-    self._clear_flag(tb, self._flags["cf"])
+    self._flag_translator.clear_flag(tb, self._flags.of)
+    self._flag_translator.clear_flag(tb, self._flags.cf)
 
     # Flags : SF, ZF, PF
-    self._update_sf(tb, oprnd0, oprnd1, tmp0)
-    self._update_zf(tb, oprnd0, oprnd1, tmp0)
-    self._update_pf(tb, oprnd0, oprnd1, tmp0)
+    self._flag_translator.update_sf(tb, oprnd0, tmp0)
+    self._flag_translator.update_zf(tb, oprnd0, tmp0)
+    self._flag_translator.update_pf(tb, tmp0)
 
     # Flags : AF
-    self._undefine_flag(tb, self._flags["af"])
+    self._flag_translator.undefine_flag(tb, self._flags.af)
 
-    tb.write(instruction.operands[0], tmp0)
+    self._reg_acc_translator.write(tb, instruction.operands[0], tmp0)
 
 
 def _translate_xor(self, tb, instruction):
@@ -86,46 +102,31 @@ def _translate_xor(self, tb, instruction):
     # according to the result. The state of the AF flag is
     # undefined.
 
-    oprnd0 = tb.read(instruction.operands[0])
-    oprnd1 = tb.read(instruction.operands[1])
+    oprnd0 = self._reg_acc_translator.read(tb, instruction.operands[0])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[1])
 
     tmp0 = tb.temporal(oprnd0.size * 2)
 
     tb.add(self._builder.gen_xor(oprnd0, oprnd1, tmp0))
 
     # Flags : OF, CF
-    self._clear_flag(tb, self._flags["of"])
-    self._clear_flag(tb, self._flags["cf"])
+    self._flag_translator.clear_flag(tb, self._flags.of)
+    self._flag_translator.clear_flag(tb, self._flags.cf)
 
     # Flags : SF, ZF, PF
-    self._update_sf(tb, oprnd0, oprnd1, tmp0)
-    self._update_zf(tb, oprnd0, oprnd1, tmp0)
-    self._update_pf(tb, oprnd0, oprnd1, tmp0)
+    self._flag_translator.update_sf(tb, oprnd0, tmp0)
+    self._flag_translator.update_zf(tb, oprnd0, tmp0)
+    self._flag_translator.update_pf(tb, tmp0)
 
     # Flags : AF
-    self._undefine_flag(tb, self._flags["af"])
+    self._flag_translator.undefine_flag(tb, self._flags.af)
 
-    tb.write(instruction.operands[0], tmp0)
-
-
-def _translate_not(self, tb, instruction):
-    # Flags Affected
-    # None.
-
-    oprnd0 = tb.read(instruction.operands[0])
-
-    tmp0 = tb.temporal(oprnd0.size * 2)
-
-    imm0 = tb.immediate((2 ** oprnd0.size) - 1, oprnd0.size)
-
-    tb.add(self._builder.gen_xor(oprnd0, imm0, tmp0))
-
-    tb.write(instruction.operands[0], tmp0)
+    self._reg_acc_translator.write(tb, instruction.operands[0], tmp0)
 
 
 dispatcher = {
     'and': _translate_and,
+    'not': _translate_not,
     'or': _translate_or,
     'xor': _translate_xor,
-    'not': _translate_not,
 }

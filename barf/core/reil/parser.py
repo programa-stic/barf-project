@@ -33,6 +33,7 @@ Instructions
     Data Transfer : LDM, STM, STR
     Conditional   : BISZ, JCC
     Other         : UNDEF, UNKN, NOP
+    Extensions    : SEXT, SDIV, SMOD, SMUL
 
 Examples
 --------
@@ -154,6 +155,7 @@ mnemonic = Or([
     Literal("sext"),
     Literal("sdiv"),
     Literal("smod"),
+    Literal("smul"),
 ])
 
 size = Or([

@@ -22,23 +22,27 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from arithmetic import *
-from bitwise import *
-from control import *
-from flag import *
-from logical import *
-from misc import *
-from sse import *
-from string import *
-from transfer import *
+from __future__ import absolute_import
+
+from .helpers import *
+
+from .arithmetic import dispatcher as arithmetic_dispatcher
+from .bitwise import dispatcher as bitwise_dispatcher
+from .control import dispatcher as control_dispatcher
+from .flag import dispatcher as flag_dispatcher
+from .logical import dispatcher as logical_dispatcher
+from .misc import dispatcher as misc_dispatcher
+from .sse import dispatcher as sse_dispatcher
+from .string import dispatcher as string_dispatcher
+from .transfer import dispatcher as transfer_dispatcher
 
 dispatcher = {}
-dispatcher.update(arithmetic.dispatcher)
-dispatcher.update(bitwise.dispatcher)
-dispatcher.update(control.dispatcher)
-dispatcher.update(flag.dispatcher)
-dispatcher.update(logical.dispatcher)
-dispatcher.update(misc.dispatcher)
-dispatcher.update(sse.dispatcher)
-dispatcher.update(string.dispatcher)
-dispatcher.update(transfer.dispatcher)
+dispatcher.update(arithmetic_dispatcher)
+dispatcher.update(bitwise_dispatcher)
+dispatcher.update(control_dispatcher)
+dispatcher.update(flag_dispatcher)
+dispatcher.update(logical_dispatcher)
+dispatcher.update(misc_dispatcher)
+dispatcher.update(sse_dispatcher)
+dispatcher.update(string_dispatcher)
+dispatcher.update(transfer_dispatcher)

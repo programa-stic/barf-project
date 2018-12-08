@@ -90,6 +90,7 @@ class ReilMnemonic(object):
     SEXT = 18
     SDIV = 19
     SMOD = 20
+    SMUL = 21
 
     @staticmethod
     def to_string(mnemonic):
@@ -127,6 +128,7 @@ class ReilMnemonic(object):
             ReilMnemonic.SEXT: "sext",
             ReilMnemonic.SDIV: "sdiv",
             ReilMnemonic.SMOD: "smod",
+            ReilMnemonic.SMUL: "smul",
         }
 
         return strings[mnemonic]
@@ -167,6 +169,7 @@ class ReilMnemonic(object):
             "sext": ReilMnemonic.SEXT,
             "sdiv": ReilMnemonic.SDIV,
             "smod": ReilMnemonic.SMOD,
+            "smul": ReilMnemonic.SMUL,
         }
 
         return mnemonics[string]
@@ -204,6 +207,7 @@ REIL_MNEMONICS = (
     ReilMnemonic.SEXT,
     ReilMnemonic.SDIV,
     ReilMnemonic.SMOD,
+    ReilMnemonic.SMUL,
 )
 
 
@@ -499,3 +503,18 @@ class ReilEmptyOperand(ReilOperand):
 
     def __eq__(self, other):
         return type(other) is type(self)
+
+
+class ReilLabel(object):
+
+    def __init__(self, name):
+        self._name = name
+
+    @property
+    def name(self):
+        """Get label name.
+        """
+        return self._name
+
+    def __str__(self):
+        return self._name + ":"
