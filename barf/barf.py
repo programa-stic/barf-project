@@ -26,30 +26,32 @@
 BARF : Binary Analysis Framework.
 
 """
+from __future__ import absolute_import
+
 import logging
 
-from analysis.codeanalyzer import CodeAnalyzer
-from analysis.graphs.controlflowgraph import CFGRecoverer
-from analysis.graphs.controlflowgraph import ControlFlowGraph
-from analysis.graphs.controlflowgraph import RecursiveDescent
-from analysis.gadgets import GadgetClassifier
-from analysis.gadgets import GadgetFinder
-from analysis.gadgets import GadgetVerifier
-from arch import ARCH_ARM_MODE_THUMB
-from arch import ARCH_X86
-from arch.arm import ArmArchitectureInformation
-from arch.arm.disassembler import ArmDisassembler
-from arch.arm.translator import ArmTranslator
-from arch.emulator import Emulator
-from arch.x86 import X86ArchitectureInformation
-from arch.x86.disassembler import X86Disassembler
-from arch.x86.translator import X86Translator
-from core.binary import BinaryFile
-from core.reil.emulator import ReilEmulator
-from core.smt.smtsolver import CVC4Solver
-from core.smt.smtsolver import SmtSolverNotFound
-from core.smt.smtsolver import Z3Solver
-from core.smt.smttranslator import SmtTranslator
+from .analysis.codeanalyzer import CodeAnalyzer
+from .analysis.graphs.controlflowgraph import CFGRecoverer
+from .analysis.graphs.controlflowgraph import ControlFlowGraph
+from .analysis.graphs.controlflowgraph import RecursiveDescent
+from .analysis.gadgets import GadgetClassifier
+from .analysis.gadgets import GadgetFinder
+from .analysis.gadgets import GadgetVerifier
+from .arch import ARCH_ARM_MODE_THUMB
+from .arch import ARCH_X86
+from .arch.arm import ArmArchitectureInformation
+from .arch.arm.disassembler import ArmDisassembler
+from .arch.arm.translator import ArmTranslator
+from .arch.emulator import Emulator
+from .arch.x86 import X86ArchitectureInformation
+from .arch.x86.disassembler import X86Disassembler
+from .arch.x86.translator import X86Translator
+from .core.binary import BinaryFile
+from .core.reil.emulator import ReilEmulator
+from .core.smt.smtsolver import CVC4Solver
+from .core.smt.smtsolver import SmtSolverNotFound
+from .core.smt.smtsolver import Z3Solver
+from .core.smt.smttranslator import SmtTranslator
 
 logger = logging.getLogger(__name__)
 
@@ -431,7 +433,7 @@ class BARF(object):
         start, end = next_addr, next_addr + self.arch_info.max_instruction_size
 
         encoding = ""
-        for i in xrange(end - start):
+        for i in range(end - start):
             encoding += chr(self.ir_emulator.read_memory(start + i, 1))
 
         return encoding

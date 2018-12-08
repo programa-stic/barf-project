@@ -22,11 +22,13 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 import copy
 import logging
 import sys
 
-from Queue import Queue
+from queue import Queue
 
 from barf.analysis.codeanalyzer import CodeAnalyzer
 from barf.core.reil import ReilImmediateOperand
@@ -200,7 +202,7 @@ class State(object):
         return self._memory.get(address, None)
 
     def write_memory(self, address, size, value):
-        for i in xrange(0, size):
+        for i in range(0, size):
             self._memory[address + i] = (value >> (i * 8)) & 0xff
 
     def query_memory(self, address, size):

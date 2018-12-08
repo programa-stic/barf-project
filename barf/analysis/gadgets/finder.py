@@ -31,6 +31,8 @@ Some more work is needed to make this algorithm truly architecture
 agnostic.
 
 """
+from __future__ import absolute_import
+
 import re
 
 from barf.analysis.gadgets import RawGadget

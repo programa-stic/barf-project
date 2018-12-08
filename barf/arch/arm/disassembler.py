@@ -27,6 +27,8 @@ This modules contains a ARM disassembler based on the Capstone
 disassembly framework.
 
 """
+from __future__ import absolute_import
+
 import logging
 
 from capstone import CS_ARCH_ARM

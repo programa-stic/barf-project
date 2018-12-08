@@ -49,6 +49,7 @@ Examples
 * Note that it can also parse registers size.
 
 """
+from __future__ import absolute_import
 
 import copy
 import logging

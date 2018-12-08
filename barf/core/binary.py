@@ -25,6 +25,9 @@
 """
 Binary Interface Module.
 """
+from __future__ import absolute_import
+
+from past.builtins import long
 
 import logging
 
@@ -80,7 +83,7 @@ class Memory(object):
 
     def __iter__(self):
         for address, data in self.__vma:
-            for i in xrange(len(data)):
+            for i in range(len(data)):
                 yield address + i
 
     def __getitem__(self, key):

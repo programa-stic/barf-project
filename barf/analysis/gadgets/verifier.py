@@ -33,6 +33,7 @@ validity.
 This algorithm is architecture agnostic since it operates on the IR
 representation of the underlying assembly code.
 """
+from __future__ import absolute_import
 
 import logging
 
@@ -246,8 +247,8 @@ class GadgetVerifier(object):
 
         constrs = []
 
-        for i in reversed(xrange(0, size, 8)):
-            bytes_exprs_1 = self.analyzer.get_memory_expr(addr + i/8, 8/8)
+        for i in reversed(range(0, size, 8)):
+            bytes_exprs_1 = self.analyzer.get_memory_expr(addr + i // 8, 8 // 8)
             bytes_exprs_2 = smtfunction.extract(dst, i, 8)
 
             constrs += [bytes_exprs_1 != bytes_exprs_2]
@@ -283,8 +284,8 @@ class GadgetVerifier(object):
 
         constrs = []
 
-        for i in reversed(xrange(0, size, 8)):
-            bytes_exprs_1 = self.analyzer.get_memory_expr(addr + i/8, 8/8)
+        for i in reversed(range(0, size, 8)):
+            bytes_exprs_1 = self.analyzer.get_memory_expr(addr + i // 8, 8 // 8)
             bytes_exprs_2 = smtfunction.extract(src, i, 8)
 
             constrs += [bytes_exprs_1 != bytes_exprs_2]
@@ -320,13 +321,13 @@ class GadgetVerifier(object):
             addr = gadget.sources[2].immediate
 
         src1 = self.analyzer.get_register_expr(gadget.sources[0].name, mode="pre")
-        src2 = self.analyzer.get_memory_expr(addr, size/8)
+        src2 = self.analyzer.get_memory_expr(addr, size // 8)
 
         result = op(src1, src2)
 
         constrs = []
 
-        for i in reversed(xrange(0, size, 8)):
+        for i in reversed(range(0, size, 8)):
             bytes_exprs_1 = smtfunction.extract(result, i, 8)
             bytes_exprs_2 = smtfunction.extract(dst, i, 8)
 
@@ -361,14 +362,14 @@ class GadgetVerifier(object):
         op = self._arithmetic_ops[gadget.operation]
         size = gadget.sources[2].size
         src1 = self.analyzer.get_register_expr(gadget.sources[2].name, mode="pre")
-        src2 = self.analyzer.get_memory_expr(addr, size/8, mode="pre")
-        dst = self.analyzer.get_memory_expr(addr, size/8, mode="post")
+        src2 = self.analyzer.get_memory_expr(addr, size // 8, mode="pre")
+        dst = self.analyzer.get_memory_expr(addr, size // 8, mode="post")
 
         result = op(src1, src2)
 
         constrs = []
 
-        for i in reversed(xrange(0, size, 8)):
+        for i in reversed(range(0, size, 8)):
             bytes_exprs_1 = smtfunction.extract(result, i, 8)
             bytes_exprs_2 = smtfunction.extract(dst, i, 8)
 

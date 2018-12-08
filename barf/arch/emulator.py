@@ -22,6 +22,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 import logging
 import pefile
 
@@ -316,7 +319,7 @@ class Emulator(object):
         start, end = next_addr, next_addr + self.arch_info.max_instruction_size
 
         encoding = ""
-        for i in xrange(end - start):
+        for i in range(end - start):
             encoding += chr(self.ir_emulator.read_memory(start + i, 1))
 
         return encoding

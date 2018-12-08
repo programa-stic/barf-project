@@ -22,6 +22,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 import random
 
 
@@ -59,7 +61,7 @@ class ReilMemory(object):
         """
         value = 0x0
 
-        for i in xrange(0, size):
+        for i in range(0, size):
             value |= self._read_byte(address + i) << (i * 8)
 
         return value
@@ -78,7 +80,7 @@ class ReilMemory(object):
     def write(self, address, size, value):
         """Write arbitrary size content to memory.
         """
-        for i in xrange(0, size):
+        for i in range(0, size):
             self.__write_byte(address + i, (value >> (i * 8)) & 0xff)
 
     def __write_byte(self, address, value):
@@ -129,7 +131,7 @@ class ReilMemoryEx(ReilMemory):
         for addr in addr_candidates:
             match = True
 
-            for i in xrange(0, size):
+            for i in range(0, size):
                 byte_curr = (value >> (i * 8)) & 0xff
                 try:
                     match = self._memory[addr + i] == byte_curr
@@ -153,7 +155,7 @@ class ReilMemoryEx(ReilMemory):
         """
         value = 0x0
 
-        for i in xrange(0, size):
+        for i in range(0, size):
             addr = address + i
 
             if addr in self._memory:
@@ -172,7 +174,7 @@ class ReilMemoryEx(ReilMemory):
         """
         value = 0x0
 
-        for i in xrange(0, size):
+        for i in range(0, size):
             addr = address + i
 
             if addr in self.__memory_prev:
@@ -201,7 +203,7 @@ class ReilMemoryEx(ReilMemory):
     def write(self, address, size, value):
         """Write arbitrary size content to memory.
         """
-        for i in xrange(0, size):
+        for i in range(0, size):
             self.__write_byte(address + i, (value >> (i * 8)) & 0xff)
 
         self.__write_count += 1

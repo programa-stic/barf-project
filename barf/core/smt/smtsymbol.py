@@ -22,6 +22,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
+from past.builtins import long
+
 
 def _cast_to_bool(value):
     if type(value) is bool:
@@ -228,9 +232,9 @@ class Constant(BitVec):
 
         # Format number, choose between binary and hexadecimal notation.
         if size < 8:
-            value_str = "#b{0:0{fill}b}".format(value, fill=size / 1)
+            value_str = "#b{0:0{fill}b}".format(value, fill=size // 1)
         else:
-            value_str = "#x{0:0{fill}x}".format(value, fill=size / 4)
+            value_str = "#x{0:0{fill}x}".format(value, fill=size // 4)
 
         return value_str
 

@@ -32,6 +32,7 @@ more gadgets type. At this point, a TypedGadget object is created for
 each classified type and the RawGadget object is associated with them.
 
 """
+from __future__ import absolute_import
 
 from barf.core.reil import ReilEmptyOperand
 from barf.core.reil import ReilImmediateOperand

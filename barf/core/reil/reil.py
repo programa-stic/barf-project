@@ -50,6 +50,10 @@ Instructions
     Extensions    : SEXT, SDIV, SMOD
 
 """
+from __future__ import absolute_import
+
+from past.builtins import long
+
 
 DISPLAY_SIZE = True     # Display operands size in instruction
 

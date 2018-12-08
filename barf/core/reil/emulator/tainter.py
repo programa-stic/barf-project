@@ -22,6 +22,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilMnemonic
 from barf.core.reil import ReilRegisterOperand
@@ -113,20 +115,20 @@ class ReilEmulatorTainter(object):
     def get_memory_taint(self, address, size):
         tainted = False
 
-        for i in xrange(0, size):
+        for i in range(0, size):
             tainted = tainted or address + i in self.__taint_mem
 
         return tainted
 
     def set_memory_taint(self, address, size, taint):
-        for i in xrange(0, size):
+        for i in range(0, size):
             if taint:
                 self.__taint_mem.add(address + i)
             else:
                 self.__taint_mem.discard(address + i)
 
     def clear_memory_taint(self, address, size):
-        for i in xrange(0, size):
+        for i in range(0, size):
             self.__taint_mem.discard(address + i)
 
     # Register taint methods
@@ -172,7 +174,7 @@ class ReilEmulatorTainter(object):
         op0_val = self.__emu.read_operand(instr.operands[0])
 
         # Get taint information.
-        op0_taint = self.get_memory_taint(op0_val, instr.operands[2].size / 8)
+        op0_taint = self.get_memory_taint(op0_val, instr.operands[2].size // 8)
 
         # Propagate taint.
         self.set_operand_taint(instr.operands[2], op0_taint)
@@ -188,7 +190,7 @@ class ReilEmulatorTainter(object):
         op0_taint = self.get_operand_taint(instr.operands[0])
 
         # Propagate taint.
-        self.set_memory_taint(op2_val, op0_size / 8, op0_taint)
+        self.set_memory_taint(op2_val, op0_size // 8, op0_taint)
 
     def __taint_move(self, instr):
         """Taint registers move instruction.

@@ -22,6 +22,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 from barf.arch.arm import ARM_COND_CODE_AL
 from barf.arch.arm import ARM_COND_CODE_CC
 from barf.arch.arm import ARM_COND_CODE_CS

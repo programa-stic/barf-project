@@ -27,6 +27,10 @@ This module contains all the classes that handle the ARM instruction
 representation.
 
 """
+from __future__ import absolute_import
+
+from past.builtins import long
+
 from barf.arch import ARCH_ARM_MODE_ARM
 from barf.arch import ARCH_ARM_MODE_THUMB
 from barf.arch import ArchitectureInformation
