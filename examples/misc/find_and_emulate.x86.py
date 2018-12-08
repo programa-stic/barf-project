@@ -1,5 +1,8 @@
 #! /usr/bin/env python
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 from barf.analysis.graphs.callgraph import CallGraph
 from barf.barf import BARF
 from barf.core.symbols import load_symbols

@@ -22,6 +22,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 import unittest
 
 from barf.analysis.codeanalyzer import CodeAnalyzer
@@ -415,19 +418,19 @@ class ArmGadgetClassifierTests(unittest.TestCase):
         self.assertTrue(self._g_verifier.verify(g_classified[1]))
 
     def _print_candidates(self, candidates):
-        print "Candidates :"
+        print("Candidates :")
 
         for gadget in candidates:
-            print gadget
-            print "-" * 10
+            print(gadget)
+            print("-" * 10)
 
     def _print_classified(self, classified):
-        print "Classified :"
+        print("Classified :")
 
         for gadget in classified:
-            print gadget
-            print gadget.type
-            print "-" * 10
+            print(gadget)
+            print(gadget.type)
+            print("-" * 10)
 
 
 def main():

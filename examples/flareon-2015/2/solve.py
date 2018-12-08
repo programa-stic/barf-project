@@ -24,6 +24,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 from barf.analysis.symbolic.emulator import ReilSymbolicEmulator
 from barf.analysis.symbolic.emulator import State
 from barf.analysis.symbolic.emulator import SymExecResult
@@ -68,7 +71,7 @@ def solve():
     initial_state.write_memory(esp + 0x0, 4, 0x41414141)    # return address
 
     # Set memory
-    for i in xrange(user_password_len):
+    for i in range(user_password_len):
         initial_state.write_memory(ref_key_addr + i, 1,
                                    ord(binary.text_section[ref_key_addr + i]))
 
@@ -93,7 +96,7 @@ def solve():
 
     user_password = bytearray()
 
-    for i in xrange(user_password_len):
+    for i in range(user_password_len):
         user_password.append(se_res.query_memory(user_password_addr + i, 1))
 
     print("User password: {}".format(user_password))

@@ -24,6 +24,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 import struct
 
 from barf.analysis.symbolic.emulator import ReilSymbolicEmulator
@@ -101,7 +104,7 @@ def solve():
     # Set the A array
     in_array_expected = bytearray(__get_in_array())
 
-    for i in xrange(len(in_array_expected)):
+    for i in range(len(in_array_expected)):
         initial_state.write_memory(in_array_addr + i, 1, in_array_expected[i])
 
     #
@@ -112,7 +115,7 @@ def solve():
     # Set the B array
     out_array_expected = bytearray(__get_out_array())
 
-    for i in xrange(32):
+    for i in range(32):
         # Avoid trivial solution
         initial_state.write_memory(out_array_addr + i, 1, 0)
 

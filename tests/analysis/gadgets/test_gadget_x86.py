@@ -22,6 +22,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 import unittest
 
 from barf.analysis.codeanalyzer import CodeAnalyzer
@@ -950,19 +953,19 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEquals(len(g_classified), 0)
 
     def print_candidates(self, candidates):
-        print "Candidates :"
+        print("Candidates :")
 
         for gadget in candidates:
-            print gadget
-            print "-" * 10
+            print(gadget)
+            print("-" * 10)
 
     def print_classified(self, classified):
-        print "Classified :"
+        print("Classified :")
 
         for gadget in classified:
-            print gadget
-            print gadget.type
-            print "-" * 10
+            print(gadget)
+            print(gadget.type)
+            print("-" * 10)
 
 
 class GadgetVerifierTests(unittest.TestCase):
@@ -1484,19 +1487,19 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def print_candidates(self, candidates):
-        print "Candidates :"
+        print("Candidates :")
 
         for gadget in candidates:
-            print gadget
-            print "-" * 10
+            print(gadget)
+            print("-" * 10)
 
     def print_classified(self, classified):
-        print "Classified :"
+        print("Classified :")
 
         for gadget in classified:
-            print gadget
-            print gadget.type
-            print "-" * 10
+            print(gadget)
+            print(gadget.type)
+            print("-" * 10)
 
 
 class GadgetVerifierTests64(unittest.TestCase):
@@ -1538,19 +1541,19 @@ class GadgetVerifierTests64(unittest.TestCase):
         self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("rax", 64), ReilImmediateOperand(0x0, 64)])
 
     def print_candidates(self, candidates):
-        print "Candidates :"
+        print("Candidates :")
 
         for gadget in candidates:
-            print gadget
-            print "-" * 10
+            print(gadget)
+            print("-" * 10)
 
     def print_classified(self, classified):
-        print "Classified :"
+        print("Classified :")
 
         for gadget in classified:
-            print gadget
-            print gadget.type
-            print "-" * 10
+            print(gadget)
+            print(gadget.type)
+            print("-" * 10)
 
 
 def main():

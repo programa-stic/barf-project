@@ -24,6 +24,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 import sys
 import time
 
@@ -100,7 +103,7 @@ def get_symbols(binary_path):
 
 
 def setup_argv(emulator, argv, base_addr):
-    addr_size = emulator.arch_info.address_size / 8
+    addr_size = emulator.arch_info.address_size // 8
 
     argv_entry_addr = {}
 
@@ -113,7 +116,7 @@ def setup_argv(emulator, argv, base_addr):
         addr += len(arg) + 1    # each argument is null-terminated
 
     # Build argv array.
-    for index in xrange(len(argv)):
+    for index in range(len(argv)):
         addr = argv_entry_addr[index]
         emulator.write_memory(base_addr + index * addr_size, addr_size, addr)
     # Add null terminator.

@@ -22,6 +22,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 import unittest
 import os
 
@@ -72,7 +74,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
         initial_state.write_memory(esp + 0x0, 4, 0x41414141)            # fake return address
 
         # Each byte of the password should be an ascii char.
-        for i in xrange(0, user_password_len):
+        for i in range(0, user_password_len):
             value = initial_state.query_memory(user_password_addr + i, 1)
 
             initial_state.add_constraint(value.uge(0x21))
@@ -94,7 +96,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
 
         se_res = SymExecResult(arch_info, initial_state, paths[0], final_state)
 
-        for i in xrange(0, user_password_len):
+        for i in range(0, user_password_len):
             value = se_res.query_memory(user_password_addr + i, 1)
             user_password.append(value)
 
@@ -128,7 +130,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
         initial_state.write_memory(esp + 0x0, 4, 0x41414141)            # fake return address
 
         # Each byte of the password should be an ascii char.
-        for i in xrange(0, user_password_len):
+        for i in range(0, user_password_len):
             value = initial_state.query_memory(user_password_addr + i, 1)
 
             initial_state.add_constraint(value.uge(0x21))
@@ -139,7 +141,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
 
         initial_state.write_memory(0x0804a020, 4, 0xcafecafe)
 
-        for i in xrange(0, len(ref_key)):
+        for i in range(0, len(ref_key)):
             initial_state.write_memory(0xcafecafe + i, 1, ref_key[i])
 
         sym_exec = ReilSymbolicEmulator(arch_info)
@@ -158,7 +160,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
 
         se_res = SymExecResult(arch_info, initial_state, paths[0], final_state)
 
-        for i in xrange(0, user_password_len):
+        for i in range(0, user_password_len):
             value = se_res.query_memory(user_password_addr + i, 1)
             user_password.append(value)
 
@@ -194,7 +196,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
     #     initial_state.write_memory(esp + 0x0, 4, 0x41414141)            # fake return address
 
     #     # Each byte of the password should be an ascii char.
-    #     for i in xrange(0, user_password_len):
+    #     for i in range(0, user_password_len):
     #         value = initial_state.query_memory(user_password_addr + i, 1)
 
     #         initial_state.add_constraint(value.uge(0x21))
@@ -205,7 +207,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
 
     #     initial_state.write_memory(0x0804a020, 4, 0xcafecafe)
 
-    #     for i in xrange(0, len(ref_key)):
+    #     for i in range(0, len(ref_key)):
     #         initial_state.write_memory(0xcafecafe + i, 1, ref_key[i])
 
     #     sym_exec = ReilSymbolicEmulator(arch_info)
@@ -224,7 +226,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
 
     #     se_res = SymExecResult(arch_info, initial_state, paths[0], final_state)
 
-    #     for i in xrange(0, user_password_len):
+    #     for i in range(0, user_password_len):
     #         value = se_res.query_memory(user_password_addr + i, 1)
     #         user_password.append(value)
 
@@ -261,7 +263,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
     #     initial_state.write_memory(esp + 0x0, 4, 0x41414141)            # fake return address
 
     #     # Each byte of the password should be an ascii char.
-    #     for i in xrange(0, user_password_len):
+    #     for i in range(0, user_password_len):
     #         value = initial_state.query_memory(user_password_addr + i, 1)
 
     #         initial_state.add_constraint(value.uge(0x21))
@@ -272,7 +274,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
 
     #     initial_state.write_memory(0x0804a020, 4, 0xcafecafe)
 
-    #     for i in xrange(0, len(ref_key)):
+    #     for i in range(0, len(ref_key)):
     #         initial_state.write_memory(0xcafecafe + i, 1, ref_key[i])
 
     #     sym_exec = ReilSymbolicEmulator(arch_info)
@@ -291,7 +293,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
 
     #     se_res = SymExecResult(arch_info, initial_state, paths[0], final_state)
 
-    #     for i in xrange(0, user_password_len):
+    #     for i in range(0, user_password_len):
     #         value = se_res.query_memory(user_password_addr + i, 1)
     #         user_password.append(value)
 
@@ -332,7 +334,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
     #     initial_state.write_memory(esp + 0x0, 4, 0x41414141)            # fake return address
 
     #     # Each byte of the password should be an ascii char.
-    #     for i in xrange(0, user_password_len):
+    #     for i in range(0, user_password_len):
     #         value = initial_state.query_memory(user_password_addr + i, 1)
 
     #         initial_state.add_constraint(value.uge(0x21))
@@ -343,7 +345,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
 
     #     initial_state.write_memory(0x0804a020, 4, 0xcafecafe)
 
-    #     for i in xrange(0, len(ref_key)):
+    #     for i in range(0, len(ref_key)):
     #         initial_state.write_memory(0xcafecafe + i, 1, ref_key[i])
 
     #     sym_exec = ReilSymbolicEmulator(arch_info)
@@ -362,7 +364,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
 
     #     se_res = SymExecResult(arch_info, initial_state, paths[0], final_state)
 
-    #     for i in xrange(0, user_password_len):
+    #     for i in range(0, user_password_len):
     #         value = se_res.query_memory(user_password_addr + i, 1)
     #         user_password.append(value)
 
