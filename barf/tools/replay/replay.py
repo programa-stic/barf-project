@@ -44,7 +44,6 @@ from barf.arch.x86.helpers import compare_contexts
 from barf.arch.x86.helpers import fix_flags
 from barf.arch.x86.helpers import print_contexts
 from barf.arch.x86.parser import X86Parser
-from barf.arch.x86.trace import AsmTrace
 from barf.arch.x86.trace import AsmTraceAnalyzer
 from barf.arch.x86.trace import parse_trace
 from barf.arch.x86.translator import X86Translator

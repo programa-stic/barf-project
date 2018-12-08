@@ -39,7 +39,6 @@ from barf.core.reil import ReilMnemonic
 from barf.core.reil.container import ReilContainer
 from barf.core.reil.container import ReilContainerInvalidAddressError
 from barf.core.reil.container import ReilSequence
-from barf.core.reil.emulator import ReilEmulator
 from barf.core.reil.helpers import split_address
 from barf.core.reil.helpers import to_asm_address
 from barf.core.reil.helpers import to_reil_address
