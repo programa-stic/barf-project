@@ -129,9 +129,9 @@ class ReilEmulatorTests(unittest.TestCase):
 
         asm = ["mov eax, ebx"]
 
-        x86_instrs = map(self._asm_parser.parse, asm)
+        x86_instrs = [self._asm_parser.parse(i) for i in asm]
         self.__set_address(0xdeadbeef, x86_instrs)
-        reil_instrs = map(self._translator.translate, x86_instrs)
+        reil_instrs = [self._translator.translate(i) for i in x86_instrs]
 
         paramter = []
 
@@ -149,9 +149,9 @@ class ReilEmulatorTests(unittest.TestCase):
 
         asm = ["mov eax, ebx"]
 
-        x86_instrs = map(self._asm_parser.parse, asm)
+        x86_instrs = [self._asm_parser.parse(i) for i in asm]
         self.__set_address(0xdeadbeef, x86_instrs)
-        reil_instrs = map(self._translator.translate, x86_instrs)
+        reil_instrs = [self._translator.translate(i) for i in x86_instrs]
 
         paramter = []
 
