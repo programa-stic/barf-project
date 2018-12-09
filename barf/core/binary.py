@@ -225,7 +225,7 @@ class BinaryFile(object):
 
             raise Exception("Error loading file: {}".format(filename))
 
-        if signature[:4] == "\x7f\x45\x4c\x46":
+        if signature[:4] == b'\x7f\x45\x4c\x46':
             self._open_elf(filename)
         elif signature[:2] == b'\x4d\x5a':
             self._open_pe(filename)
