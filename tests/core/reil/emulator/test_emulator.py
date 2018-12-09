@@ -123,8 +123,8 @@ class ReilEmulatorTests(unittest.TestCase):
 
         self.assertEqual(regs_final["eax"], 0xdead3412)
 
-    def test_pre_hanlder(self):
-        def pre_hanlder(emulator, instruction, parameter):
+    def test_pre_handler(self):
+        def pre_handler(emulator, instruction, parameter):
             paramter.append(True)
 
         asm = ["mov eax, ebx"]
@@ -135,7 +135,7 @@ class ReilEmulatorTests(unittest.TestCase):
 
         paramter = []
 
-        self._emulator.set_instruction_pre_handler(pre_hanlder, paramter)
+        self._emulator.set_instruction_pre_handler(pre_handler, paramter)
 
         reil_ctx_out, reil_mem_out = self._emulator.execute_lite(
             reil_instrs[0]
@@ -143,8 +143,8 @@ class ReilEmulatorTests(unittest.TestCase):
 
         self.assertTrue(len(paramter) > 0)
 
-    def test_post_hanlder(self):
-        def post_hanlder(emulator, instruction, parameter):
+    def test_post_handler(self):
+        def post_handler(emulator, instruction, parameter):
             paramter.append(True)
 
         asm = ["mov eax, ebx"]
@@ -155,7 +155,7 @@ class ReilEmulatorTests(unittest.TestCase):
 
         paramter = []
 
-        self._emulator.set_instruction_post_handler(post_hanlder, paramter)
+        self._emulator.set_instruction_post_handler(post_handler, paramter)
 
         _, _ = self._emulator.execute_lite(
             reil_instrs[0]
