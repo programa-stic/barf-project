@@ -33,6 +33,8 @@ agnostic.
 """
 from __future__ import absolute_import
 
+from past.builtins import xrange
+
 import re
 
 from barf.analysis.gadgets import RawGadget
