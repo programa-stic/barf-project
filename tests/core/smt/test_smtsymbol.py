@@ -144,9 +144,9 @@ class BitVecTests(unittest.TestCase):
     def test_div(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
-        z = x / y
-        v = x / 1
-        w = 1 / x
+        z = x // y
+        v = x // 1
+        w = 1 // x
 
         self.assertEqual(z.value, "(bvsdiv x y)")
         self.assertEqual(v.value, "(bvsdiv x #x00000001)")

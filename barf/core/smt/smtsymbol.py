@@ -122,6 +122,9 @@ class BitVec(Symbol):
     def __div__(self, other):
         return BitVec(self.size, "bvsdiv", self, _cast_to_bitvec(other, self.size))
 
+    def __floordiv__(self, other):
+        return BitVec(self.size, "bvsdiv", self, _cast_to_bitvec(other, self.size))
+
     def __mod__(self, other):
         return BitVec(self.size, "bvsmod", self, _cast_to_bitvec(other, self.size))
 
@@ -139,6 +142,9 @@ class BitVec(Symbol):
         return BitVec(self.size, "bvmul", _cast_to_bitvec(other, self.size), self)
 
     def __rdiv__(self, other):
+        return BitVec(self.size, "bvsdiv", _cast_to_bitvec(other, self.size), self)
+
+    def __rfloordiv__(self, other):
         return BitVec(self.size, "bvsdiv", _cast_to_bitvec(other, self.size), self)
 
     def __rmod__(self, other):

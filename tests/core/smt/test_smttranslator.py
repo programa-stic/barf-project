@@ -181,7 +181,7 @@ class SmtTranslatorTests(unittest.TestCase):
         with self.assertRaises(Exception) as context:
             self._translator.translate(instr)
 
-        self.assertTrue("Unsupported instruction : UNDEF" in context.exception)
+            self.assertTrue("Unsupported instruction : UNDEF" in context.exception)
 
     def test_translate_unkn(self):
         instr = self._parser.parse(["unkn [empty, empty, empty]"])[0]
@@ -189,7 +189,7 @@ class SmtTranslatorTests(unittest.TestCase):
         with self.assertRaises(Exception) as context:
             self._translator.translate(instr)
 
-        self.assertTrue("Unsupported instruction : UNKN" in context.exception)
+            self.assertTrue("Unsupported instruction : UNKN" in context.exception)
 
     def test_translate_nop(self):
         instr = self._parser.parse(["nop [empty, empty, empty]"])[0]

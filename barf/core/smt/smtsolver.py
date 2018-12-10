@@ -68,7 +68,7 @@ class Z3Solver(object):
             raise SmtSolverNotFound("{} solver is not installed".format(self._name))
 
     def _start_solver(self):
-        self._process = subprocess.Popen("z3 -smt2 -in", shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        self._process = subprocess.Popen("z3 -smt2 -in", shell=True, bufsize=0, stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True)
 
         # Set z3 declaration scopes.
         self._write("(set-option :global-decls false)")
@@ -176,7 +176,8 @@ class CVC4Solver(object):
 
     def _start_solver(self):
         self._process = subprocess.Popen("cvc4 --incremental --lang=smt2", shell=True,
-                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+                                         bufsize=0, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                         universal_newlines=True)
 
         # Set CVC4 declaration scopes.
         self._write("(set-logic QF_AUFBV)")

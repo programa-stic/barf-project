@@ -644,11 +644,11 @@ class SmtTranslator(object):
             op1_var_sx = smtfunction.sign_extend(op1_var, oprnd3.size)
             op2_var_sx = smtfunction.sign_extend(op2_var, oprnd3.size)
 
-            result = op1_var_sx / op2_var_sx
+            result = op1_var_sx // op2_var_sx
         elif oprnd3.size < oprnd1.size:
-            result = smtfunction.extract(op1_var / op2_var, 0, oprnd3.size)
+            result = smtfunction.extract(op1_var // op2_var, 0, oprnd3.size)
         else:
-            result = op1_var / op2_var
+            result = op1_var // op2_var
 
         return [op3_var == result] + op3_var_constrs
 
