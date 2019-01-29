@@ -175,7 +175,7 @@ class ReilContainerEx(object):
     def fetch(self, address):
         base_addr, index = split_address(address)
 
-        if base_addr not in self.__container.keys():
+        if base_addr not in self.__container:
             self.__resolve_address(base_addr)
 
         return self.__container[base_addr].get(index)
@@ -183,7 +183,7 @@ class ReilContainerEx(object):
     def get_next_address(self, address):
         base_addr, index = split_address(address)
 
-        if base_addr not in self.__container.keys():
+        if base_addr not in self.__container:
             raise Exception("Invalid address.")
 
         addr = address

@@ -91,7 +91,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
 
         final_state = State(arch_info, mode="final")
 
-        user_password_expected = bytearray("AAAAAA")
+        user_password_expected = bytearray(b"AAAAAA")
         user_password = bytearray()
 
         se_res = SymExecResult(arch_info, initial_state, paths[0], final_state)
@@ -137,7 +137,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
             initial_state.add_constraint(value.ule(0x7e))
 
         # Set up memory
-        ref_key = bytearray("\x31\x27\x30\x2b\x23\x2e")
+        ref_key = bytearray(b"\x31\x27\x30\x2b\x23\x2e")
 
         initial_state.write_memory(0x0804a020, 4, 0xcafecafe)
 
@@ -155,7 +155,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
 
         final_state = State(arch_info, mode="final")
 
-        user_password_expected = bytearray("serial")
+        user_password_expected = bytearray(b"serial")
         user_password = bytearray()
 
         se_res = SymExecResult(arch_info, initial_state, paths[0], final_state)
@@ -203,7 +203,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
     #         initial_state.add_constraint(value.ule(0x7e))
 
     #     # Set up memory
-    #     ref_key = bytearray("\x31\x27\x30\x2b\x23\x2e")
+    #     ref_key = bytearray(b"\x31\x27\x30\x2b\x23\x2e")
 
     #     initial_state.write_memory(0x0804a020, 4, 0xcafecafe)
 
@@ -221,7 +221,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
 
     #     final_state = State(arch_info, mode="final")
 
-    #     user_password_expected = bytearray("serial")
+    #     user_password_expected = bytearray(b"serial")
     #     user_password = bytearray()
 
     #     se_res = SymExecResult(arch_info, initial_state, paths[0], final_state)
@@ -270,7 +270,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
     #         initial_state.add_constraint(value.ule(0x7e))
 
     #     # Set up memory
-    #     ref_key = bytearray("\x31\x27\x30\x2b\x23\x2e")
+    #     ref_key = bytearray(b"\x31\x27\x30\x2b\x23\x2e")
 
     #     initial_state.write_memory(0x0804a020, 4, 0xcafecafe)
 
@@ -288,7 +288,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
 
     #     final_state = State(arch_info, mode="final")
 
-    #     user_password_expected = bytearray("serial")
+    #     user_password_expected = bytearray(b"serial")
     #     user_password = bytearray()
 
     #     se_res = SymExecResult(arch_info, initial_state, paths[0], final_state)
@@ -341,7 +341,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
     #         initial_state.add_constraint(value.ule(0x7e))
 
     #     # Set up memory
-    #     ref_key = bytearray("\x31\x27\x30\x2b\x23\x2e")
+    #     ref_key = bytearray(b"\x31\x27\x30\x2b\x23\x2e")
 
     #     initial_state.write_memory(0x0804a020, 4, 0xcafecafe)
 
@@ -359,7 +359,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
 
     #     final_state = State(arch_info, mode="final")
 
-    #     user_password_expected = bytearray("serial")
+    #     user_password_expected = bytearray(b"serial")
     #     user_password = bytearray()
 
     #     se_res = SymExecResult(arch_info, initial_state, paths[0], final_state)
@@ -399,7 +399,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
         initial_state.write_memory(esp + 0x10, 4, 0xBBBBBBBB)
 
         # Set the in array
-        for i, b in enumerate(bytearray("\x02\x03\x05\x07")):
+        for i, b in enumerate(bytearray(b"\x02\x03\x05\x07")):
             initial_state.write_memory(in_array_addr + i, 1, b)
 
         #
@@ -408,7 +408,7 @@ class ReilSymbolicEmulatorTests(unittest.TestCase):
         final_state = State(arch_info, mode="final")
 
         # Set the B array
-        for i, b in enumerate(bytearray("\xFC\xFB\xF5\xF7")):
+        for i, b in enumerate(bytearray(b"\xFC\xFB\xF5\xF7")):
             final_state.write_memory(out_array_addr + i, 1, b)
 
         start_addr = 0x0804849b

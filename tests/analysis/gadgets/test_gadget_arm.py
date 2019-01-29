@@ -77,8 +77,8 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_move_register_1(self):
         # testing : dst_reg <- src_reg
-        binary  = "\x04\x00\xa0\xe1"                     # 0x00 : (4)  mov    r0, r4
-        binary += "\x31\xff\x2f\xe1"                     # 0x04 : (4)  blx    r1
+        binary  = b"\x04\x00\xa0\xe1"                     # 0x00 : (4)  mov    r0, r4
+        binary += b"\x31\xff\x2f\xe1"                     # 0x04 : (4)  blx    r1
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -96,8 +96,8 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_move_register_2(self):
         # testing : dst_reg <- src_reg
-        binary  = "\x00\x00\x84\xe2"                     # 0x00 : (4)  add    r0, r4, #0
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary  = b"\x00\x00\x84\xe2"                     # 0x00 : (4)  add    r0, r4, #0
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -116,8 +116,8 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_load_constant_1(self):
         # testing : dst_reg <- constant
-        binary  = "\x0a\x20\xa0\xe3"                     # 0x00 : (4)  mov    r2, #10
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary  = b"\x0a\x20\xa0\xe3"                     # 0x00 : (4)  mov    r2, #10
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -135,8 +135,8 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_load_constant_2(self):
         # testing : dst_reg <- constant
-        binary  = "\x02\x20\x42\xe0"                     # 0x00 : (4)  sub    r2, r2, r2
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary  = b"\x02\x20\x42\xe0"                     # 0x00 : (4)  sub    r2, r2, r2
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -154,8 +154,8 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_load_constant_3(self):
         # testing : dst_reg <- constant
-        binary  = "\x02\x20\x22\xe0"                     # 0x00 : (4)  eor    r2, r2, r2
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary  = b"\x02\x20\x22\xe0"                     # 0x00 : (4)  eor    r2, r2, r2
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -173,8 +173,8 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_load_constant_4(self):
         # testing : dst_reg <- constant
-        binary  = "\x00\x20\x02\xe2"                     # 0x00 : (4)  and    r2, r2, #0
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary  = b"\x00\x20\x02\xe2"                     # 0x00 : (4)  and    r2, r2, #0
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -192,9 +192,9 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_load_constant_5(self):
         # testing : dst_reg <- constant
-        binary  = "\x00\x20\x02\xe2"                     # and    r2, r2, #0
-        binary += "\x21\x20\x82\xe3"                     # orr    r2, r2, #33
-        binary += "\x1e\xff\x2f\xe1"                     # bx     lr
+        binary  = b"\x00\x20\x02\xe2"                     # and    r2, r2, #0
+        binary += b"\x21\x20\x82\xe3"                     # orr    r2, r2, #33
+        binary += b"\x1e\xff\x2f\xe1"                     # bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -212,8 +212,8 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_arithmetic_add_1(self):
         # testing : dst_reg <- src1_reg + src2_reg
-        binary  = "\x08\x00\x84\xe0"                     # 0x00 : (4)  add    r0, r4, r8
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary  = b"\x08\x00\x84\xe0"                     # 0x00 : (4)  add    r0, r4, r8
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -231,8 +231,8 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_arithmetic_sub_1(self):
         # testing : dst_reg <- src1_reg + src2_reg
-        binary  = "\x08\x00\x44\xe0"                     # 0x00 : (4)  sub    r0, r4, r8
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary  = b"\x08\x00\x44\xe0"                     # 0x00 : (4)  sub    r0, r4, r8
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -250,8 +250,8 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_load_memory_1(self):
         # testing : dst_reg <- m[src_reg]
-        binary  = "\x00\x30\x94\xe5"                     # 0x00 : (4)  ldr    r3, [r4]
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary  = b"\x00\x30\x94\xe5"                     # 0x00 : (4)  ldr    r3, [r4]
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -268,8 +268,8 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_load_memory_2(self):
         # testing : dst_reg <- m[src_reg + offset]
-        binary  = "\x33\x30\x94\xe5"                     # 0x00 : (4)  ldr    r3, [r4 + 0x33]
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary  = b"\x33\x30\x94\xe5"                     # 0x00 : (4)  ldr    r3, [r4 + 0x33]
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -288,8 +288,8 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_store_memory_1(self):
         # testing : dst_reg <- m[src_reg]
-        binary  = "\x00\x30\x84\xe5"                     # 0x00 : (4)  str    r3, [r4]
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary  = b"\x00\x30\x84\xe5"                     # 0x00 : (4)  str    r3, [r4]
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -306,8 +306,8 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_store_memory_2(self):
         # testing : dst_reg <- m[src_reg + offset]
-        binary  = "\x33\x30\x84\xe5"                     # 0x00 : (4)  str    r3, [r4 + 0x33]
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary  = b"\x33\x30\x84\xe5"                     # 0x00 : (4)  str    r3, [r4 + 0x33]
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -324,9 +324,9 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_arithmetic_load_add_1(self):
         # testing : dst_reg <- dst_reg + mem[src_reg]
-        binary  = "\x00\x30\x94\xe5"                     # 0x00 : (4)  ldr    r3, [r4]
-        binary += "\x03\x00\x80\xe0"                     # 0x00 : (4)  add    r0, r0, r3
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary  = b"\x00\x30\x94\xe5"                     # 0x00 : (4)  ldr    r3, [r4]
+        binary += b"\x03\x00\x80\xe0"                     # 0x00 : (4)  add    r0, r0, r3
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -348,9 +348,9 @@ class ArmGadgetClassifierTests(unittest.TestCase):
     # TODO: Find out why this test takes so long to complete.
     # def test_arithmetic_load_add_2(self):
     #     # testing : dst_reg <- dst_reg + mem[src_reg + offset]
-    #     binary  = "\x22\x30\x94\xe5"                     # 0x00 : (4)  ldr    r3, [r4, 0x22]
-    #     binary += "\x03\x00\x80\xe0"                     # 0x00 : (4)  add    r0, r0, r3
-    #     binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+    #     binary  = b"\x22\x30\x94\xe5"                     # 0x00 : (4)  ldr    r3, [r4, 0x22]
+    #     binary += b"\x03\x00\x80\xe0"                     # 0x00 : (4)  add    r0, r0, r3
+    #     binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
     #     g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -371,10 +371,10 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_arithmetic_store_add_1(self):
         # testing : m[dst_reg] <- m[dst_reg] + src_reg
-        binary  = "\x00\x30\x94\xe5"                     # 0x00 : (4)  ldr    r3, [r4]
-        binary += "\x03\x30\x80\xe0"                     # 0x00 : (4)  add    r3, r0, r3
-        binary += "\x00\x30\x84\xe5"                     # 0x00 : (4)  str    r3, [r4]
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary  = b"\x00\x30\x94\xe5"                     # 0x00 : (4)  ldr    r3, [r4]
+        binary += b"\x03\x30\x80\xe0"                     # 0x00 : (4)  add    r3, r0, r3
+        binary += b"\x00\x30\x84\xe5"                     # 0x00 : (4)  str    r3, [r4]
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
@@ -395,10 +395,10 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     def test_arithmetic_store_add_2(self):
         # testing : dst_reg <- dst_reg + mem[src_reg + offset]
-        binary  = "\x22\x30\x94\xe5"                     # 0x00 : (4)  ldr    r3, [r4, 0x22]
-        binary += "\x03\x30\x80\xe0"                     # 0x00 : (4)  add    r3, r0, r3
-        binary += "\x22\x30\x84\xe5"                     # 0x00 : (4)  str    r3, [r4, 0x22]
-        binary += "\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+        binary  = b"\x22\x30\x94\xe5"                     # 0x00 : (4)  ldr    r3, [r4, 0x22]
+        binary += b"\x03\x30\x80\xe0"                     # 0x00 : (4)  add    r3, r0, r3
+        binary += b"\x22\x30\x84\xe5"                     # 0x00 : (4)  str    r3, [r4, 0x22]
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 

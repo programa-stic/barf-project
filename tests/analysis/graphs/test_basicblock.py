@@ -114,13 +114,13 @@ class X86CfgRecoveryTests(unittest.TestCase):
 
         bbs, call_targets = recoverer.build(0x0804840b, 0x08048438)
 
-        self.assertEquals(len(bbs), 1)
+        self.assertEqual(len(bbs), 1)
 
         cfg = ControlFlowGraph(bbs, name="main")
 
-        self.assertEquals(cfg.start_address, 0x0804840b)
-        self.assertEquals(cfg.end_address, 0x08048438)
-        self.assertEquals(len(cfg.basic_blocks), 1)
+        self.assertEqual(cfg.start_address, 0x0804840b)
+        self.assertEqual(cfg.end_address, 0x08048438)
+        self.assertEqual(len(cfg.basic_blocks), 1)
 
     def test_sample_2(self):
         binary = BinaryFile(get_full_path("/data/bin/x86_sample_2"))
@@ -130,52 +130,52 @@ class X86CfgRecoveryTests(unittest.TestCase):
         # Recover "main" function.
         bbs, call_targets = recoverer.build(0x0804846d, 0x080484a3)
 
-        self.assertEquals(len(bbs), 4)
+        self.assertEqual(len(bbs), 4)
 
         cfg = ControlFlowGraph(bbs, name="main")
 
-        self.assertEquals(cfg.start_address, 0x0804846d)
-        self.assertEquals(cfg.end_address, 0x080484a3)
-        self.assertEquals(len(cfg.basic_blocks), 4)
+        self.assertEqual(cfg.start_address, 0x0804846d)
+        self.assertEqual(cfg.end_address, 0x080484a3)
+        self.assertEqual(len(cfg.basic_blocks), 4)
 
         bb_entry = cfg.find_basic_block(0x0804846d)
-        self.assertEquals(len(bb_entry.branches), 2)
-        self.assertEquals(bb_entry.taken_branch, 0x08048491)
-        self.assertEquals(bb_entry.not_taken_branch, 0x0804848a)
+        self.assertEqual(len(bb_entry.branches), 2)
+        self.assertEqual(bb_entry.taken_branch, 0x08048491)
+        self.assertEqual(bb_entry.not_taken_branch, 0x0804848a)
 
         bb_taken = cfg.find_basic_block(0x08048491)
-        self.assertEquals(len(bb_taken.branches), 1)
-        self.assertEquals(bb_taken.taken_branch, None)
-        self.assertEquals(bb_taken.not_taken_branch, None)
-        self.assertEquals(bb_taken.direct_branch, 0x08048496)
+        self.assertEqual(len(bb_taken.branches), 1)
+        self.assertEqual(bb_taken.taken_branch, None)
+        self.assertEqual(bb_taken.not_taken_branch, None)
+        self.assertEqual(bb_taken.direct_branch, 0x08048496)
 
         bb_not_taken = cfg.find_basic_block(0x0804848a)
-        self.assertEquals(len(bb_not_taken.branches), 1)
-        self.assertEquals(bb_not_taken.taken_branch, None)
-        self.assertEquals(bb_not_taken.not_taken_branch, None)
-        self.assertEquals(bb_not_taken.direct_branch, 0x08048496)
+        self.assertEqual(len(bb_not_taken.branches), 1)
+        self.assertEqual(bb_not_taken.taken_branch, None)
+        self.assertEqual(bb_not_taken.not_taken_branch, None)
+        self.assertEqual(bb_not_taken.direct_branch, 0x08048496)
 
         # Recover "func_1" function.
         bbs, call_targets = recoverer.build(0x0804843b, 0x8048453)
 
-        self.assertEquals(len(bbs), 1)
+        self.assertEqual(len(bbs), 1)
 
         cfg = ControlFlowGraph(bbs, name="main")
 
-        self.assertEquals(cfg.start_address, 0x0804843b)
-        self.assertEquals(cfg.end_address, 0x8048453)
-        self.assertEquals(len(cfg.basic_blocks), 1)
+        self.assertEqual(cfg.start_address, 0x0804843b)
+        self.assertEqual(cfg.end_address, 0x8048453)
+        self.assertEqual(len(cfg.basic_blocks), 1)
 
         # Recover "func_2" function.
         bbs, call_targets = recoverer.build(0x08048454, 0x0804846c)
 
-        self.assertEquals(len(bbs), 1)
+        self.assertEqual(len(bbs), 1)
 
         cfg = ControlFlowGraph(bbs, name="main")
 
-        self.assertEquals(cfg.start_address, 0x08048454)
-        self.assertEquals(cfg.end_address, 0x0804846c)
-        self.assertEquals(len(cfg.basic_blocks), 1)
+        self.assertEqual(cfg.start_address, 0x08048454)
+        self.assertEqual(cfg.end_address, 0x0804846c)
+        self.assertEqual(len(cfg.basic_blocks), 1)
 
 
 def main():

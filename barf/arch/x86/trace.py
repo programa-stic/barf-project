@@ -25,6 +25,8 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import codecs
+
 
 def _parse_memory(accesses_string):
     accesses = {}
@@ -43,7 +45,7 @@ def _parse_registers(registers_string):
         reg, value = token.split("=")
 
         if reg.startswith("xmm"):
-            reg_state[reg] = int(value.decode("hex")[::-1].encode("hex"), 16)
+            reg_state[reg] = int(codecs.encode(codecs.decode(value, "hex")[::-1], "hex"), 16)
         else:
             reg_state[reg] = int(value, 16)
 
@@ -95,7 +97,7 @@ def parse_trace(filename, asm_parser, start_address=None):
 
                 if asm:
                     asm.address = instr_addr
-                    asm.bytes = instr_encoding.decode("hex")
+                    asm.bytes = codecs.decode(instr_encoding, "hex")
                     asm.size = len(asm.bytes)
 
                     if asm.prefix and asm.prefix.startswith("rep"):

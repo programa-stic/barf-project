@@ -77,7 +77,7 @@ class CallGraph(object):
 
         paths = networkx.all_simple_paths(self._graph, source=start_address, target=end_address)
 
-        return (map(lambda addr: self._cfg_by_addr[addr], path) for path in paths)
+        return ([self._cfg_by_addr[addr] for addr in path] for path in paths)
 
     def simple_paths_by_address(self, start_address, end_address):
         """Return a list of paths between start and end functions.
@@ -93,7 +93,7 @@ class CallGraph(object):
 
         paths = networkx.all_simple_paths(self._graph, source=start_address, target=end_address)
 
-        return (map(lambda addr: self._cfg_by_addr[addr], path) for path in paths)
+        return ([self._cfg_by_addr[addr] for addr in path] for path in paths)
 
     def find_function_by_name(self, name):
         """Return the cfg of the requested function by name.

@@ -24,6 +24,7 @@
 
 from __future__ import absolute_import
 
+import codecs
 import logging
 
 from barf.core.reil import ReilImmediateOperand
@@ -123,14 +124,14 @@ class InstructionTranslator(object):
     # Auxiliary functions
     # ======================================================================== #
     def _log_not_supported_instruction(self, instruction):
-        logger.info("Instruction not supported: %s (%s [%s])",
+        logger.warning("Instruction not supported: %s (%s [%s])",
                     instruction.mnemonic, instruction,
-                    instruction.bytes.encode('hex'), exc_info=True)
+                    codecs.encode(instruction.bytes, 'hex'), exc_info=True)
 
     def _log_translation_exception(self, instruction):
         logger.error("Error translating instruction: %s (%s [%s])",
                      instruction.mnemonic, instruction,
-                     instruction.bytes.encode('hex'), exc_info=True)
+                     codecs.encode(instruction.bytes, 'hex'), exc_info=True)
 
 
 class TranslationBuilder(object):

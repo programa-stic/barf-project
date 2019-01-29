@@ -98,7 +98,7 @@ class X86TranslationTestCase(unittest.TestCase):
 
         # TODO: Check why PyAsmJIT throws an exception when DF flag is set.
         # Set DF flag to zero.
-        flags = flags & ~(2**bit * flags_mapper["df"])
+        flags = flags & ~(2**flags_mapper["df"])
 
         return flags
 

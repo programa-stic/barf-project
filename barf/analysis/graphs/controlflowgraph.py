@@ -122,7 +122,7 @@ class ControlFlowGraph(object):
 
         paths = networkx.all_simple_paths(self._graph, source=bb_start.address, target=bb_end.address)
 
-        return (map(lambda addr: self._bb_by_addr[addr], path) for path in paths)
+        return ([self._bb_by_addr[addr] for addr in path] for path in paths)
 
     def find_basic_block(self, start):
         bb_rv = None
@@ -293,7 +293,7 @@ class CFGRecover(object):
                 data_chunk = self._memory[addr:min(data_end, end)]
                 asm = self._disasm.disassemble(data_chunk, addr)
             except (DisassemblerError, InvalidAddressError, InvalidDisassemblerData):
-                logger.warn("Error while disassembling @ {:#x}".format(addr), exc_info=True)
+                logger.warning("Error while disassembling @ {:#x}".format(addr), exc_info=True)
                 break
 
             asm.ir_instrs = self._translator.translate(asm)

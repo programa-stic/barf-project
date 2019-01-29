@@ -25,6 +25,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import codecs
 import logging
 import pefile
 
@@ -113,7 +114,7 @@ class Emulator(object):
 
     def set_memory(self, memory):
         for addr, value in memory.items():
-            for i, b in enumerate(bytearray(value.decode("hex"))):
+            for i, b in enumerate(bytearray(codecs.decode(value, 'hex'))):
                 self.ir_emulator.write_memory(addr + i, 1, b)
 
     def add_reil_hook(self, func, param):
@@ -292,7 +293,7 @@ class Emulator(object):
             ip = next_ip if next_ip else container.get_next_address(ip)
 
         # Delete temporal registers.
-        regs = self.ir_emulator.registers.keys()
+        regs = list(self.ir_emulator.registers.keys())
 
         for r in regs:
             # TODO Remove None test.
@@ -317,9 +318,9 @@ class Emulator(object):
     def __fetch_instr(self, next_addr):
         start, end = next_addr, next_addr + self.arch_info.max_instruction_size
 
-        encoding = ""
+        encoding = bytearray()
         for i in range(end - start):
-            encoding += chr(self.ir_emulator.read_memory(start + i, 1))
+            encoding.append(self.ir_emulator.read_memory(start + i, 1))
 
         return encoding
 

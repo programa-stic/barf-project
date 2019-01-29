@@ -39,13 +39,13 @@ from barf.utils.reil import ReilContainerBuilder
 
 def __get_in_array():
     # Taken from: https://github.com/Cr4sh/openreil/blob/master/tests/test_kao.py
-    in_data = ""
+    in_data = bytearray()
     kao_installation_id = '97FF58287E87FB74-979950C854E3E8B3-55A3F121A5590339-6A8DF5ABA981F7CE'
 
     # convert installation ID into the binary form
     for s in kao_installation_id.split('-'):
-        in_data += struct.pack('I', int(s[:8], 16))
-        in_data += struct.pack('I', int(s[8:], 16))
+        in_data.extend(struct.pack('I', int(s[:8], 16)))
+        in_data.extend(struct.pack('I', int(s[8:], 16)))
 
     return in_data
 
@@ -113,7 +113,7 @@ def solve():
     final_state = State(arch_info, mode="final")
 
     # Set the B array
-    out_array_expected = bytearray(__get_out_array())
+    out_array_expected = bytearray(__get_out_array(), encoding='ascii')
 
     for i in range(32):
         # Avoid trivial solution

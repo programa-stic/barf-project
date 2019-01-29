@@ -110,7 +110,7 @@ def print_gadgets_raw(gadgets, f, sort_mode, color, title, show_binary):
             asm_instrs = [str(instr) for instr in gadget.instrs]
 
             if color:
-                asm_instrs = map(lambda s: highlight(s, NasmLexer(), TerminalFormatter()), asm_instrs)
+                asm_instrs = [highlight(s, NasmLexer(), TerminalFormatter()) for s in asm_instrs]
 
             asm_instrs_str = " ; ".join(asm_instrs).replace("\n", "")
 
@@ -483,7 +483,7 @@ def main():
 
             diff = []
 
-            for addr in candidates_by_addr.keys():
+            for addr in candidates_by_addr:
                 if addr not in verified_by_addr and addr not in discarded_by_addr:
                     diff += candidates_by_addr[addr]
 

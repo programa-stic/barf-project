@@ -231,7 +231,7 @@ class ReilMemoryEx(ReilMemory):
     def get_addresses(self):
         """Get accessed addresses.
         """
-        return self._memory.keys()
+        return list(self._memory.keys())
 
     def get_write_count(self):
         """Get number of write operations performed on the memory.

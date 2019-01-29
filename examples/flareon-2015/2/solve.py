@@ -73,7 +73,7 @@ def solve():
     # Set memory
     for i in range(user_password_len):
         initial_state.write_memory(ref_key_addr + i, 1,
-                                   ord(binary.text_section[ref_key_addr + i]))
+                                   binary.text_section[ref_key_addr + i])
 
     #
     # Run concolic execution

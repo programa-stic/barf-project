@@ -35,6 +35,8 @@ representation of the underlying assembly code.
 """
 from __future__ import absolute_import
 
+from functools import reduce
+
 import logging
 
 import barf.core.smt.smtfunction as smtfunction

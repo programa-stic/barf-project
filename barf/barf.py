@@ -432,8 +432,8 @@ class BARF(object):
     def __fetch_instr(self, next_addr):
         start, end = next_addr, next_addr + self.arch_info.max_instruction_size
 
-        encoding = ""
+        encoding = bytearray()
         for i in range(end - start):
-            encoding += chr(self.ir_emulator.read_memory(start + i, 1))
+            encoding.append(self.ir_emulator.read_memory(start + i, 1))
 
         return encoding

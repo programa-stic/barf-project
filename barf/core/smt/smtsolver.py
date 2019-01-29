@@ -76,6 +76,9 @@ class Z3Solver(object):
 
     def _stop_solver(self):
         if self._process:
+            self._process.stdin.close()
+            self._process.stdout.close()
+
             self._process.kill()
             self._process.wait()
 

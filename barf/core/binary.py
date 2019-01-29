@@ -89,21 +89,21 @@ class Memory(object):
     def __getitem__(self, key):
         # TODO: Return bytearray or byte instead of str.
         if isinstance(key, slice):
-            chunck = bytearray()
+            chunk = bytearray()
 
             step = 1 if key.step is None else key.step
 
             try:
                 # Read memory one byte at a time.
                 for addr in range(key.start, key.stop, step):
-                    chunck.append(self._read_byte(addr))
+                    chunk.append(self._read_byte(addr))
             except IndexError:
                 logger.warn("Address out of range: {:#x}".format(addr))
                 raise InvalidAddressError()
 
-            return str(chunck)
+            return chunk
         elif isinstance(key, int) or isinstance(key, long):
-            return chr(self._read_byte(key))
+            return self._read_byte(key)
         else:
             raise TypeError("Invalid argument type: {}".format(type(key)))
 
@@ -248,9 +248,9 @@ class BinaryFile(object):
                 request.set_sect_properties(section.header.sh_addr,
                                             section.header.sh_size)
                 if mem:
-                    mem.add_vma(section.header.sh_addr, bytearray(section.data()))
+                    mem.add_vma(section.header.sh_addr, section.data())
                 else:
-                    request.memory.add_vma(section.header.sh_addr, bytearray(section.data()))
+                    request.memory.add_vma(section.header.sh_addr, section.data())
 
     def _open_elf(self, filename):
         f = open(filename, 'rb')
@@ -296,8 +296,8 @@ class BinaryFile(object):
                 data_addrs_start.append(start)
                 data_addrs_ends.append(start + size)
 
-        text_section_start, text_section_end = text.get_sect_properties()
-        text_section_end += text_section_start
+        text_section_start, text_section_size = text.get_sect_properties()
+        text_section_end = text_section_start + text_section_size
 
         self._section_text_start = text_section_start
         self._section_text_end = text_section_end - 1
@@ -325,7 +325,7 @@ class BinaryFile(object):
         found = False
 
         for idx, section in enumerate(pe.sections):
-            if section.Name.replace("\x00", ' ').strip() == ".text":
+            if section.Name.replace(b'\x00', b' ').strip() == b'.text':
                 found = True
 
                 text_section_start = pe.OPTIONAL_HEADER.ImageBase + section.VirtualAddress

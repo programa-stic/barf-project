@@ -412,7 +412,7 @@ class ReilSymbolicEmulator(object):
             not_taken_addr = next_addr
             address, index = split_address(instr.address)
 
-            logger.debug("[+] Processing branch: {:#08x}:{:02x} : {:s}".format(address, index, instr))
+            logger.debug("[+] Processing branch: {:#08x}:{:02x} : {}".format(address, index, instr))
 
             # Process conditional branch (oprnd0 is a REGISTER).
             if isinstance(instr.operands[0], ReilRegisterOperand):

@@ -65,12 +65,12 @@ if __name__ == "__main__":
 
         # Set argv.
         argv_0_addr = 0x00001900
-        argv_0_data = bytearray(filename + "\x00")
+        argv_0_data = bytearray(filename + "\x00", encoding='ascii')
         for i, b in enumerate(argv_0_data):
             reil_emulator.write_memory(argv_0_addr + i, 1, b)
 
         argv_1_addr = argv_0_addr + len(argv_0_data)
-        argv_1_data = bytearray(arg + "\x00")
+        argv_1_data = bytearray(arg + "\x00", encoding='ascii')
         for i, b in enumerate(argv_1_data):
             reil_emulator.write_memory(argv_1_addr + i, 1, b)
 
