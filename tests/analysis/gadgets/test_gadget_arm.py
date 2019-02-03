@@ -345,29 +345,28 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
 
-    # TODO: Find out why this test takes so long to complete.
-    # def test_arithmetic_load_add_2(self):
-    #     # testing : dst_reg <- dst_reg + mem[src_reg + offset]
-    #     binary  = b"\x22\x30\x94\xe5"                     # 0x00 : (4)  ldr    r3, [r4, 0x22]
-    #     binary += b"\x03\x00\x80\xe0"                     # 0x00 : (4)  add    r0, r0, r3
-    #     binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
+    def test_arithmetic_load_add_2(self):
+        # testing : dst_reg <- dst_reg + mem[src_reg + offset]
+        binary  = b"\x22\x30\x94\xe5"                     # 0x00 : (4)  ldr    r3, [r4, 0x22]
+        binary += b"\x03\x00\x80\xe0"                     # 0x00 : (4)  add    r0, r0, r3
+        binary += b"\x1e\xff\x2f\xe1"                     # 0x04 : (4)  bx     lr
 
-    #     g_candidates, g_classified = self._find_and_classify_gadgets(binary)
+        g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-    #     self.assertEqual(len(g_candidates), 1)
-    #     self.assertEqual(len(g_classified), 2)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 2)
 
-    #     self.assertEqual(g_classified[1].type, GadgetType.ArithmeticLoad)
-    #     self.assertEqual(g_classified[1].sources, [ReilRegisterOperand("r0", 32), ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x22, 32)])
-    #     self.assertEqual(g_classified[1].destination, [ReilRegisterOperand("r0", 32)])
-    #     self.assertEqual(g_classified[1].operation, "+")
+        self.assertEqual(g_classified[0].type, GadgetType.ArithmeticLoad)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("r0", 32), ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x22, 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r0", 32)])
+        self.assertEqual(g_classified[0].operation, "+")
 
-    #     self.assertEqual(len(g_classified[1].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
-    #     self.assertFalse(ReilRegisterOperand("r0", 32) in g_classified[1].modified_registers)
-    #     self.assertTrue(ReilRegisterOperand("r3", 32) in g_classified[1].modified_registers)
+        self.assertFalse(ReilRegisterOperand("r0", 32) in g_classified[0].modified_registers)
+        self.assertTrue(ReilRegisterOperand("r3", 32) in g_classified[0].modified_registers)
 
-    #     self.assertTrue(self._g_verifier.verify(g_classified[1]))
+        self.assertTrue(self._g_verifier.verify(g_classified[0]))
 
     def test_arithmetic_store_add_1(self):
         # testing : m[dst_reg] <- m[dst_reg] + src_reg

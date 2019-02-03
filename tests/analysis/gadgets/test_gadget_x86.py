@@ -512,32 +512,29 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
-    # def test_load_memory_6(self):
-    #     # FIXME:
-    #     # testing : dst_reg <- m[dst_reg + offset]
-    #     binary  = b"\x5c\xc3" # pop esp ; ret
+    def test_load_memory_6(self):
+        # testing : dst_reg <- m[dst_reg + offset]
+        binary  = b"\x8b\x89\x00\x01\x00\x00"  # 0x00 : (6) mov ecx, dword ptr [ecx+0x100]
+        binary += b"\xc3"                      # 0x06 : (1) ret
 
-    #     # binary  = b"\x8b\x89\x00\x01\x00\x00"  # 0x00 : (6) mov ecx, dword ptr [ecx+0x100]
-    #     # binary += b"\xc3"                      # 0x06 : (1) ret
+        g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
-    #     g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
+        g_candidates = g_finder.find(0x00000000, 0x00000006)
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
-    #     g_candidates = g_finder.find(0x00000000, 0x00000001)
-    #     g_classified = self._g_classifier.classify(g_candidates[0])
+        # self.print_candidates(g_candidates)
+        # self.print_classified(g_classified)
 
-    #     self.print_candidates(g_candidates)
-    #     self.print_classified(g_classified)
+        self.assertEqual(len(g_candidates), 2)
+        self.assertEqual(len(g_classified), 1)
 
-    #     self.assertEqual(len(g_candidates), 2)
-    #     self.assertEqual(len(g_classified), 1)
+        self.assertEqual(g_classified[0].type, GadgetType.LoadMemory)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x100, 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
 
-    #     self.assertEqual(g_classified[0].type, GadgetType.LoadMemory)
-    #     self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x100, 32)])
-    #     self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
-    #     self.assertEqual(len(g_classified[0].modified_registers), 0)
-
-    #     self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
+        self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
 
     def test_store_memory_1(self):
         # testing : m[dst_reg] <- src_reg
