@@ -44,6 +44,7 @@ from barf.analysis.gadgets import TypedGadget
 from barf.core.reil import ReilEmptyOperand
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
+from barf.utils.utils import extract_value
 
 
 class GadgetClassifier(object):
@@ -726,19 +727,10 @@ class GadgetClassifier(object):
 
             if base_reg_name:
                 reg_value = registers[base_reg_name]
-                reg_value = self._extract_value(reg_value, offset, self._arch_info.registers_size[reg])
+                reg_value = extract_value(reg_value, offset, self._arch_info.registers_size[reg])
             else:
                 reg_value = registers[reg]
 
             regs_full[reg] = reg_value
 
         return regs_full
-
-    def _extract_value(self, main_value, offset, size):
-        return (main_value >> offset) & 2**size-1
-
-    def _insert_value(self, main_value, value_to_insert, offset, size):
-        main_value &= ~((2**size-1) << offset)
-        main_value |= (value_to_insert & 2**size-1) << offset
-
-        return main_value
