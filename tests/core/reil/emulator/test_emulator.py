@@ -22,6 +22,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 import unittest
 
 from barf.arch import ARCH_X86_MODE_32
@@ -121,19 +123,19 @@ class ReilEmulatorTests(unittest.TestCase):
 
         self.assertEqual(regs_final["eax"], 0xdead3412)
 
-    def test_pre_hanlder(self):
-        def pre_hanlder(emulator, instruction, parameter):
+    def test_pre_handler(self):
+        def pre_handler(emulator, instruction, parameter):
             paramter.append(True)
 
         asm = ["mov eax, ebx"]
 
-        x86_instrs = map(self._asm_parser.parse, asm)
+        x86_instrs = [self._asm_parser.parse(i) for i in asm]
         self.__set_address(0xdeadbeef, x86_instrs)
-        reil_instrs = map(self._translator.translate, x86_instrs)
+        reil_instrs = [self._translator.translate(i) for i in x86_instrs]
 
         paramter = []
 
-        self._emulator.set_instruction_pre_handler(pre_hanlder, paramter)
+        self._emulator.set_instruction_pre_handler(pre_handler, paramter)
 
         reil_ctx_out, reil_mem_out = self._emulator.execute_lite(
             reil_instrs[0]
@@ -141,19 +143,19 @@ class ReilEmulatorTests(unittest.TestCase):
 
         self.assertTrue(len(paramter) > 0)
 
-    def test_post_hanlder(self):
-        def post_hanlder(emulator, instruction, parameter):
+    def test_post_handler(self):
+        def post_handler(emulator, instruction, parameter):
             paramter.append(True)
 
         asm = ["mov eax, ebx"]
 
-        x86_instrs = map(self._asm_parser.parse, asm)
+        x86_instrs = [self._asm_parser.parse(i) for i in asm]
         self.__set_address(0xdeadbeef, x86_instrs)
-        reil_instrs = map(self._translator.translate, x86_instrs)
+        reil_instrs = [self._translator.translate(i) for i in x86_instrs]
 
         paramter = []
 
-        self._emulator.set_instruction_post_handler(post_hanlder, paramter)
+        self._emulator.set_instruction_post_handler(post_handler, paramter)
 
         _, _ = self._emulator.execute_lite(
             reil_instrs[0]

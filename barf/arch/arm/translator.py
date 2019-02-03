@@ -22,6 +22,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 import logging
 
 import barf.arch.arm.translators as translators
@@ -59,7 +61,6 @@ from barf.arch.translator import InstructionTranslator
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
 from barf.core.reil.builder import ReilBuilder
-from barf.utils.utils import VariableNamer
 
 logger = logging.getLogger(__name__)
 
@@ -365,9 +366,9 @@ class ArmTranslator(InstructionTranslator):
             unkn_instr.address = instruction.address << 8 | (0x0 & 0xff)
             trans_instrs = [unkn_instr]
 
-            self.__log_not_supported_instruction(instruction)
+            self._log_not_supported_instruction(instruction)
         except Exception:
-            self.__log_translation_exception(instruction)
+            self._log_translation_exception(instruction)
 
             raise
 

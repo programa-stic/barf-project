@@ -22,6 +22,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 from barf.core.reil.helpers import split_address
 from barf.core.reil.helpers import to_asm_address
 
@@ -122,7 +125,7 @@ class ReilContainer(object):
     def fetch(self, address):
         base_addr, index = split_address(address)
 
-        if base_addr not in self.__container.keys():
+        if base_addr not in self.__container:
             raise ReilContainerInvalidAddressError()
 
         return self.__container[base_addr].get(index)
@@ -130,7 +133,7 @@ class ReilContainer(object):
     def fetch_sequence(self, address):
         base_addr, index = split_address(address)
 
-        if base_addr not in self.__container.keys():
+        if base_addr not in self.__container:
             raise ReilContainerInvalidAddressError()
 
         return self.__container[base_addr]
@@ -138,7 +141,7 @@ class ReilContainer(object):
     def get_next_address(self, address):
         base_addr, index = split_address(address)
 
-        if base_addr not in self.__container.keys():
+        if base_addr not in self.__container:
             raise Exception("Invalid address.")
 
         addr = address

@@ -22,6 +22,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 import unittest
 
 from barf.core.reil.parser import ReilParser
@@ -120,7 +122,7 @@ class SmtSolverBitVecTests(unittest.TestCase):
         self._solver.declare_fun("y", y)
         self._solver.declare_fun("z", z)
 
-        self._solver.add(x / y == z)
+        self._solver.add(x // y == z)
 
         # Add constraints to avoid trivial solutions.
         self._solver.add(x > 1)
@@ -133,7 +135,7 @@ class SmtSolverBitVecTests(unittest.TestCase):
         y_val = self._solver.get_value(y)
         z_val = self._solver.get_value(z)
 
-        self.assertTrue(x_val / y_val == z_val)
+        self.assertTrue(x_val // y_val == z_val)
 
     def test_mod(self):
         x = BitVec(32, "x")

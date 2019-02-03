@@ -22,6 +22,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 import logging
 import pefile
 
@@ -89,7 +91,7 @@ def load_symbols(filename):
     except:
         raise Exception("Error loading file.")
 
-    if signature[:4] == "\x7f\x45\x4c\x46":
+    if signature[:4] == b"\x7f\x45\x4c\x46":
         symbols = load_symbols_elf(filename)
     elif signature[:2] == b'\x4d\x5a':
         symbols = load_symbols_pe(filename)

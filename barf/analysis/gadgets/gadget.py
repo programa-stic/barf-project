@@ -32,6 +32,7 @@ more gadgets type. At this point, a TypedGadget object is created for
 each classified type and the RawGadget object is associated with them.
 
 """
+from __future__ import absolute_import
 
 from barf.core.reil import ReilEmptyOperand
 from barf.core.reil import ReilImmediateOperand
@@ -230,6 +231,16 @@ class TypedGadget(RawGadget):
         """
         self._operation = value
 
+    def __key(self):
+        return (self._gadget,
+                self._sources,
+                self._destination,
+                self._modified_regs,
+                self._gadget_type,
+                self._verified,
+                self._is_valid,
+                self._operation)
+
     def __str__(self):
         strings = {
             GadgetType.NoOperation:     dump_no_operation,
@@ -262,6 +273,9 @@ class TypedGadget(RawGadget):
     def __ne__(self, other):
         """Return self != other."""
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.__key())
 
     # Misc
     # ======================================================================== #

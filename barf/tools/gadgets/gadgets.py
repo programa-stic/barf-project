@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 # Copyright (c) 2014, Fundacion Dr. Manuel Sadosky
 # All rights reserved.
 
@@ -24,6 +22,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
 from __future__ import print_function
 
 import argparse
@@ -111,7 +110,7 @@ def print_gadgets_raw(gadgets, f, sort_mode, color, title, show_binary):
             asm_instrs = [str(instr) for instr in gadget.instrs]
 
             if color:
-                asm_instrs = map(lambda s: highlight(s, NasmLexer(), TerminalFormatter()), asm_instrs)
+                asm_instrs = [highlight(s, NasmLexer(), TerminalFormatter()) for s in asm_instrs]
 
             asm_instrs_str = " ; ".join(asm_instrs).replace("\n", "")
 
@@ -194,9 +193,9 @@ def print_gadgets_typed(gadgets, f, address_size, title):
         # Tile and table formats.
         table_title_fmt = "# {0} ({1} gadgets{2})"
         table_ruler_fmt = "{0}"
-        table_header_fmt = " {0:^%ds} | {1:^%ds} | {2:^%ds} | {3:^%ds} " % (address_size / 4 + 2, lhand_max + rhand_max + 4, mods_max, instrs_max)
+        table_header_fmt = " {0:^%ds} | {1:^%ds} | {2:^%ds} | {3:^%ds} " % (address_size // 4 + 2, lhand_max + rhand_max + 4, mods_max, instrs_max)
         table_footer_fmt = "{0}"
-        table_row_fmt = " 0x{addr:0%dx} | {lhand:>%ds} <- {rhand:<%ds} | {mods:<%ds} | {instrs} " % (address_size / 4, lhand_max, rhand_max, max(mods_max, len("Clobbered Registers")))
+        table_row_fmt = " 0x{addr:0%dx} | {lhand:>%ds} <- {rhand:<%ds} | {mods:<%ds} | {instrs} " % (address_size // 4, lhand_max, rhand_max, max(mods_max, len("Clobbered Registers")))
 
         table_title = table_title_fmt.format(GadgetType.to_string(ty), len(gadget_list), "" if len(gadget_list) == 1 else "s")
         table_header = table_header_fmt.format("Address", "Operation", "Clobbered Registers", "Instructions")
@@ -484,7 +483,7 @@ def main():
 
             diff = []
 
-            for addr in candidates_by_addr.keys():
+            for addr in candidates_by_addr:
                 if addr not in verified_by_addr and addr not in discarded_by_addr:
                     diff += candidates_by_addr[addr]
 

@@ -22,7 +22,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from cpu import *
-from tainter import *
-from memory import *
-from emulator import *
+from __future__ import absolute_import
+
+from .cpu import *
+from .tainter import *
+from .memory import *
+from .emulator import *

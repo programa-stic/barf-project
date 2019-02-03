@@ -22,6 +22,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 import argparse
 import sys
 
@@ -41,7 +44,6 @@ from barf.arch.x86.helpers import compare_contexts
 from barf.arch.x86.helpers import fix_flags
 from barf.arch.x86.helpers import print_contexts
 from barf.arch.x86.parser import X86Parser
-from barf.arch.x86.trace import AsmTrace
 from barf.arch.x86.trace import AsmTraceAnalyzer
 from barf.arch.x86.trace import parse_trace
 from barf.arch.x86.translator import X86Translator

@@ -22,6 +22,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+from __future__ import print_function
+
+import codecs
 import logging
 import pefile
 
@@ -36,7 +40,6 @@ from barf.core.reil import ReilMnemonic
 from barf.core.reil.container import ReilContainer
 from barf.core.reil.container import ReilContainerInvalidAddressError
 from barf.core.reil.container import ReilSequence
-from barf.core.reil.emulator import ReilEmulator
 from barf.core.reil.helpers import split_address
 from barf.core.reil.helpers import to_asm_address
 from barf.core.reil.helpers import to_reil_address
@@ -111,7 +114,7 @@ class Emulator(object):
 
     def set_memory(self, memory):
         for addr, value in memory.items():
-            for i, b in enumerate(bytearray(value.decode("hex"))):
+            for i, b in enumerate(bytearray(codecs.decode(value, 'hex'))):
                 self.ir_emulator.write_memory(addr + i, 1, b)
 
     def add_reil_hook(self, func, param):
@@ -290,7 +293,7 @@ class Emulator(object):
             ip = next_ip if next_ip else container.get_next_address(ip)
 
         # Delete temporal registers.
-        regs = self.ir_emulator.registers.keys()
+        regs = list(self.ir_emulator.registers.keys())
 
         for r in regs:
             # TODO Remove None test.
@@ -315,9 +318,9 @@ class Emulator(object):
     def __fetch_instr(self, next_addr):
         start, end = next_addr, next_addr + self.arch_info.max_instruction_size
 
-        encoding = ""
-        for i in xrange(end - start):
-            encoding += chr(self.ir_emulator.read_memory(start + i, 1))
+        encoding = bytearray()
+        for i in range(end - start):
+            encoding.append(self.ir_emulator.read_memory(start + i, 1))
 
         return encoding
 

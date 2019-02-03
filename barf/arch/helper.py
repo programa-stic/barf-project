@@ -22,6 +22,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 from barf.arch.arm import ArmImmediateOperand
 from barf.arch.x86 import X86ImmediateOperand
 from barf.core.reil.builder import ReilBuilder

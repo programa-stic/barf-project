@@ -22,6 +22,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
+from past.builtins import long
+
 
 def _cast_to_bool(value):
     if type(value) is bool:
@@ -93,6 +97,12 @@ class Bool(Symbol):
     def __rxor__(self, other):
         return Bool("xor", _cast_to_bool(other), self)
 
+    def __key(self):
+        return (self._value,)
+
+    def __hash__(self):
+        return hash(self.key())
+
 
 class BitVec(Symbol):
 
@@ -118,6 +128,9 @@ class BitVec(Symbol):
     def __div__(self, other):
         return BitVec(self.size, "bvsdiv", self, _cast_to_bitvec(other, self.size))
 
+    def __floordiv__(self, other):
+        return BitVec(self.size, "bvsdiv", self, _cast_to_bitvec(other, self.size))
+
     def __mod__(self, other):
         return BitVec(self.size, "bvsmod", self, _cast_to_bitvec(other, self.size))
 
@@ -135,6 +148,9 @@ class BitVec(Symbol):
         return BitVec(self.size, "bvmul", _cast_to_bitvec(other, self.size), self)
 
     def __rdiv__(self, other):
+        return BitVec(self.size, "bvsdiv", _cast_to_bitvec(other, self.size), self)
+
+    def __rfloordiv__(self, other):
         return BitVec(self.size, "bvsdiv", _cast_to_bitvec(other, self.size), self)
 
     def __rmod__(self, other):
@@ -214,6 +230,12 @@ class BitVec(Symbol):
     def umod(self, other):
         return BitVec(self.size, "bvurem", self, _cast_to_bitvec(other, self.size))
 
+    def __key(self):
+        return (self._value, self.size)
+
+    def __hash__(self):
+        return hash(self.key())
+
 
 class Constant(BitVec):
 
@@ -228,9 +250,9 @@ class Constant(BitVec):
 
         # Format number, choose between binary and hexadecimal notation.
         if size < 8:
-            value_str = "#b{0:0{fill}b}".format(value, fill=size / 1)
+            value_str = "#b{0:0{fill}b}".format(value, fill=size // 1)
         else:
-            value_str = "#x{0:0{fill}x}".format(value, fill=size / 4)
+            value_str = "#x{0:0{fill}x}".format(value, fill=size // 4)
 
         return value_str
 
@@ -284,3 +306,11 @@ class BitVecArray(object):
         assert other.array.key_size == self.array.key_size and other.array.value_size == self.array.value_size
 
         return Bool("not", self.__eq__(other))
+
+    def __key(self):
+        return (self._value,
+                self.key_size,
+                self.value_size)
+
+    def __hash__(self):
+        return hash(self.key())

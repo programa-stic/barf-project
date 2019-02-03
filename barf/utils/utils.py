@@ -55,7 +55,7 @@ def read_c_string(emulator, address, max_length=1024):
 
 
 def write_c_string(emulator, address, string):
-    for i, b in enumerate(bytearray(string + "\x00")):
+    for i, b in enumerate(bytearray(string + "\x00", encoding='ascii')):
         emulator.write_memory(address + i, 1, b)
 
 
@@ -108,13 +108,13 @@ class ExecutionCache(object):
 
     def add(self, address, instruction, container):
         # NOTE Does not take into account self modifying code.
-        if address in self.__container.keys():
+        if address in self.__container:
             raise Exception("Invalid instruction")
 
         self.__container[address] = (instruction, container)
 
     def retrieve(self, address):
-        if address not in self.__container.keys():
+        if address not in self.__container:
             # print("cache miss!")
             raise InvalidAddressError()
 

@@ -27,6 +27,8 @@ This modules contains a ARM disassembler based on the Capstone
 disassembly framework.
 
 """
+from __future__ import absolute_import
+
 import logging
 
 from capstone import CS_ARCH_ARM
@@ -225,7 +227,7 @@ class ArmDisassembler(Disassembler):
     def _cs_disassemble_one(self, data, address):
         """Disassemble the data into an instruction in string form.
         """
-        disasm = list(self._disassembler.disasm(data, address))
+        disasm = list(self._disassembler.disasm(bytes(data), address))
 
         # TODO: Improve this check.
         if len(disasm) > 0:
@@ -233,7 +235,7 @@ class ArmDisassembler(Disassembler):
         else:
             cs_arm = Cs(CS_ARCH_ARM, CS_MODE_ARM)
             cs_arm.detail = True
-            disasm = list(cs_arm.disasm(data, address))
+            disasm = list(cs_arm.disasm(bytes(data), address))
 
             if len(disasm) > 0:
                 return disasm[0]

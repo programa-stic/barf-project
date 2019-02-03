@@ -22,6 +22,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 from barf.arch.arm import ARM_LDM_STM_DA
 from barf.arch.arm import ARM_LDM_STM_DB
 from barf.arch.arm import ARM_LDM_STM_FD

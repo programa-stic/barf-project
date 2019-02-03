@@ -1,5 +1,8 @@
 #! /usr/bin/env python
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 import logging
 
 from barf import BARF
@@ -130,7 +133,7 @@ if __name__ == "__main__":
     for bb_path in cfg.all_simple_bb_paths(start_addr, end_addr):
         print("[+] Path: {0}".format(" -> ".join([hex(bb.address) for bb in bb_path])))
 
-        if check_path_satisfiability(barf.code_analyzer, bb_path, start_addr):
+        if check_path_satisfiability(barf.code_analyzer, list(bb_path), start_addr):
             print("[+] Satisfiable! Possible assignments:")
 
             ebp = barf.code_analyzer.get_register_expr("ebp", mode="post")

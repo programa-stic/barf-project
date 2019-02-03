@@ -22,6 +22,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 import random
 
 from barf.core.reil import ReilImmediateOperand
@@ -333,7 +336,7 @@ class ReilCpu(object):
         else:
             op1_tmp = op1_val
 
-        result_tmp = op0_tmp / op1_tmp
+        result_tmp = op0_tmp // op1_tmp
 
         if result_sign == 0x1:
             result = twos_complement(result_tmp, result_size)
@@ -382,9 +385,9 @@ class ReilCpu(object):
         op_map = {
             ReilMnemonic.ADD: lambda a, b: a + b,
             ReilMnemonic.SUB: lambda a, b: a - b,
-            ReilMnemonic.MUL: lambda a, b: a * b,  # unsigned multiplication
-            ReilMnemonic.DIV: lambda a, b: a / b,  # unsigned division
-            ReilMnemonic.MOD: lambda a, b: a % b,  # unsigned modulo
+            ReilMnemonic.MUL: lambda a, b: a * b,   # unsigned multiplication
+            ReilMnemonic.DIV: lambda a, b: a // b,  # unsigned division
+            ReilMnemonic.MOD: lambda a, b: a % b,   # unsigned modulo
 
             ReilMnemonic.AND: lambda a, b: a & b,
             ReilMnemonic.OR:  lambda a, b: a | b,
@@ -421,7 +424,7 @@ class ReilCpu(object):
         # Memory address.
         op0_val = self.read_operand(instr.operands[0])
         # Data.
-        op2_val = self.read_memory(op0_val, instr.operands[2].size / 8)
+        op2_val = self.read_memory(op0_val, instr.operands[2].size // 8)
 
         self.write_operand(instr.operands[2], op2_val)
 
@@ -438,7 +441,7 @@ class ReilCpu(object):
 
         op0_size = instr.operands[0].size
 
-        self.write_memory(op2_val, op0_size / 8, op0_val)
+        self.write_memory(op2_val, op0_size // 8, op0_val)
 
         return None
 

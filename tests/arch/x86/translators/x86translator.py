@@ -22,6 +22,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 import os
 import pickle
 import random
@@ -96,7 +98,7 @@ class X86TranslationTestCase(unittest.TestCase):
 
         # TODO: Check why PyAsmJIT throws an exception when DF flag is set.
         # Set DF flag to zero.
-        flags = flags & ~(2**bit * flags_mapper["df"])
+        flags = flags & ~(2**flags_mapper["df"])
 
         return flags
 

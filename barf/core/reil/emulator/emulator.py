@@ -44,6 +44,7 @@ ReilMemory
 Byte addressable memory based on a dictionary.
 
 """
+from __future__ import absolute_import
 
 import logging
 

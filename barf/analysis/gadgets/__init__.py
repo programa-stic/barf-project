@@ -22,12 +22,13 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from gadget import GadgetType
-from gadget import RawGadget
-from gadget import TypedGadget
+from __future__ import absolute_import
 
-from classifier import GadgetClassifier
+# NOTE: Keep this import order, there a dependency issue.
+from .gadget import GadgetType
+from .gadget import RawGadget
+from .gadget import TypedGadget
 
-from finder import GadgetFinder
-
-from verifier import GadgetVerifier
+from .classifier import GadgetClassifier
+from .finder import GadgetFinder
+from .verifier import GadgetVerifier

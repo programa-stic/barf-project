@@ -31,6 +31,10 @@ Some more work is needed to make this algorithm truly architecture
 agnostic.
 
 """
+from __future__ import absolute_import
+
+from past.builtins import xrange
+
 import re
 
 from barf.analysis.gadgets import RawGadget
@@ -80,7 +84,8 @@ class GadgetFinder(object):
         else:
             raise Exception("Architecture not supported.")
 
-        return candidates
+        # Sort and return.
+        return sorted(candidates, key=lambda g: g.address)
 
     # Auxiliary functions
     # ======================================================================== #
@@ -93,12 +98,12 @@ class GadgetFinder(object):
         for addr in xrange(start_address, end_address + 1):
             # TODO: Make this 'speed improvement' architecture-agnostic
             op_codes = [
-                "\xc3",     # RET
-                "\xc2",     # RET imm16
-                "\xeb",     # JMP rel8
-                "\xe8",     # CALL rel{16,32}
-                "\xe9",     # JMP rel{16,32}
-                "\xff",     # JMP/CALL r/m{16,32,64}
+                0xc3,     # RET
+                0xc2,     # RET imm16
+                0xeb,     # JMP rel8
+                0xe8,     # CALL rel{16,32}
+                0xe9,     # JMP rel{16,32}
+                0xff,     # JMP/CALL r/m{16,32,64}
             ]
 
             if self._mem[addr] not in op_codes:
@@ -175,9 +180,9 @@ class GadgetFinder(object):
 
         # From ROPgadget:
         free_jump_gadgets = [
-            "[\x10-\x19\x1e]{1}\xff\x2f\xe1",  # bx   reg
-            "[\x30-\x39\x3e]{1}\xff\x2f\xe1",  # blx  reg
-            "[\x00-\xff]{1}\x80\xbd\xe8",       # pop {,pc}
+            b"[\x10-\x19\x1e]{1}\xff\x2f\xe1",  # bx   reg
+            b"[\x30-\x39\x3e]{1}\xff\x2f\xe1",  # blx  reg
+            b"[\x00-\xff]{1}\x80\xbd\xe8",      # pop {,pc}
         ]
 
         # find gadgets tail
@@ -189,7 +194,7 @@ class GadgetFinder(object):
             # TODO: Evaluate performance
             gad_found = False
             for gad in free_jump_gadgets:
-                if len(re.findall(gad, "".join(self._mem[addr:min(addr+4, end_address + 1)]))) > 0:     # TODO: Add thumb (+2)
+                if len(re.findall(gad, self._mem[addr:min(addr+4, end_address + 1)])) > 0:     # TODO: Add thumb (+2)
                     gad_found = True
                     break
             if not gad_found:

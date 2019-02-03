@@ -83,7 +83,7 @@ class X86Disassembler(Disassembler):
         """
         asm, size = "", 0
 
-        disasm = list(self._disassembler.disasm_lite(data, address))
+        disasm = list(self._disassembler.disasm_lite(bytes(data), address))
 
         if len(disasm) > 0:
             address, size, mnemonic, op_str = disasm[0]

@@ -44,6 +44,8 @@ t2_0 (bvadd t0_1 t1_0))". It also send the following commands to the solver:
 (assert (= t2_0 (bvadd t1_0 t2_0)))
 
 """
+from __future__ import absolute_import
+
 import logging
 
 import barf.core.smt.smtfunction as smtfunction
@@ -524,8 +526,8 @@ class SmtTranslator(object):
 
         exprs = []
 
-        for i in reversed(xrange(0, oprnd3.size, 8)):
-            exprs += [self._mem_curr[op1_var + i / 8] == smtfunction.extract(op3_var, i, 8)]
+        for i in reversed(range(0, oprnd3.size, 8)):
+            exprs += [self._mem_curr[op1_var + i // 8] == smtfunction.extract(op3_var, i, 8)]
 
         return exprs + op3_var_constrs
 
@@ -538,8 +540,8 @@ class SmtTranslator(object):
         op1_var = self._translate_src_oprnd(oprnd1)
         op3_var = self._translate_src_oprnd(oprnd3)
 
-        for i in xrange(0, oprnd1.size, 8):
-            self._mem_curr[op3_var + i/8] = smtfunction.extract(op1_var, i, 8)
+        for i in range(0, oprnd1.size, 8):
+            self._mem_curr[op3_var + i//8] = smtfunction.extract(op1_var, i, 8)
 
         # Memory versioning.
         self._mem_instance += 1
@@ -642,11 +644,11 @@ class SmtTranslator(object):
             op1_var_sx = smtfunction.sign_extend(op1_var, oprnd3.size)
             op2_var_sx = smtfunction.sign_extend(op2_var, oprnd3.size)
 
-            result = op1_var_sx / op2_var_sx
+            result = op1_var_sx // op2_var_sx
         elif oprnd3.size < oprnd1.size:
-            result = smtfunction.extract(op1_var / op2_var, 0, oprnd3.size)
+            result = smtfunction.extract(op1_var // op2_var, 0, oprnd3.size)
         else:
-            result = op1_var / op2_var
+            result = op1_var // op2_var
 
         return [op3_var == result] + op3_var_constrs
 

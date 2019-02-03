@@ -22,11 +22,13 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 import platform
 import pyasmjit
 import unittest
 
-from x86translator import X86TranslationTestCase
+from .x86translator import X86TranslationTestCase
 
 
 @unittest.skipUnless(platform.machine().lower() == 'x86_64',

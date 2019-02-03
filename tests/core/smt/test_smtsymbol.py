@@ -22,6 +22,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 import unittest
 
 from barf.core.smt.smtsymbol import Bool
@@ -142,9 +144,9 @@ class BitVecTests(unittest.TestCase):
     def test_div(self):
         x = BitVec(32, "x")
         y = BitVec(32, "y")
-        z = x / y
-        v = x / 1
-        w = 1 / x
+        z = x // y
+        v = x // 1
+        w = 1 // x
 
         self.assertEqual(z.value, "(bvsdiv x y)")
         self.assertEqual(v.value, "(bvsdiv x #x00000001)")

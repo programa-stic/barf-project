@@ -26,6 +26,7 @@ from __future__ import absolute_import
 
 from barf.arch import ARCH_X86_MODE_32
 from barf.arch import ARCH_X86_MODE_64
+from barf.arch.helper import negate_reg
 from barf.arch.x86 import X86RegisterOperand
 from barf.arch.x86.translators.helpers import X86ConditionCodeHelper
 from barf.core.reil import ReilImmediateOperand

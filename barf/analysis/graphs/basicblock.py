@@ -223,6 +223,16 @@ class BasicBlock(object):
         """
         return len(self._instrs) == 0
 
+    def __key(self):
+        return (self._instrs,
+                self._address,
+                self._taken_branch,
+                self._not_taken_branch,
+                self._direct_branch,
+                self._label,
+                self._is_entry,
+                self._is_exit)
+
     def __str__(self):
         lines = ["Basic Block @ {:#x}".format(self.address if self.address else 0)]
 
@@ -243,6 +253,9 @@ class BasicBlock(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.__key())
 
     def __iter__(self):
         for instr in self._instrs:

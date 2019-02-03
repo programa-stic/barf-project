@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+from __future__ import absolute_import
+
 from setuptools import setup
 from setuptools import find_packages
 
@@ -12,6 +14,7 @@ setup(
     download_url     = 'https://github.com/programa-stic/barf-project/tarball/v' + __version__,
     install_requires = [
         'capstone>=3.0.5rc2',
+        'future',
         'networkx',
         'pefile',
         'pydot',

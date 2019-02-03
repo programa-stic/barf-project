@@ -22,6 +22,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
 import logging
 
 import barf.core.smt.smtfunction as smtfunction
@@ -99,7 +101,7 @@ class CodeAnalyzer(object):
         """
         mem = self.get_memory(mode)
 
-        return smtfunction.concat(8, *reversed([mem[address + i] for i in xrange(size)]))
+        return smtfunction.concat(8, *reversed([mem[address + i] for i in range(size)]))
 
     def get_memory(self, mode):
         """Return a smt bit vector that represents a memory location.
