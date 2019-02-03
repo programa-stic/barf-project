@@ -97,6 +97,12 @@ class Bool(Symbol):
     def __rxor__(self, other):
         return Bool("xor", _cast_to_bool(other), self)
 
+    def __key(self):
+        return (self._value,)
+
+    def __hash__(self):
+        return hash(self.key())
+
 
 class BitVec(Symbol):
 
@@ -224,6 +230,12 @@ class BitVec(Symbol):
     def umod(self, other):
         return BitVec(self.size, "bvurem", self, _cast_to_bitvec(other, self.size))
 
+    def __key(self):
+        return (self._value, self.size)
+
+    def __hash__(self):
+        return hash(self.key())
+
 
 class Constant(BitVec):
 
@@ -294,3 +306,11 @@ class BitVecArray(object):
         assert other.array.key_size == self.array.key_size and other.array.value_size == self.array.value_size
 
         return Bool("not", self.__eq__(other))
+
+    def __key(self):
+        return (self._value,
+                self.key_size,
+                self.value_size)
+
+    def __hash__(self):
+        return hash(self.key())

@@ -486,6 +486,18 @@ class ArmInstruction(AssemblyInstruction):
     def ldm_stm_addr_mode(self, value):
         self._ldm_stm_addr_mode = value
 
+    def __key(self):
+        return (self._orig_instr,
+                self._mnemonic,
+                self._operands,
+                self._bytes,
+                self._size,
+                self._address,
+                self._arch_mode,
+                self._condition_code,
+                self._update_flags,
+                self._ldm_stm_addr_mode)
+
     def __str__(self):
         operands_str = ", ".join([str(oprnd) for oprnd in self._operands])
 
@@ -508,6 +520,9 @@ class ArmInstruction(AssemblyInstruction):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.__key())
 
     @property
     def prefix(self):
@@ -601,6 +616,12 @@ class ArmImmediateOperand(ArmOperand):
 
         return string[:-1] if string[-1] == 'L' else string
 
+    def __key(self):
+        return (self._modifier,
+                self._immediate,
+                self._base_hex,
+                self._size)
+
     def __str__(self):
         if not self._size:
             raise Exception("Operand size missing.")
@@ -614,6 +635,9 @@ class ArmImmediateOperand(ArmOperand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.__key())
 
 
 class ArmRegisterOperand(ArmOperand):
@@ -648,6 +672,12 @@ class ArmRegisterOperand(ArmOperand):
     def wb(self, value):
         self._wb = value
 
+    def __key(self):
+        return (self._modifier,
+                self._name,
+                self._size,
+                self._wb)
+
     def __str__(self):
         if not self._size:
             raise Exception("Operand size missing.")
@@ -664,6 +694,9 @@ class ArmRegisterOperand(ArmOperand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.__key())
 
 
 class ArmRegisterListOperand(ArmOperand):
@@ -688,6 +721,11 @@ class ArmRegisterListOperand(ArmOperand):
 
         return self._reg_list
 
+    def __key(self):
+        return (self._modifier,
+                self._reg_list,
+                self._size)
+
     def __str__(self):
         if not self._size:
             raise Exception("Operand size missing.")
@@ -710,6 +748,9 @@ class ArmRegisterListOperand(ArmOperand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.__key())
 
 
 class ArmShiftedRegisterOperand(ArmOperand):
@@ -751,6 +792,13 @@ class ArmShiftedRegisterOperand(ArmOperand):
             raise Exception("Operand size missing.")
         return self._shift_amount
 
+    def __key(self):
+        return (self._modifier,
+                self._base_reg,
+                self._shift_type,
+                self._shift_amount,
+                self._size)
+
     def __str__(self):
         if not self._size:
             raise Exception("Operand size missing.")
@@ -768,6 +816,9 @@ class ArmShiftedRegisterOperand(ArmOperand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.__key())
 
 
 class ArmMemoryOperand(ArmOperand):
@@ -822,6 +873,14 @@ class ArmMemoryOperand(ArmOperand):
 
         return self._disp_minus
 
+    def __key(self):
+        return (self._modifier,
+                self._base_reg,
+                self._index_type,
+                self._displacement,
+                self._disp_minus,
+                self._size)
+
     def __str__(self):
         if not self._size:
             raise Exception("Operand size missing.")
@@ -851,3 +910,6 @@ class ArmMemoryOperand(ArmOperand):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.__key())

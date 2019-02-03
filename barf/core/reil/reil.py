@@ -301,6 +301,9 @@ class ReilInstruction(object):
         """
         self._comment = value
 
+    def __key(self):
+        return (self._mnemonic, self._operands, self._comment, self._address)
+
     def __str__(self):
         def print_oprnd(oprnd):
             oprnd_str = str(oprnd)
@@ -339,7 +342,7 @@ class ReilInstruction(object):
             return self.__str__()
 
     def __hash__(self):
-        return hash(str(self))
+        return hash(self.__key())
 
     def __getstate__(self):
         state = {
@@ -383,12 +386,18 @@ class ReilOperand(object):
         """
         self._size = value
 
+    def __key(self):
+        return (self._size,)
+
     def __eq__(self, other):
         return type(other) is type(self) and \
                 self._size == other.size
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.__key())
 
     def __getstate__(self):
         state = {
@@ -426,6 +435,9 @@ class ReilImmediateOperand(ReilOperand):
 
         return self._immediate & 2**self._size-1
 
+    def __key(self):
+        return (self._size, self._immediate)
+
     def __str__(self):
         if not self._size:
             raise Exception("Operand size missing.")
@@ -438,6 +450,9 @@ class ReilImmediateOperand(ReilOperand):
         return type(other) is type(self) and \
                 self._size == other.size and \
                 self._immediate == other.immediate
+
+    def __hash__(self):
+        return hash(self.__key())
 
     def __getstate__(self):
         state = super(ReilImmediateOperand, self).__getstate__()
@@ -473,6 +488,9 @@ class ReilRegisterOperand(ReilOperand):
         """
         return self._name
 
+    def __key(self):
+        return (self._size, self._name)
+
     def __str__(self):
         return self._name
 
@@ -480,6 +498,9 @@ class ReilRegisterOperand(ReilOperand):
         return type(other) is type(self) and \
                 self._size == other.size and \
                 self._name == other.name
+
+    def __hash__(self):
+        return hash(self.__key())
 
     def __getstate__(self):
         state = super(ReilRegisterOperand, self).__getstate__()
@@ -502,11 +523,17 @@ class ReilEmptyOperand(ReilOperand):
     def __init__(self):
         super(ReilEmptyOperand, self).__init__(size=None)
 
+    def __key(self):
+        return (self._size, "EMPTY")
+
     def __str__(self):
         return "EMPTY"
 
     def __eq__(self, other):
         return type(other) is type(self)
+
+    def __hash__(self):
+        return hash(self.__key())
 
 
 class ReilLabel(object):
