@@ -64,7 +64,7 @@ class ArmGadgetClassifierTests(unittest.TestCase):
         self._g_verifier = GadgetVerifier(self._code_analyzer, self._arch_info)
 
     def _find_and_classify_gadgets(self, binary):
-        g_finder = GadgetFinder(ArmDisassembler(architecture_mode=ARCH_ARM_MODE_ARM), binary, ArmTranslator(), ARCH_ARM, ARCH_ARM_MODE_ARM)
+        g_finder = GadgetFinder(ArmDisassembler(architecture_mode=ARCH_ARM_MODE_ARM), bytearray(binary), ArmTranslator(), ARCH_ARM, ARCH_ARM_MODE_ARM)
 
         g_candidates = g_finder.find(0x00000000, len(binary), instrs_depth=4)
         g_classified = self._g_classifier.classify(g_candidates[0])
