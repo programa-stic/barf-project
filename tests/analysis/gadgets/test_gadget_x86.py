@@ -164,21 +164,21 @@ class GadgetClassifierTests(unittest.TestCase):
         g_candidates = g_finder.find(0x00000000, 0x00000001)
         g_classified = self._g_classifier.classify(g_candidates[0])
 
-        self.print_candidates(g_candidates)
-        self.print_classified(g_classified)
+        # self.print_candidates(g_candidates)
+        # self.print_classified(g_classified)
 
         self.assertEqual(len(g_candidates), 1)
         self.assertEqual(len(g_classified), 2)
 
-        self.assertEqual(g_classified[0].type, GadgetType.MoveRegister)
-        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("eax", 32)])
-        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ebx", 32)])
+        self.assertEqual(g_classified[1].type, GadgetType.MoveRegister)
+        self.assertEqual(g_classified[1].sources, [ReilRegisterOperand("eax", 32)])
+        self.assertEqual(g_classified[1].destination, [ReilRegisterOperand("ebx", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
+        self.assertEqual(len(g_classified[1].modified_registers), 2)
 
-        self.assertTrue(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
-        self.assertFalse(ReilRegisterOperand("ebx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertTrue(ReilRegisterOperand("eax", 32) in g_classified[1].modified_registers)
+        self.assertFalse(ReilRegisterOperand("ebx", 32) in g_classified[1].modified_registers)
+        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
 
     def test_move_register_4(self):
         # testing : dst_reg <- src_reg
@@ -190,21 +190,21 @@ class GadgetClassifierTests(unittest.TestCase):
         g_candidates = g_finder.find(0x00000000, 0x00000001)
         g_classified = self._g_classifier.classify(g_candidates[0])
 
-        self.print_candidates(g_candidates)
-        self.print_classified(g_classified)
+        # self.print_candidates(g_candidates)
+        # self.print_classified(g_classified)
 
         self.assertEqual(len(g_candidates), 1)
         self.assertEqual(len(g_classified), 2)
 
-        self.assertEqual(g_classified[1].type, GadgetType.MoveRegister)
-        self.assertEqual(g_classified[1].sources, [ReilRegisterOperand("ebx", 32)])
-        self.assertEqual(g_classified[1].destination, [ReilRegisterOperand("eax", 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.MoveRegister)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ebx", 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEqual(len(g_classified[1].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 2)
 
-        self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[1].modified_registers)
-        self.assertTrue(ReilRegisterOperand("ebx", 32) in g_classified[1].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
+        self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
+        self.assertTrue(ReilRegisterOperand("ebx", 32) in g_classified[0].modified_registers)
+        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_move_register_5(self):
         # testing : dst_reg <- src_reg
@@ -239,7 +239,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000005)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -316,7 +316,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000004)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -420,7 +420,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -445,7 +445,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -495,7 +495,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -571,7 +571,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -595,7 +595,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -643,7 +643,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -715,7 +715,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -741,7 +741,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
-        g_classified = self._g_classifier.classify(g_candidates[2])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -793,7 +793,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -844,7 +844,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -869,7 +869,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -919,7 +919,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -944,7 +944,7 @@ class GadgetClassifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x0000000e)
-        g_classified = self._g_classifier.classify(g_candidates[2])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -1111,21 +1111,21 @@ class GadgetVerifierTests(unittest.TestCase):
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
 
-        verified = self._g_verifier.verify(g_classified[1])
+        verified = self._g_verifier.verify(g_classified[0])
 
         self.assertEqual(len(g_candidates), 1)
         self.assertEqual(len(g_classified), 2)
 
         self.assertTrue(verified)
 
-        self.assertEqual(g_classified[1].type, GadgetType.LoadMemory)
-        self.assertEqual(g_classified[1].sources, [ReilRegisterOperand("esp", 32), ReilImmediateOperand(0x0, 32)])
-        self.assertEqual(g_classified[1].destination, [ReilRegisterOperand("eax", 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.LoadMemory)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("esp", 32), ReilImmediateOperand(0x0, 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
         self.assertEqual(len(g_classified[1].modified_registers), 2)
 
-        self.assertTrue(ReilRegisterOperand("ebx", 32) in g_classified[1].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
+        self.assertTrue(ReilRegisterOperand("ebx", 32) in g_classified[0].modified_registers)
+        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_load_memory_two_accesses_2(self):
         # testing : dst_reg <- m[dst_reg + offset]
@@ -1141,21 +1141,21 @@ class GadgetVerifierTests(unittest.TestCase):
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
 
-        verified = self._g_verifier.verify(g_classified[0])
+        verified = self._g_verifier.verify(g_classified[1])
 
         self.assertEqual(len(g_candidates), 1)
         self.assertEqual(len(g_classified), 2)
 
         self.assertTrue(verified)
 
-        self.assertEqual(g_classified[0].type, GadgetType.LoadMemory)
-        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x0, 32)])
-        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
+        self.assertEqual(g_classified[1].type, GadgetType.LoadMemory)
+        self.assertEqual(g_classified[1].sources, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x0, 32)])
+        self.assertEqual(g_classified[1].destination, [ReilRegisterOperand("ecx", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 3)
+        self.assertEqual(len(g_classified[1].modified_registers), 3)
 
-        self.assertTrue(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertTrue(ReilRegisterOperand("eax", 32) in g_classified[1].modified_registers)
+        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
 
     def test_store_memory_two_accesses_1(self):
         # testing : m[dst_reg + offset] <- dst_reg
@@ -1200,21 +1200,21 @@ class GadgetVerifierTests(unittest.TestCase):
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
 
-        verified = self._g_verifier.verify(g_classified[1])
+        verified = self._g_verifier.verify(g_classified[0])
 
         self.assertEqual(len(g_candidates), 1)
         self.assertEqual(len(g_classified), 2)
 
         self.assertTrue(verified)
 
-        self.assertEqual(g_classified[1].type, GadgetType.ArithmeticLoad)
-        self.assertEqual(g_classified[1].sources, [ReilRegisterOperand("eax", 32), ReilRegisterOperand("ebx", 32), ReilImmediateOperand(0x0, 32)])
-        self.assertEqual(g_classified[1].destination, [ReilRegisterOperand("eax", 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.ArithmeticLoad)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("eax", 32), ReilRegisterOperand("ebx", 32), ReilImmediateOperand(0x0, 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEqual(len(g_classified[1].modified_registers), 3)
+        self.assertEqual(len(g_classified[0].modified_registers), 3)
 
-        self.assertTrue(ReilRegisterOperand("ecx", 32) in g_classified[1].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
+        self.assertTrue(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
+        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_arithmetic_load_add_1(self):
         # testing : dst_reg <- src1_reg + src2_reg
@@ -1225,7 +1225,7 @@ class GadgetVerifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000004)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -1257,7 +1257,7 @@ class GadgetVerifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000004)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -1323,21 +1323,21 @@ class GadgetVerifierTests(unittest.TestCase):
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
 
-        verified = self._g_verifier.verify(g_classified[1])
+        verified = self._g_verifier.verify(g_classified[0])
 
         self.assertEqual(len(g_candidates), 1)
         self.assertEqual(len(g_classified), 2)
 
         self.assertTrue(verified)
 
-        self.assertEqual(g_classified[1].type, GadgetType.LoadMemory)
-        self.assertEqual(g_classified[1].sources, [ReilRegisterOperand("ebp", 32), ReilImmediateOperand(0x8, 32)])
-        self.assertEqual(g_classified[1].destination, [ReilRegisterOperand("eax", 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.LoadMemory)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ebp", 32), ReilImmediateOperand(0x8, 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEqual(len(g_classified[1].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 2)
 
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
-        self.assertTrue(ReilRegisterOperand("ebp", 32) in g_classified[1].modified_registers)
+        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertTrue(ReilRegisterOperand("ebp", 32) in g_classified[0].modified_registers)
 
     def test_load_memory_2(self):
         # testing : dst_reg <- mem[offset]
@@ -1364,7 +1364,7 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ebp", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ebp", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
@@ -1398,14 +1398,14 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_arithmetic_store_xor_1(self):
-        # testing : m[dst_reg] <- m[dst_reg] + src_reg
+        # testing : m[dst_reg] <- m[dst_reg] OP src_reg
 
         binary = b"\x31\x05\x08\x8b\x00\x5d\xc3" # xor dword ptr [0x5d008b08], eax ; ret
 
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000006)
-        g_classified = self._g_classifier.classify(g_candidates[2])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -1435,7 +1435,7 @@ class GadgetVerifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000007)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -1465,7 +1465,7 @@ class GadgetVerifierTests(unittest.TestCase):
         g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
 
         g_candidates = g_finder.find(0x00000000, 0x00000004)
-        g_classified = self._g_classifier.classify(g_candidates[1])
+        g_classified = self._g_classifier.classify(g_candidates[0])
 
         # self.print_candidates(g_candidates)
         # self.print_classified(g_classified)
@@ -1498,7 +1498,7 @@ class GadgetVerifierTests(unittest.TestCase):
 
         for gadget in classified:
             print(gadget)
-            print(gadget.type)
+            print('{} ({})'.format(GadgetType.to_string(gadget.type), gadget.type))
             print("-" * 10)
 
 

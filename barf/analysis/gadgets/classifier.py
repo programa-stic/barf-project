@@ -116,7 +116,8 @@ class GadgetClassifier(object):
                 print("")
                 print(traceback.format_exc())
 
-        return typed_gadgets
+        # Sort and return.
+        return sorted(typed_gadgets, key=lambda g: str(g))
 
     # Classifiers
     # ======================================================================== #

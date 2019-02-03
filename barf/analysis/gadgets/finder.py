@@ -84,7 +84,8 @@ class GadgetFinder(object):
         else:
             raise Exception("Architecture not supported.")
 
-        return candidates
+        # Sort and return.
+        return sorted(candidates, key=lambda g: g.address)
 
     # Auxiliary functions
     # ======================================================================== #

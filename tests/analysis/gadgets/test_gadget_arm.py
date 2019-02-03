@@ -82,14 +82,14 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 2)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 2)
 
-        self.assertEquals(g_classified[0].type, GadgetType.MoveRegister)
-        self.assertEquals(g_classified[0].sources, [ReilRegisterOperand("r4", 32)])
-        self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("r0", 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.MoveRegister)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("r4", 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r0", 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
         self.assertTrue(ReilRegisterOperand("r14", 32) in g_classified[0].modified_registers)
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
@@ -101,14 +101,14 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 1)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 1)
 
-        self.assertEquals(g_classified[0].type, GadgetType.MoveRegister)
-        self.assertEquals(g_classified[0].sources, [ReilRegisterOperand("r4", 32)])
-        self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("r0", 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.MoveRegister)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("r4", 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r0", 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 0)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
 
@@ -121,14 +121,14 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 1)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 1)
 
-        self.assertEquals(g_classified[0].type, GadgetType.LoadConstant)
-        self.assertEquals(g_classified[0].sources, [ReilImmediateOperand(10, 32)])
-        self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("r2", 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.LoadConstant)
+        self.assertEqual(g_classified[0].sources, [ReilImmediateOperand(10, 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r2", 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 0)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
         self.assertFalse(ReilRegisterOperand("r2", 32) in g_classified[0].modified_registers)
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
@@ -140,14 +140,14 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 1)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 1)
 
-        self.assertEquals(g_classified[0].type, GadgetType.LoadConstant)
-        self.assertEquals(g_classified[0].sources, [ReilImmediateOperand(0, 32)])
-        self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("r2", 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.LoadConstant)
+        self.assertEqual(g_classified[0].sources, [ReilImmediateOperand(0, 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r2", 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 0)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
         self.assertFalse(ReilRegisterOperand("r2", 32) in g_classified[0].modified_registers)
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
@@ -159,14 +159,14 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 1)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 1)
 
-        self.assertEquals(g_classified[0].type, GadgetType.LoadConstant)
-        self.assertEquals(g_classified[0].sources, [ReilImmediateOperand(0, 32)])
-        self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("r2", 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.LoadConstant)
+        self.assertEqual(g_classified[0].sources, [ReilImmediateOperand(0, 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r2", 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 0)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
         self.assertFalse(ReilRegisterOperand("r2", 32) in g_classified[0].modified_registers)
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
@@ -178,14 +178,14 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 1)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 1)
 
-        self.assertEquals(g_classified[0].type, GadgetType.LoadConstant)
-        self.assertEquals(g_classified[0].sources, [ReilImmediateOperand(0, 32)])
-        self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("r2", 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.LoadConstant)
+        self.assertEqual(g_classified[0].sources, [ReilImmediateOperand(0, 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r2", 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 0)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
         self.assertFalse(ReilRegisterOperand("r2", 32) in g_classified[0].modified_registers)
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
@@ -198,14 +198,14 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 1)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 1)
 
-        self.assertEquals(g_classified[0].type, GadgetType.LoadConstant)
-        self.assertEquals(g_classified[0].sources, [ReilImmediateOperand(33, 32)])
-        self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("r2", 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.LoadConstant)
+        self.assertEqual(g_classified[0].sources, [ReilImmediateOperand(33, 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r2", 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 0)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
         self.assertFalse(ReilRegisterOperand("r2", 32) in g_classified[0].modified_registers)
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
@@ -217,15 +217,15 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 1)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 1)
 
-        self.assertEquals(g_classified[0].type, GadgetType.Arithmetic)
-        self.assertEquals(g_classified[0].sources, [ReilRegisterOperand("r4", 32), ReilRegisterOperand("r8", 32)])
-        self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("r0", 32)])
-        self.assertEquals(g_classified[0].operation, "+")
+        self.assertEqual(g_classified[0].type, GadgetType.Arithmetic)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("r4", 32), ReilRegisterOperand("r8", 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r0", 32)])
+        self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 0)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
 
@@ -236,15 +236,15 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 1)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 1)
 
-        self.assertEquals(g_classified[0].type, GadgetType.Arithmetic)
-        self.assertEquals(g_classified[0].sources, [ReilRegisterOperand("r4", 32), ReilRegisterOperand("r8", 32)])
-        self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("r0", 32)])
-        self.assertEquals(g_classified[0].operation, "-")
+        self.assertEqual(g_classified[0].type, GadgetType.Arithmetic)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("r4", 32), ReilRegisterOperand("r8", 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r0", 32)])
+        self.assertEqual(g_classified[0].operation, "-")
 
-        self.assertEquals(len(g_classified[0].modified_registers), 0)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
 
@@ -255,14 +255,14 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 1)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 1)
 
-        self.assertEquals(g_classified[0].type, GadgetType.LoadMemory)
-        self.assertEquals(g_classified[0].sources, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x0, 32)])
-        self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("r3", 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.LoadMemory)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x0, 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r3", 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 0)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
 
@@ -273,14 +273,14 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 1)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 1)
 
-        self.assertEquals(g_classified[0].type, GadgetType.LoadMemory)
-        self.assertEquals(g_classified[0].sources, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x33, 32)])
-        self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("r3", 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.LoadMemory)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x33, 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r3", 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 0)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
 
@@ -293,14 +293,14 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 1)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 1)
 
-        self.assertEquals(g_classified[0].type, GadgetType.StoreMemory)
-        self.assertEquals(g_classified[0].sources, [ReilRegisterOperand("r3", 32)])
-        self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x0, 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.StoreMemory)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("r3", 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x0, 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 0)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
 
@@ -311,14 +311,14 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 1)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 1)
 
-        self.assertEquals(g_classified[0].type, GadgetType.StoreMemory)
-        self.assertEquals(g_classified[0].sources, [ReilRegisterOperand("r3", 32)])
-        self.assertEquals(g_classified[0].destination, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x33, 32)])
+        self.assertEqual(g_classified[0].type, GadgetType.StoreMemory)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("r3", 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x33, 32)])
 
-        self.assertEquals(len(g_classified[0].modified_registers), 0)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
 
@@ -330,20 +330,20 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 2)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 2)
 
-        self.assertEquals(g_classified[1].type, GadgetType.ArithmeticLoad)
-        self.assertEquals(g_classified[1].sources, [ReilRegisterOperand("r0", 32), ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x0, 32)])
-        self.assertEquals(g_classified[1].destination, [ReilRegisterOperand("r0", 32)])
-        self.assertEquals(g_classified[1].operation, "+")
+        self.assertEqual(g_classified[0].type, GadgetType.ArithmeticLoad)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("r0", 32), ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x0, 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r0", 32)])
+        self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[1].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
-        self.assertFalse(ReilRegisterOperand("r0", 32) in g_classified[1].modified_registers)
-        self.assertTrue(ReilRegisterOperand("r3", 32) in g_classified[1].modified_registers)
+        self.assertFalse(ReilRegisterOperand("r0", 32) in g_classified[0].modified_registers)
+        self.assertTrue(ReilRegisterOperand("r3", 32) in g_classified[0].modified_registers)
 
-        self.assertTrue(self._g_verifier.verify(g_classified[1]))
+        self.assertTrue(self._g_verifier.verify(g_classified[0]))
 
     # TODO: Find out why this test takes so long to complete.
     # def test_arithmetic_load_add_2(self):
@@ -354,15 +354,15 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
     #     g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-    #     self.assertEquals(len(g_candidates), 1)
-    #     self.assertEquals(len(g_classified), 2)
+    #     self.assertEqual(len(g_candidates), 1)
+    #     self.assertEqual(len(g_classified), 2)
 
-    #     self.assertEquals(g_classified[1].type, GadgetType.ArithmeticLoad)
-    #     self.assertEquals(g_classified[1].sources, [ReilRegisterOperand("r0", 32), ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x22, 32)])
-    #     self.assertEquals(g_classified[1].destination, [ReilRegisterOperand("r0", 32)])
-    #     self.assertEquals(g_classified[1].operation, "+")
+    #     self.assertEqual(g_classified[1].type, GadgetType.ArithmeticLoad)
+    #     self.assertEqual(g_classified[1].sources, [ReilRegisterOperand("r0", 32), ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x22, 32)])
+    #     self.assertEqual(g_classified[1].destination, [ReilRegisterOperand("r0", 32)])
+    #     self.assertEqual(g_classified[1].operation, "+")
 
-    #     self.assertEquals(len(g_classified[1].modified_registers), 1)
+    #     self.assertEqual(len(g_classified[1].modified_registers), 1)
 
     #     self.assertFalse(ReilRegisterOperand("r0", 32) in g_classified[1].modified_registers)
     #     self.assertTrue(ReilRegisterOperand("r3", 32) in g_classified[1].modified_registers)
@@ -378,20 +378,20 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 2)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 2)
 
-        self.assertEquals(g_classified[1].type, GadgetType.ArithmeticStore)
-        self.assertEquals(g_classified[1].sources, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x0, 32), ReilRegisterOperand("r0", 32)])
-        self.assertEquals(g_classified[1].destination, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x0, 32)])
-        self.assertEquals(g_classified[1].operation, "+")
+        self.assertEqual(g_classified[0].type, GadgetType.ArithmeticStore)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x0, 32), ReilRegisterOperand("r0", 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x0, 32)])
+        self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[1].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
-        self.assertFalse(ReilRegisterOperand("r4", 32) in g_classified[1].modified_registers)
-        self.assertTrue(ReilRegisterOperand("r3", 32) in g_classified[1].modified_registers)
+        self.assertFalse(ReilRegisterOperand("r4", 32) in g_classified[0].modified_registers)
+        self.assertTrue(ReilRegisterOperand("r3", 32) in g_classified[0].modified_registers)
 
-        self.assertTrue(self._g_verifier.verify(g_classified[1]))
+        self.assertTrue(self._g_verifier.verify(g_classified[0]))
 
     def test_arithmetic_store_add_2(self):
         # testing : dst_reg <- dst_reg + mem[src_reg + offset]
@@ -402,20 +402,20 @@ class ArmGadgetClassifierTests(unittest.TestCase):
 
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
-        self.assertEquals(len(g_candidates), 1)
-        self.assertEquals(len(g_classified), 2)
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 2)
 
-        self.assertEquals(g_classified[1].type, GadgetType.ArithmeticStore)
-        self.assertEquals(g_classified[1].sources, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x22, 32), ReilRegisterOperand("r0", 32)])
-        self.assertEquals(g_classified[1].destination, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x22, 32)])
-        self.assertEquals(g_classified[1].operation, "+")
+        self.assertEqual(g_classified[0].type, GadgetType.ArithmeticStore)
+        self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x22, 32), ReilRegisterOperand("r0", 32)])
+        self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r4", 32), ReilImmediateOperand(0x22, 32)])
+        self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEquals(len(g_classified[1].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
-        self.assertFalse(ReilRegisterOperand("r4", 32) in g_classified[1].modified_registers)
-        self.assertTrue(ReilRegisterOperand("r3", 32) in g_classified[1].modified_registers)
+        self.assertFalse(ReilRegisterOperand("r4", 32) in g_classified[0].modified_registers)
+        self.assertTrue(ReilRegisterOperand("r3", 32) in g_classified[0].modified_registers)
 
-        self.assertTrue(self._g_verifier.verify(g_classified[1]))
+        self.assertTrue(self._g_verifier.verify(g_classified[0]))
 
     def _print_candidates(self, candidates):
         print("Candidates :")
