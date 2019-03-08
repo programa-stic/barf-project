@@ -27,6 +27,7 @@ from __future__ import absolute_import
 import logging
 import re
 import subprocess
+import platform
 
 from barf.core.smt.smtsymbol import Bool
 
@@ -36,7 +37,10 @@ logger = logging.getLogger(__name__)
 def _check_solver_installation(solver):
     found = True
     try:
-        _ = subprocess.check_output(["which", solver])
+        if platform.system() == "Windows":
+            _ = subprocess.check_output(["where", solver])
+        else:
+            _ = subprocess.check_output(["which", solver])
     except subprocess.CalledProcessError as e:
         if e.returncode == 0x1:
             found = False
