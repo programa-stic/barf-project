@@ -541,7 +541,8 @@ class GadgetClassifier(object):
         """Classify gadgets.
         """
         # Collect REIL instructions of the gadgets.
-        instrs = [ir_instr for asm_instr in gadget.instrs for ir_instr in asm_instr.ir_instrs]
+	# NOTE: Do not process chaining instruction.
+        instrs = [ir_instr for asm_instr in gadget.instrs[:-1] for ir_instr in asm_instr.ir_instrs]
 
         # Repeat classification.
         results = []

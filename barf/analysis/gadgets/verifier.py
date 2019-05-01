@@ -100,8 +100,10 @@ class GadgetVerifier(object):
         # Add instructions to the analyzer
         self.analyzer.reset()
 
-        for reil_instr in gadget.ir_instrs:
-            self.analyzer.add_instruction(reil_instr)
+	# NOTE: Do not process chaining instruction.
+        for asm_instr in gadget.instrs[:-1]:
+            for reil_instr in asm_instr.ir_instrs:
+                self.analyzer.add_instruction(reil_instr)
 
         # Generate constraints for the gadgets type.
         constrs = self._constraints_generators[gadget.type](gadget)
