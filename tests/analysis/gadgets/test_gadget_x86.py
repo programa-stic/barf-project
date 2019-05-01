@@ -124,10 +124,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ebx", 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_move_register_2(self):
         # testing : dst_reg <- src_reg
@@ -149,10 +148,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ebx", 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_move_register_3(self):
         # testing : dst_reg <- src_reg
@@ -174,11 +172,10 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[1].sources, [ReilRegisterOperand("eax", 32)])
         self.assertEqual(g_classified[1].destination, [ReilRegisterOperand("ebx", 32)])
 
-        self.assertEqual(len(g_classified[1].modified_registers), 2)
+        self.assertEqual(len(g_classified[1].modified_registers), 1)
 
         self.assertTrue(ReilRegisterOperand("eax", 32) in g_classified[1].modified_registers)
         self.assertFalse(ReilRegisterOperand("ebx", 32) in g_classified[1].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
 
     def test_move_register_4(self):
         # testing : dst_reg <- src_reg
@@ -200,11 +197,10 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ebx", 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("ebx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_move_register_5(self):
         # testing : dst_reg <- src_reg
@@ -226,10 +222,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ebx", 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_load_constant_1(self):
         # testing : dst_reg <- constant
@@ -251,10 +246,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilImmediateOperand(0x0, 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_load_constant_2(self):
         # testing : dst_reg <- constant
@@ -276,10 +270,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilImmediateOperand(0x0, 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_arithmetic_add_1(self):
         # testing : dst_reg <- src1_reg + src2_reg
@@ -302,10 +295,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
         self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_arithmetic_add_2(self):
         # testing : dst_reg <- src1_reg + src2_reg
@@ -329,11 +321,10 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("cl", 8)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 4)
+        self.assertEqual(len(g_classified[0].modified_registers), 3)
 
         self.assertTrue(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_arithmetic_add_3(self):
         # testing : dst_reg <- src1_reg + src2_reg
@@ -357,7 +348,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("bl", 8)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 3)
 
         self.assertTrue(ReilRegisterOperand("ebx", 32) in g_classified[0].modified_registers)
 
@@ -382,10 +373,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
         self.assertEqual(g_classified[0].operation, "-")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
         self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_load_memory_1(self):
         # testing : dst_reg <- m[src_reg]
@@ -407,10 +397,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ebx", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_load_memory_2(self):
         # testing : dst_reg <- m[offset]
@@ -432,10 +421,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilEmptyOperand(), ReilImmediateOperand(0xdeadbeef, 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_load_memory_3(self):
         # testing : dst_reg <- m[src_reg + offset]
@@ -457,10 +445,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("eax", 32), ReilImmediateOperand(0x100, 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_load_memory_4(self):
         # testing : dst_reg <- m[dst_reg]
@@ -482,10 +469,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_load_memory_5(self):
         # testing : dst_reg <- m[dst_reg + offset]
@@ -507,10 +493,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x100, 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_load_memory_6(self):
         # testing : dst_reg <- m[dst_reg + offset]
@@ -532,7 +517,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x100, 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
 
@@ -556,9 +541,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ebx", 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32), ReilImmediateOperand(0x0, 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
-
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
     def test_store_memory_2(self):
         # testing : m[offset] <- src_reg
@@ -580,9 +563,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ecx", 32)])
         self.assertEqual(g_classified[0].destination, [ReilEmptyOperand(), ReilImmediateOperand(0xdeadbeef, 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
-
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
     def test_store_memory_3(self):
         # testing : m[dst_reg + offset] <- src_reg
@@ -604,9 +585,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ecx", 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32), ReilImmediateOperand(0x100, 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
-
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
     def test_store_memory_4(self):
         # testing : m[dst_reg] <- dst_reg
@@ -628,9 +607,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ecx", 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x0, 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
-
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
     def test_store_memory_5(self):
         # testing : m[dst_reg + offset] <- dst_reg
@@ -652,9 +629,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ecx", 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x100, 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
-
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
     def test_store_memory_6(self):
         # testing : m[dst_reg + offset] <- dst_reg
@@ -676,7 +651,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("eax", 32), ReilImmediateOperand(0x0, 32), ReilRegisterOperand("al", 8)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32), ReilImmediateOperand(0x0, 32)])
 
-        # self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
+
+        self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
 
     def test_arithmetic_load_add_1(self):
         # testing : dst_reg <- dst_reg + mem[src_reg]
@@ -699,10 +676,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_arithmetic_load_add_2(self):
         # testing : dst_reg <- dst_reg + mem[offset]
@@ -725,10 +701,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_arithmetic_load_add_3(self):
         # testing : dst_reg <- dst_reg + mem[src_reg + offset]
@@ -751,10 +726,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_arithmetic_load_add_4(self):
         # testing : dst_reg <- dst_reg + mem[dst_reg]
@@ -777,10 +751,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
         self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_arithmetic_load_add_5(self):
         # testing : dst_reg <- dst_reg + mem[dst_reg + offset]
@@ -803,10 +776,9 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
         self.assertFalse(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_arithmetic_store_add_1(self):
         # testing : m[dst_reg] <- m[dst_reg] + src_reg
@@ -829,9 +801,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
-
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
     def test_arithmetic_store_add_2(self):
         # testing : m[offset] <- m[offset] + src_reg
@@ -854,9 +824,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilEmptyOperand(), ReilImmediateOperand(0xdeadbeef, 32)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
-
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
     def test_arithmetic_store_add_3(self):
         # testing : m[dst_reg + offset] <- m[dst_reg + offset] + src_reg
@@ -879,9 +847,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32), ReilImmediateOperand(0x100, 32)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
-
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
     def test_arithmetic_store_add_4(self):
         # testing : m[dst_reg] <- m[dst_reg] + dst_reg
@@ -904,9 +870,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
-
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
     def test_arithmetic_store_add_5(self):
         # testing : m[dst_reg + offset] <- m[dst_reg + offset] + dst_reg
@@ -929,9 +893,7 @@ class GadgetClassifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x100, 32)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
-
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
     def test_no_classification_1(self):
         binary  = b"\xc7\x40\x24\x00\x00\x00\x00" # 0x00 : (7) mov dword ptr [eax+0x24], 0x0
@@ -1089,10 +1051,9 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("ebx", 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertFalse(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_load_memory_two_accesses_1(self):
         # testing : dst_reg <- m[dst_reg + offset]
@@ -1122,7 +1083,6 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEqual(len(g_classified[1].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("ebx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_load_memory_two_accesses_2(self):
         # testing : dst_reg <- m[dst_reg + offset]
@@ -1149,10 +1109,9 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEqual(g_classified[1].sources, [ReilRegisterOperand("ecx", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEqual(g_classified[1].destination, [ReilRegisterOperand("ecx", 32)])
 
-        self.assertEqual(len(g_classified[1].modified_registers), 3)
+        self.assertEqual(len(g_classified[1].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("eax", 32) in g_classified[1].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
 
     def test_store_memory_two_accesses_1(self):
         # testing : m[dst_reg + offset] <- dst_reg
@@ -1181,8 +1140,6 @@ class GadgetVerifierTests(unittest.TestCase):
 
         self.assertEqual(len(g_classified[1].modified_registers), 1)
 
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
-
     def test_arithmetic_load_memory_two_accesses_1(self):
         # testing : dst_reg <- dst_reg + m[dst_reg + offset]
         binary  = b"\x8b\x09"                  # 0x00 : (2) mov ecx, dword ptr [ecx]
@@ -1208,10 +1165,9 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("eax", 32), ReilRegisterOperand("ebx", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 3)
+        self.assertEqual(len(g_classified[0].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
 
     def test_arithmetic_load_add_1(self):
         # testing : dst_reg <- src1_reg + src2_reg
@@ -1239,11 +1195,10 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("cl", 8)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 4)
+        self.assertEqual(len(g_classified[0].modified_registers), 3)
 
         self.assertTrue(ReilRegisterOperand("eax", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("ecx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
 
     def test_arithmetic_load_and_1(self):
         # testing : dst_reg <- src1_reg + src2_reg
@@ -1271,10 +1226,9 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEqual(g_classified[1].destination, [ReilRegisterOperand("eax", 32)])
         self.assertEqual(g_classified[1].operation, "&")
 
-        self.assertEqual(len(g_classified[1].modified_registers), 3)
+        self.assertEqual(len(g_classified[1].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("ecx", 32) in g_classified[1].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
 
     def test_arithmetic_add_1(self):
         # testing : dst_reg <- src1_reg + src2_reg
@@ -1302,7 +1256,7 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("bl", 8)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
+        self.assertEqual(len(g_classified[0].modified_registers), 3)
 
         self.assertTrue(ReilRegisterOperand("ebx", 32) in g_classified[0].modified_registers)
 
@@ -1333,7 +1287,6 @@ class GadgetVerifierTests(unittest.TestCase):
 
         self.assertEqual(len(g_classified[0].modified_registers), 2)
 
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
         self.assertTrue(ReilRegisterOperand("ebp", 32) in g_classified[0].modified_registers)
 
     def test_load_memory_2(self):
@@ -1363,8 +1316,6 @@ class GadgetVerifierTests(unittest.TestCase):
 
         self.assertEqual(len(g_classified[0].modified_registers), 1)
 
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
-
     def test_arithmetic_store_add_1(self):
         # testing : m[dst_reg] <- m[dst_reg] + src_reg
         binary  = b"\x01\x18"                 # 0x00 : (2) add dword ptr [eax], ebx
@@ -1390,9 +1341,7 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("eax", 32), ReilImmediateOperand(0x0, 32)])
         self.assertEqual(g_classified[0].operation, "+")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
-
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
     def test_arithmetic_store_xor_1(self):
         # testing : m[dst_reg] <- m[dst_reg] OP src_reg
@@ -1419,9 +1368,7 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].destination, [ReilEmptyOperand(), ReilImmediateOperand(0x5d008b08, 32)])
         self.assertEqual(g_classified[0].operation, "^")
 
-        self.assertEqual(len(g_classified[0].modified_registers), 2)
-
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+        self.assertEqual(len(g_classified[0].modified_registers), 1)
 
     def test_arithmetic_store_or_1(self):
         # testing : m[dst_reg] <- m[dst_reg] OP src_reg
@@ -1450,7 +1397,6 @@ class GadgetVerifierTests(unittest.TestCase):
 
         self.assertEqual(len(g_classified[1].modified_registers), 3)
 
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[1].modified_registers)
         self.assertTrue(ReilRegisterOperand("ebp", 32) in g_classified[1].modified_registers)
 
     def test_load_constant_1(self):
@@ -1478,10 +1424,34 @@ class GadgetVerifierTests(unittest.TestCase):
         self.assertEqual(g_classified[0].sources, [ReilImmediateOperand(0x55, 8)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("dh", 8)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 3)
+        self.assertEqual(len(g_classified[0].modified_registers), 2)
 
         self.assertTrue(ReilRegisterOperand("edx", 32) in g_classified[0].modified_registers)
-        self.assertTrue(ReilRegisterOperand("esp", 32) in g_classified[0].modified_registers)
+
+    def test_no_operation(self):
+        binary  = b"\x90"                  # 0x00 : (1) nop
+        binary += b"\xc3"                  # 0x01 : (1) ret
+
+        g_finder = GadgetFinder(X86Disassembler(ARCH_X86_MODE_32), bytearray(binary), X86Translator(ARCH_X86_MODE_32), ARCH_X86, ARCH_X86_MODE_32)
+
+        g_candidates = g_finder.find(0x00000000, 0x00000001)
+        g_classified = self._g_classifier.classify(g_candidates[0])
+
+        # self.print_candidates(g_candidates)
+        # self.print_classified(g_classified)
+
+        verified = self._g_verifier.verify(g_classified[0])
+
+        self.assertEqual(len(g_candidates), 1)
+        self.assertEqual(len(g_classified), 1)
+
+        self.assertTrue(verified)
+
+        self.assertEqual(g_classified[0].type, GadgetType.NoOperation)
+        self.assertEqual(g_classified[0].sources, [])
+        self.assertEqual(g_classified[0].destination, [])
+
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
     def print_candidates(self, candidates):
         print("Candidates :")

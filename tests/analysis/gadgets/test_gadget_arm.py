@@ -83,14 +83,13 @@ class ArmGadgetClassifierTests(unittest.TestCase):
         g_candidates, g_classified = self._find_and_classify_gadgets(binary)
 
         self.assertEqual(len(g_candidates), 1)
-        self.assertEqual(len(g_classified), 2)
+        self.assertEqual(len(g_classified), 1)
 
         self.assertEqual(g_classified[0].type, GadgetType.MoveRegister)
         self.assertEqual(g_classified[0].sources, [ReilRegisterOperand("r4", 32)])
         self.assertEqual(g_classified[0].destination, [ReilRegisterOperand("r0", 32)])
 
-        self.assertEqual(len(g_classified[0].modified_registers), 1)
-        self.assertTrue(ReilRegisterOperand("r14", 32) in g_classified[0].modified_registers)
+        self.assertEqual(len(g_classified[0].modified_registers), 0)
 
         self.assertTrue(self._g_verifier.verify(g_classified[0]))
 
