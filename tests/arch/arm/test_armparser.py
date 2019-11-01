@@ -113,7 +113,7 @@ class ArmParser32BitsTests(unittest.TestCase):
             "strd r8, [r2, #0x2c]",
             "strh r2, [r5], #8",
 
-            #A3.12.1 (examples of load/store multiple)
+            # A3.12.1 (examples of load/store multiple)
             "stmfd r13, {r0 - r12, lr}",
             "ldmfd r13, {r0 - r12, pc}",
             "ldmia r0, {r5 - r8}",
