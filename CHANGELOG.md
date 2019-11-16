@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 ### Added
 
+- Add Python 3 compatibility.
+- Add classes for managing call conventions.
 - Add hook support to the `Emulator` class.
 - Add `cconv` (calling convention) module.
 - Add `ReilCpu` tests.
@@ -20,6 +22,9 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Refactor ARM tests.
+- Refactor x86 package.
+- Refactor x86 tests.
 - Improve `emulate-binary` example script.
 - Refactor `ReilBuilder` class.
 - Refactor instruction translators (both Intel and ARM). Group translators by category and create a module for each one.
