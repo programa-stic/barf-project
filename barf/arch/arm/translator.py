@@ -56,9 +56,10 @@ from barf.arch.arm import ArmMemoryOperand
 from barf.arch.arm import ArmRegisterListOperand
 from barf.arch.arm import ArmRegisterOperand
 from barf.arch.arm import ArmShiftedRegisterOperand
-from barf.arch.translator import TranslationBuilder
 from barf.arch.translator import InstructionTranslator
+from barf.arch.translator import TranslationBuilder
 from barf.core.reil import ReilImmediateOperand
+from barf.core.reil import ReilLabel
 from barf.core.reil import ReilRegisterOperand
 from barf.core.reil.builder import ReilBuilder
 
@@ -380,20 +381,24 @@ class ArmTranslator(InstructionTranslator):
 
         tb = ArmTranslationBuilder(self._ir_name_generator, self._arch_mode)
 
-        # TODO: Improve this.
-        if instruction.mnemonic in ["b", "bl", "bx", "blx", "bne", "beq", "bpl",
-                                    "ble", "bcs", "bhs", "blt", "bge", "bhi",
-                                    "blo", "bls"]:
-            if instruction.condition_code is None:
-                instruction.condition_code = ARM_COND_CODE_AL  # TODO: unify translations
-        else:
-            # Pre-processing: evaluate flags
-            if instruction.condition_code is not None:
-                self._evaluate_condition_code(tb, instruction)
-
         # Translate instruction.
         if mnemonic in translators.dispatcher:
-            translators.dispatcher[mnemonic](self, tb, instruction)
+            # TODO: Improve this.
+            if instruction.mnemonic in ["b", "bl", "bx", "blx", "bne", "beq", "bpl",
+                                        "ble", "bcs", "bhs", "blt", "bge", "bhi",
+                                        "blo", "bls"]:
+                if instruction.condition_code is None:
+                    instruction.condition_code = ARM_COND_CODE_AL  # TODO: unify translations
+
+                translators.dispatcher[mnemonic](self, tb, instruction)
+            else:
+                # Pre-processing: evaluate flags
+                if instruction.condition_code is not None:
+                    label = self._evaluate_condition_code_pre(tb, instruction)
+                    translators.dispatcher[mnemonic](self, tb, instruction)
+                    self._evaluate_condition_code_post(tb, instruction, label)
+                else:
+                    translators.dispatcher[mnemonic](self, tb, instruction)
         else:
             tb.add(self._builder.gen_unkn())
 
@@ -612,9 +617,9 @@ class ArmTranslator(InstructionTranslator):
         # LE: (Z == 1) or (N != V)
         return tb._or_regs(self._flags["zf"], self._evaluate_lt(tb))
 
-    def _evaluate_condition_code(self, tb, instruction):
+    def _evaluate_condition_code_pre(self, tb, instruction):
         if instruction.condition_code == ARM_COND_CODE_AL:
-            return
+            return None
 
         eval_cc_fn = {
             ARM_COND_CODE_EQ: self._evaluate_eq,
@@ -635,10 +640,19 @@ class ArmTranslator(InstructionTranslator):
             ARM_COND_CODE_LE: self._evaluate_le,
         }
 
+        cond_not_met = ReilLabel('cond_not_met')
+
         neg_cond = tb._negate_reg(eval_cc_fn[instruction.condition_code](tb))
 
         end_addr = ReilImmediateOperand((instruction.address + instruction.size) << 8, self._arch_info.address_size + 8)
 
-        tb.add(self._builder.gen_jcc(neg_cond, end_addr))
+        tb.add(self._builder.gen_jcc(neg_cond, cond_not_met))
 
-        return
+        return cond_not_met
+
+    def _evaluate_condition_code_post(self, tb, instruction, label):
+        if instruction.condition_code == ARM_COND_CODE_AL:
+            return
+
+        tb.add(label)
+        tb.add(self._builder.gen_nop())
