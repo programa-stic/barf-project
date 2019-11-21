@@ -22,6 +22,30 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import absolute_import
+
+from barf.arch.arm import ARM_COND_CODE_AL
+from barf.arch.arm import ARM_COND_CODE_CC
+from barf.arch.arm import ARM_COND_CODE_CS
+from barf.arch.arm import ARM_COND_CODE_EQ
+from barf.arch.arm import ARM_COND_CODE_GE
+from barf.arch.arm import ARM_COND_CODE_GT
+from barf.arch.arm import ARM_COND_CODE_HI
+from barf.arch.arm import ARM_COND_CODE_HS
+from barf.arch.arm import ARM_COND_CODE_LE
+from barf.arch.arm import ARM_COND_CODE_LO
+from barf.arch.arm import ARM_COND_CODE_LS
+from barf.arch.arm import ARM_COND_CODE_LT
+from barf.arch.arm import ARM_COND_CODE_MI
+from barf.arch.arm import ARM_COND_CODE_NE
+from barf.arch.arm import ARM_COND_CODE_PL
+from barf.arch.arm import ARM_COND_CODE_VC
+from barf.arch.arm import ARM_COND_CODE_VS
+from barf.arch.helper import and_regs
+from barf.arch.helper import equal_regs
+from barf.arch.helper import negate_reg
+from barf.arch.helper import or_regs
+
 
 def compare_contexts(context_init, arm_context, reil_context):
     match = True
@@ -97,3 +121,109 @@ def print_flags(flags_reg):
         out += flag_str + " "
 
     return out[:-1]
+
+
+class ArmConditionCodeHelper(object):
+
+    @staticmethod
+    def evaluate_cond_code(flags, tb, condition_code):
+        dispatcher = {
+            ARM_COND_CODE_AL: ArmConditionCodeHelper.evaluate_al,
+            ARM_COND_CODE_CC: ArmConditionCodeHelper.evaluate_cc,
+            ARM_COND_CODE_CS: ArmConditionCodeHelper.evaluate_cs,
+            ARM_COND_CODE_EQ: ArmConditionCodeHelper.evaluate_eq,
+            ARM_COND_CODE_GE: ArmConditionCodeHelper.evaluate_ge,
+            ARM_COND_CODE_GT: ArmConditionCodeHelper.evaluate_gt,
+            ARM_COND_CODE_HI: ArmConditionCodeHelper.evaluate_hi,
+            ARM_COND_CODE_HS: ArmConditionCodeHelper.evaluate_cs,
+            ARM_COND_CODE_LE: ArmConditionCodeHelper.evaluate_le,
+            ARM_COND_CODE_LO: ArmConditionCodeHelper.evaluate_cc,
+            ARM_COND_CODE_LS: ArmConditionCodeHelper.evaluate_ls,
+            ARM_COND_CODE_LT: ArmConditionCodeHelper.evaluate_lt,
+            ARM_COND_CODE_MI: ArmConditionCodeHelper.evaluate_mi,
+            ARM_COND_CODE_NE: ArmConditionCodeHelper.evaluate_ne,
+            ARM_COND_CODE_PL: ArmConditionCodeHelper.evaluate_pl,
+            ARM_COND_CODE_VC: ArmConditionCodeHelper.evaluate_vc,
+            ARM_COND_CODE_VS: ArmConditionCodeHelper.evaluate_vs,
+        }
+
+        try:
+            eval_cond_fn = dispatcher[condition_code]
+        except KeyError:
+            raise Exception('Invalid condition code')
+
+        return eval_cond_fn(flags, tb)
+
+    @staticmethod
+    def evaluate_al(flags, tb):
+        return tb.immediate(1, 1)
+
+    @staticmethod
+    def evaluate_eq(flags, tb):
+        # EQ: Z set
+        return flags.zf
+
+    @staticmethod
+    def evaluate_ne(flags, tb):
+        # NE: Z clear
+        return negate_reg(tb, flags.zf)
+
+    @staticmethod
+    def evaluate_cs(flags, tb):
+        # CS: C set
+        return flags.cf
+
+    @staticmethod
+    def evaluate_cc(flags, tb):
+        # CC: C clear
+        return negate_reg(tb, flags.cf)
+
+    @staticmethod
+    def evaluate_mi(flags, tb):
+        # MI: N set
+        return flags.nf
+
+    @staticmethod
+    def evaluate_pl(flags, tb):
+        # PL: N clear
+        return negate_reg(tb, flags.nf)
+
+    @staticmethod
+    def evaluate_vs(flags, tb):
+        # VS: V set
+        return flags.vf
+
+    @staticmethod
+    def evaluate_vc(flags, tb):
+        # VC: V clear
+        return negate_reg(tb, flags.vf)
+
+    @staticmethod
+    def evaluate_hi(flags, tb):
+        # HI: C set and Z clear
+        return and_regs(tb, flags.cf, negate_reg(tb, flags.zf))
+
+    @staticmethod
+    def evaluate_ls(flags, tb):
+        # LS: C clear or Z set
+        return or_regs(tb, negate_reg(tb, flags.cf), flags.zf)
+
+    @staticmethod
+    def evaluate_ge(flags, tb):
+        # GE: N == V
+        return equal_regs(tb, flags.nf, flags.vf)
+
+    @staticmethod
+    def evaluate_lt(flags, tb):
+        # LT: N != V
+        return negate_reg(tb, ArmConditionCodeHelper.evaluate_ge(flags, tb))
+
+    @staticmethod
+    def evaluate_gt(flags, tb):
+        # GT: (Z == 0) and (N == V)
+        return and_regs(tb, negate_reg(tb, flags.zf), ArmConditionCodeHelper.evaluate_ge(flags, tb))
+
+    @staticmethod
+    def evaluate_le(flags, tb):
+        # LE: (Z == 1) or (N != V)
+        return or_regs(tb, flags.zf, ArmConditionCodeHelper.evaluate_lt(flags, tb))

@@ -105,3 +105,68 @@ def equal_regs(tb, reg1, reg2):
 
 def unequal_regs(tb, reg1, reg2):
     return xor_regs(tb, reg1, reg2)
+
+
+def add_to_reg(tb, reg, value):
+    res = tb.temporal(reg.size)
+    tb.add(tb._builder.gen_add(reg, value, res))
+
+    return res
+
+
+def sub_to_reg(tb, reg, value):
+    res = tb.temporal(reg.size)
+    tb.add(tb._builder.gen_sub(reg, value, res))
+
+    return res
+
+
+def shift_reg(tb, reg, sh):
+    ret = tb.temporal(reg.size)
+    tb.add(tb._builder.gen_bsh(reg, sh, ret))
+
+    return ret
+
+
+def extract_bit_with_register(tb, reg, bit):
+    # Same as before but the bit number is indicated by a register and it will be resolved at runtime
+    # assert(bit >= 0 and bit < reg.size2) # It is assumed, it is not checked
+    tmp = tb.temporal(reg.size)
+    neg_bit = tb.temporal(reg.size)
+    ret = tb.temporal(1)
+
+    tb.add(tb._builder.gen_sub(tb.immediate(0, bit.size), bit, neg_bit))  # as left bit is indicated by a negative number
+    tb.add(tb._builder.gen_bsh(reg, neg_bit, tmp))                        # shift to LSB
+    tb.add(tb._builder.gen_and(tmp, tb.immediate(1, reg.size), ret))      # filter LSB
+
+    return ret
+
+
+def greater_than_or_equal(tb, reg1, reg2):
+    assert(reg1.size == reg2.size)
+    result = tb.temporal(reg1.size * 2)
+
+    tb.add(tb._builder.gen_sub(reg1, reg2, result))
+
+    sign = extract_bit(tb, result, reg1.size - 1)
+    overflow = overflow_from_sub(tb, reg1, reg2, result)
+
+    return equal_regs(tb, sign, overflow)
+
+
+def jump_to(tb, target):
+    tb.add(tb._builder.gen_jcc(tb.immediate(1, 1), target))
+
+
+def jump_if_zero(tb, reg, label):
+    is_zero = tb.temporal(1)
+    tb.add(tb._builder.gen_bisz(reg, is_zero))
+    tb.add(tb._builder.gen_jcc(is_zero, label))
+
+
+def overflow_from_sub(tb, oprnd0, oprnd1, result):
+    op1_sign = extract_bit(tb, oprnd0, oprnd0.size - 1)
+    op2_sign = extract_bit(tb, oprnd1, oprnd0.size - 1)
+    res_sign = extract_bit(tb, result, oprnd0.size - 1)
+
+    return and_regs(tb, unequal_regs(tb, op1_sign, op2_sign), unequal_regs(tb, op1_sign, res_sign))

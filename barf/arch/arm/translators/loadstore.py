@@ -32,6 +32,8 @@ from barf.arch.arm import ARM_LDM_STM_IB
 from barf.arch.arm import ArmRegisterOperand
 from barf.arch.arm import ldm_stack_am_to_non_stack_am
 from barf.arch.arm import stm_stack_am_to_non_stack_am
+from barf.arch.helper import add_to_reg
+from barf.arch.helper import sub_to_reg
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
 
@@ -39,15 +41,15 @@ from barf.core.reil import ReilRegisterOperand
 # "Load/store word and unsigned byte Instructions"
 # ============================================================================ #
 def _translate_ldr(self, tb, instruction):
-    oprnd1 = tb.read(instruction.operands[1])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[1])
 
-    tb.write(instruction.operands[0], oprnd1)
+    self._reg_acc_translator.write(tb, instruction.operands[0], oprnd1)
 
 
 def _translate_str(self, tb, instruction):
-    oprnd0 = tb.read(instruction.operands[0])
+    oprnd0 = self._reg_acc_translator.read(tb, instruction.operands[0])
 
-    tb.write(instruction.operands[1], oprnd0)
+    self._reg_acc_translator.write(tb, instruction.operands[1], oprnd0)
 
 
 # TODO: Check if the byte suffix ('b') should be coded as extra information
@@ -55,7 +57,7 @@ def _translate_str(self, tb, instruction):
 # two functions).
 def _translate_ldrb(self, tb, instruction):
     op0_reil = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
-    addr_reg = tb._compute_memory_address(instruction.operands[1])
+    addr_reg = self._reg_acc_translator.compute_memory_address(tb, instruction.operands[1])
     byte_reg = tb.temporal(8)
 
     tb.add(tb._builder.gen_ldm(addr_reg, byte_reg))
@@ -69,7 +71,7 @@ def _translate_strb(self, tb, instruction):
 
     tb.add(self._builder.gen_str(reil_operand, byte_reg))  # filter bits [7:0] part of result
 
-    addr = tb._compute_memory_address(instruction.operands[1])
+    addr = self._reg_acc_translator.compute_memory_address(tb, instruction.operands[1])
 
     tb.add(self._builder.gen_stm(byte_reg, addr))
 
@@ -77,7 +79,7 @@ def _translate_strb(self, tb, instruction):
 # TODO: Generalize LDR to handle byte and half word in a single function
 def _translate_ldrh(self, tb, instruction):
     op0_reil = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
-    addr_reg = tb._compute_memory_address(instruction.operands[1])
+    addr_reg = self._reg_acc_translator.compute_memory_address(tb, instruction.operands[1])
     byte_reg = tb.temporal(16)
 
     tb.add(tb._builder.gen_ldm(addr_reg, byte_reg))
@@ -91,22 +93,22 @@ def _translate_strh(self, tb, instruction):
 
     tb.add(self._builder.gen_str(reil_operand, half_word_reg))  # filter bits [15:0] part of result
 
-    addr = tb._compute_memory_address(instruction.operands[1])
+    addr = self._reg_acc_translator.compute_memory_address(tb, instruction.operands[1])
 
     tb.add(self._builder.gen_stm(half_word_reg, addr))
 
 
 def _translate_ldrd(self, tb, instruction):
     if len(instruction.operands) > 2:  # Rd2 has been specified (UAL syntax)
-        addr_reg = tb._compute_memory_address(instruction.operands[2])
+        addr_reg = self._reg_acc_translator.compute_memory_address(tb, instruction.operands[2])
     else:
-        addr_reg = tb._compute_memory_address(instruction.operands[1])
+        addr_reg = self._reg_acc_translator.compute_memory_address(tb, instruction.operands[1])
 
     reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
 
     tb.add(tb._builder.gen_ldm(addr_reg, reil_operand))
 
-    addr_reg = tb._add_to_reg(addr_reg, ReilImmediateOperand(4, reil_operand.size))
+    addr_reg = add_to_reg(tb, addr_reg, ReilImmediateOperand(4, reil_operand.size))
 
     if len(instruction.operands) > 2:  # Rd2 has been specified (UAL syntax)
         reil_operand = ReilRegisterOperand(instruction.operands[1].name, instruction.operands[0].size)
@@ -120,15 +122,15 @@ def _translate_ldrd(self, tb, instruction):
 
 def _translate_strd(self, tb, instruction):
     if len(instruction.operands) > 2:  # Rd2 has been specified (UAL syntax)
-        addr_reg = tb._compute_memory_address(instruction.operands[2])
+        addr_reg = self._reg_acc_translator.compute_memory_address(tb, instruction.operands[2])
     else:
-        addr_reg = tb._compute_memory_address(instruction.operands[1])
+        addr_reg = self._reg_acc_translator.compute_memory_address(tb, instruction.operands[1])
 
     reil_operand = ReilRegisterOperand(instruction.operands[0].name, instruction.operands[0].size)
 
     tb.add(tb._builder.gen_stm(reil_operand, addr_reg))
 
-    addr_reg = tb._add_to_reg(addr_reg, ReilImmediateOperand(4, reil_operand.size))
+    addr_reg = add_to_reg(tb, addr_reg, ReilImmediateOperand(4, reil_operand.size))
 
     if len(instruction.operands) > 2:  # Rd2 has been specified (UAL syntax)
         reil_operand = ReilRegisterOperand(instruction.operands[1].name, instruction.operands[0].size)
@@ -155,8 +157,8 @@ def _translate_ldm_stm(self, tb, instruction, load=True):
     # other stores It is assumed that the disassembler (for example
     # Capstone) writes the register list in increasing order
 
-    base = tb.read(instruction.operands[0])
-    reg_list = tb.read(instruction.operands[1])
+    base = self._reg_acc_translator.read(tb, instruction.operands[0])
+    reg_list = self._reg_acc_translator.read(tb, instruction.operands[1])
 
     if instruction.ldm_stm_addr_mode is None:
         instruction.ldm_stm_addr_mode = ARM_LDM_STM_IA  # default mode for load and store
@@ -178,20 +180,20 @@ def _translate_ldm_stm(self, tb, instruction, load=True):
     if instruction.ldm_stm_addr_mode == ARM_LDM_STM_IA:
         for reg in reg_list:
             load_store_fn(self, tb, pointer, reg)
-            pointer = tb._add_to_reg(pointer, self._ws)
+            pointer = add_to_reg(tb, pointer, self._ws)
     elif instruction.ldm_stm_addr_mode == ARM_LDM_STM_IB:
         for reg in reg_list:
-            pointer = tb._add_to_reg(pointer, self._ws)
+            pointer = add_to_reg(tb, pointer, self._ws)
             load_store_fn(self, tb, pointer, reg)
     elif instruction.ldm_stm_addr_mode == ARM_LDM_STM_DA:
         reg_list.reverse()  # Assuming the registry list was in increasing registry number
         for reg in reg_list:
             load_store_fn(self, tb, pointer, reg)
-            pointer = tb._sub_to_reg(pointer, self._ws)
+            pointer = sub_to_reg(tb, pointer, self._ws)
     elif instruction.ldm_stm_addr_mode == ARM_LDM_STM_DB:
         reg_list.reverse()
         for reg in reg_list:
-            pointer = tb._sub_to_reg(pointer, self._ws)
+            pointer = sub_to_reg(tb, pointer, self._ws)
             load_store_fn(self, tb, pointer, reg)
     else:
         raise Exception("Unknown addressing mode.")
@@ -199,9 +201,9 @@ def _translate_ldm_stm(self, tb, instruction, load=True):
     # Write-back
     if instruction.operands[0].wb:
         if instruction.ldm_stm_addr_mode == ARM_LDM_STM_IA or instruction.ldm_stm_addr_mode == ARM_LDM_STM_IB:
-            tmp = tb._add_to_reg(base, reg_list_size_bytes)
+            tmp = add_to_reg(tb, base, reg_list_size_bytes)
         elif instruction.ldm_stm_addr_mode == ARM_LDM_STM_DA or instruction.ldm_stm_addr_mode == ARM_LDM_STM_DB:
-            tmp = tb._sub_to_reg(base, reg_list_size_bytes)
+            tmp = sub_to_reg(tb, base, reg_list_size_bytes)
         tb.add(self._builder.gen_str(tmp, base))
 
 
