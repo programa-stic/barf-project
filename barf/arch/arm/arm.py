@@ -743,7 +743,7 @@ class ArmRegisterListOperand(ArmOperand):
         return string
 
     def __eq__(self, other):
-        return  self._reg_list == other._reg_list and \
+        return  self._reg_list == other.reg_list and \
                 self.size == other.size
 
     def __ne__(self, other):
@@ -810,9 +810,9 @@ class ArmShiftedRegisterOperand(ArmOperand):
         return string
 
     def __eq__(self, other):
-        return  self._base_reg == other._base_reg and \
-                self._shift_type == other._shift_type and \
-                self._shift_amount == other._shift_amount
+        return  self._base_reg == other.base_reg and \
+                self._shift_type == other.shift_type and \
+                self._shift_amount == other.shift_amount
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -904,9 +904,9 @@ class ArmMemoryOperand(ArmOperand):
         return string
 
     def __eq__(self, other):
-        return  self._base_reg == other._base_reg and \
-                self._index_type == other._index_type and \
-                self._displacement == other._displacement
+        return  self._base_reg == other.base_reg and \
+                self._index_type == other.index_type and \
+                self._displacement == other.displacement
 
     def __ne__(self, other):
         return not self.__eq__(other)

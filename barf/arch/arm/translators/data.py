@@ -27,6 +27,10 @@ from __future__ import absolute_import
 from barf.arch.arm import ArmImmediateOperand
 from barf.arch.arm import ArmRegisterOperand
 from barf.arch.arm import ArmShiftedRegisterOperand
+from barf.arch.helper import and_regs
+from barf.arch.helper import extract_bit
+from barf.arch.helper import jump_if_zero
+from barf.arch.helper import negate_reg
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
 
@@ -34,21 +38,21 @@ from barf.core.reil import ReilRegisterOperand
 # "Data-processing Instructions"
 # ============================================================================ #
 def _translate_mov(self, tb, instruction):
-    oprnd1 = tb.read(instruction.operands[1])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[1])
 
-    tb.write(instruction.operands[0], oprnd1)
+    self._reg_acc_translator.write(tb, instruction.operands[0], oprnd1)
 
     if instruction.update_flags:
-        self._update_flags_data_proc_other(tb, instruction.operands[1], oprnd1, None, oprnd1)
+        self._flag_translator.update_flags_data_proc_other(tb, instruction.operands[1], oprnd1, None, oprnd1)
 
 
 def _translate_mvn(self, tb, instruction):
-    oprnd1 = tb.read(instruction.operands[1])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[1])
 
-    tb.write(instruction.operands[0], tb._negate_reg(oprnd1))
+    self._reg_acc_translator.write(tb, instruction.operands[0], negate_reg(tb, oprnd1))
 
     if instruction.update_flags:
-        self._update_flags_data_proc_other(tb, instruction.operands[1], oprnd1, None, tb._negate_reg(oprnd1))
+        self._flag_translator.update_flags_data_proc_other(tb, instruction.operands[1], oprnd1, None, negate_reg(tb, oprnd1))
 
 
 def _translate_movw(self, tb, instruction):
@@ -56,85 +60,84 @@ def _translate_movw(self, tb, instruction):
     word_mask = ReilImmediateOperand(0x0000FFFF, reil_operand.size)
     and_temp = tb.temporal(reil_operand.size)
 
-    oprnd1 = tb.read(instruction.operands[1])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[1])
 
-    tb.write(instruction.operands[0], oprnd1)
+    self._reg_acc_translator.write(tb, instruction.operands[0], oprnd1)
 
     tb.add(self._builder.gen_and(reil_operand, word_mask, and_temp))  # filter bits [7:0] part of result
-
     tb.add(self._builder.gen_str(and_temp, reil_operand))
 
     # It doesn't update flags
 
 
 def _translate_and(self, tb, instruction):
-    oprnd1 = tb.read(instruction.operands[1])
-    oprnd2 = tb.read(instruction.operands[2])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[1])
+    oprnd2 = self._reg_acc_translator.read(tb, instruction.operands[2])
 
     result = tb.temporal(oprnd1.size)
 
     tb.add(self._builder.gen_and(oprnd1, oprnd2, result))
 
-    tb.write(instruction.operands[0], result)
+    self._reg_acc_translator.write(tb, instruction.operands[0], result)
 
     if instruction.update_flags:
-        self._update_flags_data_proc_other(tb, instruction.operands[2], oprnd1, oprnd2, result)
+        self._flag_translator.update_flags_data_proc_other(tb, instruction.operands[2], oprnd1, oprnd2, result)
 
 
 def _translate_orr(self, tb, instruction):
-    oprnd1 = tb.read(instruction.operands[1])
-    oprnd2 = tb.read(instruction.operands[2])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[1])
+    oprnd2 = self._reg_acc_translator.read(tb, instruction.operands[2])
 
     result = tb.temporal(oprnd1.size)
 
     tb.add(self._builder.gen_or(oprnd1, oprnd2, result))
 
-    tb.write(instruction.operands[0], result)
+    self._reg_acc_translator.write(tb, instruction.operands[0], result)
 
     if instruction.update_flags:
-        self._update_flags_data_proc_other(tb, instruction.operands[2], oprnd1, oprnd2, result)
+        self._flag_translator.update_flags_data_proc_other(tb, instruction.operands[2], oprnd1, oprnd2, result)
 
 
 def _translate_eor(self, tb, instruction):
-    oprnd1 = tb.read(instruction.operands[1])
-    oprnd2 = tb.read(instruction.operands[2])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[1])
+    oprnd2 = self._reg_acc_translator.read(tb, instruction.operands[2])
 
     result = tb.temporal(oprnd1.size)
 
     tb.add(self._builder.gen_xor(oprnd1, oprnd2, result))
 
-    tb.write(instruction.operands[0], result)
+    self._reg_acc_translator.write(tb, instruction.operands[0], result)
 
     if instruction.update_flags:
-        self._update_flags_data_proc_other(tb, instruction.operands[2], oprnd1, oprnd2, result)
+        self._flag_translator.update_flags_data_proc_other(tb, instruction.operands[2], oprnd1, oprnd2, result)
 
 
 def _translate_add(self, tb, instruction):
-    oprnd1 = tb.read(instruction.operands[1])
-    oprnd2 = tb.read(instruction.operands[2])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[1])
+    oprnd2 = self._reg_acc_translator.read(tb, instruction.operands[2])
 
     result = tb.temporal(oprnd1.size * 2)
 
     tb.add(self._builder.gen_add(oprnd1, oprnd2, result))
 
-    tb.write(instruction.operands[0], result)
+    self._reg_acc_translator.write(tb, instruction.operands[0], result)
 
     if instruction.update_flags:
-        self._update_flags_data_proc_add(tb, oprnd1, oprnd2, result)
+        self._flag_translator.update_flags_data_proc_add(tb, oprnd1, oprnd2, result)
 
 
 def _translate_sub(self, tb, instruction):
-    oprnd1 = tb.read(instruction.operands[1])
-    oprnd2 = tb.read(instruction.operands[2])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[1])
+    oprnd2 = self._reg_acc_translator.read(tb, instruction.operands[2])
 
     result = tb.temporal(oprnd1.size * 2)
 
     tb.add(self._builder.gen_sub(oprnd1, oprnd2, result))
 
-    tb.write(instruction.operands[0], result)
+    self._reg_acc_translator.write(tb, instruction.operands[0], result)
 
     if instruction.update_flags:
-        self._update_flags_data_proc_sub(tb, oprnd1, oprnd2, result)
+        self._flag_translator.update_flags_data_proc_sub(tb, oprnd1, oprnd2, result)
 
 
 def _translate_rsb(self, tb, instruction):
@@ -144,51 +147,51 @@ def _translate_rsb(self, tb, instruction):
 
 
 def _translate_mul(self, tb, instruction):
-    oprnd1 = tb.read(instruction.operands[1])
-    oprnd2 = tb.read(instruction.operands[2])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[1])
+    oprnd2 = self._reg_acc_translator.read(tb, instruction.operands[2])
 
     result = tb.temporal(oprnd1.size * 2)
 
     tb.add(self._builder.gen_mul(oprnd1, oprnd2, result))
 
-    tb.write(instruction.operands[0], result)
+    self._reg_acc_translator.write(tb, instruction.operands[0], result)
 
     if instruction.update_flags:
-        self._update_zf(tb, oprnd1, oprnd2, result)
-        self._update_nf(tb, oprnd1, oprnd2, result)
+        self._flag_translator.update_zf(tb, oprnd1, oprnd2, result)
+        self._flag_translator.update_nf(tb, oprnd1, oprnd2, result)
 
 
 def _translate_cmn(self, tb, instruction):
-    oprnd1 = tb.read(instruction.operands[0])
-    oprnd2 = tb.read(instruction.operands[1])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[0])
+    oprnd2 = self._reg_acc_translator.read(tb, instruction.operands[1])
 
     result = tb.temporal(oprnd1.size * 2)
 
     tb.add(self._builder.gen_add(oprnd1, oprnd2, result))
 
-    self._update_flags_data_proc_add(tb, oprnd1, oprnd2, result)  # S = 1 (implied in the instruction)
+    self._flag_translator.update_flags_data_proc_add(tb, oprnd1, oprnd2, result)  # S = 1 (implied in the instruction)
 
 
 def _translate_cmp(self, tb, instruction):
-    oprnd1 = tb.read(instruction.operands[0])
-    oprnd2 = tb.read(instruction.operands[1])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[0])
+    oprnd2 = self._reg_acc_translator.read(tb, instruction.operands[1])
 
     result = tb.temporal(oprnd1.size * 2)
 
     tb.add(self._builder.gen_sub(oprnd1, oprnd2, result))
 
-    self._update_flags_data_proc_sub(tb, oprnd1, oprnd2, result)  # S = 1 (implied in the instruction)
+    self._flag_translator.update_flags_data_proc_sub(tb, oprnd1, oprnd2, result)  # S = 1 (implied in the instruction)
 
 
 def _translate_cbz(self, tb, instruction):
-    oprnd1 = tb.read(instruction.operands[0])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[0])
     arm_operand = instruction.operands[1]
 
     if isinstance(arm_operand, ArmImmediateOperand):
         target = ReilImmediateOperand(arm_operand.immediate << 8, self._pc.size + 8)
     elif isinstance(arm_operand, ArmRegisterOperand):
         target = ReilRegisterOperand(arm_operand.name, arm_operand.size)
-        target = tb._and_regs(target, ReilImmediateOperand(0xFFFFFFFE, target.size))
+        target = and_regs(tb, target, ReilImmediateOperand(0xFFFFFFFE, target.size))
 
         tmp0 = tb.temporal(target.size + 8)
         tmp1 = tb.temporal(target.size + 8)
@@ -200,18 +203,18 @@ def _translate_cbz(self, tb, instruction):
     else:
         raise Exception()
 
-    tb._jump_if_zero(oprnd1, target)
+    jump_if_zero(tb, oprnd1, target)
 
 
 def _translate_cbnz(self, tb, instruction):
-    oprnd0 = tb.read(instruction.operands[0])
+    oprnd0 = self._reg_acc_translator.read(tb, instruction.operands[0])
     arm_operand = instruction.operands[1]
 
     if isinstance(arm_operand, ArmImmediateOperand):
         target = ReilImmediateOperand(arm_operand.immediate << 8, self._pc.size + 8)
     elif isinstance(arm_operand, ArmRegisterOperand):
         target = ReilRegisterOperand(arm_operand.name, arm_operand.size)
-        target = tb._and_regs(target, ReilImmediateOperand(0xFFFFFFFE, target.size))
+        target = and_regs(tb, target, ReilImmediateOperand(0xFFFFFFFE, target.size))
 
         tmp0 = tb.temporal(target.size + 8)
         tmp1 = tb.temporal(target.size + 8)
@@ -223,9 +226,9 @@ def _translate_cbnz(self, tb, instruction):
     else:
         raise Exception()
 
-    neg_oprnd = tb._negate_reg(oprnd0)
+    neg_oprnd = negate_reg(tb, oprnd0)
 
-    tb._jump_if_zero(neg_oprnd, target)
+    jump_if_zero(tb, neg_oprnd, target)
 
 
 def _translate_lsl(self, tb, instruction):
@@ -233,31 +236,31 @@ def _translate_lsl(self, tb, instruction):
     if len(instruction.operands) == 3 and isinstance(instruction.operands[1], ArmRegisterOperand):
         sh_op = ArmShiftedRegisterOperand(instruction.operands[1], "lsl", instruction.operands[2],
                                           instruction.operands[1].size)
-        disp = tb._compute_shifted_register(sh_op)
-        tb.write(instruction.operands[0], disp)
+        disp = self._reg_acc_translator.compute_shifted_register(tb, sh_op)
+        self._reg_acc_translator.write(tb, instruction.operands[0], disp)
         return
 
     if len(instruction.operands) == 2 and isinstance(instruction.operands[1], ArmShiftedRegisterOperand):
         # Capstone is incorrectly packing <Rm>, #<imm5> into a shifted register, unpack it
-        instruction.operands.append(instruction.operands[1]._shift_amount)
-        instruction.operands[1] = instruction.operands[1]._base_reg
+        instruction.operands.append(instruction.operands[1].shift_amount)
+        instruction.operands[1] = instruction.operands[1].base_reg
 
-    oprnd1 = tb.read(instruction.operands[1])
-    oprnd2 = tb.read(instruction.operands[2])
+    oprnd1 = self._reg_acc_translator.read(tb, instruction.operands[1])
+    oprnd2 = self._reg_acc_translator.read(tb, instruction.operands[2])
     result = tb.temporal(oprnd1.size)
 
     tb.add(self._builder.gen_bsh(oprnd1, oprnd2, result))
-    tb.write(instruction.operands[0], result)
+    self._reg_acc_translator.write(tb, instruction.operands[0], result)
 
     if instruction.update_flags:
-        self._update_zf(tb, oprnd1, oprnd2, result)
-        self._update_nf(tb, oprnd1, oprnd2, result)
+        self._flag_translator.update_zf(tb, oprnd1, oprnd2, result)
+        self._flag_translator.update_nf(tb, oprnd1, oprnd2, result)
         # TODO: Encapsulate this new kind of flag update (different from the data proc instructions like add, and, orr)
         if oprnd2.immediate == 0:
             return
         else:
             # carry_out = Rm[32 - shift_imm]
-            shift_carry_out = tb._extract_bit(oprnd1, 32 - oprnd2.immediate)
+            shift_carry_out = extract_bit(tb, oprnd1, 32 - oprnd2.immediate)
             tb.add(self._builder.gen_str(shift_carry_out, self._flags["cf"]))
 
 

@@ -24,25 +24,10 @@
 
 from __future__ import absolute_import
 
-from barf.arch.arm import ARM_COND_CODE_AL
-from barf.arch.arm import ARM_COND_CODE_CC
-from barf.arch.arm import ARM_COND_CODE_CS
-from barf.arch.arm import ARM_COND_CODE_EQ
-from barf.arch.arm import ARM_COND_CODE_GE
-from barf.arch.arm import ARM_COND_CODE_GT
-from barf.arch.arm import ARM_COND_CODE_HI
-from barf.arch.arm import ARM_COND_CODE_HS
-from barf.arch.arm import ARM_COND_CODE_LE
-from barf.arch.arm import ARM_COND_CODE_LO
-from barf.arch.arm import ARM_COND_CODE_LS
-from barf.arch.arm import ARM_COND_CODE_LT
-from barf.arch.arm import ARM_COND_CODE_MI
-from barf.arch.arm import ARM_COND_CODE_NE
-from barf.arch.arm import ARM_COND_CODE_PL
-from barf.arch.arm import ARM_COND_CODE_VC
-from barf.arch.arm import ARM_COND_CODE_VS
 from barf.arch.arm import ArmImmediateOperand
 from barf.arch.arm import ArmRegisterOperand
+from barf.arch.arm.helpers import ArmConditionCodeHelper
+from barf.arch.helper import and_regs
 from barf.core.reil import ReilImmediateOperand
 from barf.core.reil import ReilRegisterOperand
 
@@ -111,29 +96,7 @@ def _translate_bls(self, tb, instruction):
 
 
 def _translate_branch(self, tb, instruction, link):
-    if instruction.condition_code == ARM_COND_CODE_AL:
-        cond = tb.immediate(1, 1)
-    else:
-        eval_cc_fn = {
-            ARM_COND_CODE_EQ: self._evaluate_eq,
-            ARM_COND_CODE_NE: self._evaluate_ne,
-            ARM_COND_CODE_CS: self._evaluate_cs,
-            ARM_COND_CODE_HS: self._evaluate_cs,
-            ARM_COND_CODE_CC: self._evaluate_cc,
-            ARM_COND_CODE_LO: self._evaluate_cc,
-            ARM_COND_CODE_MI: self._evaluate_mi,
-            ARM_COND_CODE_PL: self._evaluate_pl,
-            ARM_COND_CODE_VS: self._evaluate_vs,
-            ARM_COND_CODE_VC: self._evaluate_vc,
-            ARM_COND_CODE_HI: self._evaluate_hi,
-            ARM_COND_CODE_LS: self._evaluate_ls,
-            ARM_COND_CODE_GE: self._evaluate_ge,
-            ARM_COND_CODE_LT: self._evaluate_lt,
-            ARM_COND_CODE_GT: self._evaluate_gt,
-            ARM_COND_CODE_LE: self._evaluate_le,
-        }
-
-        cond = eval_cc_fn[instruction.condition_code](tb)
+    oprnd_cc = ArmConditionCodeHelper.evaluate_cond_code(self._flags, tb, instruction.condition_code)
 
     arm_operand = instruction.operands[0]
 
@@ -141,7 +104,7 @@ def _translate_branch(self, tb, instruction, link):
         target = ReilImmediateOperand(arm_operand.immediate << 8, self._pc.size + 8)
     elif isinstance(arm_operand, ArmRegisterOperand):
         target = ReilRegisterOperand(arm_operand.name, arm_operand.size)
-        target = tb._and_regs(target, ReilImmediateOperand(0xFFFFFFFE, target.size))
+        target = and_regs(tb, target, ReilImmediateOperand(0xFFFFFFFE, target.size))
 
         tmp0 = tb.temporal(target.size + 8)
         tmp1 = tb.temporal(target.size + 8)
@@ -157,9 +120,7 @@ def _translate_branch(self, tb, instruction, link):
         tb.add(self._builder.gen_str(ReilImmediateOperand(instruction.address + instruction.size, self._pc.size),
                                      self._lr))
 
-    tb.add(self._builder.gen_jcc(cond, target))
-
-    return
+    tb.add(self._builder.gen_jcc(oprnd_cc, target))
 
 
 dispatcher = {
