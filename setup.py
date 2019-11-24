@@ -5,11 +5,11 @@ from __future__ import absolute_import
 from setuptools import setup
 from setuptools import find_packages
 
-__version__ = '0.5.0'
+__version__ = '0.6.0'
 
 setup(
     author           = 'Christian Heitman',
-    author_email     = 'cnheitman@fundacionsadosky.org.ar',
+    author_email     = 'barfframework@gmail.com',
     description      = 'A multiplatform open source Binary Analysis and Reverse engineering Framework',
     download_url     = 'https://github.com/programa-stic/barf-project/tarball/v' + __version__,
     install_requires = [
@@ -29,6 +29,7 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Scientific/Engineering :: Information Analysis',
         'Topic :: Security',
         'Topic :: Software Development :: Disassemblers',

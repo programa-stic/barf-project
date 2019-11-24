@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 ### Added
 
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.6.0] - 2019-11-24
+### Added
+
 - Add Python 3 compatibility.
 - Add classes for managing call conventions.
 - Add hook support to the `Emulator` class.
@@ -22,6 +35,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Refactor ARM package.
 - Refactor ARM tests.
 - Refactor x86 package.
 - Refactor x86 tests.
@@ -189,7 +203,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 - First release.
 
-[Unreleased]: https://github.com/programa-stic/barf-project/compare/v0.5.0...master
+[Unreleased]: https://github.com/programa-stic/barf-project/compare/v0.6.0...master
+[0.6.0]: https://github.com/programa-stic/barf-project/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/programa-stic/barf-project/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/programa-stic/barf-project/compare/v0.3...v0.4.0
 [0.3]: https://github.com/programa-stic/barf-project/compare/v0.2.1...v0.3
